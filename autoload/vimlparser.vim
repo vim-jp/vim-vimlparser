@@ -748,7 +748,7 @@ function s:VimLParser.parse_cmd_lockvar()
     call add(args, node)
   endwhile
   call self.skip_trail()
-  let self.node = self.node('LOCKVAR', [depth, args])
+  let node = self.node('LOCKVAR', [depth, args])
   call self.add_node(node)
 endfunction
 
@@ -2406,7 +2406,7 @@ function s:ExprParser.parse_expr9()
         let token = self.tokenizer.peek()
         if token.type == 'COMMA'
           call self.tokenizer.get()
-          if self.tokenizer.peek().type == 'LBPAR'
+          if self.tokenizer.peek().type == 'RBPAR'
             call self.tokenizer.get()
             break
           endif
