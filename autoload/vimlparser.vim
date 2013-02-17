@@ -485,7 +485,6 @@ function s:VimLParser.parse_cmd_common()
     endwhile
   endif
   let cmdstr = self.reader.getstr(self.ea.linepos, end)
-  echo cmdstr
   let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
   let node = self.node('EXECUTE', [expr])
   call self.add_node(node)
