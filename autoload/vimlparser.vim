@@ -27,12 +27,6 @@ function! s:numtoname(num)
   return a:num
 endfunction
 
-function! s:decho(msg, hl)
-  "execute 'echohl ' . a:hl
-  "echo a:msg
-  "echohl None
-endfunction
-
 let s:NIL = {}
 
 let s:VimLParser = {}
@@ -44,6 +38,16 @@ function s:VimLParser.new(...)
 endfunction
 
 function s:VimLParser.__init__()
+endfunction
+
+function s:VimLParser.err(...)
+  let pos = self.reader.getpos()
+  if len(a:000) == 1
+    let msg = a:000[0]
+  else
+    let msg = call('printf', a:000)
+  endif
+  return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
 endfunction
 
 function s:VimLParser.node(type, value)
@@ -79,7 +83,6 @@ function s:VimLParser.parse(lines)
   call self.push_context('TOPLEVEL', [])
   let self.reader = s:StringReader.new(join(a:lines, "\n"))
   while self.reader.peek() != ''
-    call s:decho(printf('%d: %s', self.reader.getpos()[1], self.reader.peekline()), 'Comment')
     call self.parse_one_cmd()
   endwhile
   let ctx = self.pop_context()
@@ -243,7 +246,7 @@ function s:VimLParser.parse_range()
         if c == '&' || c == '?' || c == '/'
           call add(tokens, '\' . c)
         else
-          throw 'VimLParser: E10: \\ should be followed by /, ? or &'
+          throw self.err('VimLParser: E10: \\ should be followed by /, ? or &')
         endif
       elseif c =~ '\d'
         call add(tokens, self.read_digits())
@@ -294,14 +297,14 @@ function s:VimLParser.parse_pattern()
   while 1
     let c = self.reader.get()
     if c == ''
-      throw 'VimLParser: E682: Invalid search pattern or delimiter'
+      throw self.err('VimLParser: E682: Invalid search pattern or delimiter')
     endif
     let pattern .= c
     if c == delimiter && inbracket == 0
       break
     elseif c == '\'
       if self.reader.peek() == ''
-        throw 'VimLParser: E682: Invalid search pattern or delimiter'
+        throw self.err('VimLParser: E682: Invalid search pattern or delimiter')
       endif
       let pattern .= self.reader.get()
     elseif c == '['
@@ -330,7 +333,7 @@ function s:VimLParser.parse_command()
   let self.ea.cmd = self.find_command()
 
   if self.ea.cmd == s:NIL
-    throw printf('VimLParser: E492: Not an editor command: %s', line)
+    throw self.err('VimLParser: E492: Not an editor command: %s', line)
   endif
 
   if self.reader.peek() == '!' && self.ea.cmd.name !~ '\v^%(substitute|smagic|snomagic)$'
@@ -341,7 +344,7 @@ function s:VimLParser.parse_command()
   endif
 
   if self.ea.cmd.flags !~ '\<BANG\>' && self.ea.forceit
-    throw 'VimLParser: E477: No ! allowed'
+    throw self.err('VimLParser: E477: No ! allowed')
   endif
 
   if self.ea.cmd.name != '!'
@@ -358,7 +361,7 @@ function s:VimLParser.parse_command()
     if self.reader.peek() == '>'
       call self.reader.get()
       if self.reader.peek() == '>'
-        throw 'VimLParser: E494: Use w or w>>'
+        throw self.err('VimLParser: E494: Use w or w>>')
       endif
       call self.skip_white()
       let self.ea.append = 1
@@ -482,8 +485,8 @@ function s:VimLParser.parse_cmd_common()
     endwhile
   endif
   let cmdstr = self.reader.getstr(self.ea.linepos, end)
+  echo cmdstr
   let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
-  call s:decho(['EXECUTE', self.ea.cmd.name, cmdstr], 'None')
   let node = self.node('EXECUTE', [expr])
   call self.add_node(node)
 endfunction
@@ -507,15 +510,15 @@ function s:VimLParser.separate_nextcmd()
       call self.parse_expr()
       let c = self.reader.get()
       if c != '`'
-        throw printf('VimLParser: unexpected character: %s', c)
+        throw self.err('VimLParser: unexpected character: %s', c)
       endif
     elseif c == '|' || c == "\n" ||
           \ (c == '"' && self.ea.cmd.flags !~ '\<NOTRLCOM\>'
           \   && ((self.ea.cmd.name != '@' && self.ea.cmd.name != '*')
           \       || self.reader.getpos() != self.ea.argpos)
           \   && (self.ea.cmd.name != 'redir'
-          \       || self.reader.getpos()[0] != self.ea.argpos[0] + 1 || pc != '@'))
-      if c == '|' && self.ea.cmd.flags !~ '\<USECTRLV\>' && pc == '\'
+          \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc != '@'))
+      if self.ea.cmd.flags !~ '\<USECTRLV\>' && pc == '\'
         call self.reader.get()
       else
         call self.reader.get()
@@ -585,7 +588,7 @@ function s:VimLParser.parse_cmd_function()
           call self.reader.get()
           break
         else
-          throw printf('VimLParser: unexpected characters: %s', c)
+          throw self.err('VimLParser: unexpected characters: %s', c)
         endif
       elseif self.reader.peek(3) == '...'
         call self.reader.get(3)
@@ -596,10 +599,10 @@ function s:VimLParser.parse_cmd_function()
           call self.reader.get()
           break
         else
-          throw printf('VimLParser: unexpected characters: %s', c)
+          throw self.err('VimLParser: unexpected characters: %s', c)
         endif
       else
-        throw printf('VimLParser: unexpected characters: %s', c)
+        throw self.err('VimLParser: unexpected characters: %s', c)
       endif
     endwhile
   endif
@@ -616,20 +619,18 @@ function s:VimLParser.parse_cmd_function()
     elseif key == 'dict'
       let attr.dict = 1
     else
-      throw printf('VimLParser: unexpected token: %s', key)
+      throw self.err('VimLParser: unexpected token: %s', key)
     endif
   endwhile
   call self.skip_trail()
-  call s:decho(['function', name, args], 'None')
   call self.push_context('function', [name, args])
 endfunction
 
 function s:VimLParser.parse_cmd_endfunction()
   if self.find_context('^function$') != 0
-    throw 'VimLParser: E193: :endfunction not inside a function'
+    throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
   call self.skip_trail()
-  call s:decho(['endfunction'], 'None')
   let ctx = self.pop_context()
   let [name, args] = ctx.value
   let node = self.node('FUNCTION', [name, args, ctx.body])
@@ -639,14 +640,13 @@ endfunction
 function s:VimLParser.parse_cmd_delfunction()
   let name = self.parse_lvalue()
   call self.skip_trail()
-  call s:decho(['delfunction', name], 'None')
   let node = self.node('DELFUNCTION', name)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_return()
   if self.find_context('^function$') == -1
-    throw 'VimLParser: E133: :return not inside a function'
+    throw self.err('VimLParser: E133: :return not inside a function')
   endif
   call self.skip_white()
   let c = self.reader.peek()
@@ -656,7 +656,6 @@ function s:VimLParser.parse_cmd_return()
     let arg = self.parse_expr()
   endif
   call self.skip_trail()
-  call s:decho(['return', arg], 'None')
   let node = self.node('RETURN', arg)
   call self.add_node(node)
 endfunction
@@ -665,15 +664,14 @@ function s:VimLParser.parse_cmd_call()
   call self.skip_white()
   let c = self.reader.peek()
   if self.ends_excmds(c)
-    throw printf('VimLParser: call error: %s', c)
+    throw self.err('VimLParser: call error: %s', c)
   endif
   let expr = self.parse_expr()
   if expr.type != 'CALL'
-    throw printf('VimLParser: call error: %s', expr.type)
+    throw self.err('VimLParser: call error: %s', expr.type)
   endif
   let [name, args] = expr.value
   call self.skip_trail()
-  call s:decho(['call', expr], 'None')
   let node = self.node('EXCALL', [name, args])
   call self.add_node(node)
 endfunction
@@ -711,7 +709,6 @@ function s:VimLParser.parse_cmd_let()
   endif
   let rhs = self.parse_expr()
   call self.skip_trail()
-  call s:decho(['let', lhs, op, rhs], 'None')
   let node = self.node('LET', [lhs, op, rhs])
   call self.add_node(node)
 endfunction
@@ -729,7 +726,6 @@ function s:VimLParser.parse_cmd_unlet()
     call add(args, node)
   endwhile
   call self.skip_trail()
-  call s:decho(['unlet', args], 'None')
   let node = self.node('UNLET', args)
   call self.add_node(node)
 endfunction
@@ -753,7 +749,6 @@ function s:VimLParser.parse_cmd_lockvar()
     call add(args, node)
   endwhile
   call self.skip_trail()
-  call s:decho(['lockvar', depth, args], 'None')
   let self.node = self.node('LOCKVAR', [depth, args])
   call self.add_node(node)
 endfunction
@@ -777,7 +772,6 @@ function s:VimLParser.parse_cmd_unlockvar()
     call add(args, node)
   endwhile
   call self.skip_trail()
-  call s:decho(['unlockvar', depth, args], 'None')
   let node = self.node('UNLOCKVAR', [depth, args])
   call self.add_node(node)
 endfunction
@@ -785,18 +779,16 @@ endfunction
 function s:VimLParser.parse_cmd_if()
   let cond = self.parse_expr()
   call self.skip_trail()
-  call s:decho(['if', cond], 'None')
   let clauses = [[cond, []]]
   call self.push_context('if', clauses)
 endfunction
 
 function s:VimLParser.parse_cmd_elseif()
   if self.find_context('^\(if\|elseif\)$') != 0
-    throw 'VimLParser: E582: :elseif without :if'
+    throw self.err('VimLParser: E582: :elseif without :if')
   endif
   let cond = self.parse_expr()
   call self.skip_trail()
-  call s:decho(['elseif', cond], 'None')
   let ctx = self.pop_context()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
@@ -806,10 +798,9 @@ endfunction
 
 function s:VimLParser.parse_cmd_else()
   if self.find_context('^\(if\|elseif\)$') != 0
-    throw 'VimLParser: E581: :else without :if'
+    throw self.err('VimLParser: E581: :else without :if')
   endif
   call self.skip_trail()
-  call s:decho(['else'], 'None')
   let ctx = self.pop_context()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
@@ -819,10 +810,9 @@ endfunction
 
 function s:VimLParser.parse_cmd_endif()
   if self.find_context('^\(if\|elseif\|else\)$') != 0
-    throw 'VimLParser: E580: :endif without :if'
+    throw self.err('VimLParser: E580: :endif without :if')
   endif
   call self.skip_trail()
-  call s:decho(['endif'], 'None')
   let ctx = self.pop_context()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
@@ -833,16 +823,14 @@ endfunction
 function s:VimLParser.parse_cmd_while()
   let cond = self.parse_expr()
   call self.skip_trail()
-  call s:decho(['while', cond], 'None')
   call self.push_context('while', cond)
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
   if self.find_context('^while$') == -1
-    throw 'VimLParser: E588: :endwhile without :while'
+    throw self.err('VimLParser: E588: :endwhile without :while')
   endif
   call self.skip_trail()
-  call s:decho(['endwhile'], 'None')
   let ctx = self.pop_context()
   let cond = ctx.value
   let node = self.node('WHILE', [cond, ctx.body])
@@ -853,20 +841,18 @@ function s:VimLParser.parse_cmd_for()
   let var = self.parse_letlhs()
   call self.skip_white()
   if self.read_alpha() != 'in'
-    throw 'VimLParser: Missing "in" after :for'
+    throw self.err('VimLParser: Missing "in" after :for')
   endif
   let list = self.parse_expr()
   call self.skip_trail()
-  call s:decho(['for', var, list], 'None')
   call self.push_context('for', [var, list])
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
   if self.find_context('^for$') == -1
-    throw 'VimLParser: E588: :endfor without :for'
+    throw self.err('VimLParser: E588: :endfor without :for')
   endif
   call self.skip_trail()
-  call s:decho(['endfor'], 'None')
   let ctx = self.pop_context()
   let [var, list] = ctx.value
   let node = self.node('FOR', [var, list, ctx.body])
@@ -875,36 +861,33 @@ endfunction
 
 function s:VimLParser.parse_cmd_continue()
   if self.find_context('^\(while\|for\)$') == -1
-    throw 'VimLParser: E586: :continue without :while or :for'
+    throw self.err('VimLParser: E586: :continue without :while or :for')
   endif
   call self.skip_trail()
-  call s:decho(['continue'], 'None')
   let node = self.node('CONTINUE', s:NIL)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_break()
   if self.find_context('^\(while\|for\)$') == -1
-    throw 'VimLParser: E587: :break without :while or :for'
+    throw self.err('VimLParser: E587: :break without :while or :for')
   endif
   call self.skip_trail()
-  call s:decho(['break'], 'None')
   let node = self.node('BREAK', s:NIL)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_try()
   call self.skip_trail()
-  call s:decho(['try'], 'None')
   let [body, _catch, _finally] = [[], [], s:NIL]
   call self.push_context('try', [body, _catch, _finally])
 endfunction
 
 function s:VimLParser.parse_cmd_catch()
   if self.find_context('^finally$') == 0
-    throw 'VimLParser: E604: :catch after :finally'
+    throw self.err('VimLParser: E604: :catch after :finally')
   elseif self.find_context('^\(try\|catch\)$') != 0
-    throw 'VimLParser: E603: :catch without :try'
+    throw self.err('VimLParser: E603: :catch without :try')
   endif
   call self.skip_white()
   if self.ends_excmds(self.reader.peek())
@@ -913,7 +896,6 @@ function s:VimLParser.parse_cmd_catch()
     let pattern = self.parse_pattern()
   endif
   call self.skip_trail()
-  call s:decho(['catch', pattern], 'None')
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
   if ctx.type == 'try'
@@ -927,10 +909,9 @@ endfunction
 
 function s:VimLParser.parse_cmd_finally()
   if self.find_context('^\(try\|catch\)$') != 0
-    throw 'VimLParser: E606: :finally without :try'
+    throw self.err('VimLParser: E606: :finally without :try')
   endif
   call self.skip_trail()
-  call s:decho(['finally'], 'None')
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
   if ctx.type == 'try'
@@ -943,10 +924,9 @@ endfunction
 
 function s:VimLParser.parse_cmd_endtry()
   if self.find_context('^\(try\|catch\|finally\)$') != 0
-    throw 'VimLParser: E602: :endtry without :try'
+    throw self.err('VimLParser: E602: :endtry without :try')
   endif
   call self.skip_trail()
-  call s:decho(['endtry'], 'None')
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
   if ctx.type == 'try'
@@ -954,6 +934,7 @@ function s:VimLParser.parse_cmd_endtry()
   elseif ctx.type == 'catch'
     let _catch[-1][1] = ctx.body
   else
+    unlet _finally
     let _finally = ctx.body
   endif
   let node = self.node('TRY', [body, _catch, _finally])
@@ -963,7 +944,6 @@ endfunction
 function s:VimLParser.parse_cmd_throw()
   let expr1 = self.parse_expr()
   call self.skip_trail()
-  call s:decho(['throw', expr1], 'None')
   let node = self.node('THROW', expr1)
   call self.add_node(node)
 endfunction
@@ -971,7 +951,6 @@ endfunction
 function s:VimLParser.parse_cmd_echo()
   let args = self.parse_exprlist()
   call self.skip_trail()
-  call s:decho(['echo', args], 'None')
   let node = self.node('ECHO', args)
   call self.add_node(node)
 endfunction
@@ -979,7 +958,6 @@ endfunction
 function s:VimLParser.parse_cmd_echon()
   let args = self.parse_exprlist()
   call self.skip_trail()
-  call s:decho(['echon', args], 'None')
   let node = self.node('ECHON', args)
   call self.add_node(node)
 endfunction
@@ -990,7 +968,6 @@ function s:VimLParser.parse_cmd_echohl()
     let name .= self.reader.get()
   endwhile
   call self.skip_trail()
-  call s:decho(['echohl', name], 'None')
   let node = self.node('ECHOHL', name)
   call self.add_node(node)
 endfunction
@@ -998,7 +975,6 @@ endfunction
 function s:VimLParser.parse_cmd_echomsg()
   let args = self.parse_exprlist()
   call self.skip_trail()
-  call s:decho(['echomsg', args], 'None')
   let node = self.node('ECHOMSG', args)
   call self.add_node(node)
 endfunction
@@ -1006,7 +982,6 @@ endfunction
 function s:VimLParser.parse_cmd_echoerr()
   let args = self.parse_exprlist()
   call self.skip_trail()
-  call s:decho(['echoerr', args], 'None')
   let node = self.node('ECHOERR', args)
   call self.add_node(node)
 endfunction
@@ -1014,7 +989,6 @@ endfunction
 function s:VimLParser.parse_cmd_execute()
   let args = self.parse_exprlist()
   call self.skip_trail()
-  call s:decho(['execute', args], 'None')
   let node = self.node('EXECUTE', args)
   call self.add_node(node)
 endfunction
@@ -1046,7 +1020,7 @@ function s:VimLParser.parse_lvalue()
   if node.type =~ '\v^%(IDENTIFIER|INDEX|DOT|OPTION|ENV|REG)$'
     return node
   endif
-  throw printf('VimLParser: lvalue error: %s', node.value)
+  throw self.err('VimLParser: lvalue error: %s', node.value)
 endfunction
 
 " FIXME:
@@ -1073,10 +1047,10 @@ function s:VimLParser.parse_letlhs()
           call tokenizer.get()
           break
         else
-          throw printf('VimLParser: E475 Invalid argument: %s', token.value)
+          throw self.err('VimLParser: E475 Invalid argument: %s', token.value)
         endif
       else
-        throw printf('VimLParser: E475 Invalid argument: %s', token.value)
+        throw self.err('VimLParser: E475 Invalid argument: %s', token.value)
       endif
     endwhile
   else
@@ -1133,7 +1107,7 @@ function s:VimLParser.skip_trail()
   elseif c == '|'
     call self.reader.get()
   else
-    throw printf('VimLParser: E488: Trailing characters: %s', c)
+    throw self.err('VimLParser: E488: Trailing characters: %s', c)
   endif
 endfunction
 
@@ -1673,6 +1647,16 @@ function s:ExprTokenizer.__init__(reader)
   let self.reader = a:reader
 endfunction
 
+function s:ExprTokenizer.err(...)
+  let pos = self.reader.getpos()
+  if len(a:000) == 1
+    let msg = a:000[0]
+  else
+    let msg = call('printf', a:000)
+  endif
+  return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
+endfunction
+
 function s:ExprTokenizer.token(type, value)
   return {'type': a:type, 'value': a:value}
 endfunction
@@ -1909,7 +1893,7 @@ function s:ExprTokenizer.get_keepspace()
       call self.reader.get(1)
       return self.token('SEMICOLON', ';')
     else
-      throw printf('ExprTokenizer: %s', s)
+      throw self.err('ExprTokenizer: %s', s)
     endif
   endwhile
 endfunction
@@ -1921,12 +1905,12 @@ function s:ExprTokenizer.get_sstring()
   endwhile
   let c = self.reader.get()
   if c != "'"
-    throw printf('ExprTokenizer: unexpected character: %s', c)
+    throw sefl.err('ExprTokenizer: unexpected character: %s', c)
   endif
   while 1
     let c = self.reader.get()
     if c == '' || c == "\n"
-      throw 'ExprTokenizer: unexpected EOL'
+      throw self.err('ExprTokenizer: unexpected EOL')
     elseif c == "'"
       if self.reader.peek() == "'"
         let s .= c
@@ -1947,19 +1931,19 @@ function s:ExprTokenizer.get_dstring()
   endwhile
   let c = self.reader.get()
   if c != '"'
-    throw printf('ExprTokenizer: unexpected character: %s', c)
+    throw self.err('ExprTokenizer: unexpected character: %s', c)
   endif
   while 1
     let c = self.reader.get()
     if c == '' || c == "\n"
-      throw 'ExprTokenizer: unexpectd EOL'
+      throw self.err('ExprTokenizer: unexpectd EOL')
     elseif c == '"'
       break
     elseif c == '\'
       let s .= c
       let c = self.reader.get()
       if c == '' || c == "\n"
-        throw 'ExprTokenizer: unexpected EOL'
+        throw self.err('ExprTokenizer: unexpected EOL')
       endif
       let s .= c
     else
@@ -1981,6 +1965,16 @@ function s:ExprParser.__init__(tokenizer)
   let self.tokenizer = a:tokenizer
 endfunction
 
+function s:ExprParser.err(...)
+  let pos = self.tokenizer.reader.getpos()
+  if len(a:000) == 1
+    let msg = a:000[0]
+  else
+    let msg = call('printf', a:000)
+  endif
+  return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
+endfunction
+
 function s:ExprParser.node(type, value)
   return {'type': a:type, 'value': a:value}
 endfunction
@@ -1998,7 +1992,7 @@ function s:ExprParser.parse_expr1()
     let t = self.parse_expr1()
     let token = self.tokenizer.peek()
     if token.type != 'COLON'
-      throw printf('ExprParser: unexpected token: %s', token.value)
+      throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
     call self.tokenizer.get()
     let e = self.parse_expr1()
@@ -2294,10 +2288,10 @@ function s:ExprParser.parse_expr8()
           call self.tokenizer.get()
           let lhs = self.node('SLICE', [lhs, e1, e2])
         else
-          throw printf('ExprParser: unexpected token: %s', token.value)
+          throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
       else
-        throw printf('ExprParser: unexpected token: %s', token.value)
+        throw self.err('ExprParser: unexpected token: %s', token.value)
       endif
       continue
     elseif token.type == 'LPAR'
@@ -2318,7 +2312,7 @@ function s:ExprParser.parse_expr8()
             call self.tokenizer.get()
             break
           else
-            throw printf('ExprParser: unexpected token: %s', token.value)
+            throw self.err('ExprParser: unexpected token: %s', token.value)
           endif
         endwhile
       endif
@@ -2390,7 +2384,7 @@ function s:ExprParser.parse_expr9()
           call self.tokenizer.get()
           break
         else
-          throw printf('ExprParser: unexpected token: %s', token.value)
+          throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
       endwhile
     endif
@@ -2406,7 +2400,7 @@ function s:ExprParser.parse_expr9()
         let key = self.parse_expr1()
         let token = self.tokenizer.get()
         if token.type != 'COLON'
-          throw printf('ExprParser: unexpected token: %s', token.value)
+          throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
         let val = self.parse_expr1()
         call add(dict, [key, val])
@@ -2422,7 +2416,7 @@ function s:ExprParser.parse_expr9()
           call self.tokenizer.get()
           break
         else
-          throw printf('ExprParser: unexpected token: %s', token.value)
+          throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
       endwhile
     endif
@@ -2434,7 +2428,7 @@ function s:ExprParser.parse_expr9()
     if token.type == 'RPAR'
       return e
     else
-      throw printf('ExprParser: unexpected token: %s', token.value)
+      throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
   elseif token.type == 'OPTION'
     call self.tokenizer.get()
@@ -2449,7 +2443,7 @@ function s:ExprParser.parse_expr9()
     call self.tokenizer.get()
     return self.node('REG', token.value)
   else
-    throw printf('ExprParser: unexpected token: %s', token.value)
+    throw self.err('ExprParser: unexpected token: %s', token.value)
   endif
 endfunction
 
@@ -2463,6 +2457,16 @@ endfunction
 
 function s:LvalueParser.__init__(tokenizer)
   let self.tokenizer = a:tokenizer
+endfunction
+
+function s:LvalueParser.err(...)
+  let pos = self.tokenizer.reader.getpos()
+  if len(a:000) == 1
+    let msg = a:000[0]
+  else
+    let msg = call('printf', a:000)
+  endif
+  return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
 endfunction
 
 function s:LvalueParser.node(type, value)
@@ -2514,10 +2518,10 @@ function s:LvalueParser.parse_expr8()
           call self.tokenizer.get()
           let lhs = self.node('SLICE', [lhs, e1, e2])
         else
-          throw printf('LvalueParser: unexpected token: %s', token.value)
+          throw self.err('LvalueParser: unexpected token: %s', token.value)
         endif
       else
-        throw printf('LvalueParser: unexpected token: %s', token.value)
+        throw self.err('LvalueParser: unexpected token: %s', token.value)
       endif
       continue
     elseif token2.type == 'DOT'
@@ -2560,7 +2564,7 @@ function s:LvalueParser.parse_expr9()
     call self.tokenizer.get()
     return self.node('REG', token.value)
   else
-    throw printf('LvalueParser: unexpected token: %s', token.value)
+    throw self.err('LvalueParser: unexpected token: %s', token.value)
   endif
 endfunction
 
@@ -2642,15 +2646,15 @@ function s:StringReader.readline()
 endfunction
 
 function s:StringReader.getstr(begin, end)
-  return join(self.buf[a:begin[0] : a:end[0] - 1], '')
+  return join(self.buf[a:begin.i : a:end.i - 1], '')
 endfunction
 
 function s:StringReader.getpos()
-  return [self.i, self.lnum, self.col]
+  return {'i': self.i, 'lnum': self.lnum, 'col': self.col}
 endfunction
 
 function s:StringReader.setpos(pos)
-  let [self.i, self.lnum, self.col] = a:pos
+  let [self.i, self.lnum, self.col] = [a:pos.i, a:pos.lnum, a:pos.col]
 endfunction
 
 let s:Compiler = {}
@@ -2832,7 +2836,7 @@ function s:Compiler.compile(ast)
   elseif a:ast.type == 'REG'
     return self.compile_reg(a:ast)
   else
-    throw printf('Compiler: unknown node: %s', string(a:ast))
+    throw self.err('Compiler: unknown node: %s', string(a:ast))
   endif
 endfunction
 
