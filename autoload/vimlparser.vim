@@ -7,9 +7,10 @@ endfunction
 
 function vimlparser#test(filename)
   try
+    let r = s:StringReader.new(join(readfile(a:filename), "\n"))
     let p = s:VimLParser.new()
     let c = s:Compiler.new()
-    echo join(c.compile(p.parse(readfile(a:filename))), "\n")
+    echo join(c.compile(p.parse(r)))
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
@@ -74,14 +75,38 @@ function s:VimLParser.find_context(pat)
   return -1
 endfunction
 
+function s:VimLParser.check_missing_endif(ends)
+  if self.stack[0].type =~ '\v^%(if|elseif|else)$'
+    throw self.err('VimLParser: E171: Missing :endif:    %s', a:ends)
+  endif
+endfunction
+
+function s:VimLParser.check_missing_endtry(ends)
+  if self.stack[0].type =~ '\v^%(try|catch|finally)$'
+    throw self.err('VimLParser: E600: Missing :endtry:    %s', a:ends)
+  endif
+endfunction
+
+function s:VimLParser.check_missing_endwhile(ends)
+  if self.stack[0].type == 'while'
+    throw self.err('VimLParser: E170: Missing :endwhile:    %s', a:ends)
+  endif
+endfunction
+
+function s:VimLParser.check_missing_endfor(ends)
+  if self.stack[0].type == 'for'
+    throw self.err('VimLParser: E170: Missing :endfor:    %s', a:ends)
+  endif
+endfunction
+
 function s:VimLParser.add_node(node)
   call add(self.stack[0].body, a:node)
 endfunction
 
-function s:VimLParser.parse(lines)
+function s:VimLParser.parse(reader)
+  let self.reader = a:reader
   let self.stack = []
   call self.push_context('TOPLEVEL', [])
-  let self.reader = s:StringReader.new(join(a:lines, "\n"))
   while self.reader.peek() != ''
     call self.parse_one_cmd()
   endwhile
@@ -627,6 +652,10 @@ function s:VimLParser.parse_cmd_function()
 endfunction
 
 function s:VimLParser.parse_cmd_endfunction()
+  call self.check_missing_endif('endfunction')
+  call self.check_missing_endtry('endfunction')
+  call self.check_missing_endwhile('endfunction')
+  call self.check_missing_endfor('endfunction')
   if self.find_context('^function$') != 0
     throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
@@ -809,6 +838,9 @@ function s:VimLParser.parse_cmd_else()
 endfunction
 
 function s:VimLParser.parse_cmd_endif()
+  call self.check_missing_endtry('endif')
+  call self.check_missing_endwhile('endif')
+  call self.check_missing_endfor('endif')
   if self.find_context('^\(if\|elseif\|else\)$') != 0
     throw self.err('VimLParser: E580: :endif without :if')
   endif
@@ -827,6 +859,9 @@ function s:VimLParser.parse_cmd_while()
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
+  call self.check_missing_endif('endwhile')
+  call self.check_missing_endtry('endwhile')
+  call self.check_missing_endfor('endwhile')
   if self.find_context('^while$') != 0
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
@@ -849,6 +884,9 @@ function s:VimLParser.parse_cmd_for()
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
+  call self.check_missing_endif('endfor')
+  call self.check_missing_endtry('endfor')
+  call self.check_missing_endwhile('endfor')
   if self.find_context('^for$') != 0
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
@@ -923,6 +961,9 @@ function s:VimLParser.parse_cmd_finally()
 endfunction
 
 function s:VimLParser.parse_cmd_endtry()
+  call self.check_missing_endif('endtry')
+  call self.check_missing_endwhile('endtry')
+  call self.check_missing_endfor('endtry')
   if self.find_context('^\(try\|catch\|finally\)$') != 0
     throw self.err('VimLParser: E602: :endtry without :try')
   endif
