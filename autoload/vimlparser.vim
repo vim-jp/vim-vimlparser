@@ -3216,7 +3216,7 @@ endfunction
 
 function s:Compiler.compile_mod(ast)
   let [lhs, rhs] = a:ast.value
-  return printf('(% %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(%% %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
 function s:Compiler.compile_not(ast)
