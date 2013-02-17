@@ -1874,7 +1874,7 @@ function s:ExprTokenizer.get_keepspace()
         let s .= self.reader.get()
       endwhile
       return self.token('ENV', s)
-    elseif s =~ '^@\a'
+    elseif s =~ '^@.'
       return self.token('REG', self.reader.get(2))
     elseif s =~ '^&\(g:\|l:\|\w\w\)'
       let s = self.reader.get(3)
@@ -1912,6 +1912,7 @@ function s:ExprTokenizer.get_sstring()
       throw self.err('ExprTokenizer: unexpected EOL')
     elseif c == "'"
       if self.reader.peek() == "'"
+        call self.reader.get()
         let s .= c
       else
         break
@@ -2276,8 +2277,7 @@ function s:ExprParser.parse_expr8()
       elseif token.type == 'COLON'
         call self.tokenizer.get()
         let token = self.tokenizer.peek()
-        if token.type == 'COLON'
-          call self.tokenizer.get()
+        if token.type == 'RBRA'
           let e2 = s:NIL
         else
           let e2 = self.parse_expr1()
@@ -2506,8 +2506,7 @@ function s:LvalueParser.parse_expr8()
       elseif token.type == 'COLON'
         call self.tokenizer.get()
         let token = self.tokenizer.peek()
-        if token.type == 'COLON'
-          call self.tokenizer.get()
+        if token.type == 'RBRA'
           let e2 = s:NIL
         else
           let e2 = p.parse_expr1()
@@ -3241,7 +3240,17 @@ endfunction
 
 function s:Compiler.compile_slice(ast)
   let [v, s1, s2] = a:ast.value
-  return printf('(slice %s %s %s)', self.compile(v), self.compile(s1), self.compile(s2))
+  if s1 is s:NIL
+    let t1 = 'nil'
+  else
+    let t1 = self.compile(s1)
+  endif
+  if s2 is s:NIL
+    let t2 = 'nil'
+  else
+    let t2 = self.compile(s2)
+  endif
+  return printf('(slice %s %s %s)', self.compile(v), t1, t2)
 endfunction
 
 function s:Compiler.compile_dot(ast)
