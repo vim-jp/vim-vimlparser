@@ -10,7 +10,7 @@ function vimlparser#test(filename)
     let r = s:StringReader.new(join(readfile(a:filename), "\n"))
     let p = s:VimLParser.new()
     let c = s:Compiler.new()
-    echo join(c.compile(p.parse(r)))
+    echo join(c.compile(p.parse(r)), "\n")
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
