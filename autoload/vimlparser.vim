@@ -838,9 +838,6 @@ function s:VimLParser.parse_cmd_else()
 endfunction
 
 function s:VimLParser.parse_cmd_endif()
-  call self.check_missing_endtry('endif')
-  call self.check_missing_endwhile('endif')
-  call self.check_missing_endfor('endif')
   if self.find_context('^\(if\|elseif\|else\)$') != 0
     throw self.err('VimLParser: E580: :endif without :if')
   endif
@@ -859,9 +856,6 @@ function s:VimLParser.parse_cmd_while()
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
-  call self.check_missing_endif('endwhile')
-  call self.check_missing_endtry('endwhile')
-  call self.check_missing_endfor('endwhile')
   if self.find_context('^while$') != 0
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
@@ -884,9 +878,6 @@ function s:VimLParser.parse_cmd_for()
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
-  call self.check_missing_endif('endfor')
-  call self.check_missing_endtry('endfor')
-  call self.check_missing_endwhile('endfor')
   if self.find_context('^for$') != 0
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
@@ -961,9 +952,6 @@ function s:VimLParser.parse_cmd_finally()
 endfunction
 
 function s:VimLParser.parse_cmd_endtry()
-  call self.check_missing_endif('endtry')
-  call self.check_missing_endwhile('endtry')
-  call self.check_missing_endfor('endtry')
   if self.find_context('^\(try\|catch\|finally\)$') != 0
     throw self.err('VimLParser: E602: :endtry without :try')
   endif
@@ -3009,7 +2997,7 @@ function s:Compiler.compile_try(ast)
   call self.out(')')
   for [pattern, body] in _catch
     if pattern is s:NIL
-      call self.out('(catch (')
+      call self.out('(catch nil (')
       call self.compile_body(body)
       call self.out('))')
     else
@@ -3017,10 +3005,11 @@ function s:Compiler.compile_try(ast)
       call self.compile_body(body)
       call self.out('))')
     endif
+    unlet pattern
   endfor
   if _finally isnot s:NIL
     call self.out('(finally (')
-    call self.compile_body(body)
+    call self.compile_body(_finally)
     call self.out('))')
   endif
   call self.out(')')
