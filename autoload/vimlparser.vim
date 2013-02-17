@@ -11,7 +11,7 @@ function vimlparser#test(filename)
     let c = s:Compiler.new()
     echo join(c.compile(p.parse(readfile(a:filename))), "\n")
   catch
-    echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . ' : ' . v:exception
+    echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
 endfunction
 
@@ -181,6 +181,7 @@ function s:VimLParser.parse_command_modifiers()
       call add(modifiers, {'name': 'sandbox'})
     elseif k =~# '^sil\%[ent]$'
       if c == '!'
+        call self.reader.get()
         call add(modifiers, {'name': 'silent', 'bang': 1})
       else
         call add(modifiers, {'name': 'silent', 'bang': 0})
@@ -826,7 +827,7 @@ function s:VimLParser.parse_cmd_while()
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
-  if self.find_context('^while$') == -1
+  if self.find_context('^while$') != 0
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
   call self.skip_trail()
@@ -848,7 +849,7 @@ function s:VimLParser.parse_cmd_for()
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
-  if self.find_context('^for$') == -1
+  if self.find_context('^for$') != 0
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
   call self.skip_trail()
@@ -1125,8 +1126,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'args', 'pat': '^ar\%[gs]$', 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'argadd', 'pat': '^arga\%[dd]$', 'flags': 'BANG|NEEDARG|RANGE|NOTADR|ZEROR|FILES|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'argdelete', 'pat': '^argd\%[elete]$', 'flags': 'BANG|RANGE|NOTADR|FILES|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'argedit', 'pat': '^arge\%[dit]$', 'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'argdo', 'pat': '^argdo$', 'flags': 'BANG|NEEDARG|RANGE|NOTADR|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'argedit', 'pat': '^arge\%[dit]$', 'flags': 'BANG|NEEDARG|RANGE|NOTADR|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'argdo', 'pat': '^argdo$', 'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'argglobal', 'pat': '^argg\%[lobal]$', 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'arglocal', 'pat': '^argl\%[ocal]$', 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'argument', 'pat': '^argu\%[ment]$', 'flags': 'BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
@@ -1153,8 +1154,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'breakdel', 'pat': '^breakd\%[el]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'breaklist', 'pat': '^breakl\%[ist]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'browse', 'pat': '^bro\%[wse]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'bufdo', 'pat': '^bufdo$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'buffers', 'pat': '^buffers$', 'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'bufdo', 'pat': '^bufdo$', 'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'buffers', 'pat': '^buffers$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'bunload', 'pat': '^bun\%[load]$', 'flags': 'BANG|RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'bwipeout', 'pat': '^bw\%[ipeout]$', 'flags': 'BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'change', 'pat': '^c\%[hange]$', 'flags': 'BANG|WHOLEFOLD|RANGE|COUNT|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
@@ -1175,11 +1176,11 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'cexpr', 'pat': '^cex\%[pr]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'cfile', 'pat': '^cf\%[ile]$', 'flags': 'TRLBAR|FILE1|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'cfirst', 'pat': '^cfir\%[st]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'cgetbuffer', 'pat': '^cgetb\%[uffer]$', 'flags': 'TRLBAR|FILE1', 'parser': 'parse_cmd_common'},
-      \ {'name': 'cgetexpr', 'pat': '^cgete\%[xpr]$', 'flags': 'RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'cgetfile', 'pat': '^cg\%[etfile]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'changes', 'pat': '^cha\%[nges]$', 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'chdir', 'pat': '^chd\%[ir]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'cgetbuffer', 'pat': '^cgetb\%[uffer]$', 'flags': 'RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'cgetexpr', 'pat': '^cgete\%[xpr]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'cgetfile', 'pat': '^cg\%[etfile]$', 'flags': 'TRLBAR|FILE1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'changes', 'pat': '^cha\%[nges]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'chdir', 'pat': '^chd\%[ir]$', 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'checkpath', 'pat': '^che\%[ckpath]$', 'flags': 'TRLBAR|BANG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'checktime', 'pat': '^checkt\%[ime]$', 'flags': 'RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'clist', 'pat': '^cl\%[ist]$', 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1219,15 +1220,15 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'debuggreedy', 'pat': '^debugg\%[reedy]$', 'flags': 'RANGE|NOTADR|ZEROR|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'delcommand', 'pat': '^delc\%[ommand]$', 'flags': 'NEEDARG|WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'delfunction', 'pat': '^delf\%[unction]$', 'flags': 'NEEDARG|WORD1|CMDWIN', 'parser': 'parse_cmd_delfunction'},
-      \ {'name': 'diffupdate', 'pat': '^dif\%[fupdate]$', 'flags': 'EXTRA|NOTRLCOM|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'diffget', 'pat': '^diffg\%[et]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'diffoff', 'pat': '^diffo\%[ff]$', 'flags': 'RANGE|EXTRA|TRLBAR|MODIFY', 'parser': 'parse_cmd_common'},
-      \ {'name': 'diffpatch', 'pat': '^diffp\%[atch]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'diffput', 'pat': '^diffpu\%[t]$', 'flags': 'EXTRA|FILE1|TRLBAR|MODIFY', 'parser': 'parse_cmd_common'},
-      \ {'name': 'diffsplit', 'pat': '^diffs\%[plit]$', 'flags': 'RANGE|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'diffthis', 'pat': '^diffthis$', 'flags': 'EXTRA|FILE1|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'digraphs', 'pat': '^dig\%[raphs]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'display', 'pat': '^di\%[splay]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffupdate', 'pat': '^dif\%[fupdate]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffget', 'pat': '^diffg\%[et]$', 'flags': 'RANGE|EXTRA|TRLBAR|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffoff', 'pat': '^diffo\%[ff]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffpatch', 'pat': '^diffp\%[atch]$', 'flags': 'EXTRA|FILE1|TRLBAR|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffput', 'pat': '^diffpu\%[t]$', 'flags': 'RANGE|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffsplit', 'pat': '^diffs\%[plit]$', 'flags': 'EXTRA|FILE1|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'diffthis', 'pat': '^diffthis$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'digraphs', 'pat': '^dig\%[raphs]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'display', 'pat': '^di\%[splay]$', 'flags': 'EXTRA|NOTRLCOM|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'djump', 'pat': '^dj\%[ump]$', 'flags': 'BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA', 'parser': 'parse_cmd_common'},
       \ {'name': 'dlist', 'pat': '^dl\%[ist]$', 'flags': 'BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'doautocmd', 'pat': '^do\%[autocmd]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1246,8 +1247,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'elseif', 'pat': '^elsei\%[f]$', 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_elseif'},
       \ {'name': 'emenu', 'pat': '^em\%[enu]$', 'flags': 'NEEDARG|EXTRA|TRLBAR|NOTRLCOM|RANGE|NOTADR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'endif', 'pat': '^en\%[dif]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endif'},
-      \ {'name': 'endfor', 'pat': '^endfo\%[r]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_endfor'},
-      \ {'name': 'endfunction', 'pat': '^endf\%[unction]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endfunction'},
+      \ {'name': 'endfor', 'pat': '^endfo\%[r]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endfor'},
+      \ {'name': 'endfunction', 'pat': '^endf\%[unction]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_endfunction'},
       \ {'name': 'endtry', 'pat': '^endt\%[ry]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endtry'},
       \ {'name': 'endwhile', 'pat': '^endw\%[hile]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endwhile'},
       \ {'name': 'enew', 'pat': '^ene\%[w]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
@@ -1276,11 +1277,11 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'grepadd', 'pat': '^grepa\%[dd]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
       \ {'name': 'gui', 'pat': '^gu\%[i]$', 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'gvim', 'pat': '^gv\%[im]$', 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'hardcopy', 'pat': '^ha\%[rdcopy]$', 'flags': 'BANG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'help', 'pat': '^h\%[elp]$', 'flags': 'EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'helpfind', 'pat': '^helpf\%[ind]$', 'flags': 'EXTRA|NOTRLCOM|NEEDARG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'helpgrep', 'pat': '^helpg\%[rep]$', 'flags': 'NEEDARG|FILES|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'helptags', 'pat': '^helpt\%[ags]$', 'flags': 'RANGE|COUNT|EXTRA|TRLBAR|DFLALL|BANG', 'parser': 'parse_cmd_common'},
+      \ {'name': 'hardcopy', 'pat': '^ha\%[rdcopy]$', 'flags': 'RANGE|COUNT|EXTRA|TRLBAR|DFLALL|BANG', 'parser': 'parse_cmd_common'},
+      \ {'name': 'help', 'pat': '^h\%[elp]$', 'flags': 'BANG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'helpfind', 'pat': '^helpf\%[ind]$', 'flags': 'EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'helpgrep', 'pat': '^helpg\%[rep]$', 'flags': 'EXTRA|NOTRLCOM|NEEDARG', 'parser': 'parse_cmd_common'},
+      \ {'name': 'helptags', 'pat': '^helpt\%[ags]$', 'flags': 'NEEDARG|FILES|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'highlight', 'pat': '^hi\%[ghlight]$', 'flags': 'BANG|EXTRA|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'hide', 'pat': '^hid\%[e]$', 'flags': 'BANG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'history', 'pat': '^his\%[tory]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1308,14 +1309,14 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'keepalt', 'pat': '^keepa\%[lt]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'keepmarks', 'pat': '^kee\%[pmarks]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'keepjumps', 'pat': '^keepj\%[umps]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lNext', 'pat': '^lN\%[ext]$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lNext', 'pat': '^lN\%[ext]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lNfile', 'pat': '^lNf\%[ile]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'list', 'pat': '^l\%[ist]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'laddexpr', 'pat': '^lad\%[dexpr]$', 'flags': 'EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'laddbuffer', 'pat': '^laddb\%[uffer]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'laddfile', 'pat': '^laddf\%[ile]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'last', 'pat': '^la\%[st]$', 'flags': 'RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'language', 'pat': '^lan\%[guage]$', 'flags': 'TRLBAR|FILE1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'list', 'pat': '^l\%[ist]$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'laddexpr', 'pat': '^lad\%[dexpr]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'laddbuffer', 'pat': '^laddb\%[uffer]$', 'flags': 'RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'laddfile', 'pat': '^laddf\%[ile]$', 'flags': 'TRLBAR|FILE1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'last', 'pat': '^la\%[st]$', 'flags': 'EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'language', 'pat': '^lan\%[guage]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'later', 'pat': '^lat\%[er]$', 'flags': 'TRLBAR|EXTRA|NOSPC|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'lbuffer', 'pat': '^lb\%[uffer]$', 'flags': 'BANG|RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'lcd', 'pat': '^lc\%[d]$', 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1328,24 +1329,24 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'lexpr', 'pat': '^lex\%[pr]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lfile', 'pat': '^lf\%[ile]$', 'flags': 'TRLBAR|FILE1|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lfirst', 'pat': '^lfir\%[st]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lgetbuffer', 'pat': '^lgetb\%[uffer]$', 'flags': 'TRLBAR|FILE1', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lgetexpr', 'pat': '^lgete\%[xpr]$', 'flags': 'RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lgetfile', 'pat': '^lg\%[etfile]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lgetbuffer', 'pat': '^lgetb\%[uffer]$', 'flags': 'RANGE|NOTADR|WORD1|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lgetexpr', 'pat': '^lgete\%[xpr]$', 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lgetfile', 'pat': '^lg\%[etfile]$', 'flags': 'TRLBAR|FILE1', 'parser': 'parse_cmd_common'},
       \ {'name': 'lgrep', 'pat': '^lgr\%[ep]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
       \ {'name': 'lgrepadd', 'pat': '^lgrepa\%[dd]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
       \ {'name': 'lhelpgrep', 'pat': '^lh\%[elpgrep]$', 'flags': 'EXTRA|NOTRLCOM|NEEDARG', 'parser': 'parse_cmd_common'},
       \ {'name': 'll', 'pat': '^ll$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'llast', 'pat': '^lla\%[st]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'llist', 'pat': '^lli\%[st]$', 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lmake', 'pat': '^lmak\%[e]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lmap', 'pat': '^lm\%[ap]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lmapclear', 'pat': '^lmapc\%[lear]$', 'flags': 'BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lnext', 'pat': '^lne\%[xt]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lnewer', 'pat': '^lnew\%[er]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lnfile', 'pat': '^lnf\%[ile]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lnoremap', 'pat': '^ln\%[oremap]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'loadkeymap', 'pat': '^loadk\%[eymap]$', 'flags': 'FILE1|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'loadview', 'pat': '^lo\%[adview]$', 'flags': 'CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lmake', 'pat': '^lmak\%[e]$', 'flags': 'BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lmap', 'pat': '^lm\%[ap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lmapclear', 'pat': '^lmapc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lnext', 'pat': '^lne\%[xt]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lnewer', 'pat': '^lnew\%[er]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lnfile', 'pat': '^lnf\%[ile]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lnoremap', 'pat': '^ln\%[oremap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'loadkeymap', 'pat': '^loadk\%[eymap]$', 'flags': 'CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'loadview', 'pat': '^lo\%[adview]$', 'flags': 'FILE1|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'lockmarks', 'pat': '^loc\%[kmarks]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'lockvar', 'pat': '^lockv\%[ar]$', 'flags': 'BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN', 'parser': 'parse_cmd_lockvar'},
       \ {'name': 'lolder', 'pat': '^lol\%[der]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
@@ -1353,15 +1354,15 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'lprevious', 'pat': '^lp\%[revious]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lpfile', 'pat': '^lpf\%[ile]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lrewind', 'pat': '^lr\%[ewind]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'ls', 'pat': '^ls$', 'flags': 'NOTADR|TRLBAR|BANG|WORD1', 'parser': 'parse_cmd_common'},
-      \ {'name': 'ltag', 'pat': '^lt\%[ag]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lunmap', 'pat': '^lu\%[nmap]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lua', 'pat': '^lua$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'luado', 'pat': '^luad\%[o]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'luafile', 'pat': '^luaf\%[ile]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
+      \ {'name': 'ls', 'pat': '^ls$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'ltag', 'pat': '^lt\%[ag]$', 'flags': 'NOTADR|TRLBAR|BANG|WORD1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lunmap', 'pat': '^lu\%[nmap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lua', 'pat': '^lua$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'luado', 'pat': '^luad\%[o]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'luafile', 'pat': '^luaf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'lvimgrep', 'pat': '^lv\%[imgrep]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lvimgrepadd', 'pat': '^lvimgrepa\%[dd]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lwindow', 'pat': '^lw\%[indow]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lvimgrepadd', 'pat': '^lvimgrepa\%[dd]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lwindow', 'pat': '^lw\%[indow]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'move', 'pat': '^m\%[ove]$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'mark', 'pat': '^ma\%[rk]$', 'flags': 'RANGE|WORD1|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'make', 'pat': '^mak\%[e]$', 'flags': 'BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
@@ -1380,18 +1381,18 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'mode', 'pat': '^mod\%[e]$', 'flags': 'WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'mzscheme', 'pat': '^mz\%[scheme]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN|SBOXOK', 'parser': 'parse_cmd_common'},
       \ {'name': 'mzfile', 'pat': '^mzf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'nbclose', 'pat': '^nbc\%[lose]$', 'flags': 'RANGE|NOTADR|BANG|FILES|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'nbclose', 'pat': '^nbc\%[lose]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nbkey', 'pat': '^nb\%[key]$', 'flags': 'EXTRA|NOTADR|NEEDARG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'nbstart', 'pat': '^nbs\%[art]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'next', 'pat': '^n\%[ext]$', 'flags': 'WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'nbstart', 'pat': '^nbs\%[art]$', 'flags': 'WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'next', 'pat': '^n\%[ext]$', 'flags': 'RANGE|NOTADR|BANG|FILES|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'new', 'pat': '^new$', 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'nmap', 'pat': '^nm\%[ap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nmapclear', 'pat': '^nmapc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nmenu', 'pat': '^nme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nnoremap', 'pat': '^nn\%[oremap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nnoremenu', 'pat': '^nnoreme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'noautocmd', 'pat': '^noa\%[utocmd]$', 'flags': 'BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'noremap', 'pat': '^no\%[remap]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'noautocmd', 'pat': '^noa\%[utocmd]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'noremap', 'pat': '^no\%[remap]$', 'flags': 'BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nohlsearch', 'pat': '^noh\%[lsearch]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'noreabbrev', 'pat': '^norea\%[bbrev]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'noremenu', 'pat': '^noreme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1399,8 +1400,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'number', 'pat': '^nu\%[mber]$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nunmap', 'pat': '^nun\%[map]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nunmenu', 'pat': '^nunme\%[nu]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'oldfiles', 'pat': '^ol\%[dfiles]$', 'flags': 'RANGE|BANG|EXTRA', 'parser': 'parse_cmd_common'},
-      \ {'name': 'open', 'pat': '^o\%[pen]$', 'flags': 'BANG|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'oldfiles', 'pat': '^ol\%[dfiles]$', 'flags': 'BANG|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'open', 'pat': '^o\%[pen]$', 'flags': 'RANGE|BANG|EXTRA', 'parser': 'parse_cmd_common'},
       \ {'name': 'omap', 'pat': '^om\%[ap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'omapclear', 'pat': '^omapc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'omenu', 'pat': '^ome\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1411,20 +1412,20 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'ounmap', 'pat': '^ou\%[nmap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'ounmenu', 'pat': '^ounme\%[nu]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'ownsyntax', 'pat': '^ow\%[nsyntax]$', 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'pclose', 'pat': '^pc\%[lose]$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|SBOXOK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'pedit', 'pat': '^ped\%[it]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'pclose', 'pat': '^pc\%[lose]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'pedit', 'pat': '^ped\%[it]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'perl', 'pat': '^pe\%[rl]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'print', 'pat': '^p\%[rint]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'profdel', 'pat': '^profd\%[el]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'profile', 'pat': '^prof\%[ile]$', 'flags': 'RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'promptfind', 'pat': '^pro\%[mptfind]$', 'flags': 'NEEDARG|EXTRA|BANG|TRLBAR|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'promptrepl', 'pat': '^promptr\%[epl]$', 'flags': 'RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'perldo', 'pat': '^perld\%[o]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'pop', 'pat': '^po\%[p]$', 'flags': 'EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'popup', 'pat': '^pop\%[up]$', 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'ppop', 'pat': '^pp\%[op]$', 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'preserve', 'pat': '^pre\%[serve]$', 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'previous', 'pat': '^prev\%[ious]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'print', 'pat': '^p\%[rint]$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|SBOXOK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'profdel', 'pat': '^profd\%[el]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'profile', 'pat': '^prof\%[ile]$', 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'promptfind', 'pat': '^pro\%[mptfind]$', 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'promptrepl', 'pat': '^promptr\%[epl]$', 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'perldo', 'pat': '^perld\%[o]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'pop', 'pat': '^po\%[p]$', 'flags': 'RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'popup', 'pat': '^pop\%[up]$', 'flags': 'NEEDARG|EXTRA|BANG|TRLBAR|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'ppop', 'pat': '^pp\%[op]$', 'flags': 'RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'preserve', 'pat': '^pre\%[serve]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'previous', 'pat': '^prev\%[ious]$', 'flags': 'EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'psearch', 'pat': '^ps\%[earch]$', 'flags': 'BANG|RANGE|WHOLEFOLD|DFLALL|EXTRA', 'parser': 'parse_cmd_common'},
       \ {'name': 'ptag', 'pat': '^pt\%[ag]$', 'flags': 'RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
       \ {'name': 'ptNext', 'pat': '^ptN\%[ext]$', 'flags': 'RANGE|NOTADR|BANG|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
@@ -1438,8 +1439,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'put', 'pat': '^pu\%[t]$', 'flags': 'RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZEROR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'pwd', 'pat': '^pw\%[d]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'py3', 'pat': '^py3$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'python3', 'pat': '^python3$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'py3file', 'pat': '^py3f\%[ile]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'python3', 'pat': '^python3$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'py3file', 'pat': '^py3f\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'python', 'pat': '^py\%[thon]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'pyfile', 'pat': '^pyf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'quit', 'pat': '^q\%[uit]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1458,17 +1459,17 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'rewind', 'pat': '^rew\%[ind]$', 'flags': 'EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'right', 'pat': '^ri\%[ght]$', 'flags': 'TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'rightbelow', 'pat': '^rightb\%[elow]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'ruby', 'pat': '^rub\%[y]$', 'flags': 'BANG|NEEDARG|FILES|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'rubydo', 'pat': '^rubyd\%[o]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'rubyfile', 'pat': '^rubyf\%[ile]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'rundo', 'pat': '^rund\%[o]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'runtime', 'pat': '^ru\%[ntime]$', 'flags': 'NEEDARG|FILE1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'ruby', 'pat': '^rub\%[y]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'rubydo', 'pat': '^rubyd\%[o]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'rubyfile', 'pat': '^rubyf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'rundo', 'pat': '^rund\%[o]$', 'flags': 'NEEDARG|FILE1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'runtime', 'pat': '^ru\%[ntime]$', 'flags': 'BANG|NEEDARG|FILES|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'rviminfo', 'pat': '^rv\%[iminfo]$', 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'substitute', 'pat': '^s\%[ubstitute]$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'sNext', 'pat': '^sN\%[ext]$', 'flags': 'EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'sandbox', 'pat': '^san\%[dbox]$', 'flags': 'BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'sargument', 'pat': '^sa\%[rgument]$', 'flags': 'BANG|RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'sall', 'pat': '^sal\%[l]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'sandbox', 'pat': '^san\%[dbox]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'sargument', 'pat': '^sa\%[rgument]$', 'flags': 'BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'sall', 'pat': '^sal\%[l]$', 'flags': 'BANG|RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'saveas', 'pat': '^sav\%[eas]$', 'flags': 'BANG|DFLALL|FILE1|ARGOPT|CMDWIN|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'sbuffer', 'pat': '^sb\%[uffer]$', 'flags': 'BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'sbNext', 'pat': '^sbN\%[ext]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
@@ -1503,15 +1504,15 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'snomagic', 'pat': '^sno\%[magic]$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'snoremap', 'pat': '^snor\%[emap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'snoremenu', 'pat': '^snoreme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'sort', 'pat': '^sor\%[t]$', 'flags': 'BANG|FILE1|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'source', 'pat': '^so\%[urce]$', 'flags': 'RANGE|DFLALL|WHOLEFOLD|BANG|EXTRA|NOTRLCOM|MODIFY', 'parser': 'parse_cmd_common'},
-      \ {'name': 'spelldump', 'pat': '^spelld\%[ump]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'sort', 'pat': '^sor\%[t]$', 'flags': 'RANGE|DFLALL|WHOLEFOLD|BANG|EXTRA|NOTRLCOM|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'source', 'pat': '^so\%[urce]$', 'flags': 'BANG|FILE1|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'spelldump', 'pat': '^spelld\%[ump]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'spellgood', 'pat': '^spe\%[llgood]$', 'flags': 'BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'spellinfo', 'pat': '^spelli\%[nfo]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'spellinfo', 'pat': '^spelli\%[nfo]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'spellrepall', 'pat': '^spellr\%[epall]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'spellundo', 'pat': '^spellu\%[ndo]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'spellundo', 'pat': '^spellu\%[ndo]$', 'flags': 'BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'spellwrong', 'pat': '^spellw\%[rong]$', 'flags': 'BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'split', 'pat': '^sp\%[lit]$', 'flags': 'BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'split', 'pat': '^sp\%[lit]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'sprevious', 'pat': '^spr\%[evious]$', 'flags': 'EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'srewind', 'pat': '^sre\%[wind]$', 'flags': 'EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'stop', 'pat': '^st\%[op]$', 'flags': 'TRLBAR|BANG|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1532,22 +1533,22 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'syncbind', 'pat': '^sync\%[bind]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 't', 'pat': '^t$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'tNext', 'pat': '^tN\%[ext]$', 'flags': 'RANGE|NOTADR|BANG|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabNext', 'pat': '^tabN\%[ext]$', 'flags': 'RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabclose', 'pat': '^tabc\%[lose]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabNext', 'pat': '^tabN\%[ext]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabclose', 'pat': '^tabc\%[lose]$', 'flags': 'RANGE|NOTADR|COUNT|BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'tabdo', 'pat': '^tabdo$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabedit', 'pat': '^tabe\%[dit]$', 'flags': 'RANGE|NOTADR|COUNT|BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabfind', 'pat': '^tabf\%[ind]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabfirst', 'pat': '^tabfir\%[st]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tablast', 'pat': '^tabl\%[ast]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|NEEDARG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabmove', 'pat': '^tabm\%[ove]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabnew', 'pat': '^tabnew$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|NOSPC|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabnext', 'pat': '^tabn\%[ext]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabonly', 'pat': '^tabo\%[nly]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabprevious', 'pat': '^tabp\%[revious]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabrewind', 'pat': '^tabr\%[ewind]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tabs', 'pat': '^tabs$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tab', 'pat': '^tab$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tag', 'pat': '^ta\%[g]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabedit', 'pat': '^tabe\%[dit]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabfind', 'pat': '^tabf\%[ind]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|NEEDARG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabfirst', 'pat': '^tabfir\%[st]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tablast', 'pat': '^tabl\%[ast]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabmove', 'pat': '^tabm\%[ove]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|NOSPC|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabnew', 'pat': '^tabnew$', 'flags': 'BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabnext', 'pat': '^tabn\%[ext]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabonly', 'pat': '^tabo\%[nly]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabprevious', 'pat': '^tabp\%[revious]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabrewind', 'pat': '^tabr\%[ewind]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tabs', 'pat': '^tabs$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tab', 'pat': '^tab$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tag', 'pat': '^ta\%[g]$', 'flags': 'RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
       \ {'name': 'tags', 'pat': '^tags$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'tcl', 'pat': '^tc\%[l]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'tcldo', 'pat': '^tcld\%[o]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1580,27 +1581,27 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'version', 'pat': '^ve\%[rsion]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'verbose', 'pat': '^verb\%[ose]$', 'flags': 'NEEDARG|RANGE|NOTADR|EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'vertical', 'pat': '^vert\%[ical]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'vimgrep', 'pat': '^vim\%[grep]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'vimgrepadd', 'pat': '^vimgrepa\%[dd]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'visual', 'pat': '^vi\%[sual]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
-      \ {'name': 'viusage', 'pat': '^viu\%[sage]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
-      \ {'name': 'view', 'pat': '^vie\%[w]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'vimgrep', 'pat': '^vim\%[grep]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
+      \ {'name': 'vimgrepadd', 'pat': '^vimgrepa\%[dd]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
+      \ {'name': 'visual', 'pat': '^vi\%[sual]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'viusage', 'pat': '^viu\%[sage]$', 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'view', 'pat': '^vie\%[w]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'vmap', 'pat': '^vm\%[ap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'vmapclear', 'pat': '^vmapc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'vmenu', 'pat': '^vme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'vnew', 'pat': '^vne\%[w]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'vnoremap', 'pat': '^vn\%[oremap]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'vnew', 'pat': '^vne\%[w]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'vnoremap', 'pat': '^vn\%[oremap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'vnoremenu', 'pat': '^vnoreme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'vsplit', 'pat': '^vs\%[plit]$', 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'vunmap', 'pat': '^vu\%[nmap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'vunmenu', 'pat': '^vunme\%[nu]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'windo', 'pat': '^windo$', 'flags': 'RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'write', 'pat': '^w\%[rite]$', 'flags': 'RANGE|WHOLEFOLD|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'wNext', 'pat': '^wN\%[ext]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'wall', 'pat': '^wa\%[ll]$', 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'while', 'pat': '^wh\%[ile]$', 'flags': 'EXTRA|NEEDARG|TRLBAR', 'parser': 'parse_cmd_while'},
-      \ {'name': 'winsize', 'pat': '^wi\%[nsize]$', 'flags': 'NEEDARG|WORD1|RANGE|NOTADR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'wincmd', 'pat': '^winc\%[md]$', 'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'windo', 'pat': '^windo$', 'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'write', 'pat': '^w\%[rite]$', 'flags': 'RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'wNext', 'pat': '^wN\%[ext]$', 'flags': 'RANGE|WHOLEFOLD|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'wall', 'pat': '^wa\%[ll]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'while', 'pat': '^wh\%[ile]$', 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_while'},
+      \ {'name': 'winsize', 'pat': '^wi\%[nsize]$', 'flags': 'EXTRA|NEEDARG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'wincmd', 'pat': '^winc\%[md]$', 'flags': 'NEEDARG|WORD1|RANGE|NOTADR', 'parser': 'parse_cmd_common'},
       \ {'name': 'winpos', 'pat': '^winp\%[os]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'wnext', 'pat': '^wn\%[ext]$', 'flags': 'RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'wprevious', 'pat': '^wp\%[revious]$', 'flags': 'RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
@@ -1611,8 +1612,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'wviminfo', 'pat': '^wv\%[iminfo]$', 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'xit', 'pat': '^x\%[it]$', 'flags': 'RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'xall', 'pat': '^xa\%[ll]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'xmapclear', 'pat': '^xmapc\%[lear]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'xmap', 'pat': '^xm\%[ap]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'xmapclear', 'pat': '^xmapc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'xmap', 'pat': '^xm\%[ap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'xmenu', 'pat': '^xme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'xnoremap', 'pat': '^xn\%[oremap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'xnoremenu', 'pat': '^xnoreme\%[nu]$', 'flags': 'RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -2323,8 +2324,7 @@ function s:ExprParser.parse_expr8()
       call self.tokenizer.get()
       let token2 = self.tokenizer.peek_keepspace()
       if token2.type == 'IDENTIFIER'
-        call self.tokenizer.get()
-        let node = self.node('IDENTIFIER', token2.value)
+        let node = self.node('IDENTIFIER', self.parse_identifier())
         let lhs = self.node('DOT', [lhs, node])
         continue
       endif
@@ -2389,6 +2389,7 @@ function s:ExprParser.parse_expr9()
     endif
     return self.node('LIST', list)
   elseif token.type == 'LBPAR'
+    let pos = self.tokenizer.reader.getpos()
     call self.tokenizer.get()
     let token = self.tokenizer.peek()
     let dict = []
@@ -2398,6 +2399,10 @@ function s:ExprParser.parse_expr9()
       while 1
         let key = self.parse_expr1()
         let token = self.tokenizer.get()
+        if token.type == 'RBPAR'
+          call self.tokenizer.reader.setpos(pos)
+          return self.node('IDENTIFIER', self.parse_identifier())
+        endif
         if token.type != 'COLON'
           throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
@@ -2433,8 +2438,7 @@ function s:ExprParser.parse_expr9()
     call self.tokenizer.get()
     return self.node('OPTION', token.value)
   elseif token.type == 'IDENTIFIER'
-    call self.tokenizer.get()
-    return self.node('IDENTIFIER', token.value)
+    return self.node('IDENTIFIER', self.parse_identifier())
   elseif token.type == 'ENV'
     call self.tokenizer.get()
     return self.node('ENV', token.value)
@@ -2446,42 +2450,40 @@ function s:ExprParser.parse_expr9()
   endif
 endfunction
 
-let s:LvalueParser = {}
-
-function s:LvalueParser.new(...)
-  let obj = copy(self)
-  call call(obj.__init__, a:000, obj)
-  return obj
+function s:ExprParser.parse_identifier()
+  let id = []
+  let token = self.tokenizer.peek()
+  while 1
+    if token.type == 'IDENTIFIER'
+      call self.tokenizer.get()
+      call add(id, {'curly': 0, 'value': token.value})
+    elseif token.type == 'LBPAR'
+      call self.tokenizer.get()
+      let node = self.parse_expr1()
+      let token = self.tokenizer.get()
+      if token.type != 'RBPAR'
+        throw self.err('ExprParser: unexpected token: %s', token.value)
+      endif
+      call add(id, {'curly': 1, 'value': node})
+    else
+      break
+    endif
+    let token = self.tokenizer.peek_keepspace()
+  endwhile
+  return id
 endfunction
 
-function s:LvalueParser.__init__(tokenizer)
-  let self.tokenizer = a:tokenizer
-endfunction
+let s:LvalueParser = copy(s:ExprParser)
 
-function s:LvalueParser.err(...)
-  let pos = self.tokenizer.reader.getpos()
-  if len(a:000) == 1
-    let msg = a:000[0]
-  else
-    let msg = call('printf', a:000)
-  endif
-  return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
-endfunction
-
-function s:LvalueParser.node(type, value)
-  return {'type': a:type, 'value': a:value}
-endfunction
-
-function s:LvalueParser.parse()
-  return self.parse_expr8()
+function! s:LvalueParser.parse()
+  return self.parse_lv8()
 endfunction
 
 " expr8: expr8[expr1]
 "        expr8[expr1 : expr1]
 "        expr8.name
-function s:LvalueParser.parse_expr8()
-  let p = s:ExprParser.new(self.tokenizer)
-  let lhs = self.parse_expr9()
+function! s:LvalueParser.parse_lv8()
+  let lhs = self.parse_lv9()
   while 1
     let token = self.tokenizer.peek()
     let token2 = self.tokenizer.peek_keepspace()
@@ -2492,7 +2494,7 @@ function s:LvalueParser.parse_expr8()
         call self.tokenizer.get()
         let e1 = s:NIL
       else
-        let e1 = p.parse_expr1()
+        let e1 = self.parse_expr1()
       endif
       let token = self.tokenizer.peek()
       if token.type == 'RBRA'
@@ -2509,7 +2511,7 @@ function s:LvalueParser.parse_expr8()
         if token.type == 'RBRA'
           let e2 = s:NIL
         else
-          let e2 = p.parse_expr1()
+          let e2 = self.parse_expr1()
         endif
         let token = self.tokenizer.peek()
         if token.type == 'RBRA'
@@ -2528,8 +2530,7 @@ function s:LvalueParser.parse_expr8()
       call self.tokenizer.get()
       let token2 = self.tokenizer.peek_keepspace()
       if token2.type == 'IDENTIFIER'
-        call self.tokenizer.get()
-        let node = self.node('IDENTIFIER', token2.value)
+        let node = self.node('IDENTIFIER', self.parse_identifier())
         let lhs = self.node('DOT', [lhs, node])
         continue
       endif
@@ -2547,14 +2548,15 @@ endfunction
 "        var{ria}ble
 "        $VAR
 "        @r
-function s:LvalueParser.parse_expr9()
+function! s:LvalueParser.parse_lv9()
   let token = self.tokenizer.peek()
-  if token.type == 'OPTION'
+  if token.type == 'LBPAR'
+    return self.node('IDENTIFIER', self.parse_identifier())
+  elseif token.type == 'OPTION'
     call self.tokenizer.get()
     return self.node('OPTION', token.value)
   elseif token.type == 'IDENTIFIER'
-    call self.tokenizer.get()
-    return self.node('IDENTIFIER', token.value)
+    return self.node('IDENTIFIER', self.parse_identifier())
   elseif token.type == 'ENV'
     call self.tokenizer.get()
     return self.node('ENV', token.value)
@@ -3292,7 +3294,15 @@ function s:Compiler.compile_option(ast)
 endfunction
 
 function s:Compiler.compile_identifier(ast)
-  let v = a:ast.value
+  let id = a:ast.value
+  let v = ''
+  for x in id
+    if x.curly
+      let v .= '{' . self.compile(x.value) . '}'
+    else
+      let v .= x.value
+    endif
+  endfor
   return v
 endfunction
 
