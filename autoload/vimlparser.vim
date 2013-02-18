@@ -7,7 +7,7 @@ endfunction
 
 function vimlparser#test(filename)
   try
-    let r = s:StringReader.new(join(readfile(a:filename), "\n"))
+    let r = s:StringReader.new(readfile(a:filename))
     let p = s:VimLParser.new()
     let c = s:Compiler.new()
     echo join(c.compile(p.parse(r)), "\n")
@@ -107,7 +107,7 @@ function s:VimLParser.parse(reader)
   let self.reader = a:reader
   let self.stack = []
   call self.push_context('TOPLEVEL', [])
-  while self.reader.peek() != ''
+  while self.reader.peek() != '<EOF>'
     call self.parse_one_cmd()
   endwhile
   let ctx = self.pop_context()
@@ -140,16 +140,16 @@ function s:VimLParser.parse_one_cmd()
   let self.ea.modifiers = []
   let self.ea.range = []
 
-  if self.reader.peek(2) == '#!'
+  if self.reader.peekn(2) == '#!'
     call self.parse_hashbang()
     return
   endif
   call self.skip_white_and_colon()
-  if self.reader.peek() =~ '^$\|\n'
+  if self.reader.peekn(1) == ''
     call self.reader.readline()
     return
   endif
-  if self.reader.peek() == '"'
+  if self.reader.peekn(1) == '"'
     call self.parse_comment()
     return
   endif
@@ -164,14 +164,14 @@ function s:VimLParser.parse_command_modifiers()
   let modifiers = []
   while 1
     let pos = self.reader.getpos()
-    if self.reader.peek() =~ '\d'
+    if self.reader.peekn(1) =~ '\d'
       let d = self.read_digits()
       call self.skip_white()
     else
       let d = ''
     endif
     let k = self.read_alpha()
-    let c = self.reader.peek()
+    let c = self.reader.peekn(1)
     call self.skip_white()
     if k =~# '^abo\%[veleft]$'
       call add(modifiers, {'name': 'aboveleft'})
@@ -246,31 +246,35 @@ function s:VimLParser.parse_range()
     while 1
       call self.skip_white()
 
-      let c = self.reader.peek()
+      let c = self.reader.peekn(1)
       if c == ''
         break
       endif
 
       if c == '.'
-        call add(tokens, self.reader.get())
+        call add(tokens, self.reader.getn(1))
       elseif c == '$'
-        call add(tokens, self.reader.get())
+        call add(tokens, self.reader.getn(1))
       elseif c == "'"
-        call self.reader.get()
-        let c = self.reader.get()
-        if c == ''
+        call self.reader.getn(1)
+        let m = self.reader.getn(1)
+        if m == ''
           break
         endif
-        call add(tokens, "'" . c)
+        call add(tokens, "'" . m)
       elseif c == '/'
-        call add(tokens, self.parse_pattern())
+        call self.reader.getn(1)
+        let [pattern, endc] = self.parse_pattern(c)
+        call add(tokens, pattern)
       elseif c == '?'
-        call add(tokens, self.parse_pattern())
+        call self.reader.getn(1)
+        let [pattern, endc] = self.parse_pattern(c)
+        call add(tokens, pattern)
       elseif c == '\'
-        call self.reader.get()
-        let c = self.reader.get()
-        if c == '&' || c == '?' || c == '/'
-          call add(tokens, '\' . c)
+        call self.reader.getn(1)
+        let m = self.reader.getn(1)
+        if m == '&' || m == '?' || m == '/'
+          call add(tokens, '\' . m)
         else
           throw self.err('VimLParser: E10: \\ should be followed by /, ? or &')
         endif
@@ -280,7 +284,7 @@ function s:VimLParser.parse_range()
 
       while 1
         call self.skip_white()
-        if self.reader.peek() == ''
+        if self.reader.peekn(1) == ''
           break
         endif
         let n = self.read_integer()
@@ -290,22 +294,22 @@ function s:VimLParser.parse_range()
         call add(tokens, n)
       endwhile
 
-      if self.reader.peek() !~ '[/?]'
+      if self.reader.peekn(1) !~ '[/?]'
         break
       endif
     endwhile
 
-    if self.reader.peek() == '%'
-      call add(tokens, self.reader.get())
-    elseif self.reader.peek() == '*' " && &cpoptions !~ '\*'
-      call add(tokens, self.reader.get())
+    if self.reader.peekn(1) == '%'
+      call add(tokens, self.reader.getn(1))
+    elseif self.reader.peekn(1) == '*' " && &cpoptions !~ '\*'
+      call add(tokens, self.reader.getn(1))
     endif
 
-    if self.reader.peek() == ';'
-      call add(tokens, self.reader.get())
+    if self.reader.peekn(1) == ';'
+      call add(tokens, self.reader.getn(1))
       continue
-    elseif self.reader.peek() == ','
-      call add(tokens, self.reader.get())
+    elseif self.reader.peekn(1) == ','
+      call add(tokens, self.reader.getn(1))
       continue
     endif
 
@@ -316,38 +320,41 @@ function s:VimLParser.parse_range()
 endfunction
 
 " FIXME:
-function s:VimLParser.parse_pattern()
-  let pattern = self.reader.peek()
+function s:VimLParser.parse_pattern(delimiter)
+  let pattern = ''
+  let endc = ''
   let inbracket = 0
-  let delimiter = self.reader.get()
   while 1
-    let c = self.reader.get()
+    let c = self.reader.getn(1)
     if c == ''
-      throw self.err('VimLParser: E682: Invalid search pattern or delimiter')
+      break
+    endif
+    if c == a:delimiter && inbracket == 0
+      let endc = c
+      break
     endif
     let pattern .= c
-    if c == delimiter && inbracket == 0
-      break
-    elseif c == '\'
-      if self.reader.peek() == ''
+    if c == '\'
+      let c = self.reader.getn(1)
+      if c == ''
         throw self.err('VimLParser: E682: Invalid search pattern or delimiter')
       endif
-      let pattern .= self.reader.get()
+      let pattern .= c
     elseif c == '['
       let inbracket += 1
     elseif c == ']'
       let inbracket -= 1
     endif
   endwhile
-  return pattern
+  return [pattern, endc]
 endfunction
 
 function s:VimLParser.parse_command()
   call self.skip_white_and_colon()
 
-  if self.reader.peek() =~ '^$\|\n'
+  if self.reader.peekn(1) == ''
     return
-  elseif self.reader.peek() == '"'
+  elseif self.reader.peekn(1) == '"'
     call self.parse_comment()
     return
   endif
@@ -362,8 +369,8 @@ function s:VimLParser.parse_command()
     throw self.err('VimLParser: E492: Not an editor command: %s', line)
   endif
 
-  if self.reader.peek() == '!' && self.ea.cmd.name !~ '\v^%(substitute|smagic|snomagic)$'
-    call self.reader.get()
+  if self.reader.peekn(1) == '!' && self.ea.cmd.name !~ '\v^%(substitute|smagic|snomagic)$'
+    call self.reader.getn(1)
     let self.ea.forceit = 1
   else
     let self.ea.forceit = 0
@@ -384,15 +391,15 @@ function s:VimLParser.parse_command()
   endif
 
   if self.ea.cmd.name =~ '\v^%(write|update)$'
-    if self.reader.peek() == '>'
-      call self.reader.get()
-      if self.reader.peek() == '>'
+    if self.reader.peekn(1) == '>'
+      call self.reader.getn(1)
+      if self.reader.peekn(1) == '>'
         throw self.err('VimLParser: E494: Use w or w>>')
       endif
       call self.skip_white()
       let self.ea.append = 1
-    elseif self.reader.peek() == '!' && self.ea.cmd.name == 'write'
-      call self.reader.get()
+    elseif self.reader.peekn(1) == '!' && self.ea.cmd.name == 'write'
+      call self.reader.getn(1)
       let self.ea.usefilter = 1
     endif
   endif
@@ -401,16 +408,16 @@ function s:VimLParser.parse_command()
     if self.ea.forceit
       let self.ea.usefilter = 1
       let self.ea.forceit = 0
-    elseif self.reader.peek() == '!'
-      call self.reader.get()
+    elseif self.reader.peekn(1) == '!'
+      call self.reader.getn(1)
       let self.ea.usefilter = 1
     endif
   endif
 
   if self.ea.cmd.name =~ '^[<>]$'
     let self.ea.amount = 1
-    while self.reader.peek() == self.ea.cmd.name
-      call self.reader.get()
+    while self.reader.peekn(1) == self.ea.cmd.name
+      call self.reader.getn(1)
       let self.ea.amount += 1
     endwhile
     call self.skip_white()
@@ -426,33 +433,33 @@ endfunction
 function s:VimLParser.find_command()
   call self.skip_white_and_colon()
 
-  if self.reader.peek() =~ '^$\|\n'
+  if self.reader.peekn(1) == ''
     call self.reader.readline()
     return s:NIL
-  elseif self.reader.peek() == '"'
+  elseif self.reader.peekn(1) == '"'
     call self.parse_comment()
     return s:NIL
   endif
 
-  let c = self.reader.peek()
+  let c = self.reader.peekn(1)
 
   if c == 'k'
-    call self.reader.get()
+    call self.reader.getn(1)
     let name = 'k'
-  elseif c == 's' && self.reader.peek(5) =~ '\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])'
-    call self.reader.get()
+  elseif c == 's' && self.reader.peekn(5) =~ '\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])'
+    call self.reader.getn(1)
     let name = 'substitute'
   elseif c =~ '[@*!=><&~#]'
-    call self.reader.get()
+    call self.reader.getn(1)
     let name = c
-  elseif self.reader.peek(2) == 'py'
+  elseif self.reader.peekn(2) == 'py'
     let name = self.read_alnum()
   else
     let pos = self.reader.getpos()
     let name = self.read_alpha()
     if name != 'del' && name =~# '\v^d%[elete][lp]$'
       call self.reader.setpos(pos)
-      let name = self.reader.get(len(name) - 1)
+      let name = self.reader.getn(len(name) - 1)
     endif
   endif
 
@@ -497,15 +504,16 @@ function s:VimLParser.parse_cmd_common()
   if self.ea.cmd.flags =~ '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
   elseif self.ea.cmd.name =~ '^\(!\|global\|vglobal\)$' || self.ea.usefilter
-    while self.reader.peek() !~ '^$\|\n'
-      call self.reader.get()
+    while 1
+      let end = self.reader.getpos()
+      if self.reader.getn(1) == ''
+        break
+      endif
     endwhile
-    let end = self.reader.getpos()
-    call self.reader.get()
   else
     while 1
       let end = self.reader.getpos()
-      if self.reader.get() =~ '^$\|\n'
+      if self.reader.getn(1) == ''
         break
       endif
     endwhile
@@ -522,22 +530,22 @@ function s:VimLParser.separate_nextcmd()
   while 1
     let end = self.reader.getpos()
     let c = self.reader.peek()
-    if c == ''
+    if c == '<EOF>'
       break
     elseif c == "\<C-V>"
       call self.reader.get()
       let c = self.reader.get()
-      if c == ''
+      if c == '<EOF>' || c == '<EOL>'
         break
       endif
-    elseif self.reader.peek(2) == '`=' && self.ea.cmd.flags =~ '\<XFILE\>'
-      call self.reader.get(2)
+    elseif self.reader.peekn(2) == '`=' && self.ea.cmd.flags =~ '\<XFILE\>'
+      call self.reader.getn(2)
       call self.parse_expr()
-      let c = self.reader.get()
+      let c = self.reader.getn(1)
       if c != '`'
         throw self.err('VimLParser: unexpected character: %s', c)
       endif
-    elseif c == '|' || c == "\n" ||
+    elseif c == '|' || c == '<EOL>' ||
           \ (c == '"' && self.ea.cmd.flags !~ '\<NOTRLCOM\>'
           \   && ((self.ea.cmd.name != '@' && self.ea.cmd.name != '*')
           \       || self.reader.getpos() != self.ea.argpos)
@@ -569,16 +577,15 @@ endfunction
 function s:VimLParser.parse_cmd_function()
   let pos = self.reader.getpos()
   call self.skip_white()
-  let c = self.reader.peek()
 
   " :function
-  if self.ends_excmds(c)
+  if self.ends_excmds(self.reader.peek())
     call self.reader.setpos(pos)
     return self.parse_cmd_common()
   endif
 
   " :function /pattern
-  if c == '/'
+  if self.reader.peekn(1) == '/'
     call self.reader.setpos(pos)
     return self.parse_cmd_common()
   endif
@@ -587,41 +594,41 @@ function s:VimLParser.parse_cmd_function()
   call self.skip_white()
 
   " :function {name}
-  if self.reader.peek() != '('
+  if self.reader.peekn(1) != '('
     call self.reader.setpos(pos)
     return self.parse_cmd_common()
   endif
 
   " :function[!] {name}([arguments]) [range] [abort] [dict]
-  call self.reader.get()
+  call self.reader.getn(1)
   let args = []
-  let c = self.reader.peek()
+  let c = self.reader.peekn(1)
   if c == ')'
-    call self.reader.get()
+    call self.reader.getn(1)
   else
     while 1
       call self.skip_white()
-      if self.reader.peek() =~ '\h'
+      if self.reader.peekn(1) =~ '\h'
         let arg = self.readx('\w')
         call add(args, arg)
         call self.skip_white()
-        let c = self.reader.peek()
+        let c = self.reader.peekn(1)
         if c == ','
-          call self.reader.get()
+          call self.reader.getn(1)
           continue
         elseif c == ')'
-          call self.reader.get()
+          call self.reader.getn(1)
           break
         else
           throw self.err('VimLParser: unexpected characters: %s', c)
         endif
-      elseif self.reader.peek(3) == '...'
-        call self.reader.get(3)
+      elseif self.reader.peekn(3) == '...'
+        call self.reader.getn(3)
         call add(args, '...')
         call self.skip_white()
-        let c = self.reader.peek()
+        let c = self.reader.peekn(1)
         if c == ')'
-          call self.reader.get()
+          call self.reader.getn(1)
           break
         else
           throw self.err('VimLParser: unexpected characters: %s', c)
@@ -717,8 +724,8 @@ function s:VimLParser.parse_cmd_let()
 
   let lhs = self.parse_letlhs()
   call self.skip_white()
-  let s1 = self.reader.peek(1)
-  let s2 = self.reader.peek(2)
+  let s1 = self.reader.peekn(1)
+  let s2 = self.reader.peekn(2)
 
   " :let {var-name} ..
   if self.ends_excmds(s1) || (s2 != '+=' && s2 != '-=' && s2 != '.=' && s1 != '=')
@@ -728,10 +735,10 @@ function s:VimLParser.parse_cmd_let()
 
   " :let lhs op rhs
   if s2 == '+=' || s2 == '-=' || s2 == '.='
-    call self.reader.get(2)
+    call self.reader.getn(2)
     let op = s2
   elseif s1 == '='
-    call self.reader.get(1)
+    call self.reader.getn(1)
     let op = s1
   else
     throw 'NOT REACHED'
@@ -763,7 +770,7 @@ function s:VimLParser.parse_cmd_lockvar()
   let args = []
   let depth = 2
   call self.skip_white()
-  if self.reader.peek() =~ '\d'
+  if self.reader.peekn(1) =~ '\d'
     let d = self.read_digits()
     let depth = str2nr(depth, 10)
   endif
@@ -786,7 +793,7 @@ function s:VimLParser.parse_cmd_unlockvar()
   let args = []
   let depth = 2
   call self.skip_white()
-  if self.reader.peek() =~ '\d'
+  if self.reader.peekn(1) =~ '\d'
     let d = self.read_digits()
     let depth = str2nr(depth, 10)
   endif
@@ -922,7 +929,8 @@ function s:VimLParser.parse_cmd_catch()
   if self.ends_excmds(self.reader.peek())
     let pattern = s:NIL
   else
-    let pattern = self.parse_pattern()
+    let c = self.reader.get()
+    let [pattern, endc] = self.parse_pattern(c)
   endif
   call self.skip_trail()
   let ctx = self.pop_context()
@@ -1091,8 +1099,8 @@ endfunction
 
 function s:VimLParser.readx(pat)
   let r = ''
-  while self.reader.peek() =~ a:pat
-    let r .= self.reader.get()
+  while self.reader.peekn(1) =~ a:pat
+    let r .= self.reader.getn(1)
   endwhile
   return r
 endfunction
@@ -1106,8 +1114,8 @@ function s:VimLParser.read_digits()
 endfunction
 
 function s:VimLParser.read_integer()
-  if self.reader.peek() =~ '[-+]'
-    let c = self.reader.get()
+  if self.reader.peekn(1) =~ '[-+]'
+    let c = self.reader.getn(1)
   else
     let c = ''
   endif
@@ -1129,9 +1137,9 @@ endfunction
 function s:VimLParser.skip_trail()
   call self.skip_white()
   let c = self.reader.peek()
-  if c == ''
+  if c == '<EOF>'
     " pass
-  elseif c == "\n" || c  == '"'
+  elseif c == '<EOL>' || c  == '"'
     call self.reader.readline()
   elseif c == '|'
     call self.reader.get()
@@ -1141,7 +1149,7 @@ function s:VimLParser.skip_trail()
 endfunction
 
 function s:VimLParser.ends_excmds(c)
-  return a:c == '' || a:c == '|' || a:c == '"' || a:c == "\n"
+  return a:c == '' || a:c == '|' || a:c == '"' || a:c == '<EOF>' || a:c == '<EOL>'
 endfunction
 
 let s:VimLParser.builtin_commands = [
@@ -1715,211 +1723,209 @@ endfunction
 
 function s:ExprTokenizer.get_keepspace()
   while 1
-    let s = self.reader.peek(10)
-    if s == ''
-      return self.token('EOF', 'EOF')
+    let c = self.reader.peek()
+    let s = self.reader.peekn(10)
+    if c == '<EOF>'
+      return self.token('EOF', c)
+    elseif c == '<EOL>'
+      call self.reader.get()
+      return self.token('NEWLINE', c)
     elseif s =~ '^\s'
       let s = ''
-      while self.reader.peek() =~ '\s'
-        let s .= self.reader.get()
+      while self.reader.peekn(1) =~ '\s'
+        let s .= self.reader.getn(1)
       endwhile
       return self.token('SPACE', s)
-    elseif s =~ '\v^%(\r\n|\r|\n)'
-      let s = self.reader.get()
-      if s == "\r" && self.reader.peek() == "\n"
-        let s .= self.reader.get()
-      endif
-      return self.token('NEWLINE', s)
     elseif s =~ '^\d'
       let s = ''
-      while self.reader.peek() =~ '\d'
-        let s .= self.reader.get()
+      while self.reader.peekn(1) =~ '\d'
+        let s .= self.reader.getn(1)
       endwhile
-      if self.reader.peek(2) =~ '\.\d'
-        let s .= self.reader.get()
-        while self.reader.peek() =~ '\d'
-          let s .= self.reader.get()
+      if self.reader.peekn(2) =~ '\.\d'
+        let s .= self.reader.getn(1)
+        while self.reader.peekn(1) =~ '\d'
+          let s .= self.reader.getn(1)
         endwhile
       endif
       return self.token('NUMBER', s)
     elseif s =~# '^is#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('ISH', 'is#')
     elseif s=~# '^is?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('ISQ', 'is?')
     elseif s =~# '^isnot#'
-      call self.reader.get(6)
+      call self.reader.getn(6)
       return self.token('ISNOTH', 'is#')
     elseif s =~# '^isnot?'
-      call self.reader.get(6)
+      call self.reader.getn(6)
       return self.token('ISNOTQ', 'is?')
     elseif s =~# '^is\>'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('IS', 'is')
     elseif s =~# '^isnot\>'
-      call self.reader.get(5)
+      call self.reader.getn(5)
       return self.token('ISNOT', 'isnot')
     elseif s =~ '^\h'
-      let s = self.reader.get()
-      while self.reader.peek() =~ '\w\|[:#]'
-        let s .= self.reader.get()
+      let s = self.reader.getn(1)
+      while self.reader.peekn(1) =~ '\w\|[:#]'
+        let s .= self.reader.getn(1)
       endwhile
       return self.token('IDENTIFIER', s)
     elseif s =~ '^==?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('EQEQQ', '==?')
     elseif s =~ '^==#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('EQEQH', '==#')
     elseif s =~ '^!=?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('NOTEQQ', '!=?')
     elseif s =~ '^!=#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('NOTEQH', '!=#')
     elseif s =~ '^>=?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('GTEQQ', '>=?')
     elseif s =~ '^>=#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('GTEQH', '>=#')
     elseif s =~ '^<=?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('LTEQQ', '<=?')
     elseif s =~ '^<=#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('LTEQH', '<=#')
     elseif s =~ '^=\~?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('EQTILDQ', '=\~?')
     elseif s =~ '^=\~#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('EQTILDH', '=\~#')
     elseif s =~ '^!\~?'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('NOTTILDQ', '!\~?')
     elseif s =~ '^!\~#'
-      call self.reader.get(3)
+      call self.reader.getn(3)
       return self.token('NOTTILDH', '!\~#')
     elseif s =~ '^>?'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('GTQ', '>?')
     elseif s =~ '^>#'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('GTH', '>#')
     elseif s =~ '^<?'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('LTQ', '<?')
     elseif s =~ '^<#'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('LTH', '<#')
     elseif s =~ '^||'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('OROR', '||')
     elseif s =~ '^&&'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('ANDAND', '&&')
     elseif s =~ '^=='
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('EQEQ', '==')
     elseif s =~ '^!='
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('NOTEQ', '!=')
     elseif s =~ '^>='
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('GTEQ', '>=')
     elseif s =~ '^<='
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('LTEQ', '<=')
     elseif s =~ '^=\~'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('EQTILD', '=\~')
     elseif s =~ '^!\~'
-      call self.reader.get(2)
+      call self.reader.getn(2)
       return self.token('NOTTILD', '!\~')
     elseif s =~ '^>'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('GT', '>')
     elseif s =~ '^<'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('LT', '<')
     elseif s =~ '^+'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('PLUS', '+')
     elseif s =~ '^-'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('MINUS', '-')
     elseif s =~ '^\.'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('DOT', '.')
     elseif s =~ '^*'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('STAR', '*')
     elseif s =~ '^/'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('SLASH', '/')
     elseif s =~ '^%'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('PER', '%')
     elseif s =~ '^!'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('NOT', '!')
     elseif s =~ '^?'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('QUESTION', '?')
     elseif s =~ '^:'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('COLON', ':')
     elseif s =~ '^('
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('LPAR', '(')
     elseif s =~ '^)'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('RPAR', ')')
     elseif s =~ '^['
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('LBRA', '[')
     elseif s =~ '^]'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('RBRA', ']')
     elseif s =~ '^{'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('LBPAR', '{')
     elseif s =~ '^}'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('RBPAR', '}')
     elseif s =~ '^,'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('COMMA', ',')
     elseif s =~ "^'"
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('SQUOTE', "'")
     elseif s =~ '^"'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('DQUOTE', '"')
     elseif s =~ '^\$\w\+'
-      let s = self.reader.get()
-      while self.reader.peek() =~ '\w'
-        let s .= self.reader.get()
+      let s = self.reader.getn(1)
+      while self.reader.peekn(1) =~ '\w'
+        let s .= self.reader.getn(1)
       endwhile
       return self.token('ENV', s)
     elseif s =~ '^@.'
-      return self.token('REG', self.reader.get(2))
+      return self.token('REG', self.reader.getn(2))
     elseif s =~ '^&\(g:\|l:\|\w\w\)'
-      let s = self.reader.get(3)
-      while self.reader.peek() =~ '\w'
-        let s .= self.reader.get()
+      let s = self.reader.getn(3)
+      while self.reader.peekn(1) =~ '\w'
+        let s .= self.reader.getn(1)
       endwhile
       return self.token('OPTION', s)
     elseif s =~ '^='
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('EQ', '=')
     elseif s =~ '^|'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('OR', '|')
     elseif s =~ '^;'
-      call self.reader.get(1)
+      call self.reader.getn(1)
       return self.token('SEMICOLON', ';')
     else
       throw self.err('ExprTokenizer: %s', s)
@@ -1929,20 +1935,20 @@ endfunction
 
 function s:ExprTokenizer.get_sstring()
   let s = ''
-  while self.reader.peek() =~ '\s'
-    call self.reader.get()
+  while self.reader.peekn(1) =~ '\s'
+    call self.reader.getn(1)
   endwhile
-  let c = self.reader.get()
+  let c = self.reader.getn(1)
   if c != "'"
     throw sefl.err('ExprTokenizer: unexpected character: %s', c)
   endif
   while 1
-    let c = self.reader.get()
-    if c == '' || c == "\n"
+    let c = self.reader.getn(1)
+    if c == ''
       throw self.err('ExprTokenizer: unexpected EOL')
     elseif c == "'"
-      if self.reader.peek() == "'"
-        call self.reader.get()
+      if self.reader.peekn(1) == "'"
+        call self.reader.getn(1)
         let s .= c
       else
         break
@@ -1956,23 +1962,23 @@ endfunction
 
 function s:ExprTokenizer.get_dstring()
   let s = ''
-  while self.reader.peek() =~ '\s'
-    call self.reader.get()
+  while self.reader.peekn(1) =~ '\s'
+    call self.reader.getn(1)
   endwhile
-  let c = self.reader.get()
+  let c = self.reader.getn(1)
   if c != '"'
     throw self.err('ExprTokenizer: unexpected character: %s', c)
   endif
   while 1
-    let c = self.reader.get()
-    if c == '' || c == "\n"
+    let c = self.reader.getn(1)
+    if c == ''
       throw self.err('ExprTokenizer: unexpectd EOL')
     elseif c == '"'
       break
     elseif c == '\'
       let s .= c
-      let c = self.reader.get()
-      if c == '' || c == "\n"
+      let c = self.reader.getn(1)
+      if c == ''
         throw self.err('ExprTokenizer: unexpected EOL')
       endif
       let s .= c
@@ -2605,41 +2611,60 @@ function s:StringReader.new(...)
   return obj
 endfunction
 
-function s:StringReader.__init__(str)
-  let self.buf = split(a:str, '\zs')
+function s:StringReader.__init__(lines)
+  let self.buf = []
+  for i in range(len(a:lines))
+    call extend(self.buf, split(a:lines[i], '\zs'))
+    call add(self.buf, '<EOL>')
+  endfor
   let self.i = 0
   let self.lnum = 1
   let self.col = 1
 endfunction
 
-function s:StringReader.peek(...)
-  let n = get(a:000, 0, 1)
+function s:StringReader.peek()
   let pos = self.getpos()
-  let r = self.get(n)
+  let r = self.get()
   call self.setpos(pos)
   return r
 endfunction
 
-function s:StringReader.get(...)
-  let n = get(a:000, 0, 1)
+function s:StringReader.get()
+  if self.i >= len(self.buf)
+    return '<EOF>'
+  endif
+  let c = self.buf[self.i]
+  if c == '<EOL>'
+    let self.lnum += 1
+    let self.col = 0
+    let [i, col] = self.find_line_continuation(self.i + 1)
+    if i != -1
+      let self.i = i
+      let self.col = col
+      let c = self.buf[self.i]
+    endif
+  endif
+  let self.i += 1
+  let self.col += 1
+  return c
+endfunction
+
+function s:StringReader.peekn(n)
+  let pos = self.getpos()
+  let r = self.getn(a:n)
+  call self.setpos(pos)
+  return r
+endfunction
+
+function s:StringReader.getn(n)
   let r = ''
-  while n > 0 && self.i < len(self.buf)
-    let c = self.buf[self.i]
-    if c == "\n"
-      let self.lnum += 1
-      let [i, col] = self.find_line_continuation(self.i + 1)
-      if i != -1
-        let self.i = i
-        let self.col = col
-        continue
-      endif
-      let self.col = 0
+  for i in range(a:n)
+    let c = self.get()
+    if c == '<EOF>' || c == '<EOL>'
+      break
     endif
     let r .= c
-    let self.i += 1
-    let self.col += 1
-    let n -= 1
-  endwhile
+  endfor
   return r
 endfunction
 
@@ -2666,7 +2691,7 @@ function s:StringReader.readline()
   let r = ''
   while 1
     let c = self.get()
-    if c == '' || c == "\n"
+    if c == '<EOF>' || c == '<EOL>'
       break
     endif
     let r .= c
@@ -2675,7 +2700,18 @@ function s:StringReader.readline()
 endfunction
 
 function s:StringReader.getstr(begin, end)
-  return join(self.buf[a:begin.i : a:end.i - 1], '')
+  let r = ''
+  for i in range(a:begin.i, a:end.i - 1)
+    if i >= len(self.buf)
+      break
+    endif
+    let c = self.buf[i]
+    if c == '<EOL>'
+      let c = "\n"
+    endif
+    let r .= c
+  endfor
+  return r
 endfunction
 
 function s:StringReader.getpos()
