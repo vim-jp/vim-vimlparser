@@ -546,6 +546,7 @@ function s:VimLParser.separate_nextcmd()
       if self.ea.cmd.flags !~ '\<USECTRLV\>' && pc == '\'
         call self.reader.get()
       else
+        call self.skip_trail()
         break
       endif
     else
