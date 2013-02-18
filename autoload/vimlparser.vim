@@ -530,7 +530,7 @@ function s:VimLParser.separate_nextcmd()
   while 1
     let end = self.reader.getpos()
     let c = self.reader.peek()
-    if c == '<EOF>'
+    if c == '<EOF>' || c == '<EOL>'
       break
     elseif c == "\<C-V>"
       call self.reader.get()
@@ -545,13 +545,14 @@ function s:VimLParser.separate_nextcmd()
       if c != '`'
         throw self.err('VimLParser: unexpected character: %s', c)
       endif
-    elseif c == '|' || c == '<EOL>' ||
+    elseif c == '|' || c == "\n" ||
           \ (c == '"' && self.ea.cmd.flags !~ '\<NOTRLCOM\>'
           \   && ((self.ea.cmd.name != '@' && self.ea.cmd.name != '*')
           \       || self.reader.getpos() != self.ea.argpos)
           \   && (self.ea.cmd.name != 'redir'
           \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc != '@'))
-      if self.ea.cmd.flags !~ '\<USECTRLV\>' && pc == '\'
+      let has_cpo_bar = 0 " &cpoptions =~ 'b'
+      if !has_cpo_bar || (self.ea.cmd.flags !~ '\<USECTRLV\>' && pc == '\')
         call self.reader.get()
       else
         call self.skip_trail()
@@ -567,6 +568,112 @@ endfunction
 
 " FIXME
 function s:VimLParser.skip_vimgrep_pat()
+endfunction
+
+function s:VimLParser.parse_cmd_append()
+  call self.reader.setpos(self.ea.linepos)
+  let cmdline = self.reader.readline()
+  let lines = [cmdline]
+  let m = '.'
+  while 1
+    if self.reader.peek() == '<EOF>'
+      break
+    endif
+    let line = self.reader.readline()
+    call add(lines, line)
+    if line == m
+      break
+    endif
+  endwhile
+  let cmdstr = join(lines, "\n")
+  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.node('EXECUTE', [expr])
+  call self.add_node(node)
+endfunction
+
+function s:VimLParser.parse_cmd_insert()
+  return self.parse_cmd_append()
+endfunction
+
+function s:VimLParser.parse_cmd_loadkeymap()
+  call self.reader.setpos(self.ea.linepos)
+  let cmdline = self.reader.readline()
+  let lines = [cmdline]
+  while 1
+    if self.reader.peek() == '<EOF>'
+      break
+    endif
+    let line = self.reader.readline()
+    call add(lines, line)
+  endwhile
+  let cmdstr = join(lines, "\n")
+  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.node('EXECUTE', [expr])
+  call self.add_node(node)
+endfunction
+
+function s:VimLParser.parse_cmd_lua()
+  let pos = self.reader.getpos()
+  call self.reader.setpos(self.ea.linepos)
+  let cmdline = self.reader.readline()
+  call self.reader.setpos(pos)
+  call self.skip_white()
+  let lines = [cmdline]
+  if self.reader.peekn(2) == '<<'
+    call self.reader.getn(2)
+    call self.skip_white()
+    let m = self.reader.readline()
+    if m == ''
+      let m = '.'
+    endif
+    while 1
+      if self.reader.peek() == '<EOF>'
+        break
+      endif
+      let line = self.reader.readline()
+      call add(lines, line)
+      if line == m
+        break
+      endif
+    endwhile
+  endif
+  let cmdstr = join(lines, "\n")
+  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.node('EXECUTE', [expr])
+  call self.add_node(node)
+endfunction
+
+function s:VimLParser.parse_cmd_mzscheme()
+  return self.parse_cmd_lua()
+endfunction
+
+function s:VimLParser.parse_cmd_perl()
+  return self.parse_cmd_lua()
+endfunction
+
+function s:VimLParser.parse_cmd_python()
+  return self.parse_cmd_lua()
+endfunction
+
+function s:VimLParser.parse_cmd_python3()
+  return self.parse_cmd_lua()
+endfunction
+
+function s:VimLParser.parse_cmd_ruby()
+  return self.parse_cmd_lua()
+endfunction
+
+function s:VimLParser.parse_cmd_tcl()
+  return self.parse_cmd_lua()
+endfunction
+
+function s:VimLParser.parse_cmd_finish()
+  call self.parse_cmd_common()
+  if self.stack[0].type == 'TOPLEVEL'
+    while self.reader.peek() != '<EOF>'
+      call self.reader.get()
+    endwhile
+  endif
 endfunction
 
 " FIXME
@@ -666,7 +773,7 @@ function s:VimLParser.parse_cmd_endfunction()
   if self.find_context('^function$') != 0
     throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
-  call self.skip_trail()
+  call self.reader.readline()
   let ctx = self.pop_context()
   let [name, args] = ctx.value
   let node = self.node('FUNCTION', [name, args, ctx.body])
@@ -1153,7 +1260,7 @@ function s:VimLParser.ends_excmds(c)
 endfunction
 
 let s:VimLParser.builtin_commands = [
-      \ {'name': 'append', 'pat': '^a\%[ppend]$', 'flags': 'BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'append', 'pat': '^a\%[ppend]$', 'flags': 'BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_append'},
       \ {'name': 'abbreviate', 'pat': '^ab\%[breviate]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'abclear', 'pat': '^abc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'aboveleft', 'pat': '^abo\%[veleft]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
@@ -1298,7 +1405,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'filetype', 'pat': '^filet\%[ype]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'find', 'pat': '^fin\%[d]$', 'flags': 'RANGE|NOTADR|BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'finally', 'pat': '^fina\%[lly]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_finally'},
-      \ {'name': 'finish', 'pat': '^fini\%[sh]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'finish', 'pat': '^fini\%[sh]$', 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_finish'},
       \ {'name': 'first', 'pat': '^fir\%[st]$', 'flags': 'EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'fixdel', 'pat': '^fix\%[del]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'fold', 'pat': '^fo\%[ld]$', 'flags': 'RANGE|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1322,7 +1429,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'highlight', 'pat': '^hi\%[ghlight]$', 'flags': 'BANG|EXTRA|TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'hide', 'pat': '^hid\%[e]$', 'flags': 'BANG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'history', 'pat': '^his\%[tory]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'insert', 'pat': '^i\%[nsert]$', 'flags': 'BANG|RANGE|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'insert', 'pat': '^i\%[nsert]$', 'flags': 'BANG|RANGE|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_insert'},
       \ {'name': 'iabbrev', 'pat': '^ia\%[bbrev]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'iabclear', 'pat': '^iabc\%[lear]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'if', 'pat': '^if$', 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_if'},
@@ -1382,7 +1489,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'lnewer', 'pat': '^lnew\%[er]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'lnfile', 'pat': '^lnf\%[ile]$', 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lnoremap', 'pat': '^ln\%[oremap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'loadkeymap', 'pat': '^loadk\%[eymap]$', 'flags': 'CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'loadkeymap', 'pat': '^loadk\%[eymap]$', 'flags': 'CMDWIN', 'parser': 'parse_cmd_loadkeymap'},
       \ {'name': 'loadview', 'pat': '^lo\%[adview]$', 'flags': 'FILE1|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'lockmarks', 'pat': '^loc\%[kmarks]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'lockvar', 'pat': '^lockv\%[ar]$', 'flags': 'BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN', 'parser': 'parse_cmd_lockvar'},
@@ -1394,7 +1501,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'ls', 'pat': '^ls$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'ltag', 'pat': '^lt\%[ag]$', 'flags': 'NOTADR|TRLBAR|BANG|WORD1', 'parser': 'parse_cmd_common'},
       \ {'name': 'lunmap', 'pat': '^lu\%[nmap]$', 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'lua', 'pat': '^lua$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'lua', 'pat': '^lua$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_lua'},
       \ {'name': 'luado', 'pat': '^luad\%[o]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'luafile', 'pat': '^luaf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'lvimgrep', 'pat': '^lv\%[imgrep]$', 'flags': 'RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE', 'parser': 'parse_cmd_common'},
@@ -1416,7 +1523,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'mkvimrc', 'pat': '^mkv\%[imrc]$', 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'mkview', 'pat': '^mkvie\%[w]$', 'flags': 'BANG|FILE1|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'mode', 'pat': '^mod\%[e]$', 'flags': 'WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'mzscheme', 'pat': '^mz\%[scheme]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN|SBOXOK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'mzscheme', 'pat': '^mz\%[scheme]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN|SBOXOK', 'parser': 'parse_cmd_mzscheme'},
       \ {'name': 'mzfile', 'pat': '^mzf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nbclose', 'pat': '^nbc\%[lose]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'nbkey', 'pat': '^nb\%[key]$', 'flags': 'EXTRA|NOTADR|NEEDARG', 'parser': 'parse_cmd_common'},
@@ -1451,7 +1558,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'ownsyntax', 'pat': '^ow\%[nsyntax]$', 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'pclose', 'pat': '^pc\%[lose]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'pedit', 'pat': '^ped\%[it]$', 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'perl', 'pat': '^pe\%[rl]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'perl', 'pat': '^pe\%[rl]$', 'flags': 'RANGE|EXTRA|DFLALL|NEEDARG|SBOXOK|CMDWIN', 'parser': 'parse_cmd_perl'},
       \ {'name': 'print', 'pat': '^p\%[rint]$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|SBOXOK', 'parser': 'parse_cmd_common'},
       \ {'name': 'profdel', 'pat': '^profd\%[el]$', 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'profile', 'pat': '^prof\%[ile]$', 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1475,10 +1582,10 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'ptselect', 'pat': '^pts\%[elect]$', 'flags': 'BANG|TRLBAR|WORD1', 'parser': 'parse_cmd_common'},
       \ {'name': 'put', 'pat': '^pu\%[t]$', 'flags': 'RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZEROR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'pwd', 'pat': '^pw\%[d]$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'py3', 'pat': '^py3$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'python3', 'pat': '^python3$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'py3', 'pat': '^py3$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_python3'},
+      \ {'name': 'python3', 'pat': '^python3$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_python3'},
       \ {'name': 'py3file', 'pat': '^py3f\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'python', 'pat': '^py\%[thon]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'python', 'pat': '^py\%[thon]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_python'},
       \ {'name': 'pyfile', 'pat': '^pyf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'quit', 'pat': '^q\%[uit]$', 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'quitall', 'pat': '^quita\%[ll]$', 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
@@ -1496,7 +1603,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'rewind', 'pat': '^rew\%[ind]$', 'flags': 'EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'right', 'pat': '^ri\%[ght]$', 'flags': 'TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'rightbelow', 'pat': '^rightb\%[elow]$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'ruby', 'pat': '^rub\%[y]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'ruby', 'pat': '^rub\%[y]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_ruby'},
       \ {'name': 'rubydo', 'pat': '^rubyd\%[o]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'rubyfile', 'pat': '^rubyf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'rundo', 'pat': '^rund\%[o]$', 'flags': 'NEEDARG|FILE1', 'parser': 'parse_cmd_common'},
@@ -1587,7 +1694,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'tab', 'pat': '^tab$', 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'tag', 'pat': '^ta\%[g]$', 'flags': 'RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
       \ {'name': 'tags', 'pat': '^tags$', 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'tcl', 'pat': '^tc\%[l]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tcl', 'pat': '^tc\%[l]$', 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_tcl'},
       \ {'name': 'tcldo', 'pat': '^tcld\%[o]$', 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'tclfile', 'pat': '^tclf\%[ile]$', 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'tearoff', 'pat': '^te\%[aroff]$', 'flags': 'NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -1736,6 +1843,12 @@ function s:ExprTokenizer.get_keepspace()
         let s .= self.reader.getn(1)
       endwhile
       return self.token('SPACE', s)
+    elseif s =~ '^0x\x'
+      let s = self.reader.getn(3)
+      while self.reader.peekn(1) =~ '\x'
+        let s .= self.reader.getn(1)
+      endwhile
+      return self.token('NUMBER', s)
     elseif s =~ '^\d'
       let s = ''
       while self.reader.peekn(1) =~ '\d'
@@ -1766,6 +1879,12 @@ function s:ExprTokenizer.get_keepspace()
     elseif s =~# '^isnot\>'
       call self.reader.getn(5)
       return self.token('ISNOT', 'isnot')
+    elseif s =~ '^<SID>\h'
+      let s = self.reader.getn(6)
+      while self.reader.peekn(1) =~ '\w\|[:#]'
+        let s .= self.reader.getn(1)
+      endwhile
+      return self.token('IDENTIFIER', s)
     elseif s =~ '^\h'
       let s = self.reader.getn(1)
       while self.reader.peekn(1) =~ '\w\|[:#]'
@@ -2296,7 +2415,6 @@ function s:ExprParser.parse_expr8()
       call self.tokenizer.get()
       let token = self.tokenizer.peek()
       if token.type == 'COLON'
-        call self.tokenizer.get()
         let e1 = s:NIL
       else
         let e1 = self.parse_expr1()
@@ -2526,7 +2644,6 @@ function! s:LvalueParser.parse_lv8()
       call self.tokenizer.get()
       let token = self.tokenizer.peek()
       if token.type == 'COLON'
-        call self.tokenizer.get()
         let e1 = s:NIL
       else
         let e1 = self.parse_expr1()
