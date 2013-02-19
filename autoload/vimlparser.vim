@@ -75,6 +75,12 @@ function s:VimLParser.find_context(pat)
   return -1
 endfunction
 
+function s:VimLParser.check_missing_endfunction(ends)
+  if self.stack[0].type =~ '\v^%(function)$'
+    throw self.err('VimLParser: E126: Missing :endfunction:    %s', a:ends)
+  endif
+endfunction
+
 function s:VimLParser.check_missing_endif(ends)
   if self.stack[0].type =~ '\v^%(if|elseif|else)$'
     throw self.err('VimLParser: E171: Missing :endif:    %s', a:ends)
@@ -110,6 +116,11 @@ function s:VimLParser.parse(reader)
   while self.reader.peek() != '<EOF>'
     call self.parse_one_cmd()
   endwhile
+  call self.check_missing_endfunction('TOPLEVEL')
+  call self.check_missing_endif('TOPLEVEL')
+  call self.check_missing_endtry('TOPLEVEL')
+  call self.check_missing_endwhile('TOPLEVEL')
+  call self.check_missing_endfor('TOPLEVEL')
   let ctx = self.pop_context()
   return self.node('TOPLEVEL', ctx.body)
 endfunction
