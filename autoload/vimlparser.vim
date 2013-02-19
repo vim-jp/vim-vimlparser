@@ -122,6 +122,7 @@ function s:VimLParser.parse(reader)
   call self.check_missing_endwhile('TOPLEVEL')
   call self.check_missing_endfor('TOPLEVEL')
   let ctx = self.pop_context()
+  let self.ea = {}
   return self.node('TOPLEVEL', ctx.body)
 endfunction
 
