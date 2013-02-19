@@ -848,9 +848,8 @@ function s:VimLParser.parse_cmd_call()
   if expr.type != 'CALL'
     throw self.err('VimLParser: call error: %s', expr.type)
   endif
-  let [name, args] = expr.value
   call self.parse_trail()
-  let node = self.node('EXCALL', [name, args])
+  let node = self.node('EXCALL', expr)
   call self.add_node(node)
 endfunction
 
@@ -2869,20 +2868,28 @@ function s:Compiler.new(...)
 endfunction
 
 function s:Compiler.__init__()
-  let self.indent = ''
+  let self.indent = ['']
   let self.lines = []
 endfunction
 
-function s:Compiler.out(line)
-  call add(self.lines, self.indent . a:line)
+function s:Compiler.out(...)
+  if len(a:000) == 1
+    if a:000[0] =~ '^)*$'
+      let self.lines[-1] .= a:000[0]
+    else
+      call add(self.lines, self.indent[0] . a:000[0])
+    endif
+  else
+    call add(self.lines, self.indent[0] . call('printf', a:000))
+  endif
 endfunction
 
-function s:Compiler.incindent()
-  let self.indent .= ' '
+function s:Compiler.incindent(s)
+  call insert(self.indent, self.indent[0] . a:s)
 endfunction
 
 function s:Compiler.decindent()
-  let self.indent = matchstr(self.indent, '.*\ze $')
+  call remove(self.indent, 0)
 endfunction
 
 function s:Compiler.compile(ast)
@@ -3046,11 +3053,21 @@ function s:Compiler.compile(ast)
 endfunction
 
 function s:Compiler.compile_body(body)
-  call self.incindent()
   for node in a:body
     call self.compile(node)
   endfor
-  call self.decindent()
+endfunction
+
+function s:Compiler.compile_begin(body)
+  if len(a:body) == 1
+    call self.compile_body(a:body)
+  else
+    call self.out('(begin')
+    call self.incindent('  ')
+    call self.compile_body(a:body)
+    call self.out(')')
+    call self.decindent()
+  endif
 endfunction
 
 function s:Compiler.compile_toplevel(ast)
@@ -3061,21 +3078,23 @@ endfunction
 
 function s:Compiler.compile_comment(ast)
   let v = a:ast.value
-  call self.out(printf('; %s', v))
+  call self.out('; %s', v)
 endfunction
 
 function s:Compiler.compile_function(ast)
   let [_name, args, body] = a:ast.value
   let name = self.compile(_name)
-  call self.out(printf('(function %s (%s)', name, join(args, ' ')))
+  call self.out('(function %s (%s)', name, join(args, ' '))
+  call self.incindent('  ')
   call self.compile_body(body)
   call self.out(')')
+  call self.decindent()
 endfunction
 
 function s:Compiler.compile_delfunction(ast)
   let _name = a:ast.value
   let name = self.compile(_name)
-  call self.out(printf('(delfunction %s)', name))
+  call self.out('(delfunction %s)', name)
 endfunction
 
 function s:Compiler.compile_return(ast)
@@ -3084,82 +3103,89 @@ function s:Compiler.compile_return(ast)
     call self.out('(return)')
   else
     let arg = self.compile(_arg)
-    call self.out(printf('(return %s)', arg))
+    call self.out('(return %s)', arg)
   endif
 endfunction
 
 function s:Compiler.compile_excall(ast)
-  let [_name, args] = a:ast.value
-  let name = self.compile(_name)
-  call map(args, 'self.compile(v:val)')
-  call self.out(printf('(call %s %s)', name, join(args, ' ')))
+  let expr = a:ast.value
+  call self.out('(call %s)', self.compile(expr))
 endfunction
 
 function s:Compiler.compile_let(ast)
   let [lhs, op, _rhs] = a:ast.value
   let args = join(map(copy(lhs.args), 'self.compile(v:val)'), ' ')
   if lhs.rest isnot s:NIL
-    let args = ' . ' . self.compile(lhs.rest)
+    let args .= ' . ' . self.compile(lhs.rest)
   endif
   let rhs = self.compile(_rhs)
-  call self.out(printf('(let %s %s %s)', op, args, rhs))
+  call self.out('(let %s %s %s)', op, args, rhs)
 endfunction
 
 function s:Compiler.compile_unlet(ast)
   let args = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(unlet %s)', join(args, ' ')))
+  call self.out('(unlet %s)', join(args, ' '))
 endfunction
 
 function s:Compiler.compile_lockvar(ast)
   let [depth, args] = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(lockvar %s %s)', depth, join(args, ' ')))
+  call self.out('(lockvar %s %s)', depth, join(args, ' '))
 endfunction
 
 function s:Compiler.compile_unlockvar(ast)
   let [depth, args] = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(unlockvar %s %s)', depth, join(args, ' ')))
+  call self.out('(unlockvar %s %s)', depth, join(args, ' '))
 endfunction
 
 function s:Compiler.compile_if(ast)
   let clauses = a:ast.value
-  for i in range(len(clauses))
+  let [cond, body] = clauses[0]
+  call self.out('(if %s', self.compile(cond))
+  call self.incindent('  ')
+  call self.compile_begin(body)
+  call self.decindent()
+  for i in range(1, len(clauses) - 1)
     let [cond, body] = clauses[i]
-    if i == 0
-      call self.out(printf('(if %s (', self.compile(cond)))
-      call self.compile_body(body)
+    if cond isnot s:NIL
+      call self.out('(elseif %s', self.compile(cond))
+      call self.incindent('  ')
+      call self.compile_begin(body)
       call self.out(')')
-    elseif cond isnot s:NIL
-      call self.out(printf('(elseif %s (', self.compile(cond)))
-      call self.compile_body(body)
-      call self.out('))')
+      call self.decindent()
     else
-      call self.out('(else (')
-      call self.compile_body(body)
-      call self.out('))')
+      call self.out('(else')
+      call self.incindent('  ')
+      call self.compile_begin(body)
+      call self.out(')')
+      call self.decindent()
     endif
   endfor
+  call self.incindent('  ')
   call self.out(')')
+  call self.decindent()
 endfunction
 
 function s:Compiler.compile_while(ast)
   let [cond, body] = a:ast.value
-  call self.out(printf('(while %s', self.compile(cond)))
-  call self.compile_body(body)
+  call self.out('(while %s', self.compile(cond))
+  call self.incindent('  ')
+  call self.compile_begin(body)
   call self.out(')')
+  call self.decindent()
 endfunction
 
 function s:Compiler.compile_for(ast)
   let [lhs, _rhs, body] = a:ast.value
   let args = join(map(copy(lhs.args), 'self.compile(v:val)'), ' ')
   if lhs.rest isnot s:NIL
-    let args = ' . ' . self.compile(lhs.rest)
+    let args .= ' . ' . self.compile(lhs.rest)
   endif
   let rhs = self.compile(_rhs)
-  call self.out(printf('(for (%s) in %s', args, rhs))
-  call self.compile_body(body)
+  call self.out('(for (%s) in %s', args, rhs)
+  call self.compile_begin(body)
   call self.out(')')
 endfunction
 
@@ -3173,67 +3199,74 @@ endfunction
 
 function s:Compiler.compile_try(ast)
   let [body, _catch, _finally] = a:ast.value
-  call self.out('(try (')
-  call self.compile_body(body)
-  call self.out(')')
+  call self.out('(try')
+  call self.incindent('  ')
+  call self.compile_begin(body)
   for [pattern, body] in _catch
-    if pattern is s:NIL
-      call self.out('(catch nil (')
+    if pattern isnot s:NIL
+      call self.out('(#/%s/', pattern)
+      call self.incindent('  ')
       call self.compile_body(body)
-      call self.out('))')
+      call self.out(')')
+      call self.decindent()
     else
-      call self.out(printf('(catch %s (', pattern))
+      call self.out('(else')
+      call self.incindent('  ')
       call self.compile_body(body)
-      call self.out('))')
+      call self.out(')')
+      call self.decindent()
     endif
     unlet pattern
   endfor
   if _finally isnot s:NIL
-    call self.out('(finally (')
+    call self.out('(finally')
+    call self.incindent('  ')
     call self.compile_body(_finally)
-    call self.out('))')
+    call self.out(')')
+    call self.decindent()
   endif
   call self.out(')')
+  call self.decindent()
 endfunction
 
 function s:Compiler.compile_throw(ast)
   let expr1 = a:ast.value
-  call self.out(printf('(throw %s)', self.compile(expr1)))
+  call self.out('(throw %s)', self.compile(expr1))
 endfunction
 
 function s:Compiler.compile_echo(ast)
   let args = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(echo %s)', join(args, ' ')))
+  call self.out('(echo %s)', join(args, ' '))
 endfunction
 
 function s:Compiler.compile_echon(ast)
   let args = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(echon %s)', join(args, ' ')))
+  call self.out('(echon %s)', join(args, ' '))
 endfunction
 
 function s:Compiler.compile_echohl(ast)
   let name = a:ast.value
-  call self.out(printf('(echohl %s)', name))
+  call self.out('(echohl %s)', name)
 endfunction
 
 function s:Compiler.compile_echomsg(ast)
   let args = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(echomsg %s)', join(args, ' ')))
+  call self.out('(echomsg %s)', join(args, ' '))
 endfunction
 
 function s:Compiler.compile_echoerr(ast)
   let args = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(echoerr %s)', join(args, ' ')))
+  call self.out('(echoerr %s)', join(args, ' '))
 endfunction
 
 function s:Compiler.compile_execute(ast)
   let args = a:ast.value
   call map(args, 'self.compile(v:val)')
-  call self.out(printf('(execute %s)', join(args, ' ')))
+  call self.out('(execute %s)', join(args, ' '))
 endfunction
 
 function s:Compiler.compile_condexp(ast)
