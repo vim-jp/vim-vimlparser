@@ -76,31 +76,31 @@ function s:VimLParser.find_context(pat)
 endfunction
 
 function s:VimLParser.check_missing_endfunction(ends)
-  if self.stack[0].type =~ '\v^%(function)$'
+  if self.stack[0].type == 'FUNCTION'
     throw self.err('VimLParser: E126: Missing :endfunction:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endif(ends)
-  if self.stack[0].type =~ '\v^%(if|elseif|else)$'
+  if self.stack[0].type =~ '\v^%(IF|ELSEIF|ELSE)$'
     throw self.err('VimLParser: E171: Missing :endif:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endtry(ends)
-  if self.stack[0].type =~ '\v^%(try|catch|finally)$'
+  if self.stack[0].type =~ '\v^%(TRY|CATCH|FINALLY)$'
     throw self.err('VimLParser: E600: Missing :endtry:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endwhile(ends)
-  if self.stack[0].type == 'while'
+  if self.stack[0].type == 'WHILE'
     throw self.err('VimLParser: E170: Missing :endwhile:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endfor(ends)
-  if self.stack[0].type == 'for'
+  if self.stack[0].type == 'FOR'
     throw self.err('VimLParser: E170: Missing :endfor:    %s', a:ends)
   endif
 endfunction
@@ -797,15 +797,15 @@ function s:VimLParser.parse_cmd_function()
     endif
   endwhile
   call self.parse_trail()
-  call self.push_context('function', [name, args])
+  call self.push_context('FUNCTION', [name, args])
 endfunction
 
 function s:VimLParser.parse_cmd_endfunction()
-  call self.check_missing_endif('endfunction')
-  call self.check_missing_endtry('endfunction')
-  call self.check_missing_endwhile('endfunction')
-  call self.check_missing_endfor('endfunction')
-  if self.find_context('^function$') != 0
+  call self.check_missing_endif('ENDFUNCTION')
+  call self.check_missing_endtry('ENDFUNCTION')
+  call self.check_missing_endwhile('ENDFUNCTION')
+  call self.check_missing_endfor('ENDFUNCTION')
+  if self.find_context('^FUNCTION$') != 0
     throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
   call self.reader.readline()
@@ -823,7 +823,7 @@ function s:VimLParser.parse_cmd_delfunction()
 endfunction
 
 function s:VimLParser.parse_cmd_return()
-  if self.find_context('^function$') == -1
+  if self.find_context('^FUNCTION$') == -1
     throw self.err('VimLParser: E133: :return not inside a function')
   endif
   call self.skip_white()
@@ -958,11 +958,11 @@ function s:VimLParser.parse_cmd_if()
   let cond = self.parse_expr()
   call self.parse_trail()
   let clauses = [[cond, []]]
-  call self.push_context('if', clauses)
+  call self.push_context('IF', clauses)
 endfunction
 
 function s:VimLParser.parse_cmd_elseif()
-  if self.find_context('^\(if\|elseif\)$') != 0
+  if self.find_context('^\(IF\|ELSEIF\)$') != 0
     throw self.err('VimLParser: E582: :elseif without :if')
   endif
   let cond = self.parse_expr()
@@ -971,11 +971,11 @@ function s:VimLParser.parse_cmd_elseif()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
   call add(clauses, [cond, []])
-  call self.push_context('elseif', clauses)
+  call self.push_context('ELSEIF', clauses)
 endfunction
 
 function s:VimLParser.parse_cmd_else()
-  if self.find_context('^\(if\|elseif\)$') != 0
+  if self.find_context('^\(IF\|ELSEIF\)$') != 0
     throw self.err('VimLParser: E581: :else without :if')
   endif
   call self.parse_trail()
@@ -983,11 +983,11 @@ function s:VimLParser.parse_cmd_else()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
   call add(clauses, [s:NIL, []])
-  call self.push_context('else', clauses)
+  call self.push_context('ELSE', clauses)
 endfunction
 
 function s:VimLParser.parse_cmd_endif()
-  if self.find_context('^\(if\|elseif\|else\)$') != 0
+  if self.find_context('^\(IF\|ELSEIF\|ELSE\)$') != 0
     throw self.err('VimLParser: E580: :endif without :if')
   endif
   call self.parse_trail()
@@ -1001,11 +1001,11 @@ endfunction
 function s:VimLParser.parse_cmd_while()
   let cond = self.parse_expr()
   call self.parse_trail()
-  call self.push_context('while', cond)
+  call self.push_context('WHILE', cond)
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
-  if self.find_context('^while$') != 0
+  if self.find_context('^WHILE$') != 0
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
   call self.parse_trail()
@@ -1023,11 +1023,11 @@ function s:VimLParser.parse_cmd_for()
   endif
   let list = self.parse_expr()
   call self.parse_trail()
-  call self.push_context('for', [var, list])
+  call self.push_context('FOR', [var, list])
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
-  if self.find_context('^for$') != 0
+  if self.find_context('^FOR$') != 0
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
   call self.parse_trail()
@@ -1038,7 +1038,7 @@ function s:VimLParser.parse_cmd_endfor()
 endfunction
 
 function s:VimLParser.parse_cmd_continue()
-  if self.find_context('^\(while\|for\)$') == -1
+  if self.find_context('^\(WHILE\|FOR\)$') == -1
     throw self.err('VimLParser: E586: :continue without :while or :for')
   endif
   call self.parse_trail()
@@ -1047,7 +1047,7 @@ function s:VimLParser.parse_cmd_continue()
 endfunction
 
 function s:VimLParser.parse_cmd_break()
-  if self.find_context('^\(while\|for\)$') == -1
+  if self.find_context('^\(WHILE\|FOR\)$') == -1
     throw self.err('VimLParser: E587: :break without :while or :for')
   endif
   call self.parse_trail()
@@ -1058,13 +1058,13 @@ endfunction
 function s:VimLParser.parse_cmd_try()
   call self.parse_trail()
   let [body, _catch, _finally] = [[], [], s:NIL]
-  call self.push_context('try', [body, _catch, _finally])
+  call self.push_context('TRY', [body, _catch, _finally])
 endfunction
 
 function s:VimLParser.parse_cmd_catch()
-  if self.find_context('^finally$') == 0
+  if self.find_context('^FINALLY$') == 0
     throw self.err('VimLParser: E604: :catch after :finally')
-  elseif self.find_context('^\(try\|catch\)$') != 0
+  elseif self.find_context('^\(TRY\|CATCH\)$') != 0
     throw self.err('VimLParser: E603: :catch without :try')
   endif
   call self.skip_white()
@@ -1077,40 +1077,40 @@ function s:VimLParser.parse_cmd_catch()
   call self.parse_trail()
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
-  if ctx.type == 'try'
+  if ctx.type == 'TRY'
     let body = ctx.body
   else
     let _catch[-1][1] = ctx.body
   endif
   call add(_catch, [pattern, []])
-  call self.push_context('catch', [body, _catch, _finally])
+  call self.push_context('CATCH', [body, _catch, _finally])
 endfunction
 
 function s:VimLParser.parse_cmd_finally()
-  if self.find_context('^\(try\|catch\)$') != 0
+  if self.find_context('^\(TRY\|CATCH\)$') != 0
     throw self.err('VimLParser: E606: :finally without :try')
   endif
   call self.parse_trail()
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
-  if ctx.type == 'try'
+  if ctx.type == 'TRY'
     let body = ctx.body
   else
     let _catch[-1][1] = ctx.body
   endif
-  call self.push_context('finally', [body, _catch, _finally])
+  call self.push_context('FINALLY', [body, _catch, _finally])
 endfunction
 
 function s:VimLParser.parse_cmd_endtry()
-  if self.find_context('^\(try\|catch\|finally\)$') != 0
+  if self.find_context('^\(TRY\|CATCH\|FINALLY\)$') != 0
     throw self.err('VimLParser: E602: :endtry without :try')
   endif
   call self.parse_trail()
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
-  if ctx.type == 'try'
+  if ctx.type == 'TRY'
     let body = ctx.body
-  elseif ctx.type == 'catch'
+  elseif ctx.type == 'CATCH'
     let _catch[-1][1] = ctx.body
   else
     unlet _finally
