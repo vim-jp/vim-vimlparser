@@ -514,7 +514,7 @@ function s:VimLParser.parse_trail()
   if c == '<EOF>'
     " pass
   elseif c == '<EOL>'
-    call self.reader.readline()
+    call self.reader.get()
   elseif c == '|'
     call self.reader.get()
   elseif c == '"'
