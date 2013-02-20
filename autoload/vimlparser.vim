@@ -2432,7 +2432,7 @@ function s:ExprParser.parse_expr8()
   while 1
     let token = self.tokenizer.peek()
     let token2 = self.tokenizer.peek_keepspace()
-    if token.type == 'LBRA'
+    if token2.type == 'LBRA'
       call self.tokenizer.get()
       let token = self.tokenizer.peek()
       if token.type == 'COLON'
@@ -2661,7 +2661,7 @@ function! s:LvalueParser.parse_lv8()
   while 1
     let token = self.tokenizer.peek()
     let token2 = self.tokenizer.peek_keepspace()
-    if token.type == 'LBRA'
+    if token2.type == 'LBRA'
       call self.tokenizer.get()
       let token = self.tokenizer.peek()
       if token.type == 'COLON'
