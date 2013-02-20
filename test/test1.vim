@@ -40,3 +40,8 @@ echon "echon"
 echomsg "echomsg"
 echoerr "echoerr"
 execute "normal ihello"
+echo [] [1,2,3] [1,2,3,]
+echo {} {"x":"y"} {"x":"y","z":"w",}
+echo x[0] x[y]
+echo x[1:2] x[1:] x[:2] x[:]
+echo x.y x.y.z
