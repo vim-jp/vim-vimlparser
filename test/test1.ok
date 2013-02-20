@@ -1,0 +1,37 @@
+; test1
+(function s:foo (a b . ...)
+  (return 0))
+(if 1
+  (echo "if 1")
+ elseif 2
+  (echo "elseif 2")
+ else
+  (echo "else"))
+(while 1
+  (continue)
+  (break))
+(for (a b . c) d
+  (echo a b c))
+(delfunction s:foo)
+(call (s:foo 1 2 3))
+(let = (a) (dict ("x" "y")))
+(let = (a b . c) (list 1 2 3))
+(let += (a b . c) (list 1 2 3))
+(let -= (a b . c) (list 1 2 3))
+(let .= (a b . c) (list 1 2 3))
+(unlet a b c)
+(lockvar 2 a b c)
+(unlockvar 2 a b c)
+(try
+  (throw "err")
+  (#/err/
+    (echo "catch /err/"))
+  (else
+    (echo "catch"))
+  (finally
+    (echo "finally")))
+(echohl "Error")
+(echon "echon")
+(echomsg "echomsg")
+(echoerr "echoerr")
+(execute "normal ihello")
