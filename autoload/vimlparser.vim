@@ -3527,13 +3527,21 @@ endfunction
 function s:Compiler.compile_list(ast)
   let list = a:ast.value
   call map(list, 'self.compile(v:val)')
-  return printf('(list %s)', join(list, ' '))
+  if empty(list)
+    return '(list)'
+  else
+    return printf('(list %s)', join(list, ' '))
+  endif
 endfunction
 
 function s:Compiler.compile_dict(ast)
   let dict = a:ast.value
   call map(dict, '"(" . self.compile(v:val[0]) . " " . self.compile(v:val[1]) . ")"')
-  return printf('(dict %s)', join(dict, ' '))
+  if empty(dict)
+    return '(dict)'
+  else
+    return printf('(dict %s)', join(dict, ' '))
+  endif
 endfunction
 
 function s:Compiler.compile_option(ast)
