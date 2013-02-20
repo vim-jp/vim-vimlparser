@@ -1146,7 +1146,8 @@ function s:VimLParser.parse_cmd_echohl()
     let name .= self.reader.get()
   endwhile
   call self.parse_trail()
-  let node = self.node('ECHOHL', name)
+  let expr = self.node('STRING', '"' . escape(name, '\"') . '"')
+  let node = self.node('ECHOHL', expr)
   call self.add_node(node)
 endfunction
 
@@ -3078,12 +3079,15 @@ endfunction
 
 function s:Compiler.compile_comment(ast)
   let v = a:ast.value
-  call self.out('; %s', v)
+  call self.out(';%s', v)
 endfunction
 
 function s:Compiler.compile_function(ast)
   let [_name, args, body] = a:ast.value
   let name = self.compile(_name)
+  if !empty(args) && args[-1] == '...'
+    let args[-1] = '. ' . args[-1]
+  endif
   call self.out('(function %s (%s)', name, join(args, ' '))
   call self.incindent('  ')
   call self.compile_body(body)
@@ -3119,7 +3123,7 @@ function s:Compiler.compile_let(ast)
     let args .= ' . ' . self.compile(lhs.rest)
   endif
   let rhs = self.compile(_rhs)
-  call self.out('(let %s %s %s)', op, args, rhs)
+  call self.out('(let %s (%s) %s)', op, args, rhs)
 endfunction
 
 function s:Compiler.compile_unlet(ast)
@@ -3150,16 +3154,14 @@ function s:Compiler.compile_if(ast)
   for i in range(1, len(clauses) - 1)
     let [cond, body] = clauses[i]
     if cond isnot s:NIL
-      call self.out('(elseif %s', self.compile(cond))
+      call self.out(' elseif %s', self.compile(cond))
       call self.incindent('  ')
       call self.compile_begin(body)
-      call self.out(')')
       call self.decindent()
     else
-      call self.out('(else')
+      call self.out(' else')
       call self.incindent('  ')
       call self.compile_begin(body)
-      call self.out(')')
       call self.decindent()
     endif
   endfor
@@ -3172,7 +3174,7 @@ function s:Compiler.compile_while(ast)
   let [cond, body] = a:ast.value
   call self.out('(while %s', self.compile(cond))
   call self.incindent('  ')
-  call self.compile_begin(body)
+  call self.compile_body(body)
   call self.out(')')
   call self.decindent()
 endfunction
@@ -3184,9 +3186,11 @@ function s:Compiler.compile_for(ast)
     let args .= ' . ' . self.compile(lhs.rest)
   endif
   let rhs = self.compile(_rhs)
-  call self.out('(for (%s) in %s', args, rhs)
-  call self.compile_begin(body)
+  call self.out('(for (%s) %s', args, rhs)
+  call self.incindent('  ')
+  call self.compile_body(body)
   call self.out(')')
+  call self.decindent()
 endfunction
 
 function s:Compiler.compile_continue(ast)
@@ -3248,7 +3252,7 @@ endfunction
 
 function s:Compiler.compile_echohl(ast)
   let name = a:ast.value
-  call self.out('(echohl %s)', name)
+  call self.out('(echohl %s)', self.compile(name))
 endfunction
 
 function s:Compiler.compile_echomsg(ast)
