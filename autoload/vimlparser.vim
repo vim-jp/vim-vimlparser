@@ -53,68 +53,91 @@ function s:VimLParser.err(...)
   return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
 endfunction
 
-function s:VimLParser.node(type, value)
-  return {'type': a:type, 'value': a:value, 'ea': self.ea}
+function s:VimLParser.exnode(type)
+  let node = {'type': a:type}
+  let node.parent = self.context
+  let node.prev = self.lastnode
+  let node.next = s:NIL
+  if node.prev isnot s:NIL
+    let node.prev.next = node
+  endif
+  let self.lastnode = node
+  return node
 endfunction
 
-function s:VimLParser.push_context(type, value)
-  let ctx = {'type': a:type, 'value': a:value, 'body': []}
-  call insert(self.stack, ctx, 0)
+function s:VimLParser.blocknode(type)
+  let node = self.exnode(a:type)
+  let node.body = []
+  return node
+endfunction
+
+function s:VimLParser.exprnode(type, value)
+  return {'type': a:type, 'value': a:value}
+endfunction
+
+function s:VimLParser.push_context(node)
+  let self.context = a:node
 endfunction
 
 function s:VimLParser.pop_context()
-  return remove(self.stack, 0)
+  let self.context = self.context.parent
 endfunction
 
 function s:VimLParser.find_context(pat)
   let i = 0
-  for ctx in self.stack
-    if ctx.type =~ a:pat
+  let node = self.context
+  while 1
+    if node.type =~ a:pat
       return i
+    elseif node.parent is s:NIL
+      break
     endif
+    let node = node.parent
     let i += 1
-  endfor
+  endwhile
   return -1
 endfunction
 
+function s:VimLParser.add_node(node)
+  call add(self.context.body, a:node)
+endfunction
+
 function s:VimLParser.check_missing_endfunction(ends)
-  if self.stack[0].type == 'FUNCTION'
+  if self.context.type == 'FUNCTION'
     throw self.err('VimLParser: E126: Missing :endfunction:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endif(ends)
-  if self.stack[0].type =~ '\v^%(IF|ELSEIF|ELSE)$'
+  if self.context.type =~ '\v^%(IF|ELSEIF|ELSE)$'
     throw self.err('VimLParser: E171: Missing :endif:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endtry(ends)
-  if self.stack[0].type =~ '\v^%(TRY|CATCH|FINALLY)$'
+  if self.context.type =~ '\v^%(TRY|CATCH|FINALLY)$'
     throw self.err('VimLParser: E600: Missing :endtry:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endwhile(ends)
-  if self.stack[0].type == 'WHILE'
+  if self.context.type == 'WHILE'
     throw self.err('VimLParser: E170: Missing :endwhile:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endfor(ends)
-  if self.stack[0].type == 'FOR'
+  if self.context.type == 'FOR'
     throw self.err('VimLParser: E170: Missing :endfor:    %s', a:ends)
   endif
 endfunction
 
-function s:VimLParser.add_node(node)
-  call add(self.stack[0].body, a:node)
-endfunction
-
 function s:VimLParser.parse(reader)
   let self.reader = a:reader
-  let self.stack = []
-  call self.push_context('TOPLEVEL', [])
+  let self.lastnode = s:NIL
+  let self.context = s:NIL
+  let toplevel = self.blocknode('TOPLEVEL')
+  call self.push_context(toplevel)
   while self.reader.peek() != '<EOF>'
     call self.parse_one_cmd()
   endwhile
@@ -123,9 +146,8 @@ function s:VimLParser.parse(reader)
   call self.check_missing_endtry('TOPLEVEL')
   call self.check_missing_endwhile('TOPLEVEL')
   call self.check_missing_endfor('TOPLEVEL')
-  let ctx = self.pop_context()
-  let self.ea = {}
-  return self.node('TOPLEVEL', ctx.body)
+  call self.pop_context()
+  return toplevel
 endfunction
 
 function s:VimLParser.parse_one_cmd()
@@ -507,8 +529,8 @@ function s:VimLParser.parse_comment()
   if c != '"'
     throw self.err('VimLParser: unexpected character: %s', c)
   endif
-  let s = self.reader.getn(-1)
-  let node = self.node('COMMENT', s)
+  let node = self.exnode('COMMENT')
+  let node.str = self.reader.getn(-1)
   call self.add_node(node)
 endfunction
 
@@ -532,8 +554,10 @@ endfunction
 " modifier or range only command line
 function s:VimLParser.parse_cmd_modifier_range()
   let cmdstr = self.reader.getstr(self.ea.linepos, self.reader.getpos())
-  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.node('EXECUTE', [expr])
+  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.exnode('EXECUTE')
+  let node.ea = self.ea
+  let node.args = [expr]
   call self.add_node(node)
 endfunction
 
@@ -557,8 +581,10 @@ function s:VimLParser.parse_cmd_common()
     endwhile
   endif
   let cmdstr = self.reader.getstr(self.ea.linepos, end)
-  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.node('EXECUTE', [expr])
+  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.exnode('EXECUTE')
+  let node.ea = self.ea
+  let node.args = [expr]
   call self.add_node(node)
 endfunction
 
@@ -635,8 +661,10 @@ function s:VimLParser.parse_cmd_append()
     call self.reader.get()
   endwhile
   let cmdstr = join(lines, "\n")
-  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.node('EXECUTE', [expr])
+  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.exnode('EXECUTE')
+  let node.ea = self.ea
+  let node.args = [expr]
   call self.add_node(node)
 endfunction
 
@@ -656,8 +684,10 @@ function s:VimLParser.parse_cmd_loadkeymap()
     call add(lines, line)
   endwhile
   let cmdstr = join(lines, "\n")
-  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.node('EXECUTE', [expr])
+  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.exnode('EXECUTE')
+  let node.ea = self.ea
+  let node.args = [expr]
   call self.add_node(node)
 endfunction
 
@@ -688,8 +718,10 @@ function s:VimLParser.parse_cmd_lua()
     endwhile
   endif
   let cmdstr = join(lines, "\n")
-  let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.node('EXECUTE', [expr])
+  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
+  let node = self.exnode('EXECUTE')
+  let node.ea = self.ea
+  let node.args = [expr]
   call self.add_node(node)
 endfunction
 
@@ -719,7 +751,7 @@ endfunction
 
 function s:VimLParser.parse_cmd_finish()
   call self.parse_cmd_common()
-  if self.stack[0].type == 'TOPLEVEL'
+  if self.context.type == 'TOPLEVEL'
     while self.reader.peek() != '<EOF>'
       call self.reader.get()
     endwhile
@@ -757,8 +789,13 @@ function s:VimLParser.parse_cmd_function()
   endif
 
   " :function[!] {name}([arguments]) [range] [abort] [dict]
+  let node = self.blocknode('FUNCTION')
+  let node.ea = self.ea
+  let node.name = name
+  let node.args = []
+  let node.attr = {'range': 0, 'abort': 0, 'dict': 0}
+  let node.endfunction = s:NIL
   call self.reader.getn(1)
-  let args = []
   let c = self.reader.peekn(1)
   if c == ')'
     call self.reader.getn(1)
@@ -767,7 +804,7 @@ function s:VimLParser.parse_cmd_function()
       call self.skip_white()
       if self.reader.peekn(1) =~ '\h'
         let arg = self.readx('\w')
-        call add(args, arg)
+        call add(node.args, arg)
         call self.skip_white()
         let c = self.reader.peekn(1)
         if c == ','
@@ -781,7 +818,7 @@ function s:VimLParser.parse_cmd_function()
         endif
       elseif self.reader.peekn(3) == '...'
         call self.reader.getn(3)
-        call add(args, '...')
+        call add(node.args, '...')
         call self.skip_white()
         let c = self.reader.peekn(1)
         if c == ')'
@@ -795,23 +832,23 @@ function s:VimLParser.parse_cmd_function()
       endif
     endwhile
   endif
-  let attr = {'range': 0, 'abort': 0, 'dict': 0}
   while 1
     call self.skip_white()
     let key = self.read_alpha()
     if key == ''
       break
     elseif key == 'range'
-      let attr.range = 1
+      let node.attr.range = 1
     elseif key == 'abort'
-      let attr.abort = 1
+      let node.attr.abort = 1
     elseif key == 'dict'
-      let attr.dict = 1
+      let node.attr.dict = 1
     else
       throw self.err('VimLParser: unexpected token: %s', key)
     endif
   endwhile
-  call self.push_context('FUNCTION', [name, args])
+  call self.add_node(node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endfunction()
@@ -819,19 +856,20 @@ function s:VimLParser.parse_cmd_endfunction()
   call self.check_missing_endtry('ENDFUNCTION')
   call self.check_missing_endwhile('ENDFUNCTION')
   call self.check_missing_endfor('ENDFUNCTION')
-  if self.find_context('^FUNCTION$') != 0
+  if self.context.type != 'FUNCTION'
     throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
   call self.reader.getn(-1)
-  let ctx = self.pop_context()
-  let [name, args] = ctx.value
-  let node = self.node('FUNCTION', [name, args, ctx.body])
-  call self.add_node(node)
+  let node = self.exnode('ENDFUNCTION')
+  let node.ea = self.ea
+  let self.context.endfunction = node
+  call self.pop_context()
 endfunction
 
 function s:VimLParser.parse_cmd_delfunction()
-  let name = self.parse_lvalue()
-  let node = self.node('DELFUNCTION', name)
+  let node = self.exnode('DELFUNCTION')
+  let node.ea = self.ea
+  let node.name = self.parse_lvalue()
   call self.add_node(node)
 endfunction
 
@@ -839,28 +877,30 @@ function s:VimLParser.parse_cmd_return()
   if self.find_context('^FUNCTION$') == -1
     throw self.err('VimLParser: E133: :return not inside a function')
   endif
+  let node = self.exnode('RETURN')
+  let node.ea = self.ea
+  let node.arg = s:NIL
   call self.skip_white()
   let c = self.reader.peek()
-  if self.ends_excmds(c)
-    let arg = s:NIL
-  else
-    let arg = self.parse_expr()
+  if !self.ends_excmds(c)
+    let node.arg = self.parse_expr()
   endif
-  let node = self.node('RETURN', arg)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_call()
+  let node = self.exnode('EXCALL')
+  let node.ea = self.ea
+  let node.expr = s:NIL
   call self.skip_white()
   let c = self.reader.peek()
   if self.ends_excmds(c)
     throw self.err('VimLParser: call error: %s', c)
   endif
-  let expr = self.parse_expr()
-  if expr.type != 'CALL'
-    throw self.err('VimLParser: call error: %s', expr.type)
+  let node.expr = self.parse_expr()
+  if node.expr.type != 'CALL'
+    throw self.err('VimLParser: call error: %s', node.expr.type)
   endif
-  let node = self.node('EXCALL', expr)
   call self.add_node(node)
 endfunction
 
@@ -886,160 +926,159 @@ function s:VimLParser.parse_cmd_let()
   endif
 
   " :let lhs op rhs
+  let node = self.exnode('LET')
+  let node.ea = self.ea
+  let node.op = ''
+  let node.lhs = lhs
+  let node.rhs = s:NIL
   if s2 == '+=' || s2 == '-=' || s2 == '.='
     call self.reader.getn(2)
-    let op = s2
+    let node.op = s2
   elseif s1 == '='
     call self.reader.getn(1)
-    let op = s1
+    let node.op = s1
   else
     throw 'NOT REACHED'
   endif
-  let rhs = self.parse_expr()
-  let node = self.node('LET', [lhs, op, rhs])
+  let node.rhs = self.parse_expr()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_unlet()
-  let args = []
-  let node = self.parse_lvalue()
-  call add(args, node)
-  while 1
-    call self.skip_white()
-    if self.ends_excmds(self.reader.peek())
-      break
-    endif
-    let node = self.parse_lvalue()
-    call add(args, node)
-  endwhile
-  let node = self.node('UNLET', args)
+  let node = self.exnode('UNLET')
+  let node.ea = self.ea
+  let node.args = self.parse_lvaluelist()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_lockvar()
-  let args = []
-  let depth = 2
+  let node = self.exnode('LOCKVAR')
+  let node.ea = self.ea
+  let node.depth = 2
+  let node.args = []
   call self.skip_white()
   if self.reader.peekn(1) =~ '\d'
-    let d = self.read_digits()
-    let depth = str2nr(depth, 10)
+    let node.depth = str2nr(self.read_digits(), 10)
   endif
-  let node = self.parse_lvalue()
-  call add(args, node)
-  while 1
-    call self.skip_white()
-    if self.ends_excmds(self.reader.peek())
-      break
-    endif
-    let node = self.parse_lvalue()
-    call add(args, node)
-  endwhile
-  let node = self.node('LOCKVAR', [depth, args])
+  let node.args = self.parse_lvaluelist()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_unlockvar()
-  let args = []
-  let depth = 2
+  let node = self.exnode('UNLOCKVAR')
+  let node.ea = self.ea
+  let node.depth = 2
+  let node.args = []
   call self.skip_white()
   if self.reader.peekn(1) =~ '\d'
-    let d = self.read_digits()
-    let depth = str2nr(depth, 10)
+    let node.depth = str2nr(self.read_digits(), 10)
   endif
-  let node = self.parse_lvalue()
-  call add(args, node)
-  while 1
-    call self.skip_white()
-    if self.ends_excmds(self.reader.peek())
-      break
-    endif
-    let node = self.parse_lvalue()
-    call add(args, node)
-  endwhile
-  let node = self.node('UNLOCKVAR', [depth, args])
+  let node.args = self.parse_lvaluelist()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_if()
-  let cond = self.parse_expr()
-  let clauses = [[cond, []]]
-  call self.push_context('IF', clauses)
+  let node = self.blocknode('IF')
+  let node.ea = self.ea
+  let node.cond = self.parse_expr()
+  let node.elseif = []
+  let node.else = s:NIL
+  let node.endif = s:NIL
+  call self.add_node(node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_elseif()
-  if self.find_context('^\(IF\|ELSEIF\)$') != 0
+  if self.context.type != 'IF' && self.context.type != 'ELSEIF'
     throw self.err('VimLParser: E582: :elseif without :if')
   endif
-  let cond = self.parse_expr()
-  let ctx = self.pop_context()
-  let clauses = ctx.value
-  let clauses[-1][1] = ctx.body
-  call add(clauses, [cond, []])
-  call self.push_context('ELSEIF', clauses)
+  if self.context.type != 'IF'
+    call self.pop_context()
+  endif
+  let node = self.blocknode('ELSEIF')
+  let node.ea = self.ea
+  let node.cond = self.parse_expr()
+  call add(node.parent.elseif, node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_else()
-  if self.find_context('^\(IF\|ELSEIF\)$') != 0
+  if self.context.type != 'IF' && self.context.type != 'ELSEIF'
     throw self.err('VimLParser: E581: :else without :if')
   endif
-  let ctx = self.pop_context()
-  let clauses = ctx.value
-  let clauses[-1][1] = ctx.body
-  call add(clauses, [s:NIL, []])
-  call self.push_context('ELSE', clauses)
+  if self.context.type != 'IF'
+    call self.pop_context()
+  endif
+  let node = self.blocknode('ELSE')
+  let node.ea = self.ea
+  let node.parent.else = node
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endif()
-  if self.find_context('^\(IF\|ELSEIF\|ELSE\)$') != 0
+  if self.context.type != 'IF' && self.context.type != 'ELSEIF' && self.context.type != 'ELSE'
     throw self.err('VimLParser: E580: :endif without :if')
   endif
-  let ctx = self.pop_context()
-  let clauses = ctx.value
-  let clauses[-1][1] = ctx.body
-  let node = self.node('IF', clauses)
-  call self.add_node(node)
+  if self.context.type != 'IF'
+    call self.pop_context()
+  endif
+  let node = self.exnode('ENDIF')
+  let node.ea = self.ea
+  let node.parent.endif = node
+  call self.pop_context()
 endfunction
 
 function s:VimLParser.parse_cmd_while()
-  let cond = self.parse_expr()
-  call self.push_context('WHILE', cond)
+  let node = self.blocknode('WHILE')
+  let node.ea = self.ea
+  let node.cond = self.parse_expr()
+  let node.endwhile = s:NIL
+  call self.add_node(node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
-  if self.find_context('^WHILE$') != 0
+  if self.context.type != 'WHILE'
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
-  let ctx = self.pop_context()
-  let cond = ctx.value
-  let node = self.node('WHILE', [cond, ctx.body])
-  call self.add_node(node)
+  let node = self.exnode('ENDWHILE')
+  let node.ea = self.ea
+  let node.parent.endwhile = node
+  call self.pop_context()
 endfunction
 
 function s:VimLParser.parse_cmd_for()
-  let var = self.parse_letlhs()
+  let node = self.blocknode('FOR')
+  let node.ea = self.ea
+  let node.lhs = s:NIL
+  let node.rhs = s:NIL
+  let node.endfor = s:NIL
+  let node.lhs = self.parse_letlhs()
   call self.skip_white()
   if self.read_alpha() != 'in'
     throw self.err('VimLParser: Missing "in" after :for')
   endif
-  let list = self.parse_expr()
-  call self.push_context('FOR', [var, list])
+  let node.rhs = self.parse_expr()
+  call self.add_node(node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
-  if self.find_context('^FOR$') != 0
+  if self.context.type != 'FOR'
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
-  let ctx = self.pop_context()
-  let [var, list] = ctx.value
-  let node = self.node('FOR', [var, list, ctx.body])
-  call self.add_node(node)
+  let node = self.exnode('ENDFOR')
+  let node.ea = self.ea
+  let node.parent.endfor = node
+  call self.pop_context()
 endfunction
 
 function s:VimLParser.parse_cmd_continue()
   if self.find_context('^\(WHILE\|FOR\)$') == -1
     throw self.err('VimLParser: E586: :continue without :while or :for')
   endif
-  let node = self.node('CONTINUE', s:NIL)
+  let node = self.exnode('CONTINUE')
+  let node.ea = self.ea
   call self.add_node(node)
 endfunction
 
@@ -1047,86 +1086,85 @@ function s:VimLParser.parse_cmd_break()
   if self.find_context('^\(WHILE\|FOR\)$') == -1
     throw self.err('VimLParser: E587: :break without :while or :for')
   endif
-  let node = self.node('BREAK', s:NIL)
+  let node = self.exnode('BREAK')
+  let node.ea = self.ea
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_try()
-  let [body, _catch, _finally] = [[], [], s:NIL]
-  call self.push_context('TRY', [body, _catch, _finally])
+  let node = self.blocknode('TRY')
+  let node.ea = self.ea
+  let node.catch = []
+  let node.finally = s:NIL
+  let node.endtry = s:NIL
+  call self.add_node(node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_catch()
-  if self.find_context('^FINALLY$') == 0
+  if self.context.type == 'FINALLY'
     throw self.err('VimLParser: E604: :catch after :finally')
-  elseif self.find_context('^\(TRY\|CATCH\)$') != 0
+  elseif self.context.type != 'TRY' && self.context.type != 'CATCH'
     throw self.err('VimLParser: E603: :catch without :try')
   endif
+  if self.context.type != 'TRY'
+    call self.pop_context()
+  endif
+  let node = self.blocknode('CATCH')
+  let node.ea = self.ea
+  let node.pattern = s:NIL
   call self.skip_white()
-  if self.ends_excmds(self.reader.peek())
-    let pattern = s:NIL
-  else
-    let c = self.reader.get()
-    let [pattern, endc] = self.parse_pattern(c)
+  if !self.ends_excmds(self.reader.peek())
+    let [node.pattern, endc] = self.parse_pattern(self.reader.get())
   endif
-  let ctx = self.pop_context()
-  let [body, _catch, _finally] = ctx.value
-  if ctx.type == 'TRY'
-    let body = ctx.body
-  else
-    let _catch[-1][1] = ctx.body
-  endif
-  call add(_catch, [pattern, []])
-  call self.push_context('CATCH', [body, _catch, _finally])
+  call add(node.parent.catch, node)
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_finally()
-  if self.find_context('^\(TRY\|CATCH\)$') != 0
+  if self.context.type != 'TRY' && self.context.type != 'CATCH'
     throw self.err('VimLParser: E606: :finally without :try')
   endif
-  let ctx = self.pop_context()
-  let [body, _catch, _finally] = ctx.value
-  if ctx.type == 'TRY'
-    let body = ctx.body
-  else
-    let _catch[-1][1] = ctx.body
+  if self.context.type != 'TRY'
+    call self.pop_context()
   endif
-  call self.push_context('FINALLY', [body, _catch, _finally])
+  let node = self.blocknode('FINALLY')
+  let node.ea = self.ea
+  let node.parent.finally = node
+  call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endtry()
-  if self.find_context('^\(TRY\|CATCH\|FINALLY\)$') != 0
+  if self.context.type != 'TRY' && self.context.type != 'CATCH' && self.context.type != 'FINALLY'
     throw self.err('VimLParser: E602: :endtry without :try')
   endif
-  let ctx = self.pop_context()
-  let [body, _catch, _finally] = ctx.value
-  if ctx.type == 'TRY'
-    let body = ctx.body
-  elseif ctx.type == 'CATCH'
-    let _catch[-1][1] = ctx.body
-  else
-    unlet _finally
-    let _finally = ctx.body
+  if self.context.type != 'TRY'
+    call self.pop_context()
   endif
-  let node = self.node('TRY', [body, _catch, _finally])
-  call self.add_node(node)
+  let node = self.exnode('ENDTRY')
+  let node.ea = self.ea
+  let node.parent.endtry = node
+  call self.pop_context()
 endfunction
 
 function s:VimLParser.parse_cmd_throw()
-  let expr1 = self.parse_expr()
-  let node = self.node('THROW', expr1)
+  let node = self.exnode('THROW')
+  let node.ea = self.ea
+  let node.arg = self.parse_expr()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echo()
-  let args = self.parse_exprlist()
-  let node = self.node('ECHO', args)
+  let node = self.exnode('ECHO')
+  let node.ea = self.ea
+  let node.args = self.parse_exprlist()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echon()
-  let args = self.parse_exprlist()
-  let node = self.node('ECHON', args)
+  let node = self.exnode('ECHON')
+  let node.ea = self.ea
+  let node.args = self.parse_exprlist()
   call self.add_node(node)
 endfunction
 
@@ -1135,26 +1173,31 @@ function s:VimLParser.parse_cmd_echohl()
   while !self.ends_excmds(self.reader.peek())
     let name .= self.reader.get()
   endwhile
-  let expr = self.node('STRING', '"' . escape(name, '\"') . '"')
-  let node = self.node('ECHOHL', expr)
+  let expr = self.exprnode('STRING', '"' . escape(name, '\"') . '"')
+  let node = self.exnode('ECHOHL')
+  let node.ea = self.ea
+  let node.name = expr
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echomsg()
-  let args = self.parse_exprlist()
-  let node = self.node('ECHOMSG', args)
+  let node = self.exnode('ECHOMSG')
+  let node.ea = self.ea
+  let node.args = self.parse_exprlist()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echoerr()
-  let args = self.parse_exprlist()
-  let node = self.node('ECHOERR', args)
+  let node = self.exnode('ECHOERR')
+  let node.ea = self.ea
+  let node.args = self.parse_exprlist()
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_execute()
-  let args = self.parse_exprlist()
-  let node = self.node('EXECUTE', args)
+  let node = self.exnode('EXECUTE')
+  let node.ea = self.ea
+  let node.args = self.parse_exprlist()
   call self.add_node(node)
 endfunction
 
@@ -1186,6 +1229,21 @@ function s:VimLParser.parse_lvalue()
     return node
   endif
   throw self.err('VimLParser: lvalue error: %s', node.value)
+endfunction
+
+function s:VimLParser.parse_lvaluelist()
+  let args = []
+  let node = self.parse_expr()
+  call add(args, node)
+  while 1
+    call self.skip_white()
+    if self.ends_excmds(self.reader.peek())
+      break
+    endif
+    let node = self.parse_lvalue()
+    call add(args, node)
+  endwhile
+  return args
 endfunction
 
 " FIXME:
@@ -2887,163 +2945,163 @@ function s:Compiler.decindent()
   call remove(self.indent, 0)
 endfunction
 
-function s:Compiler.compile(ast)
-  if a:ast.type == 'TOPLEVEL'
-    return self.compile_toplevel(a:ast)
-  elseif a:ast.type == 'COMMENT'
-    return self.compile_comment(a:ast)
-  elseif a:ast.type == 'FUNCTION'
-    return self.compile_function(a:ast)
-  elseif a:ast.type == 'DELFUNCTION'
-    return self.compile_delfunction(a:ast)
-  elseif a:ast.type == 'RETURN'
-    return self.compile_return(a:ast)
-  elseif a:ast.type == 'EXCALL'
-    return self.compile_excall(a:ast)
-  elseif a:ast.type == 'LET'
-    return self.compile_let(a:ast)
-  elseif a:ast.type == 'UNLET'
-    return self.compile_unlet(a:ast)
-  elseif a:ast.type == 'LOCKVAR'
-    return self.compile_lockvar(a:ast)
-  elseif a:ast.type == 'UNLOCKVAR'
-    return self.compile_unlockvar(a:ast)
-  elseif a:ast.type == 'IF'
-    return self.compile_if(a:ast)
-  elseif a:ast.type == 'WHILE'
-    return self.compile_while(a:ast)
-  elseif a:ast.type == 'FOR'
-    return self.compile_for(a:ast)
-  elseif a:ast.type == 'CONTINUE'
-    return self.compile_continue(a:ast)
-  elseif a:ast.type == 'BREAK'
-    return self.compile_break(a:ast)
-  elseif a:ast.type == 'TRY'
-    return self.compile_try(a:ast)
-  elseif a:ast.type == 'THROW'
-    return self.compile_throw(a:ast)
-  elseif a:ast.type == 'ECHO'
-    return self.compile_echo(a:ast)
-  elseif a:ast.type == 'ECHON'
-    return self.compile_echon(a:ast)
-  elseif a:ast.type == 'ECHOHL'
-    return self.compile_echohl(a:ast)
-  elseif a:ast.type == 'ECHOMSG'
-    return self.compile_echomsg(a:ast)
-  elseif a:ast.type == 'ECHOERR'
-    return self.compile_echoerr(a:ast)
-  elseif a:ast.type == 'EXECUTE'
-    return self.compile_execute(a:ast)
-  elseif a:ast.type == 'CONDEXP'
-    return self.compile_condexp(a:ast)
-  elseif a:ast.type == 'LOGOR'
-    return self.compile_logor(a:ast)
-  elseif a:ast.type == 'LOGAND'
-    return self.compile_logand(a:ast)
-  elseif a:ast.type == 'EQEQQ'
-    return self.compile_eqeqq(a:ast)
-  elseif a:ast.type == 'EQEQH'
-    return self.compile_eqeqh(a:ast)
-  elseif a:ast.type == 'NOTEQQ'
-    return self.compile_noteqq(a:ast)
-  elseif a:ast.type == 'NOTEQH'
-    return self.compile_noteqh(a:ast)
-  elseif a:ast.type == 'GTEQQ'
-    return self.compile_gteqq(a:ast)
-  elseif a:ast.type == 'GTEQH'
-    return self.compile_gteqh(a:ast)
-  elseif a:ast.type == 'LTEQQ'
-    return self.compile_lteqq(a:ast)
-  elseif a:ast.type == 'LTEQH'
-    return self.compile_lteqh(a:ast)
-  elseif a:ast.type == 'EQTILDQ'
-    return self.compile_eqtildq(a:ast)
-  elseif a:ast.type == 'EQTILDH'
-    return self.compile_eqtildh(a:ast)
-  elseif a:ast.type == 'NOTTILDQ'
-    return self.compile_nottildq(a:ast)
-  elseif a:ast.type == 'NOTTILDH'
-    return self.compile_nottildh(a:ast)
-  elseif a:ast.type == 'GTQ'
-    return self.compile_gtq(a:ast)
-  elseif a:ast.type == 'GTH'
-    return self.compile_gth(a:ast)
-  elseif a:ast.type == 'LTQ'
-    return self.compile_ltq(a:ast)
-  elseif a:ast.type == 'LTH'
-    return self.compile_lth(a:ast)
-  elseif a:ast.type == 'EQEQ'
-    return self.compile_eqeq(a:ast)
-  elseif a:ast.type == 'NOTEQ'
-    return self.compile_noteq(a:ast)
-  elseif a:ast.type == 'GTEQ'
-    return self.compile_gteq(a:ast)
-  elseif a:ast.type == 'LTEQ'
-    return self.compile_lteq(a:ast)
-  elseif a:ast.type == 'EQTILD'
-    return self.compile_eqtild(a:ast)
-  elseif a:ast.type == 'NOTTILD'
-    return self.compile_nottild(a:ast)
-  elseif a:ast.type == 'GT'
-    return self.compile_gt(a:ast)
-  elseif a:ast.type == 'LT'
-    return self.compile_lt(a:ast)
-  elseif a:ast.type == 'ISQ'
-    return self.compile_isq(a:ast)
-  elseif a:ast.type == 'ISH'
-    return self.compile_ish(a:ast)
-  elseif a:ast.type == 'ISNOTQ'
-    return self.compile_isnotq(a:ast)
-  elseif a:ast.type == 'ISNOTH'
-    return self.compile_isnoth(a:ast)
-  elseif a:ast.type == 'IS'
-    return self.compile_is(a:ast)
-  elseif a:ast.type == 'ISNOT'
-    return self.compile_isnot(a:ast)
-  elseif a:ast.type == 'ADD'
-    return self.compile_add(a:ast)
-  elseif a:ast.type == 'SUB'
-    return self.compile_sub(a:ast)
-  elseif a:ast.type == 'CONCAT'
-    return self.compile_concat(a:ast)
-  elseif a:ast.type == 'MUL'
-    return self.compile_mul(a:ast)
-  elseif a:ast.type == 'DIV'
-    return self.compile_div(a:ast)
-  elseif a:ast.type == 'MOD'
-    return self.compile_mod(a:ast)
-  elseif a:ast.type == 'NOT'
-    return self.compile_not(a:ast)
-  elseif a:ast.type == 'PLUS'
-    return self.compile_plus(a:ast)
-  elseif a:ast.type == 'MINUS'
-    return self.compile_minus(a:ast)
-  elseif a:ast.type == 'INDEX'
-    return self.compile_index(a:ast)
-  elseif a:ast.type == 'SLICE'
-    return self.compile_slice(a:ast)
-  elseif a:ast.type == 'DOT'
-    return self.compile_dot(a:ast)
-  elseif a:ast.type == 'CALL'
-    return self.compile_call(a:ast)
-  elseif a:ast.type == 'NUMBER'
-    return self.compile_number(a:ast)
-  elseif a:ast.type == 'STRING'
-    return self.compile_string(a:ast)
-  elseif a:ast.type == 'LIST'
-    return self.compile_list(a:ast)
-  elseif a:ast.type == 'DICT'
-    return self.compile_dict(a:ast)
-  elseif a:ast.type == 'OPTION'
-    return self.compile_option(a:ast)
-  elseif a:ast.type == 'IDENTIFIER'
-    return self.compile_identifier(a:ast)
-  elseif a:ast.type == 'ENV'
-    return self.compile_env(a:ast)
-  elseif a:ast.type == 'REG'
-    return self.compile_reg(a:ast)
+function s:Compiler.compile(node)
+  if a:node.type == 'TOPLEVEL'
+    return self.compile_toplevel(a:node)
+  elseif a:node.type == 'COMMENT'
+    return self.compile_comment(a:node)
+  elseif a:node.type == 'FUNCTION'
+    return self.compile_function(a:node)
+  elseif a:node.type == 'DELFUNCTION'
+    return self.compile_delfunction(a:node)
+  elseif a:node.type == 'RETURN'
+    return self.compile_return(a:node)
+  elseif a:node.type == 'EXCALL'
+    return self.compile_excall(a:node)
+  elseif a:node.type == 'LET'
+    return self.compile_let(a:node)
+  elseif a:node.type == 'UNLET'
+    return self.compile_unlet(a:node)
+  elseif a:node.type == 'LOCKVAR'
+    return self.compile_lockvar(a:node)
+  elseif a:node.type == 'UNLOCKVAR'
+    return self.compile_unlockvar(a:node)
+  elseif a:node.type == 'IF'
+    return self.compile_if(a:node)
+  elseif a:node.type == 'WHILE'
+    return self.compile_while(a:node)
+  elseif a:node.type == 'FOR'
+    return self.compile_for(a:node)
+  elseif a:node.type == 'CONTINUE'
+    return self.compile_continue(a:node)
+  elseif a:node.type == 'BREAK'
+    return self.compile_break(a:node)
+  elseif a:node.type == 'TRY'
+    return self.compile_try(a:node)
+  elseif a:node.type == 'THROW'
+    return self.compile_throw(a:node)
+  elseif a:node.type == 'ECHO'
+    return self.compile_echo(a:node)
+  elseif a:node.type == 'ECHON'
+    return self.compile_echon(a:node)
+  elseif a:node.type == 'ECHOHL'
+    return self.compile_echohl(a:node)
+  elseif a:node.type == 'ECHOMSG'
+    return self.compile_echomsg(a:node)
+  elseif a:node.type == 'ECHOERR'
+    return self.compile_echoerr(a:node)
+  elseif a:node.type == 'EXECUTE'
+    return self.compile_execute(a:node)
+  elseif a:node.type == 'CONDEXP'
+    return self.compile_condexp(a:node)
+  elseif a:node.type == 'LOGOR'
+    return self.compile_logor(a:node)
+  elseif a:node.type == 'LOGAND'
+    return self.compile_logand(a:node)
+  elseif a:node.type == 'EQEQQ'
+    return self.compile_eqeqq(a:node)
+  elseif a:node.type == 'EQEQH'
+    return self.compile_eqeqh(a:node)
+  elseif a:node.type == 'NOTEQQ'
+    return self.compile_noteqq(a:node)
+  elseif a:node.type == 'NOTEQH'
+    return self.compile_noteqh(a:node)
+  elseif a:node.type == 'GTEQQ'
+    return self.compile_gteqq(a:node)
+  elseif a:node.type == 'GTEQH'
+    return self.compile_gteqh(a:node)
+  elseif a:node.type == 'LTEQQ'
+    return self.compile_lteqq(a:node)
+  elseif a:node.type == 'LTEQH'
+    return self.compile_lteqh(a:node)
+  elseif a:node.type == 'EQTILDQ'
+    return self.compile_eqtildq(a:node)
+  elseif a:node.type == 'EQTILDH'
+    return self.compile_eqtildh(a:node)
+  elseif a:node.type == 'NOTTILDQ'
+    return self.compile_nottildq(a:node)
+  elseif a:node.type == 'NOTTILDH'
+    return self.compile_nottildh(a:node)
+  elseif a:node.type == 'GTQ'
+    return self.compile_gtq(a:node)
+  elseif a:node.type == 'GTH'
+    return self.compile_gth(a:node)
+  elseif a:node.type == 'LTQ'
+    return self.compile_ltq(a:node)
+  elseif a:node.type == 'LTH'
+    return self.compile_lth(a:node)
+  elseif a:node.type == 'EQEQ'
+    return self.compile_eqeq(a:node)
+  elseif a:node.type == 'NOTEQ'
+    return self.compile_noteq(a:node)
+  elseif a:node.type == 'GTEQ'
+    return self.compile_gteq(a:node)
+  elseif a:node.type == 'LTEQ'
+    return self.compile_lteq(a:node)
+  elseif a:node.type == 'EQTILD'
+    return self.compile_eqtild(a:node)
+  elseif a:node.type == 'NOTTILD'
+    return self.compile_nottild(a:node)
+  elseif a:node.type == 'GT'
+    return self.compile_gt(a:node)
+  elseif a:node.type == 'LT'
+    return self.compile_lt(a:node)
+  elseif a:node.type == 'ISQ'
+    return self.compile_isq(a:node)
+  elseif a:node.type == 'ISH'
+    return self.compile_ish(a:node)
+  elseif a:node.type == 'ISNOTQ'
+    return self.compile_isnotq(a:node)
+  elseif a:node.type == 'ISNOTH'
+    return self.compile_isnoth(a:node)
+  elseif a:node.type == 'IS'
+    return self.compile_is(a:node)
+  elseif a:node.type == 'ISNOT'
+    return self.compile_isnot(a:node)
+  elseif a:node.type == 'ADD'
+    return self.compile_add(a:node)
+  elseif a:node.type == 'SUB'
+    return self.compile_sub(a:node)
+  elseif a:node.type == 'CONCAT'
+    return self.compile_concat(a:node)
+  elseif a:node.type == 'MUL'
+    return self.compile_mul(a:node)
+  elseif a:node.type == 'DIV'
+    return self.compile_div(a:node)
+  elseif a:node.type == 'MOD'
+    return self.compile_mod(a:node)
+  elseif a:node.type == 'NOT'
+    return self.compile_not(a:node)
+  elseif a:node.type == 'PLUS'
+    return self.compile_plus(a:node)
+  elseif a:node.type == 'MINUS'
+    return self.compile_minus(a:node)
+  elseif a:node.type == 'INDEX'
+    return self.compile_index(a:node)
+  elseif a:node.type == 'SLICE'
+    return self.compile_slice(a:node)
+  elseif a:node.type == 'DOT'
+    return self.compile_dot(a:node)
+  elseif a:node.type == 'CALL'
+    return self.compile_call(a:node)
+  elseif a:node.type == 'NUMBER'
+    return self.compile_number(a:node)
+  elseif a:node.type == 'STRING'
+    return self.compile_string(a:node)
+  elseif a:node.type == 'LIST'
+    return self.compile_list(a:node)
+  elseif a:node.type == 'DICT'
+    return self.compile_dict(a:node)
+  elseif a:node.type == 'OPTION'
+    return self.compile_option(a:node)
+  elseif a:node.type == 'IDENTIFIER'
+    return self.compile_identifier(a:node)
+  elseif a:node.type == 'ENV'
+    return self.compile_env(a:node)
+  elseif a:node.type == 'REG'
+    return self.compile_reg(a:node)
   else
-    throw self.err('Compiler: unknown node: %s', string(a:ast))
+    throw self.err('Compiler: unknown node: %s', string(a:node))
   endif
 endfunction
 
@@ -3065,162 +3123,141 @@ function s:Compiler.compile_begin(body)
   endif
 endfunction
 
-function s:Compiler.compile_toplevel(ast)
-  let body = a:ast.value
-  call self.compile_body(body)
+function s:Compiler.compile_toplevel(node)
+  call self.compile_body(a:node.body)
   return self.lines
 endfunction
 
-function s:Compiler.compile_comment(ast)
-  let v = a:ast.value
-  call self.out(';%s', v)
+function s:Compiler.compile_comment(node)
+  call self.out(';%s', a:node.str)
 endfunction
 
-function s:Compiler.compile_function(ast)
-  let [_name, args, body] = a:ast.value
-  let name = self.compile(_name)
-  if !empty(args) && args[-1] == '...'
-    let args[-1] = '. ' . args[-1]
+function s:Compiler.compile_function(node)
+  let name = self.compile(a:node.name)
+  if !empty(a:node.args) && a:node.args[-1] == '...'
+    let a:node.args[-1] = '. ...'
   endif
-  call self.out('(function %s (%s)', name, join(args, ' '))
+  call self.out('(function %s (%s)', name, join(a:node.args, ' '))
   call self.incindent('  ')
-  call self.compile_body(body)
+  call self.compile_body(a:node.body)
   call self.out(')')
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_delfunction(ast)
-  let _name = a:ast.value
-  let name = self.compile(_name)
-  call self.out('(delfunction %s)', name)
+function s:Compiler.compile_delfunction(node)
+  call self.out('(delfunction %s)', self.compile(a:node.name))
 endfunction
 
-function s:Compiler.compile_return(ast)
-  let _arg = a:ast.value
-  if _arg is s:NIL
+function s:Compiler.compile_return(node)
+  if a:node.arg is s:NIL
     call self.out('(return)')
   else
-    let arg = self.compile(_arg)
-    call self.out('(return %s)', arg)
+    call self.out('(return %s)', self.compile(a:node.arg))
   endif
 endfunction
 
-function s:Compiler.compile_excall(ast)
-  let expr = a:ast.value
-  call self.out('(call %s)', self.compile(expr))
+function s:Compiler.compile_excall(node)
+  call self.out('(call %s)', self.compile(a:node.expr))
 endfunction
 
-function s:Compiler.compile_let(ast)
-  let [lhs, op, _rhs] = a:ast.value
-  let args = join(map(copy(lhs.args), 'self.compile(v:val)'), ' ')
-  if lhs.rest isnot s:NIL
-    let args .= ' . ' . self.compile(lhs.rest)
+function s:Compiler.compile_let(node)
+  let lhs = join(map(a:node.lhs.args, 'self.compile(v:val)'), ' ')
+  if a:node.lhs.rest isnot s:NIL
+    let lhs .= ' . ' . self.compile(a:node.lhs.rest)
   endif
-  let rhs = self.compile(_rhs)
-  call self.out('(let %s (%s) %s)', op, args, rhs)
+  let rhs = self.compile(a:node.rhs)
+  call self.out('(let %s (%s) %s)', a:node.op, lhs, rhs)
 endfunction
 
-function s:Compiler.compile_unlet(ast)
-  let args = a:ast.value
-  call map(args, 'self.compile(v:val)')
+function s:Compiler.compile_unlet(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
   call self.out('(unlet %s)', join(args, ' '))
 endfunction
 
-function s:Compiler.compile_lockvar(ast)
-  let [depth, args] = a:ast.value
-  call map(args, 'self.compile(v:val)')
-  call self.out('(lockvar %s %s)', depth, join(args, ' '))
+function s:Compiler.compile_lockvar(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
+  call self.out('(lockvar %s %s)', a:node.depth, join(args, ' '))
 endfunction
 
-function s:Compiler.compile_unlockvar(ast)
-  let [depth, args] = a:ast.value
-  call map(args, 'self.compile(v:val)')
-  call self.out('(unlockvar %s %s)', depth, join(args, ' '))
+function s:Compiler.compile_unlockvar(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
+  call self.out('(unlockvar %s %s)', a:node.depth, join(args, ' '))
 endfunction
 
-function s:Compiler.compile_if(ast)
-  let clauses = a:ast.value
-  let [cond, body] = clauses[0]
-  call self.out('(if %s', self.compile(cond))
+function s:Compiler.compile_if(node)
+  call self.out('(if %s', self.compile(a:node.cond))
   call self.incindent('  ')
-  call self.compile_begin(body)
+  call self.compile_begin(a:node.body)
   call self.decindent()
-  for i in range(1, len(clauses) - 1)
-    unlet! cond body
-    let [cond, body] = clauses[i]
-    if cond isnot s:NIL
-      call self.out(' elseif %s', self.compile(cond))
-      call self.incindent('  ')
-      call self.compile_begin(body)
-      call self.decindent()
-    else
-      call self.out(' else')
-      call self.incindent('  ')
-      call self.compile_begin(body)
-      call self.decindent()
-    endif
+  for node in a:node.elseif
+    call self.out(' elseif %s', self.compile(node.cond))
+    call self.incindent('  ')
+    call self.compile_begin(node.body)
+    call self.decindent()
   endfor
-  call self.incindent('  ')
-  call self.out(')')
-  call self.decindent()
-endfunction
-
-function s:Compiler.compile_while(ast)
-  let [cond, body] = a:ast.value
-  call self.out('(while %s', self.compile(cond))
-  call self.incindent('  ')
-  call self.compile_body(body)
-  call self.out(')')
-  call self.decindent()
-endfunction
-
-function s:Compiler.compile_for(ast)
-  let [lhs, _rhs, body] = a:ast.value
-  let args = join(map(copy(lhs.args), 'self.compile(v:val)'), ' ')
-  if lhs.rest isnot s:NIL
-    let args .= ' . ' . self.compile(lhs.rest)
+  if a:node.else isnot s:NIL
+    call self.out(' else')
+    call self.incindent('  ')
+    call self.compile_begin(a:node.else.body)
+    call self.decindent()
   endif
-  let rhs = self.compile(_rhs)
-  call self.out('(for (%s) %s', args, rhs)
   call self.incindent('  ')
-  call self.compile_body(body)
   call self.out(')')
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_continue(ast)
+function s:Compiler.compile_while(node)
+  call self.out('(while %s', self.compile(a:node.cond))
+  call self.incindent('  ')
+  call self.compile_body(a:node.body)
+  call self.out(')')
+  call self.decindent()
+endfunction
+
+function s:Compiler.compile_for(node)
+  let lhs = join(map(a:node.lhs.args, 'self.compile(v:val)'), ' ')
+  if a:node.lhs.rest isnot s:NIL
+    let lhs .= ' . ' . self.compile(a:node.lhs.rest)
+  endif
+  let rhs = self.compile(a:node.rhs)
+  call self.out('(for (%s) %s', lhs, rhs)
+  call self.incindent('  ')
+  call self.compile_body(a:node.body)
+  call self.out(')')
+  call self.decindent()
+endfunction
+
+function s:Compiler.compile_continue(node)
   call self.out('(continue)')
 endfunction
 
-function s:Compiler.compile_break(ast)
+function s:Compiler.compile_break(node)
   call self.out('(break)')
 endfunction
 
-function s:Compiler.compile_try(ast)
-  let [body, _catch, _finally] = a:ast.value
+function s:Compiler.compile_try(node)
   call self.out('(try')
   call self.incindent('  ')
-  call self.compile_begin(body)
-  for [pattern, body] in _catch
-    if pattern isnot s:NIL
-      call self.out('(#/%s/', pattern)
+  call self.compile_begin(a:node.body)
+  for node in a:node.catch
+    if node.pattern isnot s:NIL
+      call self.out('(#/%s/', node.pattern)
       call self.incindent('  ')
-      call self.compile_body(body)
+      call self.compile_body(node.body)
       call self.out(')')
       call self.decindent()
     else
       call self.out('(else')
       call self.incindent('  ')
-      call self.compile_body(body)
+      call self.compile_body(node.body)
       call self.out(')')
       call self.decindent()
     endif
-    unlet pattern
   endfor
-  if _finally isnot s:NIL
+  if a:node.finally isnot s:NIL
     call self.out('(finally')
     call self.incindent('  ')
-    call self.compile_body(_finally)
+    call self.compile_body(a:node.finally.body)
     call self.out(')')
     call self.decindent()
   endif
@@ -3228,263 +3265,256 @@ function s:Compiler.compile_try(ast)
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_throw(ast)
-  let expr1 = a:ast.value
-  call self.out('(throw %s)', self.compile(expr1))
+function s:Compiler.compile_throw(node)
+  call self.out('(throw %s)', self.compile(a:node.arg))
 endfunction
 
-function s:Compiler.compile_echo(ast)
-  let args = a:ast.value
-  call map(args, 'self.compile(v:val)')
+function s:Compiler.compile_echo(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
   call self.out('(echo %s)', join(args, ' '))
 endfunction
 
-function s:Compiler.compile_echon(ast)
-  let args = a:ast.value
-  call map(args, 'self.compile(v:val)')
+function s:Compiler.compile_echon(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
   call self.out('(echon %s)', join(args, ' '))
 endfunction
 
-function s:Compiler.compile_echohl(ast)
-  let name = a:ast.value
-  call self.out('(echohl %s)', self.compile(name))
+function s:Compiler.compile_echohl(node)
+  call self.out('(echohl %s)', self.compile(a:node.name))
 endfunction
 
-function s:Compiler.compile_echomsg(ast)
-  let args = a:ast.value
-  call map(args, 'self.compile(v:val)')
+function s:Compiler.compile_echomsg(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
   call self.out('(echomsg %s)', join(args, ' '))
 endfunction
 
-function s:Compiler.compile_echoerr(ast)
-  let args = a:ast.value
-  call map(args, 'self.compile(v:val)')
+function s:Compiler.compile_echoerr(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
   call self.out('(echoerr %s)', join(args, ' '))
 endfunction
 
-function s:Compiler.compile_execute(ast)
-  let args = a:ast.value
-  call map(args, 'self.compile(v:val)')
+function s:Compiler.compile_execute(node)
+  let args = map(a:node.args, 'self.compile(v:val)')
   call self.out('(execute %s)', join(args, ' '))
 endfunction
 
-function s:Compiler.compile_condexp(ast)
-  let [cond, t, e] = a:ast.value
+function s:Compiler.compile_condexp(node)
+  let [cond, t, e] = a:node.value
   return printf('(?: %s %s %s)', self.compile(cond), self.compile(t), self.compile(e))
 endfunction
 
-function s:Compiler.compile_logor(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_logor(node)
+  let [lhs, rhs] = a:node.value
   return printf('(|| %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_logand(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_logand(node)
+  let [lhs, rhs] = a:node.value
   return printf('(&& %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_eqeqq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_eqeqq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(==? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_eqeqh(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_eqeqh(node)
+  let [lhs, rhs] = a:node.value
   return printf('(==# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_noteqq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_noteqq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(!=? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_noteqh(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_noteqh(node)
+  let [lhs, rhs] = a:node.value
   return printf('(!=# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_gteqq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_gteqq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(>=? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_gteqh(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_gteqh(node)
+  let [lhs, rhs] = a:node.value
   return printf('(>=# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_lteqq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_lteqq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(<=? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_lteqh(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_lteqh(node)
+  let [lhs, rhs] = a:node.value
   return printf('(<=# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_eqtildq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_eqtildq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(=~? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_eqtildh(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_eqtildh(node)
+  let [lhs, rhs] = a:node.value
   return printf('(=~# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_nottildq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_nottildq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(!~? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_nottildh(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_nottildh(node)
+  let [lhs, rhs] = a:node.value
   return printf('(!~# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_gtq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_gtq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(>? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_gth(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_gth(node)
+  let [lhs, rhs] = a:node.value
   return printf('(># %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_ltq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_ltq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(<? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_lth(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_lth(node)
+  let [lhs, rhs] = a:node.value
   return printf('(<# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_eqeq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_eqeq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(== %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_noteq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_noteq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(!= %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_gteq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_gteq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(>= %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_lteq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_lteq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(<= %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_eqtild(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_eqtild(node)
+  let [lhs, rhs] = a:node.value
   return printf('(=~ %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_nottild(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_nottild(node)
+  let [lhs, rhs] = a:node.value
   return printf('(!~ %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_gt(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_gt(node)
+  let [lhs, rhs] = a:node.value
   return printf('(> %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_lt(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_lt(node)
+  let [lhs, rhs] = a:node.value
   return printf('(< %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_isq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_isq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(is? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_ish(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_ish(node)
+  let [lhs, rhs] = a:node.value
   return printf('(is# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_isnotq(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_isnotq(node)
+  let [lhs, rhs] = a:node.value
   return printf('(isnot? %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_isnoth(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_isnoth(node)
+  let [lhs, rhs] = a:node.value
   return printf('(isnot# %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_is(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_is(node)
+  let [lhs, rhs] = a:node.value
   return printf('(is %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_isnot(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_isnot(node)
+  let [lhs, rhs] = a:node.value
   return printf('(isnot %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_add(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_add(node)
+  let [lhs, rhs] = a:node.value
   return printf('(+ %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_sub(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_sub(node)
+  let [lhs, rhs] = a:node.value
   return printf('(- %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_concat(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_concat(node)
+  let [lhs, rhs] = a:node.value
   return printf('(concat %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_mul(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_mul(node)
+  let [lhs, rhs] = a:node.value
   return printf('(* %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_div(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_div(node)
+  let [lhs, rhs] = a:node.value
   return printf('(/ %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_mod(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_mod(node)
+  let [lhs, rhs] = a:node.value
   return printf('(%% %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_not(ast)
-  let lhs = a:ast.value
+function s:Compiler.compile_not(node)
+  let lhs = a:node.value
   return printf('(! %s)', self.compile(lhs))
 endfunction
 
-function s:Compiler.compile_plus(ast)
-  let lhs = a:ast.value
+function s:Compiler.compile_plus(node)
+  let lhs = a:node.value
   return printf('(+ %s)', self.compile(lhs))
 endfunction
 
-function s:Compiler.compile_minus(ast)
-  let lhs = a:ast.value
+function s:Compiler.compile_minus(node)
+  let lhs = a:node.value
   return printf('(- %s)', self.compile(lhs))
 endfunction
 
-function s:Compiler.compile_index(ast)
-  let [v, s1] = a:ast.value
+function s:Compiler.compile_index(node)
+  let [v, s1] = a:node.value
   return printf('(index %s %s)', self.compile(v), self.compile(s1))
 endfunction
 
-function s:Compiler.compile_slice(ast)
-  let [v, s1, s2] = a:ast.value
+function s:Compiler.compile_slice(node)
+  let [v, s1, s2] = a:node.value
   if s1 is s:NIL
     let t1 = 'nil'
   else
@@ -3498,29 +3528,29 @@ function s:Compiler.compile_slice(ast)
   return printf('(slice %s %s %s)', self.compile(v), t1, t2)
 endfunction
 
-function s:Compiler.compile_dot(ast)
-  let [lhs, rhs] = a:ast.value
+function s:Compiler.compile_dot(node)
+  let [lhs, rhs] = a:node.value
   return printf('(dot %s %s)', self.compile(lhs), self.compile(rhs))
 endfunction
 
-function s:Compiler.compile_call(ast)
-  let [lhs, args] = a:ast.value
+function s:Compiler.compile_call(node)
+  let [lhs, args] = a:node.value
   call map(args, 'self.compile(v:val)')
   return printf('(%s %s)', self.compile(lhs), join(args, ' '))
 endfunction
 
-function s:Compiler.compile_number(ast)
-  let v = a:ast.value
+function s:Compiler.compile_number(node)
+  let v = a:node.value
   return v
 endfunction
 
-function s:Compiler.compile_string(ast)
-  let v = a:ast.value
+function s:Compiler.compile_string(node)
+  let v = a:node.value
   return v
 endfunction
 
-function s:Compiler.compile_list(ast)
-  let list = a:ast.value
+function s:Compiler.compile_list(node)
+  let list = a:node.value
   call map(list, 'self.compile(v:val)')
   if empty(list)
     return '(list)'
@@ -3529,8 +3559,8 @@ function s:Compiler.compile_list(ast)
   endif
 endfunction
 
-function s:Compiler.compile_dict(ast)
-  let dict = a:ast.value
+function s:Compiler.compile_dict(node)
+  let dict = a:node.value
   call map(dict, '"(" . self.compile(v:val[0]) . " " . self.compile(v:val[1]) . ")"')
   if empty(dict)
     return '(dict)'
@@ -3539,13 +3569,13 @@ function s:Compiler.compile_dict(ast)
   endif
 endfunction
 
-function s:Compiler.compile_option(ast)
-  let v = a:ast.value
+function s:Compiler.compile_option(node)
+  let v = a:node.value
   return v
 endfunction
 
-function s:Compiler.compile_identifier(ast)
-  let id = a:ast.value
+function s:Compiler.compile_identifier(node)
+  let id = a:node.value
   let v = ''
   for x in id
     if x.curly
@@ -3557,13 +3587,13 @@ function s:Compiler.compile_identifier(ast)
   return v
 endfunction
 
-function s:Compiler.compile_env(ast)
-  let v = a:ast.value
+function s:Compiler.compile_env(node)
+  let v = a:node.value
   return v
 endfunction
 
-function s:Compiler.compile_reg(ast)
-  let v = a:ast.value
+function s:Compiler.compile_reg(node)
+  let v = a:node.value
   return v
 endfunction
 
