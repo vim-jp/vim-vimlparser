@@ -2111,6 +2111,9 @@ function s:ExprTokenizer.get_keepspace()
     elseif s =~ '^;'
       call self.reader.getn(1)
       return self.token('SEMICOLON', ';')
+    elseif s =~ '^`'
+      call self.reader.getn(1)
+      return self.token('BACKTICK', '`')
     else
       throw self.err('ExprTokenizer: %s', s)
     endif
