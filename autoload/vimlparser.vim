@@ -19,16 +19,18 @@ endfunction
 function! s:numtoname(num)
   let sig = printf("function('%s')", a:num)
   for k in keys(s:)
-    for name in keys(s:[k])
-      if type(s:[k][name]) == type(function('tr')) && string(s:[k][name]) == sig
-        return printf('%s.%s', k, name)
-      endif
-    endfor
+    if type(s:[k]) == type({})
+      for name in keys(s:[k])
+        if type(s:[k][name]) == type(function('tr')) && string(s:[k][name]) == sig
+          return printf('%s.%s', k, name)
+        endif
+      endfor
+    endif
   endfor
   return a:num
 endfunction
 
-let s:NIL = {}
+let s:NIL = []
 
 let s:VimLParser = {}
 
@@ -378,7 +380,7 @@ function s:VimLParser.parse_command()
 
   let self.ea.cmd = self.find_command()
 
-  if self.ea.cmd == s:NIL
+  if self.ea.cmd is s:NIL
     call self.reader.setpos(self.ea.cmdpos)
     throw self.err('VimLParser: E492: Not an editor command: %s', self.reader.peekline())
   endif
@@ -471,14 +473,16 @@ function s:VimLParser.find_command()
 
   for x in self.builtin_commands
     if name =~# x.pat
+      unlet cmd
       let cmd = x
       break
     endif
   endfor
 
   " FIXME: user defined command
-  if (cmd == s:NIL || cmd.name == 'Print') && name =~ '^[A-Z]'
+  if (cmd is s:NIL || cmd.name == 'Print') && name =~ '^[A-Z]'
     let name .= self.read_alnum()
+    unlet cmd
     let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
   endif
 
@@ -2445,6 +2449,7 @@ function s:ExprParser.parse_expr8()
     if token2.type == 'LBRA'
       call self.tokenizer.get()
       let token = self.tokenizer.peek()
+      unlet! e1
       if token.type == 'COLON'
         let e1 = s:NIL
       else
@@ -2453,7 +2458,8 @@ function s:ExprParser.parse_expr8()
       let token = self.tokenizer.peek()
       if token.type == 'RBRA'
         call self.tokenizer.get()
-        if e1 == s:NIL
+        if e1 is s:NIL
+          unlet! e2
           let e2 = s:NIL
           let lhs = self.node('SLICE', [lhs, e1, e2])
         else
@@ -2462,6 +2468,7 @@ function s:ExprParser.parse_expr8()
       elseif token.type == 'COLON'
         call self.tokenizer.get()
         let token = self.tokenizer.peek()
+        unlet! e2
         if token.type == 'RBRA'
           let e2 = s:NIL
         else
@@ -2674,6 +2681,7 @@ function! s:LvalueParser.parse_lv8()
     if token2.type == 'LBRA'
       call self.tokenizer.get()
       let token = self.tokenizer.peek()
+      unlet! e1
       if token.type == 'COLON'
         let e1 = s:NIL
       else
@@ -2682,7 +2690,8 @@ function! s:LvalueParser.parse_lv8()
       let token = self.tokenizer.peek()
       if token.type == 'RBRA'
         call self.tokenizer.get()
-        if e1 == s:NIL
+        if e1 is s:NIL
+          unlet! e2
           let e2 = s:NIL
           let lhs = self.node('SLICE', [lhs, e1, e2])
         else
@@ -2691,6 +2700,7 @@ function! s:LvalueParser.parse_lv8()
       elseif token.type == 'COLON'
         call self.tokenizer.get()
         let token = self.tokenizer.peek()
+        unlet! e2
         if token.type == 'RBRA'
           let e2 = s:NIL
         else
@@ -3162,6 +3172,7 @@ function s:Compiler.compile_if(ast)
   call self.compile_begin(body)
   call self.decindent()
   for i in range(1, len(clauses) - 1)
+    unlet! cond body
     let [cond, body] = clauses[i]
     if cond isnot s:NIL
       call self.out(' elseif %s', self.compile(cond))
