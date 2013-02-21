@@ -20,8 +20,8 @@
 (let -= (a b . c) (list 1 2 3))
 (let .= (a b . c) (list 1 2 3))
 (unlet a b c)
-(lockvar 2 a b c)
-(unlockvar 2 a b c)
+(lockvar 1 a b c)
+(unlockvar 1 a b c)
 (try
   (throw "err")
   (#/err/
