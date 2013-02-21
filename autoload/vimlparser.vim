@@ -153,25 +153,27 @@ function s:VimLParser.parse_one_cmd()
   let self.ea.cmd = {}
   let self.ea.modifiers = []
   let self.ea.range = []
-  let self.ea.comment = ''
 
   if self.reader.peekn(2) == '#!'
     call self.parse_hashbang()
+    call self.reader.get()
     return
   endif
   call self.skip_white_and_colon()
   if self.reader.peekn(1) == ''
-    call self.reader.readline()
+    call self.reader.get()
     return
   endif
   if self.reader.peekn(1) == '"'
     call self.parse_comment()
+    call self.reader.get()
     return
   endif
   let self.ea.linepos = self.reader.getpos()
   call self.parse_command_modifiers()
   call self.parse_range()
   call self.parse_command()
+  call self.parse_trail()
 endfunction
 
 " FIXME:
@@ -370,8 +372,6 @@ function s:VimLParser.parse_command()
   if self.reader.peekn(1) == '' || self.reader.peekn(1) == '"'
     if !empty(self.ea.modifiers) || !empty(self.ea.range)
       call self.parse_cmd_modifier_range()
-    else
-      call self.reader.readline()
     endif
     return
   endif
@@ -491,7 +491,7 @@ endfunction
 
 " TODO:
 function s:VimLParser.parse_hashbang()
-  call self.reader.readline()
+  call self.reader.getn(-1)
 endfunction
 
 " TODO:
@@ -507,7 +507,7 @@ function s:VimLParser.parse_comment()
   if c != '"'
     throw self.err('VimLParser: unexpected character: %s', c)
   endif
-  let s = self.reader.readline()
+  let s = self.reader.getn(-1)
   let node = self.node('COMMENT', s)
   call self.add_node(node)
 endfunction
@@ -522,8 +522,8 @@ function s:VimLParser.parse_trail()
   elseif c == '|'
     call self.reader.get()
   elseif c == '"'
+    call self.parse_comment()
     call self.reader.get()
-    let self.ea.comment = self.reader.readline()
   else
     throw self.err('VimLParser: E488: Trailing characters: %s', c)
   endif
@@ -532,7 +532,6 @@ endfunction
 " modifier or range only command line
 function s:VimLParser.parse_cmd_modifier_range()
   let cmdstr = self.reader.getstr(self.ea.linepos, self.reader.getpos())
-  call self.parse_trail()
   let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
   let node = self.node('EXECUTE', [expr])
   call self.add_node(node)
@@ -580,10 +579,11 @@ function s:VimLParser.separate_nextcmd()
       call self.reader.get()
       let end = self.reader.getpos()
       let nospend = self.reader.getpos()
-      let c = self.reader.get()
+      let c = self.reader.peek()
       if c == '<EOF>' || c == '<EOL>'
         break
       endif
+      call self.reader.get()
     elseif self.reader.peekn(2) == '`=' && self.ea.cmd.flags =~ '\<XFILE\>'
       call self.reader.getn(2)
       call self.parse_expr()
@@ -601,7 +601,6 @@ function s:VimLParser.separate_nextcmd()
       if (!has_cpo_bar || self.ea.cmd.flags !~ '\<USECTRLV\>') && pc == '\'
         call self.reader.get()
       else
-        call self.parse_trail()
         break
       endif
     else
@@ -628,11 +627,12 @@ function s:VimLParser.parse_cmd_append()
     if self.reader.peek() == '<EOF>'
       break
     endif
-    let line = self.reader.readline()
+    let line = self.reader.getn(-1)
     call add(lines, line)
     if line == m
       break
     endif
+    call self.reader.get()
   endwhile
   let cmdstr = join(lines, "\n")
   let expr = self.node('STRING', '"' . escape(cmdstr, '\"') . '"')
@@ -679,11 +679,12 @@ function s:VimLParser.parse_cmd_lua()
       if self.reader.peek() == '<EOF>'
         break
       endif
-      let line = self.reader.readline()
+      let line = self.reader.getn(-1)
       call add(lines, line)
       if line == m
         break
       endif
+      call self.reader.get()
     endwhile
   endif
   let cmdstr = join(lines, "\n")
@@ -810,7 +811,6 @@ function s:VimLParser.parse_cmd_function()
       throw self.err('VimLParser: unexpected token: %s', key)
     endif
   endwhile
-  call self.parse_trail()
   call self.push_context('FUNCTION', [name, args])
 endfunction
 
@@ -822,7 +822,7 @@ function s:VimLParser.parse_cmd_endfunction()
   if self.find_context('^FUNCTION$') != 0
     throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
-  call self.reader.readline()
+  call self.reader.getn(-1)
   let ctx = self.pop_context()
   let [name, args] = ctx.value
   let node = self.node('FUNCTION', [name, args, ctx.body])
@@ -831,7 +831,6 @@ endfunction
 
 function s:VimLParser.parse_cmd_delfunction()
   let name = self.parse_lvalue()
-  call self.parse_trail()
   let node = self.node('DELFUNCTION', name)
   call self.add_node(node)
 endfunction
@@ -847,7 +846,6 @@ function s:VimLParser.parse_cmd_return()
   else
     let arg = self.parse_expr()
   endif
-  call self.parse_trail()
   let node = self.node('RETURN', arg)
   call self.add_node(node)
 endfunction
@@ -862,7 +860,6 @@ function s:VimLParser.parse_cmd_call()
   if expr.type != 'CALL'
     throw self.err('VimLParser: call error: %s', expr.type)
   endif
-  call self.parse_trail()
   let node = self.node('EXCALL', expr)
   call self.add_node(node)
 endfunction
@@ -899,7 +896,6 @@ function s:VimLParser.parse_cmd_let()
     throw 'NOT REACHED'
   endif
   let rhs = self.parse_expr()
-  call self.parse_trail()
   let node = self.node('LET', [lhs, op, rhs])
   call self.add_node(node)
 endfunction
@@ -916,7 +912,6 @@ function s:VimLParser.parse_cmd_unlet()
     let node = self.parse_lvalue()
     call add(args, node)
   endwhile
-  call self.parse_trail()
   let node = self.node('UNLET', args)
   call self.add_node(node)
 endfunction
@@ -939,7 +934,6 @@ function s:VimLParser.parse_cmd_lockvar()
     let node = self.parse_lvalue()
     call add(args, node)
   endwhile
-  call self.parse_trail()
   let node = self.node('LOCKVAR', [depth, args])
   call self.add_node(node)
 endfunction
@@ -962,14 +956,12 @@ function s:VimLParser.parse_cmd_unlockvar()
     let node = self.parse_lvalue()
     call add(args, node)
   endwhile
-  call self.parse_trail()
   let node = self.node('UNLOCKVAR', [depth, args])
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_if()
   let cond = self.parse_expr()
-  call self.parse_trail()
   let clauses = [[cond, []]]
   call self.push_context('IF', clauses)
 endfunction
@@ -979,7 +971,6 @@ function s:VimLParser.parse_cmd_elseif()
     throw self.err('VimLParser: E582: :elseif without :if')
   endif
   let cond = self.parse_expr()
-  call self.parse_trail()
   let ctx = self.pop_context()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
@@ -991,7 +982,6 @@ function s:VimLParser.parse_cmd_else()
   if self.find_context('^\(IF\|ELSEIF\)$') != 0
     throw self.err('VimLParser: E581: :else without :if')
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
@@ -1003,7 +993,6 @@ function s:VimLParser.parse_cmd_endif()
   if self.find_context('^\(IF\|ELSEIF\|ELSE\)$') != 0
     throw self.err('VimLParser: E580: :endif without :if')
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let clauses = ctx.value
   let clauses[-1][1] = ctx.body
@@ -1013,7 +1002,6 @@ endfunction
 
 function s:VimLParser.parse_cmd_while()
   let cond = self.parse_expr()
-  call self.parse_trail()
   call self.push_context('WHILE', cond)
 endfunction
 
@@ -1021,7 +1009,6 @@ function s:VimLParser.parse_cmd_endwhile()
   if self.find_context('^WHILE$') != 0
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let cond = ctx.value
   let node = self.node('WHILE', [cond, ctx.body])
@@ -1035,7 +1022,6 @@ function s:VimLParser.parse_cmd_for()
     throw self.err('VimLParser: Missing "in" after :for')
   endif
   let list = self.parse_expr()
-  call self.parse_trail()
   call self.push_context('FOR', [var, list])
 endfunction
 
@@ -1043,7 +1029,6 @@ function s:VimLParser.parse_cmd_endfor()
   if self.find_context('^FOR$') != 0
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let [var, list] = ctx.value
   let node = self.node('FOR', [var, list, ctx.body])
@@ -1054,7 +1039,6 @@ function s:VimLParser.parse_cmd_continue()
   if self.find_context('^\(WHILE\|FOR\)$') == -1
     throw self.err('VimLParser: E586: :continue without :while or :for')
   endif
-  call self.parse_trail()
   let node = self.node('CONTINUE', s:NIL)
   call self.add_node(node)
 endfunction
@@ -1063,13 +1047,11 @@ function s:VimLParser.parse_cmd_break()
   if self.find_context('^\(WHILE\|FOR\)$') == -1
     throw self.err('VimLParser: E587: :break without :while or :for')
   endif
-  call self.parse_trail()
   let node = self.node('BREAK', s:NIL)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_try()
-  call self.parse_trail()
   let [body, _catch, _finally] = [[], [], s:NIL]
   call self.push_context('TRY', [body, _catch, _finally])
 endfunction
@@ -1087,7 +1069,6 @@ function s:VimLParser.parse_cmd_catch()
     let c = self.reader.get()
     let [pattern, endc] = self.parse_pattern(c)
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
   if ctx.type == 'TRY'
@@ -1103,7 +1084,6 @@ function s:VimLParser.parse_cmd_finally()
   if self.find_context('^\(TRY\|CATCH\)$') != 0
     throw self.err('VimLParser: E606: :finally without :try')
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
   if ctx.type == 'TRY'
@@ -1118,7 +1098,6 @@ function s:VimLParser.parse_cmd_endtry()
   if self.find_context('^\(TRY\|CATCH\|FINALLY\)$') != 0
     throw self.err('VimLParser: E602: :endtry without :try')
   endif
-  call self.parse_trail()
   let ctx = self.pop_context()
   let [body, _catch, _finally] = ctx.value
   if ctx.type == 'TRY'
@@ -1135,21 +1114,18 @@ endfunction
 
 function s:VimLParser.parse_cmd_throw()
   let expr1 = self.parse_expr()
-  call self.parse_trail()
   let node = self.node('THROW', expr1)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echo()
   let args = self.parse_exprlist()
-  call self.parse_trail()
   let node = self.node('ECHO', args)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echon()
   let args = self.parse_exprlist()
-  call self.parse_trail()
   let node = self.node('ECHON', args)
   call self.add_node(node)
 endfunction
@@ -1159,7 +1135,6 @@ function s:VimLParser.parse_cmd_echohl()
   while !self.ends_excmds(self.reader.peek())
     let name .= self.reader.get()
   endwhile
-  call self.parse_trail()
   let expr = self.node('STRING', '"' . escape(name, '\"') . '"')
   let node = self.node('ECHOHL', expr)
   call self.add_node(node)
@@ -1167,21 +1142,18 @@ endfunction
 
 function s:VimLParser.parse_cmd_echomsg()
   let args = self.parse_exprlist()
-  call self.parse_trail()
   let node = self.node('ECHOMSG', args)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_echoerr()
   let args = self.parse_exprlist()
-  call self.parse_trail()
   let node = self.node('ECHOERR', args)
   call self.add_node(node)
 endfunction
 
 function s:VimLParser.parse_cmd_execute()
   let args = self.parse_exprlist()
-  call self.parse_trail()
   let node = self.node('EXECUTE', args)
   call self.add_node(node)
 endfunction
@@ -2815,14 +2787,16 @@ function s:StringReader.peekn(n)
 endfunction
 
 function s:StringReader.getn(n)
+  let n = a:n
   let r = ''
-  for i in range(a:n)
-    let c = self.get()
+  while n != 0
+    let c = self.peek()
     if c == '<EOF>' || c == '<EOL>'
       break
     endif
-    let r .= c
-  endfor
+    let r .= self.get()
+    let n -= 1
+  endwhile
   return r
 endfunction
 
