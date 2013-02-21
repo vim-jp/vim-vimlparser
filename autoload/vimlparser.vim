@@ -562,13 +562,20 @@ endfunction
 function s:VimLParser.separate_nextcmd()
   call self.skip_vimgrep_pat()
   let pc = ''
+  let end = self.reader.getpos()
+  let nospend = end
   while 1
     let end = self.reader.getpos()
+    if pc !~ '\s'
+      let nospend = end
+    endif
     let c = self.reader.peek()
     if c == '<EOF>' || c == '<EOL>'
       break
     elseif c == "\<C-V>"
       call self.reader.get()
+      let end = self.reader.getpos()
+      let nospend = self.reader.getpos()
       let c = self.reader.get()
       if c == '<EOF>' || c == '<EOL>'
         break
@@ -587,7 +594,7 @@ function s:VimLParser.separate_nextcmd()
           \   && (self.ea.cmd.name != 'redir'
           \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc != '@'))
       let has_cpo_bar = 0 " &cpoptions =~ 'b'
-      if !has_cpo_bar || (self.ea.cmd.flags !~ '\<USECTRLV\>' && pc == '\')
+      if (!has_cpo_bar || self.ea.cmd.flags !~ '\<USECTRLV\>') && pc == '\'
         call self.reader.get()
       else
         call self.parse_trail()
@@ -598,6 +605,9 @@ function s:VimLParser.separate_nextcmd()
     endif
     let pc = c
   endwhile
+  if self.ea.cmd.flags !~ '\<NOTRLCOM\>'
+    let end = nospend
+  endif
   return end
 endfunction
 
