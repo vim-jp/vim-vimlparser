@@ -648,7 +648,9 @@ function s:VimLParser.parse_cmd_common()
 endfunction
 
 function s:VimLParser.separate_nextcmd()
-  call self.skip_vimgrep_pat()
+  if self.ea.cmd.name =~ '^\(vimgrep\|vimgrepadd\|lvimgrep\|lvimgrepadd\)$'
+    call self.skip_vimgrep_pat()
+  endif
   let pc = ''
   let end = self.reader.getpos()
   let nospend = end
@@ -701,6 +703,22 @@ endfunction
 
 " FIXME
 function s:VimLParser.skip_vimgrep_pat()
+  if self.reader.peekn(1) == ''
+    " pass
+  elseif self.isidc(self.reader.peekn(1))
+    " :vimgrep pattern fname
+    call self.readx('\S')
+  else
+    " :vimgrep /pattern/[g][j] fname
+    let c = self.reader.getn(1)
+    let [pattern, endc] = self.parse_pattern(c)
+    if c != endc
+      return
+    endif
+    while self.reader.peekn(1) =~ '[gj]'
+      call self.reader.getn(1)
+    endwhile
+  endif
 endfunction
 
 function s:VimLParser.parse_cmd_append()
@@ -1373,6 +1391,11 @@ endfunction
 
 function s:VimLParser.ends_excmds(c)
   return a:c == '' || a:c == '|' || a:c == '"' || a:c == '<EOF>' || a:c == '<EOL>'
+endfunction
+
+" FIXME:
+function s:VimLParser.isidc(c)
+  return a:c =~ '[0-9A-Za-z_]'
 endfunction
 
 let s:VimLParser.builtin_commands = [
