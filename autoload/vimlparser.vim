@@ -2725,13 +2725,12 @@ function s:ExprParser.parse_expr9()
     return self.node('DICT', dict)
   elseif token.type == 'LPAR'
     call self.tokenizer.get()
-    let e = self.parse_expr1()
+    let expr = self.parse_expr1()
     let token = self.tokenizer.get()
-    if token.type == 'RPAR'
-      return e
-    else
+    if token.type != 'RPAR'
       throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
+    return self.node('NESTING', expr)
   elseif token.type == 'OPTION'
     call self.tokenizer.get()
     return self.node('OPTION', token.value)
@@ -3171,6 +3170,8 @@ function s:Compiler.compile(node)
     return self.compile_list(a:node)
   elseif a:node.type == 'DICT'
     return self.compile_dict(a:node)
+  elseif a:node.type == 'NESTING'
+    return self.compile_nesting(a:node)
   elseif a:node.type == 'OPTION'
     return self.compile_option(a:node)
   elseif a:node.type == 'IDENTIFIER'
@@ -3650,6 +3651,10 @@ function s:Compiler.compile_dict(node)
   else
     return printf('(dict %s)', join(dict, ' '))
   endif
+endfunction
+
+function s:Compiler.compile_nesting(node)
+  return self.compile(a:node.value)
 endfunction
 
 function s:Compiler.compile_option(node)
