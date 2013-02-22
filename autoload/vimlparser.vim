@@ -563,7 +563,32 @@ function s:VimLParser.parse_argopt()
 endfunction
 
 " TODO:
+" +command
 function s:VimLParser.parse_argcmd()
+  if self.reader.peekn(1) == '+'
+    call self.reader.getn(1)
+    if self.reader.peekn(1) == ' '
+      let self.ea.do_ecmd_cmd = '$'
+    else
+      let self.ea.do_ecmd_cmd = self.read_cmdarg()
+    endif
+  endif
+endfunction
+
+function s:VimLParser.read_cmdarg()
+  let r = ''
+  while 1
+    let c = self.reader.peekn(1)
+    if c == '' || c =~ '\s'
+      break
+    endif
+    call self.reader.getn(1)
+    if c == '\'
+      let c = self.reader.getn(1)
+    endif
+    let r .= c
+  endwhile
+  return r
 endfunction
 
 function s:VimLParser.parse_comment()
