@@ -2278,8 +2278,8 @@ function s:ExprParser.err(...)
   return printf('%s: line %d col %d', msg, pos.lnum, pos.col)
 endfunction
 
-function s:ExprParser.node(type, value)
-  return {'type': a:type, 'value': a:value}
+function s:ExprParser.exprnode(type)
+  return {'type': a:type}
 endfunction
 
 function s:ExprParser.parse()
@@ -2292,14 +2292,16 @@ function s:ExprParser.parse_expr1()
   let token = self.tokenizer.peek()
   if token.type == 'QUESTION'
     call self.tokenizer.get()
-    let t = self.parse_expr1()
+    let node = self.exprnode('CONDEXP')
+    let node.cond = lhs
+    let node.then = self.parse_expr1()
     let token = self.tokenizer.peek()
     if token.type != 'COLON'
       throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
     call self.tokenizer.get()
-    let e = self.parse_expr1()
-    let lhs = self.node('CONDEXP', [lhs, t, e])
+    let node.else = self.parse_expr1()
+    let lhs = node
   endif
   return lhs
 endfunction
@@ -2310,8 +2312,10 @@ function s:ExprParser.parse_expr2()
   let token = self.tokenizer.peek()
   while token.type == 'OROR'
     call self.tokenizer.get()
-    let rhs = self.parse_expr3()
-    let lhs = self.node('LOGOR', [lhs, rhs])
+    let node = self.exprnode('LOGOR')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr3()
+    let lhs = node
     let token = self.tokenizer.peek()
   endwhile
   return lhs
@@ -2323,8 +2327,10 @@ function s:ExprParser.parse_expr3()
   let token = self.tokenizer.peek()
   while token.type == 'ANDAND'
     call self.tokenizer.get()
-    let rhs = self.parse_expr4()
-    let lhs = self.node('LOGAND', [lhs, rhs])
+    let node = self.exprnode('LOGAND')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr4()
+    let lhs = node
     let token = self.tokenizer.peek()
   endwhile
   return lhs
@@ -2350,124 +2356,184 @@ function s:ExprParser.parse_expr4()
   let token = self.tokenizer.peek()
   if token.type == 'EQEQQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('EQEQQ', [lhs, rhs])
+    let node = self.exprnode('EQEQQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'EQEQH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('EQEQH', [lhs, rhs])
+    let node = self.exprnode('EQEQH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'NOTEQQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('NOTEQQ', [lhs, rhs])
+    let node = self.exprnode('NOTEQQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'NOTEQH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('NOTEQH', [lhs, rhs])
+    let node = self.exprnode('NOTEQH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'GTEQQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('GTEQQ', [lhs, rhs])
+    let node = self.exprnode('GTEQQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'GTEQH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('GTEQH', [lhs, rhs])
+    let node = self.exprnode('GTEQH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'LTEQQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('LTEQQ', [lhs, rhs])
+    let node = self.exprnode('LTEQQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'LTEQH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('LTEQH', [lhs, rhs])
+    let node = self.exprnode('LTEQH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'EQTILDQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('EQTILDQ', [lhs, rhs])
+    let node = self.exprnode('EQTILDQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'EQTILDH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('EQTILDH', [lhs, rhs])
+    let node = self.exprnode('EQTILDH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'NOTTILDQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('NOTTILDQ', [lhs, rhs])
+    let node = self.exprnode('NOTTILDQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'NOTTILDH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('NOTTILDH', [lhs, rhs])
+    let node = self.exprnode('NOTTILDH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'GTQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('GTQ', [lhs, rhs])
+    let node = self.exprnode('GTQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'GTH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('GTH', [lhs, rhs])
+    let node = self.exprnode('GTH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'LTQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('LTQ', [lhs, rhs])
+    let node = self.exprnode('LTQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'LTH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('LTH', [lhs, rhs])
+    let node = self.exprnode('LTH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'EQEQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('EQEQ', [lhs, rhs])
+    let node = self.exprnode('EQEQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'NOTEQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('NOTEQ', [lhs, rhs])
+    let node = self.exprnode('NOTEQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'GTEQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('GTEQ', [lhs, rhs])
+    let node = self.exprnode('GTEQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'LTEQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('LTEQ', [lhs, rhs])
+    let node = self.exprnode('LTEQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'EQTILD'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('EQTILD', [lhs, rhs])
+    let node = self.exprnode('EQTILD')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'NOTTILD'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('NOTTILD', [lhs, rhs])
+    let node = self.exprnode('NOTTILD')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'GT'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('GT', [lhs, rhs])
+    let node = self.exprnode('GT')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'LT'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('LT', [lhs, rhs])
+    let node = self.exprnode('LT')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'ISH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('ISH', [lhs, rhs])
+    let node = self.exprnode('ISH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'ISQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('ISQ', [lhs, rhs])
+    let node = self.exprnode('ISQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'ISNOTH'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('ISNOTH', [lhs, rhs])
+    let node = self.exprnode('ISNOTH')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'ISNOTQ'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('ISNOTQ', [lhs, rhs])
+    let node = self.exprnode('ISNOTQ')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'IS'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('IS', [lhs, rhs])
+    let node = self.exprnode('IS')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   elseif token.type == 'ISNOT'
     call self.tokenizer.get()
-    let rhs = self.parse_expr5()
-    let lhs = self.node('ISNOT', [lhs, rhs])
+    let node = self.exprnode('ISNOT')
+    let node.lhs = lhs
+    let node.rhs = self.parse_expr5()
+    let lhs = node
   endif
   return lhs
 endfunction
@@ -2481,21 +2547,25 @@ function s:ExprParser.parse_expr5()
     let token = self.tokenizer.peek()
     if token.type == 'PLUS'
       call self.tokenizer.get()
-      let rhs = self.parse_expr6()
-      let lhs = self.node('ADD', [lhs,rhs])
-      continue
+      let node = self.exprnode('ADD')
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr6()
+      let lhs = node
     elseif token.type == 'MINUS'
       call self.tokenizer.get()
-      let rhs = self.parse_expr6()
-      let lhs = self.node('SUB', [lhs, rhs])
-      continue
+      let node = self.exprnode('SUB')
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr6()
+      let lhs = node
     elseif token.type == 'DOT'
       call self.tokenizer.get()
-      let rhs = self.parse_expr6()
-      let lhs = self.node('CONCAT', [lhs, rhs])
-      continue
+      let node = self.exprnode('CONCAT')
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr6()
+      let lhs = node
+    else
+      break
     endif
-    break
   endwhile
   return lhs
 endfunction
@@ -2509,21 +2579,25 @@ function s:ExprParser.parse_expr6()
     let token = self.tokenizer.peek()
     if token.type == 'STAR'
       call self.tokenizer.get()
-      let rhs = self.parse_expr7()
-      let lhs = self.node('MUL', [lhs, rhs])
-      continue
+      let node = self.exprnode('MUL')
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr7()
+      let lhs = node
     elseif token.type == 'SLASH'
       call self.tokenizer.get()
-      let rhs = self.parse_expr7()
-      let lhs = self.node('DIV', [lhs, rhs])
-      continue
+      let node = self.exprnode('DIV')
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr7()
+      let lhs = node
     elseif token.type == 'PER'
       call self.tokenizer.get()
-      let rhs = self.parse_expr7()
-      let lhs = self.node('MOD', [lhs, rhs])
-      continue
+      let node = self.exprnode('MOD')
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr7()
+      let lhs = node
+    else
+      break
     endif
-    break
   endwhile
   return lhs
 endfunction
@@ -2535,19 +2609,20 @@ function s:ExprParser.parse_expr7()
   let token = self.tokenizer.peek()
   if token.type == 'NOT'
     call self.tokenizer.get()
-    let e = self.parse_expr7()
-    return self.node('NOT', e)
-  elseif token.type == 'PLUS'
-    call self.tokenizer.get()
-    let e = self.parse_expr7()
-    return self.node('PLUS', e)
+    let node = self.exprnode('NOT')
+    let node.expr = self.parse_expr7()
   elseif token.type == 'MINUS'
     call self.tokenizer.get()
-    let e = self.parse_expr7()
-    return self.node('MINUS', e)
+    let node = self.exprnode('MINUS')
+    let node.expr = self.parse_expr7()
+  elseif token.type == 'PLUS'
+    call self.tokenizer.get()
+    let node = self.exprnode('PLUS')
+    let node.expr = self.parse_expr7()
   else
-    return self.parse_expr8()
+    let node = self.parse_expr8()
   endif
+  return node
 endfunction
 
 " expr8: expr8[expr1]
@@ -2561,57 +2636,63 @@ function s:ExprParser.parse_expr8()
     let token2 = self.tokenizer.peek_keepspace()
     if token2.type == 'LBRA'
       call self.tokenizer.get()
-      let token = self.tokenizer.peek()
-      unlet! e1
-      if token.type == 'COLON'
-        let e1 = s:NIL
-      else
-        let e1 = self.parse_expr1()
-      endif
-      let token = self.tokenizer.peek()
-      if token.type == 'RBRA'
+      if self.tokenizer.peek().type == 'COLON'
         call self.tokenizer.get()
-        if e1 is s:NIL
-          unlet! e2
-          let e2 = s:NIL
-          let lhs = self.node('SLICE', [lhs, e1, e2])
-        else
-          let lhs = self.node('INDEX', [lhs, e1])
-        endif
-      elseif token.type == 'COLON'
-        call self.tokenizer.get()
+        let node = self.exprnode('SLICE')
+        let node.expr = lhs
+        let node.expr1 = s:NIL
+        let node.expr2 = s:NIL
         let token = self.tokenizer.peek()
-        unlet! e2
-        if token.type == 'RBRA'
-          let e2 = s:NIL
-        else
-          let e2 = self.parse_expr1()
+        if token.type != 'RBRA'
+          let node.expr2 = self.parse_expr1()
         endif
         let token = self.tokenizer.peek()
-        if token.type == 'RBRA'
-          call self.tokenizer.get()
-          let lhs = self.node('SLICE', [lhs, e1, e2])
-        else
+        if token.type != 'RBRA'
           throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
+        call self.tokenizer.get()
       else
-        throw self.err('ExprParser: unexpected token: %s', token.value)
+        let expr1 = self.parse_expr1()
+        if self.tokenizer.peek().type == 'COLON'
+          call self.tokenizer.get()
+          let node = self.exprnode('SLICE')
+          let node.expr = lhs
+          let node.expr1 = expr1
+          let node.expr2 = s:NIL
+          let token = self.tokenizer.peek()
+          if token.type != 'RBRA'
+            let node.expr2 = self.parse_expr1()
+          endif
+          let token = self.tokenizer.peek()
+          if token.type != 'RBRA'
+            throw self.err('ExprParser: unexpected token: %s', token.value)
+          endif
+          call self.tokenizer.get()
+        else
+          let node = self.exprnode('INDEX')
+          let node.expr = lhs
+          let node.expr1 = expr1
+          let token = self.tokenizer.peek()
+          if token.type != 'RBRA'
+            throw self.err('ExprParser: unexpected token: %s', token.value)
+          endif
+          call self.tokenizer.get()
+        endif
       endif
-      continue
+      let lhs = node
     elseif token.type == 'LPAR'
       call self.tokenizer.get()
-      let args = []
-      let token = self.tokenizer.peek()
-      if token.type == 'RPAR'
+      let node = self.exprnode('CALL')
+      let node.expr = lhs
+      let node.args = []
+      if self.tokenizer.peek().type == 'RPAR'
         call self.tokenizer.get()
       else
         while 1
-          let node = self.parse_expr1()
-          call add(args, node)
+          call add(node.args, self.parse_expr1())
           let token = self.tokenizer.peek()
           if token.type == 'COMMA'
             call self.tokenizer.get()
-            continue
           elseif token.type == 'RPAR'
             call self.tokenizer.get()
             break
@@ -2620,23 +2701,27 @@ function s:ExprParser.parse_expr8()
           endif
         endwhile
       endif
-      let lhs = self.node('CALL', [lhs, args])
-      continue
+      let lhs = node
     elseif token2.type == 'DOT'
       " INDEX or CONCAT
       let pos = self.tokenizer.reader.getpos()
       call self.tokenizer.get()
       let token2 = self.tokenizer.peek_keepspace()
       if token2.type == 'IDENTIFIER'
-        let node = self.node('IDENTIFIER', self.parse_identifier())
-        let lhs = self.node('DOT', [lhs, node])
-        continue
+        let rhs = self.exprnode('IDENTIFIER')
+        let rhs.value = self.parse_identifier()
+        let node = self.exprnode('DOT')
+        let node.lhs = lhs
+        let node.rhs = rhs
+      else
+        " to be CONCAT
+        call self.tokenizer.reader.setpos(pos)
+        break
       endif
-      call self.tokenizer.reader.setpos(pos)
-      " to be CONCAT
+      let lhs = node
+    else
       break
     endif
-    break
   endwhile
   return lhs
 endfunction
@@ -2658,23 +2743,24 @@ function s:ExprParser.parse_expr9()
   let token = self.tokenizer.peek()
   if token.type == 'NUMBER'
     call self.tokenizer.get()
-    return self.node('NUMBER', token.value)
+    let node = self.exprnode('NUMBER')
+    let node.value = token.value
   elseif token.type == 'DQUOTE'
-    let e = self.tokenizer.get_dstring()
-    return self.node('STRING', '"' . e . '"')
+    let node = self.exprnode('STRING')
+    let node.value = '"' . self.tokenizer.get_dstring() . '"'
   elseif token.type == 'SQUOTE'
-    let e = self.tokenizer.get_sstring()
-    return self.node('STRING', "'" . e . "'")
+    let node = self.exprnode('STRING')
+    let node.value = "'" . self.tokenizer.get_sstring() . "'"
   elseif token.type == 'LBRA'
     call self.tokenizer.get()
-    let list = []
+    let node = self.exprnode('LIST')
+    let node.items = []
     let token = self.tokenizer.peek()
     if token.type == 'RBRA'
       call self.tokenizer.get()
     else
       while 1
-        let node = self.parse_expr1()
-        call add(list, node)
+        call add(node.items, self.parse_expr1())
         let token = self.tokenizer.peek()
         if token.type == 'COMMA'
           call self.tokenizer.get()
@@ -2682,7 +2768,6 @@ function s:ExprParser.parse_expr9()
             call self.tokenizer.get()
             break
           endif
-          continue
         elseif token.type == 'RBRA'
           call self.tokenizer.get()
           break
@@ -2691,12 +2776,12 @@ function s:ExprParser.parse_expr9()
         endif
       endwhile
     endif
-    return self.node('LIST', list)
   elseif token.type == 'LBPAR'
     let pos = self.tokenizer.reader.getpos()
     call self.tokenizer.get()
+    let node = self.exprnode('DICT')
+    let node.items = []
     let token = self.tokenizer.peek()
-    let dict = []
     if token.type == 'RBPAR'
       call self.tokenizer.get()
     else
@@ -2704,14 +2789,19 @@ function s:ExprParser.parse_expr9()
         let key = self.parse_expr1()
         let token = self.tokenizer.get()
         if token.type == 'RBPAR'
+          if !empty(node.items)
+            throw self.err('ExprParser: unexpected token: %s', token.value)
+          endif
           call self.tokenizer.reader.setpos(pos)
-          return self.node('IDENTIFIER', self.parse_identifier())
+          let node = self.exprnode('IDENTIFIER')
+          let node.value = self.parse_identifier()
+          break
         endif
         if token.type != 'COLON'
           throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
         let val = self.parse_expr1()
-        call add(dict, [key, val])
+        call add(node.items, [key, val])
         let token = self.tokenizer.peek()
         if token.type == 'COMMA'
           call self.tokenizer.get()
@@ -2719,7 +2809,6 @@ function s:ExprParser.parse_expr9()
             call self.tokenizer.get()
             break
           endif
-          continue
         elseif token.type == 'RBPAR'
           call self.tokenizer.get()
           break
@@ -2728,29 +2817,33 @@ function s:ExprParser.parse_expr9()
         endif
       endwhile
     endif
-    return self.node('DICT', dict)
   elseif token.type == 'LPAR'
     call self.tokenizer.get()
-    let expr = self.parse_expr1()
+    let node = self.exprnode('NESTING')
+    let node.expr = self.parse_expr1()
     let token = self.tokenizer.get()
     if token.type != 'RPAR'
       throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
-    return self.node('NESTING', expr)
   elseif token.type == 'OPTION'
     call self.tokenizer.get()
-    return self.node('OPTION', token.value)
+    let node = self.exprnode('OPTION')
+    let node.value = token.value
   elseif token.type == 'IDENTIFIER'
-    return self.node('IDENTIFIER', self.parse_identifier())
+    let node = self.exprnode('IDENTIFIER')
+    let node.value = self.parse_identifier()
   elseif token.type == 'ENV'
     call self.tokenizer.get()
-    return self.node('ENV', token.value)
+    let node = self.exprnode('ENV')
+    let node.value = token.value
   elseif token.type == 'REG'
     call self.tokenizer.get()
-    return self.node('REG', token.value)
+    let node = self.exprnode('REG')
+    let node.value = token.value
   else
     throw self.err('ExprParser: unexpected token: %s', token.value)
   endif
+  return node
 endfunction
 
 function s:ExprParser.parse_identifier()
@@ -2792,58 +2885,70 @@ function! s:LvalueParser.parse_lv8()
     let token2 = self.tokenizer.peek_keepspace()
     if token2.type == 'LBRA'
       call self.tokenizer.get()
-      let token = self.tokenizer.peek()
-      unlet! e1
-      if token.type == 'COLON'
-        let e1 = s:NIL
-      else
-        let e1 = self.parse_expr1()
-      endif
-      let token = self.tokenizer.peek()
-      if token.type == 'RBRA'
+      if self.tokenizer.peek().type == 'COLON'
         call self.tokenizer.get()
-        if e1 is s:NIL
-          unlet! e2
-          let e2 = s:NIL
-          let lhs = self.node('SLICE', [lhs, e1, e2])
-        else
-          let lhs = self.node('INDEX', [lhs, e1])
-        endif
-      elseif token.type == 'COLON'
-        call self.tokenizer.get()
+        let node = self.exprnode('SLICE')
+        let node.expr = lhs
+        let node.expr1 = s:NIL
+        let node.expr2 = s:NIL
         let token = self.tokenizer.peek()
-        unlet! e2
-        if token.type == 'RBRA'
-          let e2 = s:NIL
-        else
-          let e2 = self.parse_expr1()
+        if token.type != 'RBRA'
+          let node.expr2 = self.parse_expr1()
         endif
         let token = self.tokenizer.peek()
-        if token.type == 'RBRA'
-          call self.tokenizer.get()
-          let lhs = self.node('SLICE', [lhs, e1, e2])
-        else
+        if token.type != 'RBRA'
           throw self.err('LvalueParser: unexpected token: %s', token.value)
         endif
+        call self.tokenizer.get()
       else
-        throw self.err('LvalueParser: unexpected token: %s', token.value)
+        let expr1 = self.parse_expr1()
+        if self.tokenizer.peek().type == 'COLON'
+          call self.tokenizer.get()
+          let node = self.exprnode('SLICE')
+          let node.expr = lhs
+          let node.expr1 = expr1
+          let node.expr2 = s:NIL
+          let token = self.tokenizer.peek()
+          if token.type != 'RBRA'
+            let node.expr2 = self.parse_expr1()
+          endif
+          let token = self.tokenizer.peek()
+          if token.type != 'RBRA'
+            throw self.err('LvalueParser: unexpected token: %s', token.value)
+          endif
+          call self.tokenizer.get()
+        else
+          let node = self.exprnode('INDEX')
+          let node.expr = lhs
+          let node.expr1 = expr1
+          let token = self.tokenizer.peek()
+          if token.type != 'RBRA'
+            throw self.err('LvalueParser: unexpected token: %s', token.value)
+          endif
+          call self.tokenizer.get()
+        endif
       endif
-      continue
+      let lhs = node
     elseif token2.type == 'DOT'
       " INDEX or CONCAT
       let pos = self.tokenizer.reader.getpos()
       call self.tokenizer.get()
       let token2 = self.tokenizer.peek_keepspace()
       if token2.type == 'IDENTIFIER'
-        let node = self.node('IDENTIFIER', self.parse_identifier())
-        let lhs = self.node('DOT', [lhs, node])
-        continue
+        let rhs = self.exprnode('IDENTIFIER')
+        let rhs.value = self.parse_identifier()
+        let node = self.exprnode('DOT')
+        let node.lhs = lhs
+        let node.rhs = rhs
+      else
+        " to be CONCAT
+        call self.tokenizer.reader.setpos(pos)
+        break
       endif
-      call self.tokenizer.reader.setpos(pos)
-      " to be CONCAT
+      let lhs = node
+    else
       break
     endif
-    break
   endwhile
   return lhs
 endfunction
@@ -2856,21 +2961,27 @@ endfunction
 function! s:LvalueParser.parse_lv9()
   let token = self.tokenizer.peek()
   if token.type == 'LBPAR'
-    return self.node('IDENTIFIER', self.parse_identifier())
+    let node = self.exprnode('IDENTIFIER')
+    let node.value = self.parse_identifier()
   elseif token.type == 'OPTION'
     call self.tokenizer.get()
-    return self.node('OPTION', token.value)
+    let node = self.exprnode('OPTION')
+    let node.value = token.value
   elseif token.type == 'IDENTIFIER'
-    return self.node('IDENTIFIER', self.parse_identifier())
+    let node = self.exprnode('IDENTIFIER')
+    let node.value = self.parse_identifier()
   elseif token.type == 'ENV'
     call self.tokenizer.get()
-    return self.node('ENV', token.value)
+    let node = self.exprnode('ENV')
+    let node.value = token.value
   elseif token.type == 'REG'
     call self.tokenizer.get()
-    return self.node('REG', token.value)
+    let node = self.exprnode('REG')
+    let node.value = token.value
   else
     throw self.err('LvalueParser: unexpected token: %s', token.value)
   endif
+  return node
 endfunction
 
 let s:StringReader = {}
@@ -3389,289 +3500,229 @@ function s:Compiler.compile_execute(node)
 endfunction
 
 function s:Compiler.compile_condexp(node)
-  let [cond, t, e] = a:node.value
-  return printf('(?: %s %s %s)', self.compile(cond), self.compile(t), self.compile(e))
+  return printf('(?: %s %s %s)', self.compile(a:node.cond), self.compile(a:node.then), self.compile(a:node.else))
 endfunction
 
 function s:Compiler.compile_logor(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(|| %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(|| %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_logand(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(&& %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(&& %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_eqeqq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(==? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(==? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_eqeqh(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(==# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(==# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_noteqq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(!=? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(!=? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_noteqh(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(!=# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(!=# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_gteqq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(>=? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(>=? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_gteqh(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(>=# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(>=# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_lteqq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(<=? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(<=? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_lteqh(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(<=# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(<=# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_eqtildq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(=~? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(=~? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_eqtildh(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(=~# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(=~# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_nottildq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(!~? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(!~? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_nottildh(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(!~# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(!~# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_gtq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(>? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(>? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_gth(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(># %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(># %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_ltq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(<? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(<? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_lth(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(<# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(<# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_eqeq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(== %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(== %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_noteq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(!= %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(!= %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_gteq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(>= %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(>= %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_lteq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(<= %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(<= %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_eqtild(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(=~ %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(=~ %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_nottild(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(!~ %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(!~ %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_gt(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(> %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(> %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_lt(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(< %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(< %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_isq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(is? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(is? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_ish(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(is# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(is# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_isnotq(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(isnot? %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(isnot? %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_isnoth(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(isnot# %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(isnot# %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_is(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(is %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(is %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_isnot(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(isnot %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(isnot %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_add(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(+ %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(+ %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_sub(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(- %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(- %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_concat(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(concat %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(concat %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_mul(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(* %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(* %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_div(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(/ %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(/ %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_mod(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(%% %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(%% %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_not(node)
-  let lhs = a:node.value
-  return printf('(! %s)', self.compile(lhs))
+  return printf('(! %s)', self.compile(a:node.expr))
 endfunction
 
 function s:Compiler.compile_plus(node)
-  let lhs = a:node.value
-  return printf('(+ %s)', self.compile(lhs))
+  return printf('(+ %s)', self.compile(a:node.expr))
 endfunction
 
 function s:Compiler.compile_minus(node)
-  let lhs = a:node.value
-  return printf('(- %s)', self.compile(lhs))
+  return printf('(- %s)', self.compile(a:node.expr))
 endfunction
 
 function s:Compiler.compile_index(node)
-  let [v, s1] = a:node.value
-  return printf('(index %s %s)', self.compile(v), self.compile(s1))
+  return printf('(index %s %s)', self.compile(a:node.expr), self.compile(a:node.expr1))
 endfunction
 
 function s:Compiler.compile_slice(node)
-  let [v, s1, s2] = a:node.value
-  if s1 is s:NIL
-    let t1 = 'nil'
-  else
-    let t1 = self.compile(s1)
-  endif
-  if s2 is s:NIL
-    let t2 = 'nil'
-  else
-    let t2 = self.compile(s2)
-  endif
-  return printf('(slice %s %s %s)', self.compile(v), t1, t2)
+  let expr1 = a:node.expr1 is s:NIL ? 'nil' : self.compile(a:node.expr1)
+  let expr2 = a:node.expr2 is s:NIL ? 'nil' : self.compile(a:node.expr2)
+  return printf('(slice %s %s %s)', self.compile(a:node.expr), expr1, expr2)
 endfunction
 
 function s:Compiler.compile_dot(node)
-  let [lhs, rhs] = a:node.value
-  return printf('(dot %s %s)', self.compile(lhs), self.compile(rhs))
+  return printf('(dot %s %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:Compiler.compile_call(node)
-  let [lhs, args] = a:node.value
-  call map(args, 'self.compile(v:val)')
-  return printf('(%s %s)', self.compile(lhs), join(args, ' '))
+  let args = map(a:node.args, 'self.compile(v:val)')
+  return printf('(%s %s)', self.compile(a:node.expr), join(args, ' '))
 endfunction
 
 function s:Compiler.compile_number(node)
-  let v = a:node.value
-  return v
+  return a:node.value
 endfunction
 
 function s:Compiler.compile_string(node)
-  let v = a:node.value
-  return v
+  return a:node.value
 endfunction
 
 function s:Compiler.compile_list(node)
-  let list = a:node.value
-  call map(list, 'self.compile(v:val)')
-  if empty(list)
+  let items = map(a:node.items, 'self.compile(v:val)')
+  if empty(items)
     return '(list)'
   else
-    return printf('(list %s)', join(list, ' '))
+    return printf('(list %s)', join(items, ' '))
   endif
 endfunction
 
 function s:Compiler.compile_dict(node)
-  let dict = a:node.value
-  call map(dict, '"(" . self.compile(v:val[0]) . " " . self.compile(v:val[1]) . ")"')
-  if empty(dict)
+  let items = map(a:node.items, '"(" . self.compile(v:val[0]) . " " . self.compile(v:val[1]) . ")"')
+  if empty(items)
     return '(dict)'
   else
-    return printf('(dict %s)', join(dict, ' '))
+    return printf('(dict %s)', join(items, ' '))
   endif
 endfunction
 
 function s:Compiler.compile_nesting(node)
-  return self.compile(a:node.value)
+  return self.compile(a:node.expr)
 endfunction
 
 function s:Compiler.compile_option(node)
-  let v = a:node.value
-  return v
+  return a:node.value
 endfunction
 
 function s:Compiler.compile_identifier(node)
-  let id = a:node.value
   let v = ''
-  for x in id
+  for x in a:node.value
     if x.curly
       let v .= '{' . self.compile(x.value) . '}'
     else
@@ -3682,12 +3733,10 @@ function s:Compiler.compile_identifier(node)
 endfunction
 
 function s:Compiler.compile_env(node)
-  let v = a:node.value
-  return v
+  return a:node.value
 endfunction
 
 function s:Compiler.compile_reg(node)
-  let v = a:node.value
-  return v
+  return a:node.value
 endfunction
 
