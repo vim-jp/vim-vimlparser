@@ -669,7 +669,7 @@ function s:VimLParser.separate_nextcmd()
         break
       endif
       call self.reader.get()
-    elseif self.reader.peekn(2) == '`=' && self.ea.cmd.flags =~ '\<XFILE\>'
+    elseif self.reader.peekn(2) == '`=' && self.ea.cmd.flags =~ '\<\(XFILE\|FILES\|FILE1\)\>'
       call self.reader.getn(2)
       call self.parse_expr()
       let c = self.reader.getn(1)
