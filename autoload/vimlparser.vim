@@ -71,10 +71,6 @@ function s:VimLParser.blocknode(type)
   return node
 endfunction
 
-function s:VimLParser.exprnode(type, value)
-  return {'type': a:type, 'value': a:value}
-endfunction
-
 function s:VimLParser.push_context(node)
   let self.context = a:node
 endfunction
@@ -1226,14 +1222,12 @@ function s:VimLParser.parse_cmd_echon()
 endfunction
 
 function s:VimLParser.parse_cmd_echohl()
-  let name = ''
-  while !self.ends_excmds(self.reader.peek())
-    let name .= self.reader.get()
-  endwhile
-  let expr = self.exprnode('STRING', '"' . escape(name, '\"') . '"')
   let node = self.exnode('ECHOHL')
   let node.ea = self.ea
-  let node.name = expr
+  let node.name = ''
+  while !self.ends_excmds(self.reader.peek())
+    let node.name .= self.reader.get()
+  endwhile
   call self.add_node(node)
 endfunction
 
@@ -3346,7 +3340,7 @@ function s:Compiler.compile_echon(node)
 endfunction
 
 function s:Compiler.compile_echohl(node)
-  call self.out('(echohl %s)', self.compile(a:node.name))
+  call self.out('(echohl "%s")', escape(a:node.name, '\"'))
 endfunction
 
 function s:Compiler.compile_echomsg(node)
