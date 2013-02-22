@@ -1,2 +1,2 @@
 (if 1
-  (execute "set nocp"))
+  (excmd "set nocp"))

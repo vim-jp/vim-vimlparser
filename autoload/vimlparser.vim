@@ -620,11 +620,9 @@ endfunction
 
 " modifier or range only command line
 function s:VimLParser.parse_cmd_modifier_range()
-  let cmdstr = self.reader.getstr(self.ea.linepos, self.reader.getpos())
-  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.exnode('EXECUTE')
+  let node = self.exnode('EXCMD')
   let node.ea = self.ea
-  let node.args = [expr]
+  let node.str = self.reader.getstr(self.ea.linepos, self.reader.getpos())
   call self.add_node(node)
 endfunction
 
@@ -647,11 +645,9 @@ function s:VimLParser.parse_cmd_common()
       endif
     endwhile
   endif
-  let cmdstr = self.reader.getstr(self.ea.linepos, end)
-  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.exnode('EXECUTE')
+  let node = self.exnode('EXCMD')
   let node.ea = self.ea
-  let node.args = [expr]
+  let node.str = self.reader.getstr(self.ea.linepos, end)
   call self.add_node(node)
 endfunction
 
@@ -727,11 +723,9 @@ function s:VimLParser.parse_cmd_append()
     endif
     call self.reader.get()
   endwhile
-  let cmdstr = join(lines, "\n")
-  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.exnode('EXECUTE')
+  let node = self.exnode('EXCMD')
   let node.ea = self.ea
-  let node.args = [expr]
+  let node.str = join(lines, "\n")
   call self.add_node(node)
 endfunction
 
@@ -750,11 +744,9 @@ function s:VimLParser.parse_cmd_loadkeymap()
     let line = self.reader.readline()
     call add(lines, line)
   endwhile
-  let cmdstr = join(lines, "\n")
-  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.exnode('EXECUTE')
+  let node = self.exnode('EXCMD')
   let node.ea = self.ea
-  let node.args = [expr]
+  let node.str = join(lines, "\n")
   call self.add_node(node)
 endfunction
 
@@ -784,11 +776,9 @@ function s:VimLParser.parse_cmd_lua()
       call self.reader.get()
     endwhile
   endif
-  let cmdstr = join(lines, "\n")
-  let expr = self.exprnode('STRING', '"' . escape(cmdstr, '\"') . '"')
-  let node = self.exnode('EXECUTE')
+  let node = self.exnode('EXCMD')
   let node.ea = self.ea
-  let node.args = [expr]
+  let node.str = join(lines, "\n")
   call self.add_node(node)
 endfunction
 
@@ -3020,6 +3010,8 @@ function s:Compiler.compile(node)
     return self.compile_toplevel(a:node)
   elseif a:node.type == 'COMMENT'
     return self.compile_comment(a:node)
+  elseif a:node.type == 'EXCMD'
+    return self.compile_excmd(a:node)
   elseif a:node.type == 'FUNCTION'
     return self.compile_function(a:node)
   elseif a:node.type == 'DELFUNCTION'
@@ -3200,6 +3192,10 @@ endfunction
 
 function s:Compiler.compile_comment(node)
   call self.out(';%s', a:node.str)
+endfunction
+
+function s:Compiler.compile_excmd(node)
+  call self.out('(excmd "%s")', escape(a:node.str, '\"'))
 endfunction
 
 function s:Compiler.compile_function(node)
