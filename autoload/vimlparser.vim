@@ -175,6 +175,8 @@ function s:VimLParser.parse_one_cmd()
   let self.ea.cmd = {}
   let self.ea.modifiers = []
   let self.ea.range = []
+  let self.ea.argopt = {}
+  let self.ea.argcmd = {}
 
   if self.reader.peekn(2) == '#!'
     call self.parse_hashbang()
@@ -517,7 +519,47 @@ function s:VimLParser.parse_hashbang()
 endfunction
 
 " TODO:
+" ++opt=val
 function s:VimLParser.parse_argopt()
+  while 1
+    let s = self.reader.peekn(20)
+    if s =~ '^++bin\>'
+      call self.reader.getn(5)
+      let self.ea.force_bin = 1
+    elseif s =~ '^++nobin\>'
+      call self.reader.getn(7)
+      let self.ea.force_bin = 2
+    elseif s =~ '^++edit\>'
+      call self.reader.getn(6)
+      let self.ea.read_edit = 1
+    elseif s =~ '^++ff=\(dos\|unix\|mac\)\>'
+      call self.reader.getn(5)
+      let self.ea.force_ff = self.read_alpha()
+    elseif s =~ '^++fileformat=\(dos\|unix\|mac\)\>'
+      call self.reader.getn(13)
+      let self.ea.force_ff = self.read_alpha()
+    elseif s =~ '^++enc=\S'
+      call self.reader.getn(6)
+      let self.ea.force_enc = self.readx('\S')
+    elseif s =~ '^++encoding=\S'
+      call self.reader.getn(11)
+      let self.ea.force_enc = self.readx('\S')
+    elseif s =~ '^++bad=\(keep\|drop\|.\)\>'
+      call self.reader.getn(6)
+      if s =~ '^++bad=keep'
+        let self.ea.bad_char = self.reader.getn(4)
+      elseif s =~ '^++bad=drop'
+        let self.ea.bad_char = self.reader.getn(4)
+      else
+        let self.ea.bad_char = self.reader.getn(1)
+      endif
+    elseif s =~ '++'
+      throw 'VimLParser: E474: Invalid Argument'
+    else
+      break
+    endif
+    call self.skip_white()
+  endwhile
 endfunction
 
 " TODO:
