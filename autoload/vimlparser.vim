@@ -1998,6 +1998,12 @@ function s:ExprTokenizer.get_keepspace()
         while self.reader.peekn(1) =~ '\d'
           let s .= self.reader.getn(1)
         endwhile
+        if self.reader.peekn(3) =~? 'e[-+]\d'
+          let s .= self.reader.getn(3)
+          while self.reader.peekn(1) =~ '\d'
+            let s .= self.reader.getn(1)
+          endwhile
+        endif
       endif
       return self.token('NUMBER', s)
     elseif s =~# '^is#'
