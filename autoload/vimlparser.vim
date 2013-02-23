@@ -549,7 +549,7 @@ function s:VimLParser.parse_argopt()
       else
         let self.ea.bad_char = self.reader.getn(1)
       endif
-    elseif s =~ '++'
+    elseif s =~ '^++'
       throw 'VimLParser: E474: Invalid Argument'
     else
       break
