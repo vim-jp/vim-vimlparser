@@ -3390,10 +3390,10 @@ function s:Compiler.compile_if(node)
   call self.incindent('  ')
   call self.compile_begin(a:node.body)
   call self.decindent()
-  for node in a:node.elseif
-    call self.out(' elseif %s', self.compile(node.cond))
+  for enode in a:node.elseif
+    call self.out(' elseif %s', self.compile(enode.cond))
     call self.incindent('  ')
-    call self.compile_begin(node.body)
+    call self.compile_begin(enode.body)
     call self.decindent()
   endfor
   if a:node.else isnot s:NIL
@@ -3440,17 +3440,17 @@ function s:Compiler.compile_try(node)
   call self.out('(try')
   call self.incindent('  ')
   call self.compile_begin(a:node.body)
-  for node in a:node.catch
-    if node.pattern isnot s:NIL
-      call self.out('(#/%s/', node.pattern)
+  for cnode in a:node.catch
+    if cnode.pattern isnot s:NIL
+      call self.out('(#/%s/', cnode.pattern)
       call self.incindent('  ')
-      call self.compile_body(node.body)
+      call self.compile_body(cnode.body)
       call self.out(')')
       call self.decindent()
     else
       call self.out('(else')
       call self.incindent('  ')
-      call self.compile_body(node.body)
+      call self.compile_body(cnode.body)
       call self.out(')')
       call self.decindent()
     endif
