@@ -1907,7 +1907,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': '!', 'pat': '^!$', 'flags': 'RANGE|WHOLEFOLD|BANG|FILES|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': '#', 'pat': '^#$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': '&', 'pat': '^&$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
-      \ {'name': '*', 'pat': '^*$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': '*', 'pat': '^\*$', 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': '<', 'pat': '^<$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': '=', 'pat': '^=$', 'flags': 'RANGE|TRLBAR|DFLALL|EXFLAGS|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': '>', 'pat': '^>$', 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
@@ -2123,7 +2123,7 @@ function s:ExprTokenizer.get_keepspace()
     elseif s =~ '^\.'
       call self.reader.getn(1)
       return self.token('DOT', '.')
-    elseif s =~ '^*'
+    elseif s =~ '^\*'
       call self.reader.getn(1)
       return self.token('STAR', '*')
     elseif s =~ '^/'
@@ -2147,7 +2147,7 @@ function s:ExprTokenizer.get_keepspace()
     elseif s =~ '^)'
       call self.reader.getn(1)
       return self.token('RPAR', ')')
-    elseif s =~ '^['
+    elseif s =~ '^\['
       call self.reader.getn(1)
       return self.token('LBRA', '[')
     elseif s =~ '^]'
