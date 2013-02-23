@@ -3038,15 +3038,15 @@ function s:StringReader.peekn(n)
 endfunction
 
 function s:StringReader.getn(n)
-  let n = a:n
   let r = ''
-  while n != 0
+  let i = 0
+  while a:n < 0 || i < a:n
     let c = self.peek()
     if c == '<EOF>' || c == '<EOL>'
       break
     endif
     let r .= self.get()
-    let n -= 1
+    let i += 1
   endwhile
   return r
 endfunction
