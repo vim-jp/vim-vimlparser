@@ -3120,7 +3120,7 @@ endfunction
 
 function s:Compiler.out(...)
   if len(a:000) == 1
-    if a:000[0] =~ '^)*$'
+    if a:000[0] =~ '^)\+$'
       let self.lines[-1] .= a:000[0]
     else
       call add(self.lines, self.indent[0] . a:000[0])
