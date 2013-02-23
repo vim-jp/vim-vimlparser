@@ -1,5 +1,5 @@
-" WORK IN PROGRESS
 " VimL parser
+" License: This file is placed in the public domain.
 
 function vimlparser#import()
   return s:
