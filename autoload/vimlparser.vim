@@ -1276,8 +1276,6 @@ endfunction
 
 function s:VimLParser.parse_exprlist()
   let args = []
-  let node = self.parse_expr()
-  call add(args, node)
   while 1
     call self.skip_white()
     let c = self.reader.peek()
