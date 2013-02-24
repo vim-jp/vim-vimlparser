@@ -3015,16 +3015,17 @@ function s:StringReader.get()
     return '<EOF>'
   endif
   let c = self.buf[self.i]
-  if c == '<EOL>'
+  while c == '<EOL>'
     let self.lnum += 1
     let self.col = 0
     let [i, col] = self.find_line_continuation(self.i + 1)
-    if i != -1
-      let self.i = i
-      let self.col = col
-      let c = self.buf[self.i]
+    if i == -1
+      break
     endif
-  endif
+    let self.i = i
+    let self.col = col
+    let c = self.buf[self.i]
+  endwhile
   let self.i += 1
   let self.col += 1
   return c
