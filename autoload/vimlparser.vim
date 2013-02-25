@@ -2991,42 +2991,55 @@ function s:StringReader.new(...)
 endfunction
 
 function s:StringReader.__init__(lines)
+  let self.lines = a:lines
   let self.buf = []
-  for i in range(len(a:lines))
-    call extend(self.buf, split(a:lines[i], '\zs'))
+  let self.pos = []
+  let lnum = 0
+  while lnum < len(a:lines)
+    let col = 0
+    for c in split(a:lines[lnum], '\zs')
+      call add(self.buf, c)
+      call add(self.pos, [lnum, col])
+      let col += len(c)
+    endfor
+    while lnum + 1 < len(a:lines) && a:lines[lnum + 1] =~# '^\s*\\'
+      let skip = 1
+      let col = 0
+      for c in split(a:lines[lnum + 1], '\zs')
+        if skip
+          if c == '\'
+            let skip = 0
+          endif
+        else
+          call add(self.buf, c)
+          call add(self.pos, [lnum, col])
+        endif
+        let col += len(c)
+      endfor
+      let lnum += 1
+    endwhile
     call add(self.buf, '<EOL>')
-  endfor
+    call add(self.pos, [lnum, col])
+    let lnum += 1
+  endwhile
+  " for <EOF>
+  call add(self.pos, [lnum, 0])
   let self.i = 0
-  let self.lnum = 1
-  let self.col = 1
 endfunction
 
 function s:StringReader.peek()
-  let pos = self.getpos()
-  let r = self.get()
-  call self.setpos(pos)
-  return r
+  if self.i >= len(self.buf)
+    return '<EOF>'
+  endif
+  return self.buf[self.i]
 endfunction
 
 function s:StringReader.get()
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
-  let c = self.buf[self.i]
-  while c ==# '<EOL>'
-    let self.lnum += 1
-    let self.col = 0
-    let [i, col] = self.find_line_continuation(self.i + 1)
-    if i == -1
-      break
-    endif
-    let self.i = i
-    let self.col = col
-    let c = self.buf[self.i]
-  endwhile
   let self.i += 1
-  let self.col += 1
-  return c
+  return self.buf[self.i - 1]
 endfunction
 
 function s:StringReader.peekn(n)
@@ -3038,46 +3051,26 @@ endfunction
 
 function s:StringReader.getn(n)
   let r = ''
-  let i = 0
-  while a:n < 0 || i < a:n
-    let c = self.peek()
-    if c ==# '<EOF>' || c ==# '<EOL>'
-      break
-    endif
-    let r .= self.get()
-    let i += 1
-  endwhile
-  return r
-endfunction
-
-function s:StringReader.find_line_continuation(start)
-  let [i, col] = [a:start, 1]
-  while i < len(self.buf) && self.buf[i] =~# '\s'
-    let i += 1
-    let col += 1
-  endwhile
-  if i < len(self.buf) && self.buf[i] ==# '\'
-    return [i + 1, col + 1]
-  endif
-  return [-1, 0]
-endfunction
-
-function s:StringReader.peekline()
-  let pos = self.getpos()
-  let r = self.readline()
-  call self.setpos(pos)
-  return r
-endfunction
-
-function s:StringReader.readline()
-  let r = ''
-  while 1
-    let c = self.get()
-    if c ==# '<EOF>' || c ==# '<EOL>'
+  let j = 0
+  while self.i <= len(self.buf) && (a:n < 0 || j < a:n)
+    let c = self.buf[self.i]
+    if c ==# '<EOL>'
       break
     endif
     let r .= c
+    let self.i += 1
+    let j += 1
   endwhile
+  return r
+endfunction
+
+function s:StringReader.peekline()
+  return self.peekn(-1)
+endfunction
+
+function s:StringReader.readline()
+  let r = self.getn(-1)
+  call self.get()
   return r
 endfunction
 
@@ -3097,11 +3090,12 @@ function s:StringReader.getstr(begin, end)
 endfunction
 
 function s:StringReader.getpos()
-  return {'i': self.i, 'lnum': self.lnum, 'col': self.col}
+  let [lnum, col] = self.pos[self.i]
+  return {'i': self.i, 'lnum': lnum, 'col': col}
 endfunction
 
 function s:StringReader.setpos(pos)
-  let [self.i, self.lnum, self.col] = [a:pos.i, a:pos.lnum, a:pos.col]
+  let self.i  = a:pos.i
 endfunction
 
 let s:Compiler = {}
