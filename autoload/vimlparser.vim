@@ -55,13 +55,6 @@ endfunction
 
 function s:VimLParser.exnode(type)
   let node = {'type': a:type}
-  let node.parent = self.context
-  let node.prev = self.lastnode
-  let node.next = s:NIL
-  if node.prev isnot s:NIL
-    let node.prev.next = node
-  endif
-  let self.lastnode = node
   return node
 endfunction
 
@@ -72,66 +65,61 @@ function s:VimLParser.blocknode(type)
 endfunction
 
 function s:VimLParser.push_context(node)
-  let self.context = a:node
+  call insert(self.context, a:node)
 endfunction
 
 function s:VimLParser.pop_context()
-  let self.context = self.context.parent
+  call remove(self.context, 0)
 endfunction
 
 function s:VimLParser.find_context(pat)
   let i = 0
-  let node = self.context
-  while 1
+  for node in self.context
     if node.type =~# a:pat
       return i
-    elseif node.parent is s:NIL
-      break
     endif
-    let node = node.parent
     let i += 1
-  endwhile
+  endfor
   return -1
 endfunction
 
 function s:VimLParser.add_node(node)
-  call add(self.context.body, a:node)
+  call add(self.context[0].body, a:node)
 endfunction
 
 function s:VimLParser.check_missing_endfunction(ends)
-  if self.context.type ==# 'FUNCTION'
+  if self.context[0].type ==# 'FUNCTION'
     throw self.err('VimLParser: E126: Missing :endfunction:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endif(ends)
-  if self.context.type =~# '\v^%(IF|ELSEIF|ELSE)$'
+  if self.context[0].type =~# '\v^%(IF|ELSEIF|ELSE)$'
     throw self.err('VimLParser: E171: Missing :endif:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endtry(ends)
-  if self.context.type =~# '\v^%(TRY|CATCH|FINALLY)$'
+  if self.context[0].type =~# '\v^%(TRY|CATCH|FINALLY)$'
     throw self.err('VimLParser: E600: Missing :endtry:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endwhile(ends)
-  if self.context.type ==# 'WHILE'
+  if self.context[0].type ==# 'WHILE'
     throw self.err('VimLParser: E170: Missing :endwhile:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.check_missing_endfor(ends)
-  if self.context.type ==# 'FOR'
+  if self.context[0].type ==# 'FOR'
     throw self.err('VimLParser: E170: Missing :endfor:    %s', a:ends)
   endif
 endfunction
 
 function s:VimLParser.parse(reader)
   let self.reader = a:reader
-  let self.lastnode = s:NIL
-  let self.context = s:NIL
+  let self.context = []
   let toplevel = self.blocknode('TOPLEVEL')
   call self.push_context(toplevel)
   while self.reader.peek() !=# '<EOF>'
@@ -822,7 +810,7 @@ endfunction
 
 function s:VimLParser.parse_cmd_finish()
   call self.parse_cmd_common()
-  if self.context.type ==# 'TOPLEVEL'
+  if self.context[0].type ==# 'TOPLEVEL'
     while self.reader.peek() !=# '<EOF>'
       call self.reader.get()
     endwhile
@@ -927,13 +915,13 @@ function s:VimLParser.parse_cmd_endfunction()
   call self.check_missing_endtry('ENDFUNCTION')
   call self.check_missing_endwhile('ENDFUNCTION')
   call self.check_missing_endfor('ENDFUNCTION')
-  if self.context.type !=# 'FUNCTION'
+  if self.context[0].type !=# 'FUNCTION'
     throw self.err('VimLParser: E193: :endfunction not inside a function')
   endif
   call self.reader.getn(-1)
   let node = self.exnode('ENDFUNCTION')
   let node.ea = self.ea
-  let self.context.endfunction = node
+  let self.context[0].endfunction = node
   call self.pop_context()
 endfunction
 
@@ -1060,42 +1048,42 @@ function s:VimLParser.parse_cmd_if()
 endfunction
 
 function s:VimLParser.parse_cmd_elseif()
-  if self.context.type !=# 'IF' && self.context.type !=# 'ELSEIF'
+  if self.context[0].type !=# 'IF' && self.context[0].type !=# 'ELSEIF'
     throw self.err('VimLParser: E582: :elseif without :if')
   endif
-  if self.context.type !=# 'IF'
+  if self.context[0].type !=# 'IF'
     call self.pop_context()
   endif
   let node = self.blocknode('ELSEIF')
   let node.ea = self.ea
   let node.cond = self.parse_expr()
-  call add(node.parent.elseif, node)
+  call add(self.context[0].elseif, node)
   call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_else()
-  if self.context.type !=# 'IF' && self.context.type !=# 'ELSEIF'
+  if self.context[0].type !=# 'IF' && self.context[0].type !=# 'ELSEIF'
     throw self.err('VimLParser: E581: :else without :if')
   endif
-  if self.context.type !=# 'IF'
+  if self.context[0].type !=# 'IF'
     call self.pop_context()
   endif
   let node = self.blocknode('ELSE')
   let node.ea = self.ea
-  let node.parent.else = node
+  let self.context[0].else = node
   call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endif()
-  if self.context.type !=# 'IF' && self.context.type !=# 'ELSEIF' && self.context.type !=# 'ELSE'
+  if self.context[0].type !=# 'IF' && self.context[0].type !=# 'ELSEIF' && self.context[0].type !=# 'ELSE'
     throw self.err('VimLParser: E580: :endif without :if')
   endif
-  if self.context.type !=# 'IF'
+  if self.context[0].type !=# 'IF'
     call self.pop_context()
   endif
   let node = self.exnode('ENDIF')
   let node.ea = self.ea
-  let node.parent.endif = node
+  let self.context[0].endif = node
   call self.pop_context()
 endfunction
 
@@ -1109,12 +1097,12 @@ function s:VimLParser.parse_cmd_while()
 endfunction
 
 function s:VimLParser.parse_cmd_endwhile()
-  if self.context.type !=# 'WHILE'
+  if self.context[0].type !=# 'WHILE'
     throw self.err('VimLParser: E588: :endwhile without :while')
   endif
   let node = self.exnode('ENDWHILE')
   let node.ea = self.ea
-  let node.parent.endwhile = node
+  let self.context[0].endwhile = node
   call self.pop_context()
 endfunction
 
@@ -1135,12 +1123,12 @@ function s:VimLParser.parse_cmd_for()
 endfunction
 
 function s:VimLParser.parse_cmd_endfor()
-  if self.context.type !=# 'FOR'
+  if self.context[0].type !=# 'FOR'
     throw self.err('VimLParser: E588: :endfor without :for')
   endif
   let node = self.exnode('ENDFOR')
   let node.ea = self.ea
-  let node.parent.endfor = node
+  let self.context[0].endfor = node
   call self.pop_context()
 endfunction
 
@@ -1173,12 +1161,12 @@ function s:VimLParser.parse_cmd_try()
 endfunction
 
 function s:VimLParser.parse_cmd_catch()
-  if self.context.type ==# 'FINALLY'
+  if self.context[0].type ==# 'FINALLY'
     throw self.err('VimLParser: E604: :catch after :finally')
-  elseif self.context.type !=# 'TRY' && self.context.type !=# 'CATCH'
+  elseif self.context[0].type !=# 'TRY' && self.context[0].type !=# 'CATCH'
     throw self.err('VimLParser: E603: :catch without :try')
   endif
-  if self.context.type !=# 'TRY'
+  if self.context[0].type !=# 'TRY'
     call self.pop_context()
   endif
   let node = self.blocknode('CATCH')
@@ -1188,33 +1176,33 @@ function s:VimLParser.parse_cmd_catch()
   if !self.ends_excmds(self.reader.peek())
     let [node.pattern, endc] = self.parse_pattern(self.reader.get())
   endif
-  call add(node.parent.catch, node)
+  call add(self.context[0].catch, node)
   call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_finally()
-  if self.context.type !=# 'TRY' && self.context.type !=# 'CATCH'
+  if self.context[0].type !=# 'TRY' && self.context[0].type !=# 'CATCH'
     throw self.err('VimLParser: E606: :finally without :try')
   endif
-  if self.context.type !=# 'TRY'
+  if self.context[0].type !=# 'TRY'
     call self.pop_context()
   endif
   let node = self.blocknode('FINALLY')
   let node.ea = self.ea
-  let node.parent.finally = node
+  let self.context[0].finally = node
   call self.push_context(node)
 endfunction
 
 function s:VimLParser.parse_cmd_endtry()
-  if self.context.type !=# 'TRY' && self.context.type !=# 'CATCH' && self.context.type !=# 'FINALLY'
+  if self.context[0].type !=# 'TRY' && self.context[0].type !=# 'CATCH' && self.context[0].type !=# 'FINALLY'
     throw self.err('VimLParser: E602: :endtry without :try')
   endif
-  if self.context.type !=# 'TRY'
+  if self.context[0].type !=# 'TRY'
     call self.pop_context()
   endif
   let node = self.exnode('ENDTRY')
   let node.ea = self.ea
-  let node.parent.endtry = node
+  let self.context[0].endtry = node
   call self.pop_context()
 endfunction
 
