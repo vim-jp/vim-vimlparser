@@ -2066,6 +2066,7 @@ endfunction
 
 function s:ExprTokenizer.__init__(reader)
   let self.reader = a:reader
+  let self.cache = {}
 endfunction
 
 function s:ExprTokenizer.err(...)
@@ -2106,6 +2107,19 @@ function s:ExprTokenizer.peek_keepspace()
 endfunction
 
 function s:ExprTokenizer.get_keepspace()
+  " FIXME: remove dirty hack
+  if has_key(self.cache, self.reader.i)
+    let x = self.cache[self.reader.i]
+    let self.reader.i = x[0]
+    return x[1]
+  endif
+  let i = self.reader.i
+  let r = self.get_keepspace2()
+  let self.cache[i] = [self.reader.i, r]
+  return r
+endfunction
+
+function s:ExprTokenizer.get_keepspace2()
   while 1
     let c = self.reader.peek()
     let s = self.reader.peekn(10)
