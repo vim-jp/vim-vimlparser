@@ -193,6 +193,7 @@ function s:VimLParser.new(...)
 endfunction
 
 function s:VimLParser.__init__()
+  let self.find_command_cache = {}
 endfunction
 
 function s:VimLParser.err(...)
@@ -629,6 +630,10 @@ function s:VimLParser.find_command()
     endif
   endif
 
+  if has_key(self.find_command_cache, name)
+    return self.find_command_cache[name]
+  endif
+
   let cmd = s:NIL
 
   for x in self.builtin_commands
@@ -645,6 +650,8 @@ function s:VimLParser.find_command()
     unlet cmd
     let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
   endif
+
+  let self.find_command_cache[name] = cmd
 
   return cmd
 endfunction
