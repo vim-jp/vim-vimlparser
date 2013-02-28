@@ -3158,7 +3158,7 @@ function s:StringReader.__init__(lines)
     let col = 0
     for c in split(a:lines[lnum], '\zs')
       call add(self.buf, c)
-      call add(self.pos, [lnum, col])
+      call add(self.pos, [lnum + 1, col + 1])
       let col += len(c)
     endfor
     while lnum + 1 < len(a:lines) && a:lines[lnum + 1] =~# '^\s*\\'
@@ -3171,18 +3171,18 @@ function s:StringReader.__init__(lines)
           endif
         else
           call add(self.buf, c)
-          call add(self.pos, [lnum, col])
+          call add(self.pos, [lnum + 1, col + 1])
         endif
         let col += len(c)
       endfor
       let lnum += 1
     endwhile
     call add(self.buf, '<EOL>')
-    call add(self.pos, [lnum, col])
+    call add(self.pos, [lnum + 1, col + 1])
     let lnum += 1
   endwhile
   " for <EOF>
-  call add(self.pos, [lnum, 0])
+  call add(self.pos, [lnum + 1, 0])
   let self.i = 0
 endfunction
 
