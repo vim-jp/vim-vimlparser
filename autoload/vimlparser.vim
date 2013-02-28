@@ -912,12 +912,7 @@ function s:VimLParser.parse_cmd_loadkeymap()
 endfunction
 
 function s:VimLParser.parse_cmd_lua()
-  let pos = self.reader.getpos()
-  call self.reader.setpos(self.ea.linepos)
-  let cmdline = self.reader.readline()
-  call self.reader.setpos(pos)
   call self.skip_white()
-  let lines = [cmdline]
   if self.reader.peekn(2) ==# '<<'
     call self.reader.getn(2)
     call self.skip_white()
@@ -925,6 +920,10 @@ function s:VimLParser.parse_cmd_lua()
     if m ==# ''
       let m = '.'
     endif
+    call self.reader.setpos(self.ea.linepos)
+    let cmdline = self.reader.getn(-1)
+    let lines = [cmdline]
+    call self.reader.get()
     while 1
       if self.reader.peek() ==# '<EOF>'
         break
@@ -936,6 +935,10 @@ function s:VimLParser.parse_cmd_lua()
       endif
       call self.reader.get()
     endwhile
+  else
+    call self.reader.setpos(self.ea.linepos)
+    let cmdline = self.reader.getn(-1)
+    let lines = [cmdline]
   endif
   let node = self.exnode(s:NODE_EXCMD)
   let node.ea = self.ea
