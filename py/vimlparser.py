@@ -1445,18 +1445,17 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_lua(self):
-        pos = self.reader.getpos()
-        self.reader.setpos(self.ea.linepos)
-        cmdline = self.reader.readline()
-        self.reader.setpos(pos)
         self.skip_white()
-        lines = [cmdline]
         if self.reader.peekn(2) == "<<":
             self.reader.getn(2)
             self.skip_white()
             m = self.reader.readline()
             if m == "":
                 m = "."
+            self.reader.setpos(self.ea.linepos)
+            cmdline = self.reader.getn(-1)
+            lines = [cmdline]
+            self.reader.get()
             while 1:
                 if self.reader.peek() == "<EOF>":
                     break
@@ -1465,6 +1464,10 @@ class VimLParser:
                 if line == m:
                     break
                 self.reader.get()
+        else:
+            self.reader.setpos(self.ea.linepos)
+            cmdline = self.reader.getn(-1)
+            lines = [cmdline]
         node = self.exnode(NODE_EXCMD)
         node.ea = self.ea
         node.str = viml_join(lines, "\n")
