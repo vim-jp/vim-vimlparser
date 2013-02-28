@@ -2120,236 +2120,234 @@ function s:ExprTokenizer.get_keepspace()
 endfunction
 
 function s:ExprTokenizer.get_keepspace2()
-  while 1
-    let c = self.reader.peek()
-    let s = self.reader.peekn(10)
-    if c ==# '<EOF>'
-      return self.token(s:TOKEN_EOF, c)
-    elseif c ==# '<EOL>'
-      call self.reader.get()
-      return self.token(s:TOKEN_EOL, c)
-    elseif s =~# '^\s'
-      let s = ''
-      while self.reader.peekn(1) =~# '\s'
-        let s .= self.reader.getn(1)
-      endwhile
-      return self.token(s:TOKEN_SPACE, s)
-    elseif s =~# '^0x\x'
-      let s = self.reader.getn(3)
-      while self.reader.peekn(1) =~# '\x'
-        let s .= self.reader.getn(1)
-      endwhile
-      return self.token(s:TOKEN_NUMBER, s)
-    elseif s =~# '^\d'
-      let s = ''
+  let c = self.reader.peek()
+  let s = self.reader.peekn(10)
+  if c ==# '<EOF>'
+    return self.token(s:TOKEN_EOF, c)
+  elseif c ==# '<EOL>'
+    call self.reader.get()
+    return self.token(s:TOKEN_EOL, c)
+  elseif s =~# '^\s'
+    let s = ''
+    while self.reader.peekn(1) =~# '\s'
+      let s .= self.reader.getn(1)
+    endwhile
+    return self.token(s:TOKEN_SPACE, s)
+  elseif s =~# '^0x\x'
+    let s = self.reader.getn(3)
+    while self.reader.peekn(1) =~# '\x'
+      let s .= self.reader.getn(1)
+    endwhile
+    return self.token(s:TOKEN_NUMBER, s)
+  elseif s =~# '^\d'
+    let s = ''
+    while self.reader.peekn(1) =~# '\d'
+      let s .= self.reader.getn(1)
+    endwhile
+    if self.reader.peekn(2) =~# '\.\d'
+      let s .= self.reader.getn(1)
       while self.reader.peekn(1) =~# '\d'
         let s .= self.reader.getn(1)
       endwhile
-      if self.reader.peekn(2) =~# '\.\d'
-        let s .= self.reader.getn(1)
+      if self.reader.peekn(3) =~# '[Ee][-+]\d'
+        let s .= self.reader.getn(3)
         while self.reader.peekn(1) =~# '\d'
           let s .= self.reader.getn(1)
         endwhile
-        if self.reader.peekn(3) =~# '[Ee][-+]\d'
-          let s .= self.reader.getn(3)
-          while self.reader.peekn(1) =~# '\d'
-            let s .= self.reader.getn(1)
-          endwhile
-        endif
       endif
-      return self.token(s:TOKEN_NUMBER, s)
-    elseif s =~# '^is#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_ISH, 'is#')
-    elseif s=~# '^is?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_ISQ, 'is?')
-    elseif s =~# '^isnot#'
-      call self.reader.getn(6)
-      return self.token(s:TOKEN_ISNOTH, 'is#')
-    elseif s =~# '^isnot?'
-      call self.reader.getn(6)
-      return self.token(s:TOKEN_ISNOTQ, 'is?')
-    elseif s =~# '^is\>'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_IS, 'is')
-    elseif s =~# '^isnot\>'
-      call self.reader.getn(5)
-      return self.token(s:TOKEN_ISNOT, 'isnot')
-    elseif s =~# '^<[Ss][Ii][Dd]>\h'
-      let s = self.reader.getn(6)
-      while self.reader.peekn(1) =~# '\w\|[:#]'
-        let s .= self.reader.getn(1)
-      endwhile
-      return self.token(s:TOKEN_IDENTIFIER, s)
-    elseif s =~# '^\h'
-      let s = self.reader.getn(1)
-      while self.reader.peekn(1) =~# '\w\|[:#]'
-        let s .= self.reader.getn(1)
-      endwhile
-      return self.token(s:TOKEN_IDENTIFIER, s)
-    elseif s =~# '^==?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_EQEQQ, '==?')
-    elseif s =~# '^==#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_EQEQH, '==#')
-    elseif s =~# '^!=?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_NOTEQQ, '!=?')
-    elseif s =~# '^!=#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_NOTEQH, '!=#')
-    elseif s =~# '^>=?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_GTEQQ, '>=?')
-    elseif s =~# '^>=#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_GTEQH, '>=#')
-    elseif s =~# '^<=?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_LTEQQ, '<=?')
-    elseif s =~# '^<=#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_LTEQH, '<=#')
-    elseif s =~# '^=\~?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_EQTILDQ, '=\~?')
-    elseif s =~# '^=\~#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_EQTILDH, '=\~#')
-    elseif s =~# '^!\~?'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_NOTTILDQ, '!\~?')
-    elseif s =~# '^!\~#'
-      call self.reader.getn(3)
-      return self.token(s:TOKEN_NOTTILDH, '!\~#')
-    elseif s =~# '^>?'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_GTQ, '>?')
-    elseif s =~# '^>#'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_GTH, '>#')
-    elseif s =~# '^<?'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_LTQ, '<?')
-    elseif s =~# '^<#'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_LTH, '<#')
-    elseif s =~# '^||'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_OROR, '||')
-    elseif s =~# '^&&'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_ANDAND, '&&')
-    elseif s =~# '^=='
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_EQEQ, '==')
-    elseif s =~# '^!='
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_NOTEQ, '!=')
-    elseif s =~# '^>='
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_GTEQ, '>=')
-    elseif s =~# '^<='
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_LTEQ, '<=')
-    elseif s =~# '^=\~'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_EQTILD, '=\~')
-    elseif s =~# '^!\~'
-      call self.reader.getn(2)
-      return self.token(s:TOKEN_NOTTILD, '!\~')
-    elseif s =~# '^>'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_GT, '>')
-    elseif s =~# '^<'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_LT, '<')
-    elseif s =~# '^+'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_PLUS, '+')
-    elseif s =~# '^-'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_MINUS, '-')
-    elseif s =~# '^\.'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_DOT, '.')
-    elseif s =~# '^\*'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_STAR, '*')
-    elseif s =~# '^/'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_SLASH, '/')
-    elseif s =~# '^%'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_PER, '%')
-    elseif s =~# '^!'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_NOT, '!')
-    elseif s =~# '^?'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_QUESTION, '?')
-    elseif s =~# '^:'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_COLON, ':')
-    elseif s =~# '^('
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_LPAR, '(')
-    elseif s =~# '^)'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_RPAR, ')')
-    elseif s =~# '^\['
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_LBRA, '[')
-    elseif s =~# '^]'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_RBRA, ']')
-    elseif s =~# '^{'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_LBPAR, '{')
-    elseif s =~# '^}'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_RBPAR, '}')
-    elseif s =~# '^,'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_COMMA, ',')
-    elseif s =~# "^'"
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_SQUOTE, "'")
-    elseif s =~# '^"'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_DQUOTE, '"')
-    elseif s =~# '^\$\w\+'
-      let s = self.reader.getn(1)
-      while self.reader.peekn(1) =~# '\w'
-        let s .= self.reader.getn(1)
-      endwhile
-      return self.token(s:TOKEN_ENV, s)
-    elseif s =~# '^@.'
-      return self.token(s:TOKEN_REG, self.reader.getn(2))
-    elseif s =~# '^&\(g:\|l:\|\w\w\)'
-      let s = self.reader.getn(3)
-      while self.reader.peekn(1) =~# '\w'
-        let s .= self.reader.getn(1)
-      endwhile
-      return self.token(s:TOKEN_OPTION, s)
-    elseif s =~# '^='
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_EQ, '=')
-    elseif s =~# '^|'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_OR, '|')
-    elseif s =~# '^;'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_SEMICOLON, ';')
-    elseif s =~# '^`'
-      call self.reader.getn(1)
-      return self.token(s:TOKEN_BACKTICK, '`')
-    else
-      throw self.err('ExprTokenizer: %s', s)
     endif
-  endwhile
+    return self.token(s:TOKEN_NUMBER, s)
+  elseif s =~# '^is#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_ISH, 'is#')
+  elseif s=~# '^is?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_ISQ, 'is?')
+  elseif s =~# '^isnot#'
+    call self.reader.getn(6)
+    return self.token(s:TOKEN_ISNOTH, 'is#')
+  elseif s =~# '^isnot?'
+    call self.reader.getn(6)
+    return self.token(s:TOKEN_ISNOTQ, 'is?')
+  elseif s =~# '^is\>'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_IS, 'is')
+  elseif s =~# '^isnot\>'
+    call self.reader.getn(5)
+    return self.token(s:TOKEN_ISNOT, 'isnot')
+  elseif s =~# '^<[Ss][Ii][Dd]>\h'
+    let s = self.reader.getn(6)
+    while self.reader.peekn(1) =~# '\w\|[:#]'
+      let s .= self.reader.getn(1)
+    endwhile
+    return self.token(s:TOKEN_IDENTIFIER, s)
+  elseif s =~# '^\h'
+    let s = self.reader.getn(1)
+    while self.reader.peekn(1) =~# '\w\|[:#]'
+      let s .= self.reader.getn(1)
+    endwhile
+    return self.token(s:TOKEN_IDENTIFIER, s)
+  elseif s =~# '^==?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_EQEQQ, '==?')
+  elseif s =~# '^==#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_EQEQH, '==#')
+  elseif s =~# '^!=?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_NOTEQQ, '!=?')
+  elseif s =~# '^!=#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_NOTEQH, '!=#')
+  elseif s =~# '^>=?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_GTEQQ, '>=?')
+  elseif s =~# '^>=#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_GTEQH, '>=#')
+  elseif s =~# '^<=?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_LTEQQ, '<=?')
+  elseif s =~# '^<=#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_LTEQH, '<=#')
+  elseif s =~# '^=\~?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_EQTILDQ, '=\~?')
+  elseif s =~# '^=\~#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_EQTILDH, '=\~#')
+  elseif s =~# '^!\~?'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_NOTTILDQ, '!\~?')
+  elseif s =~# '^!\~#'
+    call self.reader.getn(3)
+    return self.token(s:TOKEN_NOTTILDH, '!\~#')
+  elseif s =~# '^>?'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_GTQ, '>?')
+  elseif s =~# '^>#'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_GTH, '>#')
+  elseif s =~# '^<?'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_LTQ, '<?')
+  elseif s =~# '^<#'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_LTH, '<#')
+  elseif s =~# '^||'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_OROR, '||')
+  elseif s =~# '^&&'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_ANDAND, '&&')
+  elseif s =~# '^=='
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_EQEQ, '==')
+  elseif s =~# '^!='
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_NOTEQ, '!=')
+  elseif s =~# '^>='
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_GTEQ, '>=')
+  elseif s =~# '^<='
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_LTEQ, '<=')
+  elseif s =~# '^=\~'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_EQTILD, '=\~')
+  elseif s =~# '^!\~'
+    call self.reader.getn(2)
+    return self.token(s:TOKEN_NOTTILD, '!\~')
+  elseif s =~# '^>'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_GT, '>')
+  elseif s =~# '^<'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_LT, '<')
+  elseif s =~# '^+'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_PLUS, '+')
+  elseif s =~# '^-'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_MINUS, '-')
+  elseif s =~# '^\.'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_DOT, '.')
+  elseif s =~# '^\*'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_STAR, '*')
+  elseif s =~# '^/'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_SLASH, '/')
+  elseif s =~# '^%'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_PER, '%')
+  elseif s =~# '^!'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_NOT, '!')
+  elseif s =~# '^?'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_QUESTION, '?')
+  elseif s =~# '^:'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_COLON, ':')
+  elseif s =~# '^('
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_LPAR, '(')
+  elseif s =~# '^)'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_RPAR, ')')
+  elseif s =~# '^\['
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_LBRA, '[')
+  elseif s =~# '^]'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_RBRA, ']')
+  elseif s =~# '^{'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_LBPAR, '{')
+  elseif s =~# '^}'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_RBPAR, '}')
+  elseif s =~# '^,'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_COMMA, ',')
+  elseif s =~# "^'"
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_SQUOTE, "'")
+  elseif s =~# '^"'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_DQUOTE, '"')
+  elseif s =~# '^\$\w\+'
+    let s = self.reader.getn(1)
+    while self.reader.peekn(1) =~# '\w'
+      let s .= self.reader.getn(1)
+    endwhile
+    return self.token(s:TOKEN_ENV, s)
+  elseif s =~# '^@.'
+    return self.token(s:TOKEN_REG, self.reader.getn(2))
+  elseif s =~# '^&\(g:\|l:\|\w\w\)'
+    let s = self.reader.getn(3)
+    while self.reader.peekn(1) =~# '\w'
+      let s .= self.reader.getn(1)
+    endwhile
+    return self.token(s:TOKEN_OPTION, s)
+  elseif s =~# '^='
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_EQ, '=')
+  elseif s =~# '^|'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_OR, '|')
+  elseif s =~# '^;'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_SEMICOLON, ';')
+  elseif s =~# '^`'
+    call self.reader.getn(1)
+    return self.token(s:TOKEN_BACKTICK, '`')
+  else
+    throw self.err('ExprTokenizer: %s', s)
+  endif
 endfunction
 
 function s:ExprTokenizer.get_sstring()
