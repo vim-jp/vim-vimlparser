@@ -3206,7 +3206,7 @@ endfunction
 function s:StringReader.getn(n)
   let r = ''
   let j = 0
-  while self.i <= len(self.buf) && (a:n < 0 || j < a:n)
+  while self.i < len(self.buf) && (a:n < 0 || j < a:n)
     let c = self.buf[self.i]
     if c ==# '<EOL>'
       break
