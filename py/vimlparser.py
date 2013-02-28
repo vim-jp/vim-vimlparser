@@ -2927,7 +2927,7 @@ class StringReader:
             col = 0
             for c in viml_split(lines[lnum], "\\zs"):
                 viml_add(self.buf, c)
-                viml_add(self.pos, [lnum, col])
+                viml_add(self.pos, [lnum + 1, col + 1])
                 col += viml_len(c)
             while lnum + 1 < viml_len(lines) and viml_eqregh(lines[lnum + 1], "^\\s*\\\\"):
                 skip = 1
@@ -2938,14 +2938,14 @@ class StringReader:
                             skip = 0
                     else:
                         viml_add(self.buf, c)
-                        viml_add(self.pos, [lnum, col])
+                        viml_add(self.pos, [lnum + 1, col + 1])
                     col += viml_len(c)
                 lnum += 1
             viml_add(self.buf, "<EOL>")
-            viml_add(self.pos, [lnum, col])
+            viml_add(self.pos, [lnum + 1, col + 1])
             lnum += 1
         # for <EOF>
-        viml_add(self.pos, [lnum, 0])
+        viml_add(self.pos, [lnum + 1, 0])
         self.i = 0
 
     def peek(self):
