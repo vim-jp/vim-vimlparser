@@ -184,6 +184,39 @@ let s:TOKEN_OR = 60
 let s:TOKEN_SEMICOLON = 61
 let s:TOKEN_BACKTICK = 62
 
+function s:isalpha(c)
+  return a:c =~# '^[A-Za-z]$'
+endfunction
+
+function s:isalnum(c)
+  return a:c =~# '^[0-9A-Za-z]$'
+endfunction
+
+function s:isdigit(c)
+  return a:c =~# '^[0-9]$'
+endfunction
+
+function s:isxdigit(c)
+  return a:c =~# '^[0-9A-Fa-f]$'
+endfunction
+
+function s:iswordc(c)
+  return a:c =~# '^[0-9A-Za-z_]$'
+endfunction
+
+function s:iswordc1(c)
+  return a:c =~# '^[A-Za-z_]$'
+endfunction
+
+function s:iswhite(c)
+  return a:c =~# '^[ \t]$'
+endfunction
+
+" FIXME:
+function s:isidc(c)
+  return a:c =~# '^[0-9A-Za-z_]$'
+endfunction
+
 let s:VimLParser = {}
 
 function s:VimLParser.new(...)
@@ -320,7 +353,7 @@ function s:VimLParser.parse_one_cmd()
     call self.reader.get()
     return
   endif
-  call self.skip_white_and_colon()
+  call self.reader.skip_white_and_colon()
   if self.reader.peekn(1) ==# ''
     call self.reader.get()
     return
@@ -342,15 +375,15 @@ function s:VimLParser.parse_command_modifiers()
   let modifiers = []
   while 1
     let pos = self.reader.getpos()
-    if self.reader.peekn(1) =~# '\d'
-      let d = self.read_digits()
-      call self.skip_white()
+    if s:isdigit(self.reader.peekn(1))
+      let d = self.reader.read_digit()
+      call self.reader.skip_white()
     else
       let d = ''
     endif
-    let k = self.read_alpha()
+    let k = self.reader.read_alpha()
     let c = self.reader.peekn(1)
-    call self.skip_white()
+    call self.reader.skip_white()
     if k =~# '^abo\%[veleft]$'
       call add(modifiers, {'name': 'aboveleft'})
     elseif k =~# '^bel\%[owright]$'
@@ -422,7 +455,7 @@ function s:VimLParser.parse_range()
   while 1
 
     while 1
-      call self.skip_white()
+      call self.reader.skip_white()
 
       let c = self.reader.peekn(1)
       if c ==# ''
@@ -456,16 +489,16 @@ function s:VimLParser.parse_range()
         else
           throw self.err('VimLParser: E10: \\ should be followed by /, ? or &')
         endif
-      elseif c =~# '\d'
-        call add(tokens, self.read_digits())
+      elseif s:isdigit(c)
+        call add(tokens, self.reader.read_digit())
       endif
 
       while 1
-        call self.skip_white()
+        call self.reader.skip_white()
         if self.reader.peekn(1) ==# ''
           break
         endif
-        let n = self.read_integer()
+        let n = self.reader.read_integer()
         if n ==# ''
           break
         endif
@@ -528,7 +561,7 @@ function s:VimLParser.parse_pattern(delimiter)
 endfunction
 
 function s:VimLParser.parse_command()
-  call self.skip_white_and_colon()
+  call self.reader.skip_white_and_colon()
 
   if self.reader.peekn(1) ==# '' || self.reader.peekn(1) ==# '"'
     if !empty(self.ea.modifiers) || !empty(self.ea.range)
@@ -558,7 +591,7 @@ function s:VimLParser.parse_command()
   endif
 
   if self.ea.cmd.name !=# '!'
-    call self.skip_white()
+    call self.reader.skip_white()
   endif
 
   let self.ea.argpos = self.reader.getpos()
@@ -573,7 +606,7 @@ function s:VimLParser.parse_command()
       if self.reader.peekn(1) ==# '>'
         throw self.err('VimLParser: E494: Use w or w>>')
       endif
-      call self.skip_white()
+      call self.reader.skip_white()
       let self.ea.append = 1
     elseif self.reader.peekn(1) ==# '!' && self.ea.cmd.name ==# 'write'
       call self.reader.getn(1)
@@ -597,7 +630,7 @@ function s:VimLParser.parse_command()
       call self.reader.getn(1)
       let self.ea.amount += 1
     endwhile
-    call self.skip_white()
+    call self.reader.skip_white()
   endif
 
   if self.ea.cmd.flags =~# '\<EDITCMD\>' && !self.ea.usefilter
@@ -620,10 +653,10 @@ function s:VimLParser.find_command()
     call self.reader.getn(1)
     let name = c
   elseif self.reader.peekn(2) ==# 'py'
-    let name = self.read_alnum()
+    let name = self.reader.read_alnum()
   else
     let pos = self.reader.getpos()
-    let name = self.read_alpha()
+    let name = self.reader.read_alpha()
     if name !=# 'del' && name =~# '\v^d%[elete][lp]$'
       call self.reader.setpos(pos)
       let name = self.reader.getn(len(name) - 1)
@@ -646,7 +679,7 @@ function s:VimLParser.find_command()
 
   " FIXME: user defined command
   if (cmd is s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
-    let name .= self.read_alnum()
+    let name .= self.reader.read_alnum()
     unlet cmd
     let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
   endif
@@ -677,16 +710,16 @@ function s:VimLParser.parse_argopt()
       let self.ea.read_edit = 1
     elseif s =~# '^++ff=\(dos\|unix\|mac\)\>'
       call self.reader.getn(5)
-      let self.ea.force_ff = self.read_alpha()
+      let self.ea.force_ff = self.reader.read_alpha()
     elseif s =~# '^++fileformat=\(dos\|unix\|mac\)\>'
       call self.reader.getn(13)
-      let self.ea.force_ff = self.read_alpha()
+      let self.ea.force_ff = self.reader.read_alpha()
     elseif s =~# '^++enc=\S'
       call self.reader.getn(6)
-      let self.ea.force_enc = self.readx('\S')
+      let self.ea.force_enc = self.reader.read_nonwhite()
     elseif s =~# '^++encoding=\S'
       call self.reader.getn(11)
-      let self.ea.force_enc = self.readx('\S')
+      let self.ea.force_enc = self.reader.read_nonwhite()
     elseif s =~# '^++bad=\(keep\|drop\|.\)\>'
       call self.reader.getn(6)
       if s =~# '^++bad=keep'
@@ -701,7 +734,7 @@ function s:VimLParser.parse_argopt()
     else
       break
     endif
-    call self.skip_white()
+    call self.reader.skip_white()
   endwhile
 endfunction
 
@@ -722,7 +755,7 @@ function s:VimLParser.read_cmdarg()
   let r = ''
   while 1
     let c = self.reader.peekn(1)
-    if c ==# '' || c =~# '\s'
+    if c ==# '' || s:iswhite(c)
       break
     endif
     call self.reader.getn(1)
@@ -745,7 +778,7 @@ function s:VimLParser.parse_comment()
 endfunction
 
 function s:VimLParser.parse_trail()
-  call self.skip_white()
+  call self.reader.skip_white()
   let c = self.reader.peek()
   if c ==# '<EOF>'
     " pass
@@ -803,7 +836,7 @@ function s:VimLParser.separate_nextcmd()
   let nospend = end
   while 1
     let end = self.reader.getpos()
-    if pc !~# '\s'
+    if !s:iswhite(pc)
       let nospend = end
     endif
     let c = self.reader.peek()
@@ -852,9 +885,9 @@ endfunction
 function s:VimLParser.skip_vimgrep_pat()
   if self.reader.peekn(1) ==# ''
     " pass
-  elseif self.isidc(self.reader.peekn(1))
+  elseif s:isidc(self.reader.peekn(1))
     " :vimgrep pattern fname
-    call self.readx('\S')
+    call self.reader.read_nonwhite()
   else
     " :vimgrep /pattern/[g][j] fname
     let c = self.reader.getn(1)
@@ -912,10 +945,10 @@ function s:VimLParser.parse_cmd_loadkeymap()
 endfunction
 
 function s:VimLParser.parse_cmd_lua()
-  call self.skip_white()
+  call self.reader.skip_white()
   if self.reader.peekn(2) ==# '<<'
     call self.reader.getn(2)
-    call self.skip_white()
+    call self.reader.skip_white()
     let m = self.reader.readline()
     if m ==# ''
       let m = '.'
@@ -973,9 +1006,7 @@ endfunction
 function s:VimLParser.parse_cmd_finish()
   call self.parse_cmd_common()
   if self.context[0].type == s:NODE_TOPLEVEL
-    while self.reader.peek() !=# '<EOF>'
-      call self.reader.get()
-    endwhile
+    call self.reader.seek_end(0)
   endif
 endfunction
 
@@ -986,7 +1017,7 @@ endfunction
 
 function s:VimLParser.parse_cmd_function()
   let pos = self.reader.getpos()
-  call self.skip_white()
+  call self.reader.skip_white()
 
   " :function
   if self.ends_excmds(self.reader.peek())
@@ -1001,7 +1032,7 @@ function s:VimLParser.parse_cmd_function()
   endif
 
   let name = self.parse_lvalue()
-  call self.skip_white()
+  call self.reader.skip_white()
 
   " :function {name}
   if self.reader.peekn(1) !=# '('
@@ -1022,11 +1053,11 @@ function s:VimLParser.parse_cmd_function()
     call self.reader.getn(1)
   else
     while 1
-      call self.skip_white()
-      if self.reader.peekn(1) =~# '\h'
-        let arg = self.readx('\w')
+      call self.reader.skip_white()
+      if s:iswordc1(self.reader.peekn(1))
+        let arg = self.reader.read_word()
         call add(node.args, arg)
-        call self.skip_white()
+        call self.reader.skip_white()
         let c = self.reader.peekn(1)
         if c ==# ','
           call self.reader.getn(1)
@@ -1040,7 +1071,7 @@ function s:VimLParser.parse_cmd_function()
       elseif self.reader.peekn(3) ==# '...'
         call self.reader.getn(3)
         call add(node.args, '...')
-        call self.skip_white()
+        call self.reader.skip_white()
         let c = self.reader.peekn(1)
         if c ==# ')'
           call self.reader.getn(1)
@@ -1054,8 +1085,8 @@ function s:VimLParser.parse_cmd_function()
     endwhile
   endif
   while 1
-    call self.skip_white()
-    let key = self.read_alpha()
+    call self.reader.skip_white()
+    let key = self.reader.read_alpha()
     if key ==# ''
       break
     elseif key ==# 'range'
@@ -1101,7 +1132,7 @@ function s:VimLParser.parse_cmd_return()
   let node = self.exnode(s:NODE_RETURN)
   let node.ea = self.ea
   let node.arg = s:NIL
-  call self.skip_white()
+  call self.reader.skip_white()
   let c = self.reader.peek()
   if !self.ends_excmds(c)
     let node.arg = self.parse_expr()
@@ -1113,7 +1144,7 @@ function s:VimLParser.parse_cmd_call()
   let node = self.exnode(s:NODE_EXCALL)
   let node.ea = self.ea
   let node.expr = s:NIL
-  call self.skip_white()
+  call self.reader.skip_white()
   let c = self.reader.peek()
   if self.ends_excmds(c)
     throw self.err('VimLParser: call error: %s', c)
@@ -1127,7 +1158,7 @@ endfunction
 
 function s:VimLParser.parse_cmd_let()
   let pos = self.reader.getpos()
-  call self.skip_white()
+  call self.reader.skip_white()
 
   " :let
   if self.ends_excmds(self.reader.peek())
@@ -1136,7 +1167,7 @@ function s:VimLParser.parse_cmd_let()
   endif
 
   let lhs = self.parse_letlhs()
-  call self.skip_white()
+  call self.reader.skip_white()
   let s1 = self.reader.peekn(1)
   let s2 = self.reader.peekn(2)
 
@@ -1177,9 +1208,9 @@ function s:VimLParser.parse_cmd_lockvar()
   let node.ea = self.ea
   let node.depth = 2
   let node.args = []
-  call self.skip_white()
-  if self.reader.peekn(1) =~# '\d'
-    let node.depth = str2nr(self.read_digits(), 10)
+  call self.reader.skip_white()
+  if s:isdigit(self.reader.peekn(1))
+    let node.depth = str2nr(self.reader.read_digit(), 10)
   endif
   let node.args = self.parse_lvaluelist()
   call self.add_node(node)
@@ -1190,9 +1221,9 @@ function s:VimLParser.parse_cmd_unlockvar()
   let node.ea = self.ea
   let node.depth = 2
   let node.args = []
-  call self.skip_white()
-  if self.reader.peekn(1) =~# '\d'
-    let node.depth = str2nr(self.read_digits(), 10)
+  call self.reader.skip_white()
+  if s:isdigit(self.reader.peekn(1))
+    let node.depth = str2nr(self.reader.read_digit(), 10)
   endif
   let node.args = self.parse_lvaluelist()
   call self.add_node(node)
@@ -1275,8 +1306,8 @@ function s:VimLParser.parse_cmd_for()
   let node.rhs = s:NIL
   let node.endfor = s:NIL
   let node.lhs = self.parse_letlhs()
-  call self.skip_white()
-  if self.read_alpha() !=# 'in'
+  call self.reader.skip_white()
+  if self.reader.read_alpha() !=# 'in'
     throw self.err('VimLParser: Missing "in" after :for')
   endif
   let node.rhs = self.parse_expr()
@@ -1334,7 +1365,7 @@ function s:VimLParser.parse_cmd_catch()
   let node = self.blocknode(s:NODE_CATCH)
   let node.ea = self.ea
   let node.pattern = s:NIL
-  call self.skip_white()
+  call self.reader.skip_white()
   if !self.ends_excmds(self.reader.peek())
     let [node.pattern, endc] = self.parse_pattern(self.reader.get())
   endif
@@ -1427,7 +1458,7 @@ endfunction
 function s:VimLParser.parse_exprlist()
   let args = []
   while 1
-    call self.skip_white()
+    call self.reader.skip_white()
     let c = self.reader.peek()
     if c !=# '"' && self.ends_excmds(c)
       break
@@ -1453,7 +1484,7 @@ function s:VimLParser.parse_lvaluelist()
   let node = self.parse_expr()
   call add(args, node)
   while 1
-    call self.skip_white()
+    call self.reader.skip_white()
     if self.ends_excmds(self.reader.peek())
       break
     endif
@@ -1500,50 +1531,8 @@ function s:VimLParser.parse_letlhs()
   return values
 endfunction
 
-function s:VimLParser.readx(pat)
-  let r = ''
-  while self.reader.peekn(1) =~# a:pat
-    let r .= self.reader.getn(1)
-  endwhile
-  return r
-endfunction
-
-function s:VimLParser.read_alpha()
-  return self.readx('\a')
-endfunction
-
-function s:VimLParser.read_digits()
-  return self.readx('\d')
-endfunction
-
-function s:VimLParser.read_integer()
-  if self.reader.peekn(1) =~# '[-+]'
-    let c = self.reader.getn(1)
-  else
-    let c = ''
-  endif
-  return c . self.read_digits()
-endfunction
-
-function s:VimLParser.read_alnum()
-  return self.readx('[0-9a-zA-Z]')
-endfunction
-
-function s:VimLParser.skip_white()
-  call self.readx('\s')
-endfunction
-
-function s:VimLParser.skip_white_and_colon()
-  call self.readx(':\|\s')
-endfunction
-
 function s:VimLParser.ends_excmds(c)
   return a:c ==# '' || a:c ==# '|' || a:c ==# '"' || a:c ==# '<EOF>' || a:c ==# '<EOL>'
-endfunction
-
-" FIXME:
-function s:VimLParser.isidc(c)
-  return a:c =~# '[0-9A-Za-z_]'
 endfunction
 
 let s:VimLParser.builtin_commands = [
@@ -2118,14 +2107,14 @@ endfunction
 
 function s:ExprTokenizer.get_keepspace()
   " FIXME: remove dirty hack
-  if has_key(self.cache, self.reader.i)
-    let x = self.cache[self.reader.i]
-    let self.reader.i = x[0]
+  if has_key(self.cache, self.reader.tell())
+    let x = self.cache[self.reader.tell()]
+    call self.reader.seek_set(x[0])
     return x[1]
   endif
-  let i = self.reader.i
+  let pos = self.reader.tell()
   let r = self.get_keepspace2()
-  let self.cache[i] = [self.reader.i, r]
+  let self.cache[pos] = [self.reader.tell(), r]
   return r
 endfunction
 
@@ -2138,32 +2127,20 @@ function s:ExprTokenizer.get_keepspace2()
     call self.reader.get()
     return self.token(s:TOKEN_EOL, c)
   elseif s =~# '^\s'
-    let s = ''
-    while self.reader.peekn(1) =~# '\s'
-      let s .= self.reader.getn(1)
-    endwhile
+    let s = self.reader.read_white()
     return self.token(s:TOKEN_SPACE, s)
   elseif s =~# '^0x\x'
     let s = self.reader.getn(3)
-    while self.reader.peekn(1) =~# '\x'
-      let s .= self.reader.getn(1)
-    endwhile
+    let s .= self.reader.read_xdigit()
     return self.token(s:TOKEN_NUMBER, s)
-  elseif s =~# '^\d'
-    let s = ''
-    while self.reader.peekn(1) =~# '\d'
-      let s .= self.reader.getn(1)
-    endwhile
+  elseif s:isdigit(c)
+    let s = self.reader.read_digit()
     if self.reader.peekn(2) =~# '\.\d'
       let s .= self.reader.getn(1)
-      while self.reader.peekn(1) =~# '\d'
-        let s .= self.reader.getn(1)
-      endwhile
+      let s .= self.reader.read_digit()
       if self.reader.peekn(3) =~# '[Ee][-+]\d'
         let s .= self.reader.getn(3)
-        while self.reader.peekn(1) =~# '\d'
-          let s .= self.reader.getn(1)
-        endwhile
+        let s .= self.reader.read_digit()
       endif
     endif
     return self.token(s:TOKEN_NUMBER, s)
@@ -2331,17 +2308,13 @@ function s:ExprTokenizer.get_keepspace2()
     return self.token(s:TOKEN_DQUOTE, '"')
   elseif s =~# '^\$\w\+'
     let s = self.reader.getn(1)
-    while self.reader.peekn(1) =~# '\w'
-      let s .= self.reader.getn(1)
-    endwhile
+    let s .= self.reader.read_word()
     return self.token(s:TOKEN_ENV, s)
   elseif s =~# '^@.'
     return self.token(s:TOKEN_REG, self.reader.getn(2))
   elseif s =~# '^&\(g:\|l:\|\w\w\)'
     let s = self.reader.getn(3)
-    while self.reader.peekn(1) =~# '\w'
-      let s .= self.reader.getn(1)
-    endwhile
+    let s .= self.reader.read_word()
     return self.token(s:TOKEN_OPTION, s)
   elseif s =~# '^='
     call self.reader.getn(1)
@@ -2361,14 +2334,12 @@ function s:ExprTokenizer.get_keepspace2()
 endfunction
 
 function s:ExprTokenizer.get_sstring()
-  let s = ''
-  while self.reader.peekn(1) =~# '\s'
-    call self.reader.getn(1)
-  endwhile
+  call self.reader.skip_white()
   let c = self.reader.getn(1)
   if c !=# "'"
     throw sefl.err('ExprTokenizer: unexpected character: %s', c)
   endif
+  let s = ''
   while 1
     let c = self.reader.getn(1)
     if c ==# ''
@@ -2388,14 +2359,12 @@ function s:ExprTokenizer.get_sstring()
 endfunction
 
 function s:ExprTokenizer.get_dstring()
-  let s = ''
-  while self.reader.peekn(1) =~# '\s'
-    call self.reader.getn(1)
-  endwhile
+  call self.reader.skip_white()
   let c = self.reader.getn(1)
   if c !=# '"'
     throw self.err('ExprTokenizer: unexpected character: %s', c)
   endif
+  let s = ''
   while 1
     let c = self.reader.getn(1)
     if c ==# ''
@@ -3189,6 +3158,33 @@ function s:StringReader.__init__(lines)
   let self.i = 0
 endfunction
 
+function s:StringReader.eof()
+  return self.i >= len(self.buf)
+endfunction
+
+function s:StringReader.tell()
+  return self.i
+endfunction
+
+function s:StringReader.seek_set(i)
+  let self.i = a:i
+endfunction
+
+function s:StringReader.seek_cur(i)
+  let self.i = self.i + a:i
+endfunction
+
+function s:StringReader.seek_end(i)
+  let self.i = len(self.buf) + a:i
+endfunction
+
+function s:StringReader.p(i)
+  if self.i >= len(self.buf)
+    return '<EOF>'
+  endif
+  return self.buf[self.i + a:i]
+endfunction
+
 function s:StringReader.peek()
   if self.i >= len(self.buf)
     return '<EOF>'
@@ -3258,6 +3254,87 @@ endfunction
 
 function s:StringReader.setpos(pos)
   let self.i  = a:pos.i
+endfunction
+
+function s:StringReader.read_alpha()
+  let r = ''
+  while s:isalpha(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_alnum()
+  let r = ''
+  while s:isalnum(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_digit()
+  let r = ''
+  while s:isdigit(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_xdigit()
+  let r = ''
+  while s:isxdigit(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_integer()
+  let r = ''
+  let c = self.peekn(1)
+  if c == '-' || c == '+'
+    let r = self.getn(1)
+  endif
+  return r . self.read_digit()
+endfunction
+
+function s:StringReader.read_word()
+  let r = ''
+  while s:iswordc(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_white()
+  let r = ''
+  while s:iswhite(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_nonwhite()
+  let r = ''
+  while !s:iswhite(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.skip_white()
+  while s:iswhite(self.peekn(1))
+    call self.seek_cur(1)
+  endwhile
+endfunction
+
+function s:StringReader.skip_white_and_colon()
+  while 1
+    let c = self.peekn(1)
+    if !s:iswhite(c) && c !=# ':'
+      break
+    endif
+    call self.seek_cur(1)
+  endwhile
 endfunction
 
 let s:Compiler = {}
