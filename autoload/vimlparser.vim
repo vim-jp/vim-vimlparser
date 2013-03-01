@@ -212,6 +212,14 @@ function s:iswhite(c)
   return a:c =~# '^[ \t]$'
 endfunction
 
+function s:isnamec(c)
+  return a:c =~# '^[0-9A-Za-z_:#]$'
+endfunction
+
+function s:isnamec1(c)
+  return a:c =~# '^[0-9A-Za-z_]$'
+endfunction
+
 " FIXME:
 function s:isidc(c)
   return a:c =~# '^[0-9A-Za-z_]$'
@@ -2119,214 +2127,233 @@ function s:ExprTokenizer.get_keepspace()
 endfunction
 
 function s:ExprTokenizer.get_keepspace2()
-  let c = self.reader.peek()
-  let s = self.reader.peekn(10)
+  let r = self.reader
+  let c = r.peek()
   if c ==# '<EOF>'
     return self.token(s:TOKEN_EOF, c)
   elseif c ==# '<EOL>'
-    call self.reader.get()
+    call r.seek_cur(1)
     return self.token(s:TOKEN_EOL, c)
-  elseif s =~# '^\s'
-    let s = self.reader.read_white()
+  elseif s:iswhite(c)
+    let s = r.read_white()
     return self.token(s:TOKEN_SPACE, s)
-  elseif s =~# '^0x\x'
-    let s = self.reader.getn(3)
-    let s .= self.reader.read_xdigit()
+  elseif c ==# '0' && (r.p(1) ==# 'X' || r.p(1) ==# 'x') && s:isxdigit(r.p(2))
+    let s = r.getn(3)
+    let s .= r.read_xdigit()
     return self.token(s:TOKEN_NUMBER, s)
   elseif s:isdigit(c)
-    let s = self.reader.read_digit()
-    if self.reader.peekn(2) =~# '\.\d'
-      let s .= self.reader.getn(1)
-      let s .= self.reader.read_digit()
-      if self.reader.peekn(3) =~# '[Ee][-+]\d'
-        let s .= self.reader.getn(3)
-        let s .= self.reader.read_digit()
+    let s = r.read_digit()
+    if r.p(0) ==# '.' && s:isdigit(r.p(1))
+      let s .= r.getn(1)
+      let s .= r.read_digit()
+      if (r.p(0) ==# 'E' || r.p(0) ==# 'e') && (r.p(1) ==# '-' || r.p(1) ==# '+') && s:isdigit(r.p(2))
+        let s .= r.getn(3)
+        let s .= r.read_digit()
       endif
     endif
     return self.token(s:TOKEN_NUMBER, s)
-  elseif s =~# '^is#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_ISH, 'is#')
-  elseif s=~# '^is?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_ISQ, 'is?')
-  elseif s =~# '^isnot#'
-    call self.reader.getn(6)
-    return self.token(s:TOKEN_ISNOTH, 'is#')
-  elseif s =~# '^isnot?'
-    call self.reader.getn(6)
-    return self.token(s:TOKEN_ISNOTQ, 'is?')
-  elseif s =~# '^is\>'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_IS, 'is')
-  elseif s =~# '^isnot\>'
-    call self.reader.getn(5)
-    return self.token(s:TOKEN_ISNOT, 'isnot')
-  elseif s =~# '^<[Ss][Ii][Dd]>\h'
-    let s = self.reader.getn(6)
-    while self.reader.peekn(1) =~# '\w\|[:#]'
-      let s .= self.reader.getn(1)
-    endwhile
+  elseif c ==# 'i' && r.p(1) ==# 's' && !s:isidc(r.p(2))
+    if r.p(3) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_ISQ, 'is?')
+    elseif r.p(3) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_ISH, 'is#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_IS, 'is')
+    endif
+  elseif c ==# 'i' && r.p(1) ==# 's' && r.p(2) ==# 'n' && r.p(3) ==# 'o' && r.p(4) ==# 't' && !s:isidc(r.p(5))
+    if r.p(5) ==# '?'
+      call r.seek_cur(6)
+      return self.token(s:TOKEN_ISNOTQ, 'isnot?')
+    elseif r.p(5) ==# '#'
+      return self.token(s:TOKEN_ISNOTH, 'isnot#')
+      call r.seek_cur(6)
+    else
+      call r.seek_cur(5)
+      return self.token(s:TOKEN_ISNOT, 'isnot')
+    endif
+  elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 's') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>' && s:isnamec1(r.p(5))
+    let s = r.getn(6)
+    let s .= r.read_name()
     return self.token(s:TOKEN_IDENTIFIER, s)
-  elseif s =~# '^\h'
-    let s = self.reader.getn(1)
-    while self.reader.peekn(1) =~# '\w\|[:#]'
-      let s .= self.reader.getn(1)
-    endwhile
+  elseif s:isnamec1(c)
+    let s = r.read_name()
     return self.token(s:TOKEN_IDENTIFIER, s)
-  elseif s =~# '^==?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_EQEQQ, '==?')
-  elseif s =~# '^==#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_EQEQH, '==#')
-  elseif s =~# '^!=?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_NOTEQQ, '!=?')
-  elseif s =~# '^!=#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_NOTEQH, '!=#')
-  elseif s =~# '^>=?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_GTEQQ, '>=?')
-  elseif s =~# '^>=#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_GTEQH, '>=#')
-  elseif s =~# '^<=?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_LTEQQ, '<=?')
-  elseif s =~# '^<=#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_LTEQH, '<=#')
-  elseif s =~# '^=\~?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_EQTILDQ, '=~?')
-  elseif s =~# '^=\~#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_EQTILDH, '=~#')
-  elseif s =~# '^!\~?'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_NOTTILDQ, '!~?')
-  elseif s =~# '^!\~#'
-    call self.reader.getn(3)
-    return self.token(s:TOKEN_NOTTILDH, '!~#')
-  elseif s =~# '^>?'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_GTQ, '>?')
-  elseif s =~# '^>#'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_GTH, '>#')
-  elseif s =~# '^<?'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_LTQ, '<?')
-  elseif s =~# '^<#'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_LTH, '<#')
-  elseif s =~# '^||'
-    call self.reader.getn(2)
+  elseif c ==# '|' && r.p(1) ==# '|'
+    call r.seek_cur(2)
     return self.token(s:TOKEN_OROR, '||')
-  elseif s =~# '^&&'
-    call self.reader.getn(2)
+  elseif c ==# '&' && r.p(1) ==# '&'
+    call r.seek_cur(2)
     return self.token(s:TOKEN_ANDAND, '&&')
-  elseif s =~# '^=='
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_EQEQ, '==')
-  elseif s =~# '^!='
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_NOTEQ, '!=')
-  elseif s =~# '^>='
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_GTEQ, '>=')
-  elseif s =~# '^<='
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_LTEQ, '<=')
-  elseif s =~# '^=\~'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_EQTILD, '=~')
-  elseif s =~# '^!\~'
-    call self.reader.getn(2)
-    return self.token(s:TOKEN_NOTTILD, '!~')
-  elseif s =~# '^>'
-    call self.reader.getn(1)
-    return self.token(s:TOKEN_GT, '>')
-  elseif s =~# '^<'
-    call self.reader.getn(1)
-    return self.token(s:TOKEN_LT, '<')
-  elseif s =~# '^+'
-    call self.reader.getn(1)
+  elseif c ==# '=' && r.p(1) ==# '='
+    if r.p(2) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_EQEQQ, '==?')
+    elseif r.p(2) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_EQEQH, '==#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_EQEQ, '==')
+    endif
+  elseif c ==# '!' && r.p(1) ==# '='
+    if r.p(2) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_NOTEQQ, '!=?')
+    elseif r.p(2) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_NOTEQH, '!=#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_NOTEQ, '!=')
+    endif
+  elseif c ==# '>' && r.p(1) ==# '='
+    if r.p(2) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_GTEQQ, '>=?')
+    elseif r.p(2) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_GTEQH, '>=#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_GTEQ, '>=')
+    endif
+  elseif c ==# '<' && r.p(1) ==# '='
+    if r.p(2) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_LTEQQ, '<=?')
+    elseif r.p(2) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_LTEQH, '<=#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_LTEQ, '<=')
+    endif
+  elseif c ==# '=' && r.p(1) ==# '~'
+    if r.p(2) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_EQTILDQ, '=~?')
+    elseif r.p(2) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_EQTILDH, '=~#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_EQTILD, '=~')
+    endif
+  elseif c ==# '!' && r.p(1) ==# '~'
+    if r.p(2) ==# '?'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_NOTTILDQ, '!~?')
+    elseif r.p(2) ==# '#'
+      call r.seek_cur(3)
+      return self.token(s:TOKEN_NOTTILDH, '!~#')
+    else
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_NOTTILD, '!~')
+    endif
+  elseif c ==# '>'
+    if r.p(1) ==# '?'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_GTQ, '>?')
+    elseif r.p(1) ==# '#'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_GTH, '>#')
+    else
+      call r.seek_cur(1)
+      return self.token(s:TOKEN_GT, '>')
+    endif
+  elseif c ==# '<'
+    if r.p(1) ==# '?'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_LTQ, '<?')
+    elseif r.p(1) ==# '#'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_LTH, '<#')
+    else
+      call r.seek_cur(1)
+      return self.token(s:TOKEN_LT, '<')
+    endif
+  elseif c ==# '+'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_PLUS, '+')
-  elseif s =~# '^-'
-    call self.reader.getn(1)
+  elseif c ==# '-'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_MINUS, '-')
-  elseif s =~# '^\.'
-    call self.reader.getn(1)
+  elseif c ==# '.'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_DOT, '.')
-  elseif s =~# '^\*'
-    call self.reader.getn(1)
+  elseif c ==# '*'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_STAR, '*')
-  elseif s =~# '^/'
-    call self.reader.getn(1)
+  elseif c ==# '/'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_SLASH, '/')
-  elseif s =~# '^%'
-    call self.reader.getn(1)
+  elseif c ==# '%'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_PER, '%')
-  elseif s =~# '^!'
-    call self.reader.getn(1)
+  elseif c ==# '!'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_NOT, '!')
-  elseif s =~# '^?'
-    call self.reader.getn(1)
+  elseif c ==# '?'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_QUESTION, '?')
-  elseif s =~# '^:'
-    call self.reader.getn(1)
+  elseif c ==# ':'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_COLON, ':')
-  elseif s =~# '^('
-    call self.reader.getn(1)
+  elseif c ==# '('
+    call r.seek_cur(1)
     return self.token(s:TOKEN_LPAR, '(')
-  elseif s =~# '^)'
-    call self.reader.getn(1)
+  elseif c ==# ')'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_RPAR, ')')
-  elseif s =~# '^\['
-    call self.reader.getn(1)
+  elseif c ==# '['
+    call r.seek_cur(1)
     return self.token(s:TOKEN_LBRA, '[')
-  elseif s =~# '^]'
-    call self.reader.getn(1)
+  elseif c ==# ']'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_RBRA, ']')
-  elseif s =~# '^{'
-    call self.reader.getn(1)
+  elseif c ==# '{'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_LBPAR, '{')
-  elseif s =~# '^}'
-    call self.reader.getn(1)
+  elseif c ==# '}'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_RBPAR, '}')
-  elseif s =~# '^,'
-    call self.reader.getn(1)
+  elseif c ==# ','
+    call r.seek_cur(1)
     return self.token(s:TOKEN_COMMA, ',')
-  elseif s =~# "^'"
-    call self.reader.getn(1)
+  elseif c ==# "'"
+    call r.seek_cur(1)
     return self.token(s:TOKEN_SQUOTE, "'")
-  elseif s =~# '^"'
-    call self.reader.getn(1)
+  elseif c ==# '"'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_DQUOTE, '"')
-  elseif s =~# '^\$\w\+'
-    let s = self.reader.getn(1)
-    let s .= self.reader.read_word()
+  elseif c ==# '$'
+    let s = r.getn(1)
+    let s .= r.read_word()
     return self.token(s:TOKEN_ENV, s)
-  elseif s =~# '^@.'
-    return self.token(s:TOKEN_REG, self.reader.getn(2))
-  elseif s =~# '^&\(g:\|l:\|\w\w\)'
-    let s = self.reader.getn(3)
-    let s .= self.reader.read_word()
+  elseif c ==# '@'
+    " @<EOL> is treated as @"
+    return self.token(s:TOKEN_REG, r.getn(2))
+  elseif c ==# '&'
+    if (r.p(1) ==# 'g' || r.p(1) ==# 'l') && r.p(2) ==# ':'
+      let s = r.getn(3) . r.read_word()
+    else
+      let s = r.getn(1) . r.read_word()
+    endif
     return self.token(s:TOKEN_OPTION, s)
-  elseif s =~# '^='
-    call self.reader.getn(1)
+  elseif c ==# '='
+    call r.seek_cur(1)
     return self.token(s:TOKEN_EQ, '=')
-  elseif s =~# '^|'
-    call self.reader.getn(1)
+  elseif c ==# '|'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_OR, '|')
-  elseif s =~# '^;'
-    call self.reader.getn(1)
+  elseif c ==# ';'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_SEMICOLON, ';')
-  elseif s =~# '^`'
-    call self.reader.getn(1)
+  elseif c ==# '`'
+    call r.seek_cur(1)
     return self.token(s:TOKEN_BACKTICK, '`')
   else
     throw self.err('ExprTokenizer: %s', s)
@@ -3316,6 +3343,14 @@ endfunction
 function s:StringReader.read_nonwhite()
   let r = ''
   while !s:iswhite(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_name()
+  let r = ''
+  while s:isnamec(self.peekn(1))
     let r .= self.getn(1)
   endwhile
   return r
