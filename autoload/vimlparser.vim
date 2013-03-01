@@ -2223,16 +2223,16 @@ function s:ExprTokenizer.get_keepspace2()
     return self.token(s:TOKEN_LTEQH, '<=#')
   elseif s =~# '^=\~?'
     call self.reader.getn(3)
-    return self.token(s:TOKEN_EQTILDQ, '=\~?')
+    return self.token(s:TOKEN_EQTILDQ, '=~?')
   elseif s =~# '^=\~#'
     call self.reader.getn(3)
-    return self.token(s:TOKEN_EQTILDH, '=\~#')
+    return self.token(s:TOKEN_EQTILDH, '=~#')
   elseif s =~# '^!\~?'
     call self.reader.getn(3)
-    return self.token(s:TOKEN_NOTTILDQ, '!\~?')
+    return self.token(s:TOKEN_NOTTILDQ, '!~?')
   elseif s =~# '^!\~#'
     call self.reader.getn(3)
-    return self.token(s:TOKEN_NOTTILDH, '!\~#')
+    return self.token(s:TOKEN_NOTTILDH, '!~#')
   elseif s =~# '^>?'
     call self.reader.getn(2)
     return self.token(s:TOKEN_GTQ, '>?')
@@ -2265,10 +2265,10 @@ function s:ExprTokenizer.get_keepspace2()
     return self.token(s:TOKEN_LTEQ, '<=')
   elseif s =~# '^=\~'
     call self.reader.getn(2)
-    return self.token(s:TOKEN_EQTILD, '=\~')
+    return self.token(s:TOKEN_EQTILD, '=~')
   elseif s =~# '^!\~'
     call self.reader.getn(2)
-    return self.token(s:TOKEN_NOTTILD, '!\~')
+    return self.token(s:TOKEN_NOTTILD, '!~')
   elseif s =~# '^>'
     call self.reader.getn(1)
     return self.token(s:TOKEN_GT, '>')
