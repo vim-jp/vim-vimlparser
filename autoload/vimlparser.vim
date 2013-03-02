@@ -513,7 +513,7 @@ function s:VimLParser.parse_range()
         call add(tokens, n)
       endwhile
 
-      if self.reader.peekn(1) !~# '[/?]'
+      if self.reader.p(0) !=# '/' && self.reader.p(0) !=# '?'
         break
       endif
     endwhile
@@ -587,7 +587,7 @@ function s:VimLParser.parse_command()
     throw self.err('VimLParser: E492: Not an editor command: %s', self.reader.peekline())
   endif
 
-  if self.reader.peekn(1) ==# '!' && self.ea.cmd.name !~# '\v^%(substitute|smagic|snomagic)$'
+  if self.reader.peekn(1) ==# '!' && self.ea.cmd.name !=# 'substitute' && self.ea.cmd.name !=# 'smagic' && self.ea.cmd.name !=# 'snomagic'
     call self.reader.getn(1)
     let self.ea.forceit = 1
   else
@@ -608,7 +608,7 @@ function s:VimLParser.parse_command()
     call self.parse_argopt()
   endif
 
-  if self.ea.cmd.name =~# '\v^%(write|update)$'
+  if self.ea.cmd.name ==# 'write' || self.ea.cmd.name ==# 'update'
     if self.reader.peekn(1) ==# '>'
       call self.reader.getn(1)
       if self.reader.peekn(1) ==# '>'
@@ -632,7 +632,7 @@ function s:VimLParser.parse_command()
     endif
   endif
 
-  if self.ea.cmd.name =~# '^[<>]$'
+  if self.ea.cmd.name ==# '<' || self.ea.cmd.name ==# '>'
     let self.ea.amount = 1
     while self.reader.peekn(1) ==# self.ea.cmd.name
       call self.reader.getn(1)
@@ -705,7 +705,7 @@ endfunction
 " TODO:
 " ++opt=val
 function s:VimLParser.parse_argopt()
-  while 1
+  while self.reader.p(0) ==# '+' && self.reader.p(1) ==# '+'
     let s = self.reader.peekn(20)
     if s =~# '^++bin\>'
       call self.reader.getn(5)
@@ -814,7 +814,7 @@ endfunction
 function s:VimLParser.parse_cmd_common()
   if self.ea.cmd.flags =~# '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
-  elseif self.ea.cmd.name =~# '^\(!\|global\|vglobal\)$' || self.ea.usefilter
+  elseif self.ea.cmd.name ==# '!' || self.ea.cmd.name ==# 'global' || self.ea.cmd.name ==# 'vglobal' || self.ea.usefilter
     while 1
       let end = self.reader.getpos()
       if self.reader.getn(1) ==# ''
@@ -836,7 +836,7 @@ function s:VimLParser.parse_cmd_common()
 endfunction
 
 function s:VimLParser.separate_nextcmd()
-  if self.ea.cmd.name =~# '^\(vimgrep\|vimgrepadd\|lvimgrep\|lvimgrepadd\)$'
+  if self.ea.cmd.name ==# 'vimgrep' || self.ea.cmd.name ==# 'vimgrepadd' || self.ea.cmd.name ==# 'lvimgrep' || self.ea.cmd.name ==# 'lvimgrepadd'
     call self.skip_vimgrep_pat()
   endif
   let pc = ''
@@ -903,7 +903,7 @@ function s:VimLParser.skip_vimgrep_pat()
     if c !=# endc
       return
     endif
-    while self.reader.peekn(1) =~# '[gj]'
+    while self.reader.p(0) ==# 'g' || self.reader.p(0) ==# 'j'
       call self.reader.getn(1)
     endwhile
   endif
@@ -3387,7 +3387,7 @@ endfunction
 
 function s:Compiler.out(...)
   if len(a:000) == 1
-    if a:000[0] =~# '^)\+$'
+    if a:000[0][0] ==# ')'
       let self.lines[-1] .= a:000[0]
     else
       call add(self.lines, self.indent[0] . a:000[0])
