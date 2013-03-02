@@ -2356,7 +2356,7 @@ function s:ExprTokenizer.get_keepspace2()
     call r.seek_cur(1)
     return self.token(s:TOKEN_BACKTICK, '`')
   else
-    throw self.err('ExprTokenizer: %s', s)
+    throw self.err('ExprTokenizer: %s', c)
   endif
 endfunction
 
