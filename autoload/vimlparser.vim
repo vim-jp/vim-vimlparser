@@ -1511,19 +1511,16 @@ function s:VimLParser.parse_letlhs()
     while 1
       let node = self.parse_lvalue()
       call add(values.args, node)
-      if tokenizer.peek().type == s:TOKEN_RBRA
-        call tokenizer.get()
+      let token = tokenizer.get()
+      if token.type == s:TOKEN_RBRA
         break
-      elseif tokenizer.peek().type == s:TOKEN_COMMA
-        call tokenizer.get()
+      elseif token.type == s:TOKEN_COMMA
         continue
-      elseif tokenizer.peek().type == s:TOKEN_SEMICOLON
-        call tokenizer.get()
+      elseif token.type == s:TOKEN_SEMICOLON
         let node = self.parse_lvalue()
         let values.rest = node
-        let token = tokenizer.peek()
+        let token = tokenizer.get()
         if token.type == s:TOKEN_RBRA
-          call tokenizer.get()
           break
         else
           throw self.err('VimLParser: E475 Invalid argument: %s', token.value)
@@ -3004,23 +3001,24 @@ endfunction
 
 function s:ExprParser.parse_identifier()
   let id = []
-  let token = self.tokenizer.peek()
+  call self.tokenizer.reader.skip_white()
   while 1
-    if token.type == s:TOKEN_IDENTIFIER
-      call self.tokenizer.get()
-      call add(id, {'curly': 0, 'value': token.value})
-    elseif token.type == s:TOKEN_LBPAR
-      call self.tokenizer.get()
+    let c = self.tokenizer.reader.peek()
+    if s:isnamec(c)
+      let name = self.tokenizer.reader.read_name()
+      call add(id, {'curly': 0, 'value': name})
+    elseif c ==# '{'
+      call self.tokenizer.reader.get()
       let node = self.parse_expr1()
-      let token = self.tokenizer.get()
-      if token.type != s:TOKEN_RBPAR
-        throw self.err('ExprParser: unexpected token: %s', token.value)
+      call self.tokenizer.reader.skip_white()
+      let c = self.tokenizer.reader.get()
+      if c !=# '}'
+        throw self.err('ExprParser: unexpected token: %s', c)
       endif
       call add(id, {'curly': 1, 'value': node})
     else
       break
     endif
-    let token = self.tokenizer.peek_keepspace()
   endwhile
   return id
 endfunction
