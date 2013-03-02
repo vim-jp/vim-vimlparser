@@ -2150,10 +2150,10 @@ function s:ExprTokenizer.get_keepspace2()
     endif
     return self.token(s:TOKEN_NUMBER, s)
   elseif c ==# 'i' && r.p(1) ==# 's' && !s:isidc(r.p(2))
-    if r.p(3) ==# '?'
+    if r.p(2) ==# '?'
       call r.seek_cur(3)
       return self.token(s:TOKEN_ISQ, 'is?')
-    elseif r.p(3) ==# '#'
+    elseif r.p(2) ==# '#'
       call r.seek_cur(3)
       return self.token(s:TOKEN_ISH, 'is#')
     else
@@ -2165,8 +2165,8 @@ function s:ExprTokenizer.get_keepspace2()
       call r.seek_cur(6)
       return self.token(s:TOKEN_ISNOTQ, 'isnot?')
     elseif r.p(5) ==# '#'
-      return self.token(s:TOKEN_ISNOTH, 'isnot#')
       call r.seek_cur(6)
+      return self.token(s:TOKEN_ISNOTH, 'isnot#')
     else
       call r.seek_cur(5)
       return self.token(s:TOKEN_ISNOT, 'isnot')
