@@ -1940,19 +1940,16 @@ class VimLParser:
             while 1:
                 node = self.parse_lvalue()
                 viml_add(values.args, node)
-                if tokenizer.peek().type == TOKEN_RBRA:
-                    tokenizer.get()
+                token = tokenizer.get()
+                if token.type == TOKEN_RBRA:
                     break
-                elif tokenizer.peek().type == TOKEN_COMMA:
-                    tokenizer.get()
+                elif token.type == TOKEN_COMMA:
                     continue
-                elif tokenizer.peek().type == TOKEN_SEMICOLON:
-                    tokenizer.get()
+                elif token.type == TOKEN_SEMICOLON:
                     node = self.parse_lvalue()
                     values.rest = node
-                    token = tokenizer.peek()
+                    token = tokenizer.get()
                     if token.type == TOKEN_RBRA:
-                        tokenizer.get()
                         break
                     else:
                         raise Exception(self.err("VimLParser: E475 Invalid argument: %s", token.value))
@@ -2229,7 +2226,7 @@ class ExprTokenizer:
             r.seek_cur(1)
             return self.token(TOKEN_BACKTICK, "`")
         else:
-            raise Exception(self.err("ExprTokenizer: %s", s))
+            raise Exception(self.err("ExprTokenizer: %s", c))
 
     def get_sstring(self):
         self.reader.skip_white()
@@ -2808,21 +2805,22 @@ class ExprParser:
 
     def parse_identifier(self):
         id = []
-        token = self.tokenizer.peek()
+        self.tokenizer.reader.skip_white()
         while 1:
-            if token.type == TOKEN_IDENTIFIER:
-                self.tokenizer.get()
-                viml_add(id, AttributeDict({"curly":0, "value":token.value}))
-            elif token.type == TOKEN_LBPAR:
-                self.tokenizer.get()
+            c = self.tokenizer.reader.peek()
+            if isnamec(c):
+                name = self.tokenizer.reader.read_name()
+                viml_add(id, AttributeDict({"curly":0, "value":name}))
+            elif c == "{":
+                self.tokenizer.reader.get()
                 node = self.parse_expr1()
-                token = self.tokenizer.get()
-                if token.type != TOKEN_RBPAR:
-                    raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
+                self.tokenizer.reader.skip_white()
+                c = self.tokenizer.reader.get()
+                if c != "}":
+                    raise Exception(self.err("ExprParser: unexpected token: %s", c))
                 viml_add(id, AttributeDict({"curly":1, "value":node}))
             else:
                 break
-            token = self.tokenizer.peek_keepspace()
         return id
 
 class LvalueParser(ExprParser):
