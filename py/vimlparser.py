@@ -1149,7 +1149,7 @@ class VimLParser:
                     if n == "":
                         break
                     viml_add(tokens, n)
-                if not viml_eqregh(self.reader.peekn(1), "[/?]"):
+                if self.reader.p(0) != "/" and self.reader.p(0) != "?":
                     break
             if self.reader.peekn(1) == "%":
                 viml_add(tokens, self.reader.getn(1))
@@ -1200,7 +1200,7 @@ class VimLParser:
         if self.ea.cmd is NIL:
             self.reader.setpos(self.ea.cmdpos)
             raise Exception(self.err("VimLParser: E492: Not an editor command: %s", self.reader.peekline()))
-        if self.reader.peekn(1) == "!" and not viml_eqregh(self.ea.cmd.name, "\\v^%(substitute|smagic|snomagic)$"):
+        if self.reader.peekn(1) == "!" and self.ea.cmd.name != "substitute" and self.ea.cmd.name != "smagic" and self.ea.cmd.name != "snomagic":
             self.reader.getn(1)
             self.ea.forceit = 1
         else:
@@ -1212,7 +1212,7 @@ class VimLParser:
         self.ea.argpos = self.reader.getpos()
         if viml_eqregh(self.ea.cmd.flags, "\\<ARGOPT\\>"):
             self.parse_argopt()
-        if viml_eqregh(self.ea.cmd.name, "\\v^%(write|update)$"):
+        if self.ea.cmd.name == "write" or self.ea.cmd.name == "update":
             if self.reader.peekn(1) == ">":
                 self.reader.getn(1)
                 if self.reader.peekn(1) == ">":
@@ -1229,7 +1229,7 @@ class VimLParser:
             elif self.reader.peekn(1) == "!":
                 self.reader.getn(1)
                 self.ea.usefilter = 1
-        if viml_eqregh(self.ea.cmd.name, "^[<>]$"):
+        if self.ea.cmd.name == "<" or self.ea.cmd.name == ">":
             self.ea.amount = 1
             while self.reader.peekn(1) == self.ea.cmd.name:
                 self.reader.getn(1)
@@ -1281,7 +1281,7 @@ class VimLParser:
 # TODO:
 # ++opt=val
     def parse_argopt(self):
-        while 1:
+        while self.reader.p(0) == "+" and self.reader.p(1) == "+":
             s = self.reader.peekn(20)
             if viml_eqregh(s, "^++bin\\>"):
                 self.reader.getn(5)
@@ -1375,7 +1375,7 @@ class VimLParser:
     def parse_cmd_common(self):
         if viml_eqregh(self.ea.cmd.flags, "\\<TRLBAR\\>") and not self.ea.usefilter:
             end = self.separate_nextcmd()
-        elif viml_eqregh(self.ea.cmd.name, "^\\(!\\|global\\|vglobal\\)$") or self.ea.usefilter:
+        elif self.ea.cmd.name == "!" or self.ea.cmd.name == "global" or self.ea.cmd.name == "vglobal" or self.ea.usefilter:
             while 1:
                 end = self.reader.getpos()
                 if self.reader.getn(1) == "":
@@ -1391,7 +1391,7 @@ class VimLParser:
         self.add_node(node)
 
     def separate_nextcmd(self):
-        if viml_eqregh(self.ea.cmd.name, "^\\(vimgrep\\|vimgrepadd\\|lvimgrep\\|lvimgrepadd\\)$"):
+        if self.ea.cmd.name == "vimgrep" or self.ea.cmd.name == "vimgrepadd" or self.ea.cmd.name == "lvimgrep" or self.ea.cmd.name == "lvimgrepadd":
             self.skip_vimgrep_pat()
         pc = ""
         end = self.reader.getpos()
@@ -1445,7 +1445,7 @@ class VimLParser:
             pattern, endc = self.parse_pattern(c)
             if c != endc:
                 return
-            while viml_eqregh(self.reader.peekn(1), "[gj]"):
+            while self.reader.p(0) == "g" or self.reader.p(0) == "j":
                 self.reader.getn(1)
 
     def parse_cmd_append(self):
@@ -3104,7 +3104,7 @@ class Compiler:
 
     def out(self, *a000):
         if viml_len(a000) == 1:
-            if viml_eqregh(a000[0], "^)\\+$"):
+            if a000[0][0] == ")":
                 self.lines[-1] += a000[0]
             else:
                 viml_add(self.lines, self.indent[0] + a000[0])
