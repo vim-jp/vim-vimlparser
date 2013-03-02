@@ -2034,10 +2034,10 @@ class ExprTokenizer:
                     s += r.read_digit()
             return self.token(TOKEN_NUMBER, s)
         elif c == "i" and r.p(1) == "s" and not isidc(r.p(2)):
-            if r.p(3) == "?":
+            if r.p(2) == "?":
                 r.seek_cur(3)
                 return self.token(TOKEN_ISQ, "is?")
-            elif r.p(3) == "#":
+            elif r.p(2) == "#":
                 r.seek_cur(3)
                 return self.token(TOKEN_ISH, "is#")
             else:
@@ -2048,8 +2048,8 @@ class ExprTokenizer:
                 r.seek_cur(6)
                 return self.token(TOKEN_ISNOTQ, "isnot?")
             elif r.p(5) == "#":
-                return self.token(TOKEN_ISNOTH, "isnot#")
                 r.seek_cur(6)
+                return self.token(TOKEN_ISNOTH, "isnot#")
             else:
                 r.seek_cur(5)
                 return self.token(TOKEN_ISNOT, "isnot")
