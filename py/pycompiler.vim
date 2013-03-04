@@ -567,7 +567,7 @@ function s:PythonCompiler.compile_div(node)
 endfunction
 
 function s:PythonCompiler.compile_mod(node)
-  return printf('%s % %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s %% %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 function s:PythonCompiler.compile_not(node)
