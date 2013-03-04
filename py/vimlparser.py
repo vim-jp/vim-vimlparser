@@ -17,14 +17,8 @@ class AttributeDict(dict):
     __delattr__ = dict.__delitem__
 
 pat_vim2py = {
-  ":\\|\\s" : ":|\\s",
-  "[-+]" : "[-+]",
-  "[/?]" : "[/?]",
-  "[0-9A-Za-z_]" : "[0-9A-Za-z_]",
   "[0-9a-zA-Z]" : "[0-9a-zA-Z]",
   "[@*!=><&~#]" : "[@*!=><&~#]",
-  "[gj]" : "[gj]",
-  "\\.\\d" : "\\.\\d",
   "\\<ARGOPT\\>" : "\\bARGOPT\\b",
   "\\<BANG\\>" : "\\bBANG\\b",
   "\\<EDITCMD\\>" : "\\bEDITCMD\\b",
@@ -37,34 +31,11 @@ pat_vim2py = {
   "\\d" : "\\d",
   "\\h" : "[A-Za-z_]",
   "\\s" : "\\s",
-  "\\v^%(IDENTIFIER|INDEX|DOT|OPTION|ENV|REG)$" : "^(IDENTIFIER|INDEX|DOT|OPTION|ENV|REG)$",
-  "\\v^%(IF|ELSEIF|ELSE)$" : "^(IF|ELSEIF|ELSE)$",
-  "\\v^%(TRY|CATCH|FINALLY)$" : "^(TRY|CATCH|FINALLY)$",
-  "\\v^%(substitute|smagic|snomagic)$" : "^(substitute|smagic|snomagic)$",
-  "\\v^%(write|update)$" : "^(write|update)$",
   "\\v^d%[elete][lp]$" : "^d(elete|elet|ele|el|e)[lp]$",
   "\\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])" : "^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])",
   "\\w" : "[0-9A-Za-z_]",
   "\\w\\|[:#]" : "[0-9A-Za-z_]|[:#]",
   "\\x" : "[0-9A-Fa-f]",
-  "^!" : "^!",
-  "^!$" : "^!$",
-  "^!=" : "^!=",
-  "^!=#" : "^!=#",
-  "^!=?" : "^!=\\?",
-  "^!\\~" : "^!~",
-  "^!\\~#" : "^!~#",
-  "^!\\~?" : "^!~\\?",
-  "^#$" : "^#$",
-  "^%" : "^%",
-  "^&$" : "^&$",
-  "^&&" : "^&&",
-  "^&\\(g:\\|l:\\|\\w\\w\\)" : "^&(g:|l:|[0-9A-Za-z_][0-9A-Za-z_])",
-  "^'" : "^'",
-  "^(" : "^\(",
-  "^)" : "^\)",
-  "^)\\+$" : "^\)+$",
-  "^+" : "^\+",
   "^++" : "^\+\+",
   "^++bad=\\(keep\\|drop\\|.\\)\\>" : "^\\+\\+bad=(keep|drop|.)\\b",
   "^++bad=drop" : "^\\+\\+bad=drop",
@@ -76,575 +47,14 @@ pat_vim2py = {
   "^++ff=\\(dos\\|unix\\|mac\\)\\>" : "^\\+\\+ff=(dos|unix|mac)\\b",
   "^++fileformat=\\(dos\\|unix\\|mac\\)\\>" : "^\\+\\+fileformat=(dos|unix|mac)\\b",
   "^++nobin\\>" : "^\\+\\+nobin\\b",
-  "^," : "^,",
-  "^-" : "^-",
-  "^/" : "^/",
-  "^0x\\x" : "^0x[0-9A-Fa-f]",
-  "^:" : "^:",
-  "^;" : "^;",
-  "^<" : "^<",
-  "^<#" : "^<#",
-  "^<$" : "^<$",
-  "^<=" : "^<=",
-  "^<=#" : "^<=#",
-  "^<=?" : "^<=\\?",
-  "^<?" : "^<\\?",
-  "^<[Ss][Ii][Dd]>\\h" : "^<[Ss][Ii][Dd]>[A-Za-z_]",
-  "^=" : "^=",
-  "^=$" : "^=$",
-  "^==" : "^==",
-  "^==#" : "^==#",
-  "^==?" : "^==\\?",
-  "^=\\~" : "^=~",
-  "^=\\~#" : "^=~#",
-  "^=\\~?" : "^=~\\?",
-  "^>" : "^>",
-  "^>#" : "^>#",
-  "^>$" : "^>$",
-  "^>=" : "^>=",
-  "^>=#" : "^>=#",
-  "^>=?" : "^>=\\?",
-  "^>?" : "^>\\?",
-  "^?" : "^\\?",
-  "^@$" : "^@$",
-  "^@." : "^@.",
-  "^FUNCTION$" : "^FUNCTION$",
-  "^N\\%[ext]$" : "^N(ext|ex|e)$",
-  "^P\\%[rint]$" : "^P(rint|rin|ri|r)$",
-  "^X$" : "^X$",
-  "^[<>]$" : "^[<>]$",
   "^[A-Z]" : "^[A-Z]",
-  "^\"" : "^\"",
   "^\\$\\w\\+" : "^\\$[0-9A-Za-z_]+",
   "^\\(!\\|global\\|vglobal\\)$" : "^(!|global|vglobal)$",
   "^\\(WHILE\\|FOR\\)$" : "^(WHILE|FOR)$",
   "^\\(vimgrep\\|vimgrepadd\\|lvimgrep\\|lvimgrepadd\\)$" : "^(vimgrep|vimgrepadd|lvimgrep|lvimgrepadd)$",
-  "^\\*" : "^\\*",
-  "^\\*$" : "^\\*$",
-  "^\\." : "^\\.",
-  "^\\[" : "^\[",
   "^\\d" : "^\\d",
   "^\\h" : "^[A-Za-z_]",
   "^\\s" : "^\\s",
-  "^\\~$" : "^~$",
-  "^]" : "^]",
-  "^`" : "^`",
-  "^a\\%[ppend]$" : "^a(ppend|ppen|ppe|pp|p)?$",
-  "^ab\\%[breviate]$" : "^ab(breviate|breviat|brevia|brevi|brev|bre|br|b)?$",
-  "^abc\\%[lear]$" : "^abc(lear|lea|le|l)?$",
-  "^abo\\%[veleft]$" : "^abo(veleft|velef|vele|vel|ve|v)?$",
-  "^al\\%[l]$" : "^al(l)?$",
-  "^am\\%[enu]$" : "^am(enu|en|e)?$",
-  "^an\\%[oremenu]$" : "^an(oremenu|oremen|oreme|orem|ore|or|o)?$",
-  "^ar\\%[gs]$" : "^ar(gs|g)?$",
-  "^arga\\%[dd]$" : "^arga(dd|d)?$",
-  "^argd\\%[elete]$" : "^argd(elete|elet|ele|el|e)?$",
-  "^argdo$" : "^argdo$",
-  "^arge\\%[dit]$" : "^arge(dit|di|d)?$",
-  "^argg\\%[lobal]$" : "^argg(lobal|loba|lob|lo|l)?$",
-  "^argl\\%[ocal]$" : "^argl(ocal|oca|oc|o)?$",
-  "^argu\\%[ment]$" : "^argu(ment|men|me|m)?$",
-  "^as\\%[cii]$" : "^as(cii|ci|c)?$",
-  "^au\\%[tocmd]$" : "^au(tocmd|tocm|toc|to|t)?$",
-  "^aug\\%[roup]$" : "^aug(roup|rou|ro|r)?$",
-  "^aun\\%[menu]$" : "^aun(menu|men|me|m)?$",
-  "^bN\\%[ext]$" : "^bN(ext|ex|e)?$",
-  "^b\\%[uffer]$" : "^b(uffer|uffe|uff|uf|u)?$",
-  "^ba\\%[ll]$" : "^ba(ll|l)?$",
-  "^bad\\%[d]$" : "^bad(d)?$",
-  "^bd\\%[elete]$" : "^bd(elete|elet|ele|el|e)?$",
-  "^be\\%[have]$" : "^be(have|hav|ha|h)?$",
-  "^bel\\%[owright]$" : "^bel(owright|owrigh|owrig|owri|owr|ow|o)?$",
-  "^bf\\%[irst]$" : "^bf(irst|irs|ir|i)?$",
-  "^bl\\%[ast]$" : "^bl(ast|as|a)?$",
-  "^bm\\%[odified]$" : "^bm(odified|odifie|odifi|odif|odi|od|o)?$",
-  "^bn\\%[ext]$" : "^bn(ext|ex|e)?$",
-  "^bo\\%[tright]$" : "^bo(tright|trigh|trig|tri|tr|t)?$",
-  "^bp\\%[revious]$" : "^bp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^br\\%[ewind]$" : "^br(ewind|ewin|ewi|ew|e)?$",
-  "^brea\\%[k]$" : "^brea(k)?$",
-  "^breaka\\%[dd]$" : "^breaka(dd|d)?$",
-  "^breakd\\%[el]$" : "^breakd(el|e)?$",
-  "^breakl\\%[ist]$" : "^breakl(ist|is|i)?$",
-  "^bro\\%[wse]$" : "^bro(wse|ws|w)?$",
-  "^bufdo$" : "^bufdo$",
-  "^buffers$" : "^buffers$",
-  "^bun\\%[load]$" : "^bun(load|loa|lo|l)?$",
-  "^bw\\%[ipeout]$" : "^bw(ipeout|ipeou|ipeo|ipe|ip|i)?$",
-  "^cN\\%[ext]$" : "^cN(ext|ex|e)?$",
-  "^cNf\\%[ile]$" : "^cNf(ile|il|i)?$",
-  "^c\\%[hange]$" : "^c(hange|hang|han|ha|h)?$",
-  "^ca\\%[bbrev]$" : "^ca(bbrev|bbre|bbr|bb|b)?$",
-  "^cabc\\%[lear]$" : "^cabc(lear|lea|le|l)?$",
-  "^cad\\%[dexpr]$" : "^cad(dexpr|dexp|dex|de|d)?$",
-  "^caddb\\%[uffer]$" : "^caddb(uffer|uffe|uff|uf|u)?$",
-  "^caddf\\%[ile]$" : "^caddf(ile|il|i)?$",
-  "^cal\\%[l]$" : "^cal(l)?$",
-  "^cat\\%[ch]$" : "^cat(ch|c)?$",
-  "^cb\\%[uffer]$" : "^cb(uffer|uffe|uff|uf|u)?$",
-  "^cc$" : "^cc$",
-  "^ccl\\%[ose]$" : "^ccl(ose|os|o)?$",
-  "^cd$" : "^cd$",
-  "^ce\\%[nter]$" : "^ce(nter|nte|nt|n)?$",
-  "^cex\\%[pr]$" : "^cex(pr|p)?$",
-  "^cf\\%[ile]$" : "^cf(ile|il|i)?$",
-  "^cfir\\%[st]$" : "^cfir(st|s)?$",
-  "^cg\\%[etfile]$" : "^cg(etfile|etfil|etfi|etf|et|e)?$",
-  "^cgetb\\%[uffer]$" : "^cgetb(uffer|uffe|uff|uf|u)?$",
-  "^cgete\\%[xpr]$" : "^cgete(xpr|xp|x)?$",
-  "^changes$" : "^changes$",
-  "^chd\\%[ir]$" : "^chd(ir|i)?$",
-  "^che\\%[ckpath]$" : "^che(ckpath|ckpat|ckpa|ckp|ck|c)?$",
-  "^checkt\\%[ime]$" : "^checkt(ime|im|i)?$",
-  "^cl\\%[ist]$" : "^cl(ist|is|i)?$",
-  "^cla\\%[st]$" : "^cla(st|s)?$",
-  "^clo\\%[se]$" : "^clo(se|s)?$",
-  "^cm\\%[ap]$" : "^cm(ap|a)?$",
-  "^cmapc\\%[lear]$" : "^cmapc(lear|lea|le|l)?$",
-  "^cme\\%[nu]$" : "^cme(nu|n)?$",
-  "^cn\\%[ext]$" : "^cn(ext|ex|e)?$",
-  "^cnew\\%[er]$" : "^cnew(er|e)?$",
-  "^cnf\\%[ile]$" : "^cnf(ile|il|i)?$",
-  "^cno\\%[remap]$" : "^cno(remap|rema|rem|re|r)?$",
-  "^cnorea\\%[bbrev]$" : "^cnorea(bbrev|bbre|bbr|bb|b)?$",
-  "^cnoreme\\%[nu]$" : "^cnoreme(nu|n)?$",
-  "^co\\%[py]$" : "^co(py|p)?$",
-  "^col\\%[der]$" : "^col(der|de|d)?$",
-  "^colo\\%[rscheme]$" : "^colo(rscheme|rschem|rsche|rsch|rsc|rs|r)?$",
-  "^com\\%[mand]$" : "^com(mand|man|ma|m)?$",
-  "^comc\\%[lear]$" : "^comc(lear|lea|le|l)?$",
-  "^comp\\%[iler]$" : "^comp(iler|ile|il|i)?$",
-  "^con\\%[tinue]$" : "^con(tinue|tinu|tin|ti|t)?$",
-  "^conf\\%[irm]$" : "^conf(irm|ir|i)?$",
-  "^cope\\%[n]$" : "^cope(n)?$",
-  "^cp\\%[revious]$" : "^cp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^cpf\\%[ile]$" : "^cpf(ile|il|i)?$",
-  "^cq\\%[uit]$" : "^cq(uit|ui|u)?$",
-  "^cr\\%[ewind]$" : "^cr(ewind|ewin|ewi|ew|e)?$",
-  "^cs\\%[cope]$" : "^cs(cope|cop|co|c)?$",
-  "^cst\\%[ag]$" : "^cst(ag|a)?$",
-  "^cu\\%[nmap]$" : "^cu(nmap|nma|nm|n)?$",
-  "^cuna\\%[bbrev]$" : "^cuna(bbrev|bbre|bbr|bb|b)?$",
-  "^cunme\\%[nu]$" : "^cunme(nu|n)?$",
-  "^cw\\%[indow]$" : "^cw(indow|indo|ind|in|i)?$",
-  "^d\\%[elete]$" : "^d(elete|elet|ele|el|e)?$",
-  "^deb\\%[ug]$" : "^deb(ug|u)?$",
-  "^debugg\\%[reedy]$" : "^debugg(reedy|reed|ree|re|r)?$",
-  "^delc\\%[ommand]$" : "^delc(ommand|omman|omma|omm|om|o)?$",
-  "^delf\\%[unction]$" : "^delf(unction|unctio|uncti|unct|unc|un|u)?$",
-  "^delm\\%[arks]$" : "^delm(arks|ark|ar|a)?$",
-  "^di\\%[splay]$" : "^di(splay|spla|spl|sp|s)?$",
-  "^dif\\%[fupdate]$" : "^dif(fupdate|fupdat|fupda|fupd|fup|fu|f)?$",
-  "^diffg\\%[et]$" : "^diffg(et|e)?$",
-  "^diffo\\%[ff]$" : "^diffo(ff|f)?$",
-  "^diffp\\%[atch]$" : "^diffp(atch|atc|at|a)?$",
-  "^diffpu\\%[t]$" : "^diffpu(t)?$",
-  "^diffs\\%[plit]$" : "^diffs(plit|pli|pl|p)?$",
-  "^diffthis$" : "^diffthis$",
-  "^dig\\%[raphs]$" : "^dig(raphs|raph|rap|ra|r)?$",
-  "^dj\\%[ump]$" : "^dj(ump|um|u)?$",
-  "^dl\\%[ist]$" : "^dl(ist|is|i)?$",
-  "^do\\%[autocmd]$" : "^do(autocmd|autocm|autoc|auto|aut|au|a)?$",
-  "^doautoa\\%[ll]$" : "^doautoa(ll|l)?$",
-  "^dr\\%[op]$" : "^dr(op|o)?$",
-  "^ds\\%[earch]$" : "^ds(earch|earc|ear|ea|e)?$",
-  "^dsp\\%[lit]$" : "^dsp(lit|li|l)?$",
-  "^e\\%[dit]$" : "^e(dit|di|d)?$",
-  "^ea\\%[rlier]$" : "^ea(rlier|rlie|rli|rl|r)?$",
-  "^ec\\%[ho]$" : "^ec(ho|h)?$",
-  "^echoe\\%[rr]$" : "^echoe(rr|r)?$",
-  "^echoh\\%[l]$" : "^echoh(l)?$",
-  "^echom\\%[sg]$" : "^echom(sg|s)?$",
-  "^echon$" : "^echon$",
-  "^el\\%[se]$" : "^el(se|s)?$",
-  "^elsei\\%[f]$" : "^elsei(f)?$",
-  "^em\\%[enu]$" : "^em(enu|en|e)?$",
-  "^en\\%[dif]$" : "^en(dif|di|d)?$",
-  "^endf\\%[unction]$" : "^endf(unction|unctio|uncti|unct|unc|un|u)?$",
-  "^endfo\\%[r]$" : "^endfo(r)?$",
-  "^endt\\%[ry]$" : "^endt(ry|r)?$",
-  "^endw\\%[hile]$" : "^endw(hile|hil|hi|h)?$",
-  "^ene\\%[w]$" : "^ene(w)?$",
-  "^ex$" : "^ex$",
-  "^exe\\%[cute]$" : "^exe(cute|cut|cu|c)?$",
-  "^exi\\%[t]$" : "^exi(t)?$",
-  "^exu\\%[sage]$" : "^exu(sage|sag|sa|s)?$",
-  "^f\\%[ile]$" : "^f(ile|il|i)?$",
-  "^files$" : "^files$",
-  "^filet\\%[ype]$" : "^filet(ype|yp|y)?$",
-  "^fin\\%[d]$" : "^fin(d)?$",
-  "^fina\\%[lly]$" : "^fina(lly|ll|l)?$",
-  "^fini\\%[sh]$" : "^fini(sh|s)?$",
-  "^fir\\%[st]$" : "^fir(st|s)?$",
-  "^fix\\%[del]$" : "^fix(del|de|d)?$",
-  "^fo\\%[ld]$" : "^fo(ld|l)?$",
-  "^foldc\\%[lose]$" : "^foldc(lose|los|lo|l)?$",
-  "^foldd\\%[oopen]$" : "^foldd(oopen|oope|oop|oo|o)?$",
-  "^folddoc\\%[losed]$" : "^folddoc(losed|lose|los|lo|l)?$",
-  "^foldo\\%[pen]$" : "^foldo(pen|pe|p)?$",
-  "^for$" : "^for$",
-  "^fu\\%[nction]$" : "^fu(nction|nctio|ncti|nct|nc|n)?$",
-  "^g\\%[lobal]$" : "^g(lobal|loba|lob|lo|l)?$",
-  "^go\\%[to]$" : "^go(to|t)?$",
-  "^gr\\%[ep]$" : "^gr(ep|e)?$",
-  "^grepa\\%[dd]$" : "^grepa(dd|d)?$",
-  "^gu\\%[i]$" : "^gu(i)?$",
-  "^gv\\%[im]$" : "^gv(im|i)?$",
-  "^h\\%[elp]$" : "^h(elp|el|e)?$",
-  "^ha\\%[rdcopy]$" : "^ha(rdcopy|rdcop|rdco|rdc|rd|r)?$",
-  "^helpf\\%[ind]$" : "^helpf(ind|in|i)?$",
-  "^helpg\\%[rep]$" : "^helpg(rep|re|r)?$",
-  "^helpt\\%[ags]$" : "^helpt(ags|ag|a)?$",
-  "^hi\\%[ghlight]$" : "^hi(ghlight|ghligh|ghlig|ghli|ghl|gh|g)?$",
-  "^hid\\%[e]$" : "^hid(e)?$",
-  "^his\\%[tory]$" : "^his(tory|tor|to|t)?$",
-  "^i\\%[nsert]$" : "^i(nsert|nser|nse|ns|n)?$",
-  "^ia\\%[bbrev]$" : "^ia(bbrev|bbre|bbr|bb|b)?$",
-  "^iabc\\%[lear]$" : "^iabc(lear|lea|le|l)?$",
-  "^if$" : "^if$",
-  "^ij\\%[ump]$" : "^ij(ump|um|u)?$",
-  "^il\\%[ist]$" : "^il(ist|is|i)?$",
-  "^im\\%[ap]$" : "^im(ap|a)?$",
-  "^imapc\\%[lear]$" : "^imapc(lear|lea|le|l)?$",
-  "^ime\\%[nu]$" : "^ime(nu|n)?$",
-  "^ino\\%[remap]$" : "^ino(remap|rema|rem|re|r)?$",
-  "^inorea\\%[bbrev]$" : "^inorea(bbrev|bbre|bbr|bb|b)?$",
-  "^inoreme\\%[nu]$" : "^inoreme(nu|n)?$",
-  "^int\\%[ro]$" : "^int(ro|r)?$",
-  "^is#" : "^is#",
-  "^is?" : "^is\\?",
-  "^is\\%[earch]$" : "^is(earch|earc|ear|ea|e)?$",
-  "^is\\>" : "^is\\b",
-  "^isnot#" : "^isnot#",
-  "^isnot?" : "^isnot\\?",
-  "^isnot\\>" : "^isnot\\b",
-  "^isp\\%[lit]$" : "^isp(lit|li|l)?$",
-  "^iu\\%[nmap]$" : "^iu(nmap|nma|nm|n)?$",
-  "^iuna\\%[bbrev]$" : "^iuna(bbrev|bbre|bbr|bb|b)?$",
-  "^iunme\\%[nu]$" : "^iunme(nu|n)?$",
-  "^j\\%[oin]$" : "^j(oin|oi|o)?$",
-  "^ju\\%[mps]$" : "^ju(mps|mp|m)?$",
-  "^k$" : "^k$",
-  "^kee\\%[pmarks]$" : "^kee(pmarks|pmark|pmar|pma|pm|p)?$",
-  "^keepa\\%[lt]$" : "^keepa(lt|l)?$",
-  "^keepj\\%[umps]$" : "^keepj(umps|ump|um|u)?$",
-  "^lN\\%[ext]$" : "^lN(ext|ex|e)?$",
-  "^lNf\\%[ile]$" : "^lNf(ile|il|i)?$",
-  "^l\\%[ist]$" : "^l(ist|is|i)?$",
-  "^la\\%[st]$" : "^la(st|s)?$",
-  "^lad\\%[dexpr]$" : "^lad(dexpr|dexp|dex|de|d)?$",
-  "^laddb\\%[uffer]$" : "^laddb(uffer|uffe|uff|uf|u)?$",
-  "^laddf\\%[ile]$" : "^laddf(ile|il|i)?$",
-  "^lan\\%[guage]$" : "^lan(guage|guag|gua|gu|g)?$",
-  "^lat\\%[er]$" : "^lat(er|e)?$",
-  "^lb\\%[uffer]$" : "^lb(uffer|uffe|uff|uf|u)?$",
-  "^lc\\%[d]$" : "^lc(d)?$",
-  "^lch\\%[dir]$" : "^lch(dir|di|d)?$",
-  "^lcl\\%[ose]$" : "^lcl(ose|os|o)?$",
-  "^lcs\\%[cope]$" : "^lcs(cope|cop|co|c)?$",
-  "^le\\%[ft]$" : "^le(ft|f)?$",
-  "^lefta\\%[bove]$" : "^lefta(bove|bov|bo|b)?$",
-  "^let$" : "^let$",
-  "^lex\\%[pr]$" : "^lex(pr|p)?$",
-  "^lf\\%[ile]$" : "^lf(ile|il|i)?$",
-  "^lfir\\%[st]$" : "^lfir(st|s)?$",
-  "^lg\\%[etfile]$" : "^lg(etfile|etfil|etfi|etf|et|e)?$",
-  "^lgetb\\%[uffer]$" : "^lgetb(uffer|uffe|uff|uf|u)?$",
-  "^lgete\\%[xpr]$" : "^lgete(xpr|xp|x)?$",
-  "^lgr\\%[ep]$" : "^lgr(ep|e)?$",
-  "^lgrepa\\%[dd]$" : "^lgrepa(dd|d)?$",
-  "^lh\\%[elpgrep]$" : "^lh(elpgrep|elpgre|elpgr|elpg|elp|el|e)?$",
-  "^ll$" : "^ll$",
-  "^lla\\%[st]$" : "^lla(st|s)?$",
-  "^lli\\%[st]$" : "^lli(st|s)?$",
-  "^lm\\%[ap]$" : "^lm(ap|a)?$",
-  "^lmak\\%[e]$" : "^lmak(e)?$",
-  "^lmapc\\%[lear]$" : "^lmapc(lear|lea|le|l)?$",
-  "^ln\\%[oremap]$" : "^ln(oremap|orema|orem|ore|or|o)?$",
-  "^lne\\%[xt]$" : "^lne(xt|x)?$",
-  "^lnew\\%[er]$" : "^lnew(er|e)?$",
-  "^lnf\\%[ile]$" : "^lnf(ile|il|i)?$",
-  "^lo\\%[adview]$" : "^lo(adview|advie|advi|adv|ad|a)?$",
-  "^loadk\\%[eymap]$" : "^loadk(eymap|eyma|eym|ey|e)?$",
-  "^loc\\%[kmarks]$" : "^loc(kmarks|kmark|kmar|kma|km|k)?$",
-  "^lockv\\%[ar]$" : "^lockv(ar|a)?$",
-  "^lol\\%[der]$" : "^lol(der|de|d)?$",
-  "^lope\\%[n]$" : "^lope(n)?$",
-  "^lp\\%[revious]$" : "^lp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^lpf\\%[ile]$" : "^lpf(ile|il|i)?$",
-  "^lr\\%[ewind]$" : "^lr(ewind|ewin|ewi|ew|e)?$",
-  "^ls$" : "^ls$",
-  "^lt\\%[ag]$" : "^lt(ag|a)?$",
-  "^lu\\%[nmap]$" : "^lu(nmap|nma|nm|n)?$",
-  "^lua$" : "^lua$",
-  "^luad\\%[o]$" : "^luad(o)?$",
-  "^luaf\\%[ile]$" : "^luaf(ile|il|i)?$",
-  "^lv\\%[imgrep]$" : "^lv(imgrep|imgre|imgr|img|im|i)?$",
-  "^lvimgrepa\\%[dd]$" : "^lvimgrepa(dd|d)?$",
-  "^lw\\%[indow]$" : "^lw(indow|indo|ind|in|i)?$",
-  "^m\\%[ove]$" : "^m(ove|ov|o)?$",
-  "^ma\\%[rk]$" : "^ma(rk|r)?$",
-  "^mak\\%[e]$" : "^mak(e)?$",
-  "^map$" : "^map$",
-  "^mapc\\%[lear]$" : "^mapc(lear|lea|le|l)?$",
-  "^marks$" : "^marks$",
-  "^mat\\%[ch]$" : "^mat(ch|c)?$",
-  "^me\\%[nu]$" : "^me(nu|n)?$",
-  "^menut\\%[ranslate]$" : "^menut(ranslate|ranslat|ransla|ransl|rans|ran|ra|r)?$",
-  "^mes\\%[sages]$" : "^mes(sages|sage|sag|sa|s)?$",
-  "^mk\\%[exrc]$" : "^mk(exrc|exr|ex|e)?$",
-  "^mks\\%[ession]$" : "^mks(ession|essio|essi|ess|es|e)?$",
-  "^mksp\\%[ell]$" : "^mksp(ell|el|e)?$",
-  "^mkv\\%[imrc]$" : "^mkv(imrc|imr|im|i)?$",
-  "^mkvie\\%[w]$" : "^mkvie(w)?$",
-  "^mod\\%[e]$" : "^mod(e)?$",
-  "^mz\\%[scheme]$" : "^mz(scheme|schem|sche|sch|sc|s)?$",
-  "^mzf\\%[ile]$" : "^mzf(ile|il|i)?$",
-  "^n\\%[ext]$" : "^n(ext|ex|e)?$",
-  "^nb\\%[key]$" : "^nb(key|ke|k)?$",
-  "^nbc\\%[lose]$" : "^nbc(lose|los|lo|l)?$",
-  "^nbs\\%[art]$" : "^nbs(art|ar|a)?$",
-  "^new$" : "^new$",
-  "^nm\\%[ap]$" : "^nm(ap|a)?$",
-  "^nmapc\\%[lear]$" : "^nmapc(lear|lea|le|l)?$",
-  "^nme\\%[nu]$" : "^nme(nu|n)?$",
-  "^nn\\%[oremap]$" : "^nn(oremap|orema|orem|ore|or|o)?$",
-  "^nnoreme\\%[nu]$" : "^nnoreme(nu|n)?$",
-  "^no\\%[remap]$" : "^no(remap|rema|rem|re|r)?$",
-  "^noa\\%[utocmd]$" : "^noa(utocmd|utocm|utoc|uto|ut|u)?$",
-  "^noh\\%[lsearch]$" : "^noh(lsearch|lsearc|lsear|lsea|lse|ls|l)?$",
-  "^norea\\%[bbrev]$" : "^norea(bbrev|bbre|bbr|bb|b)?$",
-  "^noreme\\%[nu]$" : "^noreme(nu|n)?$",
-  "^norm\\%[al]$" : "^norm(al|a)?$",
-  "^nu\\%[mber]$" : "^nu(mber|mbe|mb|m)?$",
-  "^nun\\%[map]$" : "^nun(map|ma|m)?$",
-  "^nunme\\%[nu]$" : "^nunme(nu|n)?$",
-  "^o\\%[pen]$" : "^o(pen|pe|p)?$",
-  "^ol\\%[dfiles]$" : "^ol(dfiles|dfile|dfil|dfi|df|d)?$",
-  "^om\\%[ap]$" : "^om(ap|a)?$",
-  "^omapc\\%[lear]$" : "^omapc(lear|lea|le|l)?$",
-  "^ome\\%[nu]$" : "^ome(nu|n)?$",
-  "^on\\%[ly]$" : "^on(ly|l)?$",
-  "^ono\\%[remap]$" : "^ono(remap|rema|rem|re|r)?$",
-  "^onoreme\\%[nu]$" : "^onoreme(nu|n)?$",
-  "^opt\\%[ions]$" : "^opt(ions|ion|io|i)?$",
-  "^ou\\%[nmap]$" : "^ou(nmap|nma|nm|n)?$",
-  "^ounme\\%[nu]$" : "^ounme(nu|n)?$",
-  "^ow\\%[nsyntax]$" : "^ow(nsyntax|nsynta|nsynt|nsyn|nsy|ns|n)?$",
-  "^p\\%[rint]$" : "^p(rint|rin|ri|r)?$",
-  "^pc\\%[lose]$" : "^pc(lose|los|lo|l)?$",
-  "^pe\\%[rl]$" : "^pe(rl|r)?$",
-  "^ped\\%[it]$" : "^ped(it|i)?$",
-  "^perld\\%[o]$" : "^perld(o)?$",
-  "^po\\%[p]$" : "^po(p)?$",
-  "^popu\\%[p]$" : "^popu(p)?$",
-  "^pp\\%[op]$" : "^pp(op|o)?$",
-  "^pre\\%[serve]$" : "^pre(serve|serv|ser|se|s)?$",
-  "^prev\\%[ious]$" : "^prev(ious|iou|io|i)?$",
-  "^pro\\%[mptfind]$" : "^pro(mptfind|mptfin|mptfi|mptf|mpt|mp|m)?$",
-  "^prof\\%[ile]$" : "^prof(ile|il|i)?$",
-  "^profd\\%[el]$" : "^profd(el|e)?$",
-  "^promptr\\%[epl]$" : "^promptr(epl|ep|e)?$",
-  "^ps\\%[earch]$" : "^ps(earch|earc|ear|ea|e)?$",
-  "^ptN\\%[ext]$" : "^ptN(ext|ex|e)?$",
-  "^pt\\%[ag]$" : "^pt(ag|a)?$",
-  "^ptf\\%[irst]$" : "^ptf(irst|irs|ir|i)?$",
-  "^ptj\\%[ump]$" : "^ptj(ump|um|u)?$",
-  "^ptl\\%[ast]$" : "^ptl(ast|as|a)?$",
-  "^ptn\\%[ext]$" : "^ptn(ext|ex|e)?$",
-  "^ptp\\%[revious]$" : "^ptp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^ptr\\%[ewind]$" : "^ptr(ewind|ewin|ewi|ew|e)?$",
-  "^pts\\%[elect]$" : "^pts(elect|elec|ele|el|e)?$",
-  "^pu\\%[t]$" : "^pu(t)?$",
-  "^pw\\%[d]$" : "^pw(d)?$",
-  "^py3$" : "^py3$",
-  "^py3f\\%[ile]$" : "^py3f(ile|il|i)?$",
-  "^py\\%[thon]$" : "^py(thon|tho|th|t)?$",
-  "^pyf\\%[ile]$" : "^pyf(ile|il|i)?$",
-  "^python3$" : "^python3$",
-  "^q\\%[uit]$" : "^q(uit|ui|u)?$",
-  "^qa\\%[ll]$" : "^qa(ll|l)?$",
-  "^quita\\%[ll]$" : "^quita(ll|l)?$",
-  "^r\\%[ead]$" : "^r(ead|ea|e)?$",
-  "^rec\\%[over]$" : "^rec(over|ove|ov|o)?$",
-  "^red\\%[o]$" : "^red(o)?$",
-  "^redi\\%[r]$" : "^redi(r)?$",
-  "^redr\\%[aw]$" : "^redr(aw|a)?$",
-  "^redraws\\%[tatus]$" : "^redraws(tatus|tatu|tat|ta|t)?$",
-  "^reg\\%[isters]$" : "^reg(isters|ister|iste|ist|is|i)?$",
-  "^res\\%[ize]$" : "^res(ize|iz|i)?$",
-  "^ret\\%[ab]$" : "^ret(ab|a)?$",
-  "^retu\\%[rn]$" : "^retu(rn|r)?$",
-  "^rew\\%[ind]$" : "^rew(ind|in|i)?$",
-  "^ri\\%[ght]$" : "^ri(ght|gh|g)?$",
-  "^rightb\\%[elow]$" : "^rightb(elow|elo|el|e)?$",
-  "^ru\\%[ntime]$" : "^ru(ntime|ntim|nti|nt|n)?$",
-  "^rub\\%[y]$" : "^rub(y)?$",
-  "^rubyd\\%[o]$" : "^rubyd(o)?$",
-  "^rubyf\\%[ile]$" : "^rubyf(ile|il|i)?$",
-  "^rund\\%[o]$" : "^rund(o)?$",
-  "^rv\\%[iminfo]$" : "^rv(iminfo|iminf|imin|imi|im|i)?$",
-  "^sN\\%[ext]$" : "^sN(ext|ex|e)?$",
-  "^s\\%[ubstitute]$" : "^s(ubstitute|ubstitut|ubstitu|ubstit|ubsti|ubst|ubs|ub|u)?$",
-  "^sa\\%[rgument]$" : "^sa(rgument|rgumen|rgume|rgum|rgu|rg|r)?$",
-  "^sal\\%[l]$" : "^sal(l)?$",
-  "^san\\%[dbox]$" : "^san(dbox|dbo|db|d)?$",
-  "^sav\\%[eas]$" : "^sav(eas|ea|e)?$",
-  "^sbN\\%[ext]$" : "^sbN(ext|ex|e)?$",
-  "^sb\\%[uffer]$" : "^sb(uffer|uffe|uff|uf|u)?$",
-  "^sba\\%[ll]$" : "^sba(ll|l)?$",
-  "^sbf\\%[irst]$" : "^sbf(irst|irs|ir|i)?$",
-  "^sbl\\%[ast]$" : "^sbl(ast|as|a)?$",
-  "^sbm\\%[odified]$" : "^sbm(odified|odifie|odifi|odif|odi|od|o)?$",
-  "^sbn\\%[ext]$" : "^sbn(ext|ex|e)?$",
-  "^sbp\\%[revious]$" : "^sbp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^sbr\\%[ewind]$" : "^sbr(ewind|ewin|ewi|ew|e)?$",
-  "^scrip\\%[tnames]$" : "^scrip(tnames|tname|tnam|tna|tn|t)?$",
-  "^scripte\\%[ncoding]$" : "^scripte(ncoding|ncodin|ncodi|ncod|nco|nc|n)?$",
-  "^scs\\%[cope]$" : "^scs(cope|cop|co|c)?$",
-  "^se\\%[t]$" : "^se(t)?$",
-  "^setf\\%[iletype]$" : "^setf(iletype|iletyp|ilety|ilet|ile|il|i)?$",
-  "^setg\\%[lobal]$" : "^setg(lobal|loba|lob|lo|l)?$",
-  "^setl\\%[ocal]$" : "^setl(ocal|oca|oc|o)?$",
-  "^sf\\%[ind]$" : "^sf(ind|in|i)?$",
-  "^sfir\\%[st]$" : "^sfir(st|s)?$",
-  "^sh\\%[ell]$" : "^sh(ell|el|e)?$",
-  "^sig\\%[n]$" : "^sig(n)?$",
-  "^sil\\%[ent]$" : "^sil(ent|en|e)?$",
-  "^sim\\%[alt]$" : "^sim(alt|al|a)?$",
-  "^sl\\%[eep]$" : "^sl(eep|ee|e)?$",
-  "^sla\\%[st]$" : "^sla(st|s)?$",
-  "^sm\\%[agic]$" : "^sm(agic|agi|ag|a)?$",
-  "^smap$" : "^smap$",
-  "^smapc\\%[lear]$" : "^smapc(lear|lea|le|l)?$",
-  "^sme\\%[nu]$" : "^sme(nu|n)?$",
-  "^sn\\%[ext]$" : "^sn(ext|ex|e)?$",
-  "^sni\\%[ff]$" : "^sni(ff|f)?$",
-  "^sno\\%[magic]$" : "^sno(magic|magi|mag|ma|m)?$",
-  "^snor\\%[emap]$" : "^snor(emap|ema|em|e)?$",
-  "^snoreme\\%[nu]$" : "^snoreme(nu|n)?$",
-  "^so\\%[urce]$" : "^so(urce|urc|ur|u)?$",
-  "^sor\\%[t]$" : "^sor(t)?$",
-  "^sp\\%[lit]$" : "^sp(lit|li|l)?$",
-  "^spe\\%[llgood]$" : "^spe(llgood|llgoo|llgo|llg|ll|l)?$",
-  "^spelld\\%[ump]$" : "^spelld(ump|um|u)?$",
-  "^spelli\\%[nfo]$" : "^spelli(nfo|nf|n)?$",
-  "^spellr\\%[epall]$" : "^spellr(epall|epal|epa|ep|e)?$",
-  "^spellu\\%[ndo]$" : "^spellu(ndo|nd|n)?$",
-  "^spellw\\%[rong]$" : "^spellw(rong|ron|ro|r)?$",
-  "^spr\\%[evious]$" : "^spr(evious|eviou|evio|evi|ev|e)?$",
-  "^sre\\%[wind]$" : "^sre(wind|win|wi|w)?$",
-  "^st\\%[op]$" : "^st(op|o)?$",
-  "^sta\\%[g]$" : "^sta(g)?$",
-  "^star\\%[tinsert]$" : "^star(tinsert|tinser|tinse|tins|tin|ti|t)?$",
-  "^startg\\%[replace]$" : "^startg(replace|replac|repla|repl|rep|re|r)?$",
-  "^startr\\%[eplace]$" : "^startr(eplace|eplac|epla|epl|ep|e)?$",
-  "^stj\\%[ump]$" : "^stj(ump|um|u)?$",
-  "^stopi\\%[nsert]$" : "^stopi(nsert|nser|nse|ns|n)?$",
-  "^sts\\%[elect]$" : "^sts(elect|elec|ele|el|e)?$",
-  "^sun\\%[hide]$" : "^sun(hide|hid|hi|h)?$",
-  "^sunm\\%[ap]$" : "^sunm(ap|a)?$",
-  "^sunme\\%[nu]$" : "^sunme(nu|n)?$",
-  "^sus\\%[pend]$" : "^sus(pend|pen|pe|p)?$",
-  "^sv\\%[iew]$" : "^sv(iew|ie|i)?$",
-  "^sw\\%[apname]$" : "^sw(apname|apnam|apna|apn|ap|a)?$",
-  "^sy\\%[ntax]$" : "^sy(ntax|nta|nt|n)?$",
-  "^sync\\%[bind]$" : "^sync(bind|bin|bi|b)?$",
-  "^t$" : "^t$",
-  "^tN\\%[ext]$" : "^tN(ext|ex|e)?$",
-  "^ta\\%[g]$" : "^ta(g)?$",
-  "^tab$" : "^tab$",
-  "^tabN\\%[ext]$" : "^tabN(ext|ex|e)?$",
-  "^tabc\\%[lose]$" : "^tabc(lose|los|lo|l)?$",
-  "^tabdo$" : "^tabdo$",
-  "^tabe\\%[dit]$" : "^tabe(dit|di|d)?$",
-  "^tabf\\%[ind]$" : "^tabf(ind|in|i)?$",
-  "^tabfir\\%[st]$" : "^tabfir(st|s)?$",
-  "^tabl\\%[ast]$" : "^tabl(ast|as|a)?$",
-  "^tabm\\%[ove]$" : "^tabm(ove|ov|o)?$",
-  "^tabn\\%[ext]$" : "^tabn(ext|ex|e)?$",
-  "^tabnew$" : "^tabnew$",
-  "^tabo\\%[nly]$" : "^tabo(nly|nl|n)?$",
-  "^tabp\\%[revious]$" : "^tabp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^tabr\\%[ewind]$" : "^tabr(ewind|ewin|ewi|ew|e)?$",
-  "^tabs$" : "^tabs$",
-  "^tags$" : "^tags$",
-  "^tc\\%[l]$" : "^tc(l)?$",
-  "^tcld\\%[o]$" : "^tcld(o)?$",
-  "^tclf\\%[ile]$" : "^tclf(ile|il|i)?$",
-  "^te\\%[aroff]$" : "^te(aroff|arof|aro|ar|a)?$",
-  "^tf\\%[irst]$" : "^tf(irst|irs|ir|i)?$",
-  "^th\\%[row]$" : "^th(row|ro|r)?$",
-  "^tj\\%[ump]$" : "^tj(ump|um|u)?$",
-  "^tl\\%[ast]$" : "^tl(ast|as|a)?$",
-  "^tm\\%[enu]$" : "^tm(enu|en|e)?$",
-  "^tn\\%[ext]$" : "^tn(ext|ex|e)?$",
-  "^to\\%[pleft]$" : "^to(pleft|plef|ple|pl|p)?$",
-  "^tp\\%[revious]$" : "^tp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^tr\\%[ewind]$" : "^tr(ewind|ewin|ewi|ew|e)?$",
-  "^try$" : "^try$",
-  "^ts\\%[elect]$" : "^ts(elect|elec|ele|el|e)?$",
-  "^tu\\%[nmenu]$" : "^tu(nmenu|nmen|nme|nm|n)?$",
-  "^u\\%[ndo]$" : "^u(ndo|nd|n)?$",
-  "^una\\%[bbreviate]$" : "^una(bbreviate|bbreviat|bbrevia|bbrevi|bbrev|bbre|bbr|bb|b)?$",
-  "^undoj\\%[oin]$" : "^undoj(oin|oi|o)?$",
-  "^undol\\%[ist]$" : "^undol(ist|is|i)?$",
-  "^unh\\%[ide]$" : "^unh(ide|id|i)?$",
-  "^unl\\%[et]$" : "^unl(et|e)?$",
-  "^unlo\\%[ckvar]$" : "^unlo(ckvar|ckva|ckv|ck|c)?$",
-  "^unm\\%[ap]$" : "^unm(ap|a)?$",
-  "^unme\\%[nu]$" : "^unme(nu|n)?$",
-  "^uns\\%[ilent]$" : "^uns(ilent|ilen|ile|il|i)?$",
-  "^up\\%[date]$" : "^up(date|dat|da|d)?$",
-  "^v\\%[global]$" : "^v(global|globa|glob|glo|gl|g)?$",
-  "^ve\\%[rsion]$" : "^ve(rsion|rsio|rsi|rs|r)?$",
-  "^verb\\%[ose]$" : "^verb(ose|os|o)?$",
-  "^vert\\%[ical]$" : "^vert(ical|ica|ic|i)?$",
-  "^vi\\%[sual]$" : "^vi(sual|sua|su|s)?$",
-  "^vie\\%[w]$" : "^vie(w)?$",
-  "^vim\\%[grep]$" : "^vim(grep|gre|gr|g)?$",
-  "^vimgrepa\\%[dd]$" : "^vimgrepa(dd|d)?$",
-  "^viu\\%[sage]$" : "^viu(sage|sag|sa|s)?$",
-  "^vm\\%[ap]$" : "^vm(ap|a)?$",
-  "^vmapc\\%[lear]$" : "^vmapc(lear|lea|le|l)?$",
-  "^vme\\%[nu]$" : "^vme(nu|n)?$",
-  "^vn\\%[oremap]$" : "^vn(oremap|orema|orem|ore|or|o)?$",
-  "^vne\\%[w]$" : "^vne(w)?$",
-  "^vnoreme\\%[nu]$" : "^vnoreme(nu|n)?$",
-  "^vs\\%[plit]$" : "^vs(plit|pli|pl|p)?$",
-  "^vu\\%[nmap]$" : "^vu(nmap|nma|nm|n)?$",
-  "^vunme\\%[nu]$" : "^vunme(nu|n)?$",
-  "^wN\\%[ext]$" : "^wN(ext|ex|e)?$",
-  "^w\\%[rite]$" : "^w(rite|rit|ri|r)?$",
-  "^wa\\%[ll]$" : "^wa(ll|l)?$",
-  "^wh\\%[ile]$" : "^wh(ile|il|i)?$",
-  "^wi\\%[nsize]$" : "^wi(nsize|nsiz|nsi|ns|n)?$",
-  "^winc\\%[md]$" : "^winc(md|m)?$",
-  "^windo$" : "^windo$",
-  "^winp\\%[os]$" : "^winp(os|o)?$",
-  "^wn\\%[ext]$" : "^wn(ext|ex|e)?$",
-  "^wp\\%[revious]$" : "^wp(revious|reviou|revio|revi|rev|re|r)?$",
-  "^wq$" : "^wq$",
-  "^wqa\\%[ll]$" : "^wqa(ll|l)?$",
-  "^ws\\%[verb]$" : "^ws(verb|ver|ve|v)?$",
-  "^wu\\%[ndo]$" : "^wu(ndo|nd|n)?$",
-  "^wv\\%[iminfo]$" : "^wv(iminfo|iminf|imin|imi|im|i)?$",
-  "^x\\%[it]$" : "^x(it|i)?$",
-  "^xa\\%[ll]$" : "^xa(ll|l)?$",
-  "^xm\\%[ap]$" : "^xm(ap|a)?$",
-  "^xmapc\\%[lear]$" : "^xmapc(lear|lea|le|l)?$",
-  "^xme\\%[nu]$" : "^xme(nu|n)?$",
-  "^xn\\%[oremap]$" : "^xn(oremap|orema|orem|ore|or|o)?$",
-  "^xnoreme\\%[nu]$" : "^xnoreme(nu|n)?$",
-  "^xu\\%[nmap]$" : "^xu(nmap|nma|nm|n)?$",
-  "^xunme\\%[nu]$" : "^xunme(nu|n)?$",
-  "^y\\%[ank]$" : "^y(ank|an|a)?$",
-  "^z$" : "^z$",
-  "^{" : "^{",
-  "^|" : "^\\|",
-  "^||" : "^\\|\\|",
-  "^}" : "^}",
-  "[Ee][-+]\\d" : "[Ee][-+]\\d",
   "^\\s*\\\\" : "^\\s*\\\\",
   "^[ \\t]$" : "^[ \\t]$",
   "^[A-Za-z]$" : "^[A-Za-z]$",
@@ -734,6 +144,9 @@ def viml_string(obj):
 
 def viml_has_key(obj, key):
     return key in obj
+
+def viml_stridx(a, b):
+    return a.find(b)
 
 NIL = []
 NODE_TOPLEVEL = 1
@@ -1039,7 +452,7 @@ class VimLParser:
     def parse_command_modifiers(self):
         modifiers = []
         while 1:
-            pos = self.reader.getpos()
+            pos = self.reader.tell()
             if isdigit(self.reader.peekn(1)):
                 d = self.reader.read_digit()
                 self.reader.skip_white()
@@ -1048,60 +461,80 @@ class VimLParser:
             k = self.reader.read_alpha()
             c = self.reader.peekn(1)
             self.reader.skip_white()
-            if viml_eqregh(k, "^abo\\%[veleft]$"):
+            if viml_stridx("aboveleft", k) == 0 and viml_len(k) >= 3:
+                # abo\%[veleft]
                 viml_add(modifiers, AttributeDict({"name":"aboveleft"}))
-            elif viml_eqregh(k, "^bel\\%[owright]$"):
+            elif viml_stridx("belowright", k) == 0 and viml_len(k) >= 3:
+                # bel\%[owright]
                 viml_add(modifiers, AttributeDict({"name":"belowright"}))
-            elif viml_eqregh(k, "^bro\\%[wse]$"):
+            elif viml_stridx("browse", k) == 0 and viml_len(k) >= 3:
+                # bro\%[wse]
                 viml_add(modifiers, AttributeDict({"name":"browse"}))
-            elif viml_eqregh(k, "^bo\\%[tright]$"):
+            elif viml_stridx("botright", k) == 0 and viml_len(k) >= 2:
+                # bo\%[tright]
                 viml_add(modifiers, AttributeDict({"name":"botright"}))
-            elif viml_eqregh(k, "^conf\\%[irm]$"):
+            elif viml_stridx("confirm", k) == 0 and viml_len(k) >= 4:
+                # conf\%[irm]
                 viml_add(modifiers, AttributeDict({"name":"confirm"}))
-            elif viml_eqregh(k, "^kee\\%[pmarks]$"):
+            elif viml_stridx("keepmarks", k) == 0 and viml_len(k) >= 3:
+                # kee\%[pmarks]
                 viml_add(modifiers, AttributeDict({"name":"keepmarks"}))
-            elif viml_eqregh(k, "^keepa\\%[lt]$"):
+            elif viml_stridx("keepalt", k) == 0 and viml_len(k) >= 5:
+                # keepa\%[lt]
                 viml_add(modifiers, AttributeDict({"name":"keepalt"}))
-            elif viml_eqregh(k, "^keepj\\%[umps]$"):
+            elif viml_stridx("keepjumps", k) == 0 and viml_len(k) >= 5:
+                # keepj\%[umps]
                 viml_add(modifiers, AttributeDict({"name":"keepjumps"}))
-            elif viml_eqregh(k, "^hid\\%[e]$"):
+            elif viml_stridx("hide", k) == 0 and viml_len(k) >= 3:
+                #hid\%[e]
                 if self.ends_excmds(c):
                     break
                 viml_add(modifiers, AttributeDict({"name":"hide"}))
-            elif viml_eqregh(k, "^loc\\%[kmarks]$"):
+            elif viml_stridx("lockmarks", k) == 0 and viml_len(k) >= 3:
+                # loc\%[kmarks]
                 viml_add(modifiers, AttributeDict({"name":"lockmarks"}))
-            elif viml_eqregh(k, "^lefta\\%[bove]$"):
+            elif viml_stridx("leftabove", k) == 0 and viml_len(k) >= 5:
+                # lefta\%[bove]
                 viml_add(modifiers, AttributeDict({"name":"leftabove"}))
-            elif viml_eqregh(k, "^noa\\%[utocmd]$"):
+            elif viml_stridx("noautocmd", k) == 0 and viml_len(k) >= 3:
+                # noa\%[utocmd]
                 viml_add(modifiers, AttributeDict({"name":"noautocmd"}))
-            elif viml_eqregh(k, "^rightb\\%[elow]$"):
+            elif viml_stridx("rightbelow", k) == 0 and viml_len(k) >= 6:
+                #rightb\%[elow]
                 viml_add(modifiers, AttributeDict({"name":"rightbelow"}))
-            elif viml_eqregh(k, "^san\\%[dbox]$"):
+            elif viml_stridx("sandbox", k) == 0 and viml_len(k) >= 3:
+                # san\%[dbox]
                 viml_add(modifiers, AttributeDict({"name":"sandbox"}))
-            elif viml_eqregh(k, "^sil\\%[ent]$"):
+            elif viml_stridx("silent", k) == 0 and viml_len(k) >= 3:
+                # sil\%[ent]
                 if c == "!":
                     self.reader.get()
                     viml_add(modifiers, AttributeDict({"name":"silent", "bang":1}))
                 else:
                     viml_add(modifiers, AttributeDict({"name":"silent", "bang":0}))
-            elif viml_eqregh(k, "^tab$"):
+            elif k == "tab":
+                # tab
                 if d != "":
                     viml_add(modifiers, AttributeDict({"name":"tab", "count":viml_str2nr(d, 10)}))
                 else:
                     viml_add(modifiers, AttributeDict({"name":"tab"}))
-            elif viml_eqregh(k, "^to\\%[pleft]$"):
+            elif viml_stridx("topleft", k) == 0 and viml_len(k) >= 2:
+                # to\%[pleft]
                 viml_add(modifiers, AttributeDict({"name":"topleft"}))
-            elif viml_eqregh(k, "^uns\\%[ilent]$"):
+            elif viml_stridx("unsilent", k) == 0 and viml_len(k) >= 3:
+                # uns\%[ilent]
                 viml_add(modifiers, AttributeDict({"name":"unsilent"}))
-            elif viml_eqregh(k, "^vert\\%[ical]$"):
+            elif viml_stridx("vertical", k) == 0 and viml_len(k) >= 4:
+                # vert\%[ical]
                 viml_add(modifiers, AttributeDict({"name":"vertical"}))
-            elif viml_eqregh(k, "^verb\\%[ose]$"):
+            elif viml_stridx("verbose", k) == 0 and viml_len(k) >= 4:
+                # verb\%[ose]
                 if d != "":
                     viml_add(modifiers, AttributeDict({"name":"verbose", "count":viml_str2nr(d, 10)}))
                 else:
                     viml_add(modifiers, AttributeDict({"name":"verbose", "count":1}))
             else:
-                self.reader.setpos(pos)
+                self.reader.seek_set(pos)
                 break
         self.ea.modifiers = modifiers
 
@@ -1253,16 +686,16 @@ class VimLParser:
         elif self.reader.peekn(2) == "py":
             name = self.reader.read_alnum()
         else:
-            pos = self.reader.getpos()
+            pos = self.reader.tell()
             name = self.reader.read_alpha()
             if name != "del" and viml_eqregh(name, "\\v^d%[elete][lp]$"):
-                self.reader.setpos(pos)
+                self.reader.seek_set(pos)
                 name = self.reader.getn(viml_len(name) - 1)
         if viml_has_key(self.find_command_cache, name):
             return self.find_command_cache[name]
         cmd = NIL
         for x in self.builtin_commands:
-            if viml_eqregh(name, x.pat):
+            if viml_stridx(x.name, name) == 0 and viml_len(name) >= x.minlen:
                 del cmd
                 cmd = x
                 break
@@ -1540,21 +973,21 @@ class VimLParser:
         return self.parse_cmd_common()
 
     def parse_cmd_function(self):
-        pos = self.reader.getpos()
+        pos = self.reader.tell()
         self.reader.skip_white()
         # :function
         if self.ends_excmds(self.reader.peek()):
-            self.reader.setpos(pos)
+            self.reader.seek_set(pos)
             return self.parse_cmd_common()
         # :function /pattern
         if self.reader.peekn(1) == "/":
-            self.reader.setpos(pos)
+            self.reader.seek_set(pos)
             return self.parse_cmd_common()
         name = self.parse_lvalue()
         self.reader.skip_white()
         # :function {name}
         if self.reader.peekn(1) != "(":
-            self.reader.setpos(pos)
+            self.reader.seek_set(pos)
             return self.parse_cmd_common()
         # :function[!] {name}([arguments]) [range] [abort] [dict]
         node = self.blocknode(NODE_FUNCTION)
@@ -1656,11 +1089,11 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_let(self):
-        pos = self.reader.getpos()
+        pos = self.reader.tell()
         self.reader.skip_white()
         # :let
         if self.ends_excmds(self.reader.peek()):
-            self.reader.setpos(pos)
+            self.reader.seek_set(pos)
             return self.parse_cmd_common()
         lhs = self.parse_letlhs()
         self.reader.skip_white()
@@ -1668,7 +1101,7 @@ class VimLParser:
         s2 = self.reader.peekn(2)
         # :let {var-name} ..
         if self.ends_excmds(s1) or (s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "="):
-            self.reader.setpos(pos)
+            self.reader.seek_set(pos)
             return self.parse_cmd_common()
         # :let lhs op rhs
         node = self.exnode(NODE_LET)
@@ -1963,7 +1396,7 @@ class VimLParser:
     def ends_excmds(self, c):
         return c == "" or c == "|" or c == "\"" or c == "<EOF>" or c == "<EOL>"
 
-VimLParser.builtin_commands = [AttributeDict({"name":"append", "pat":"^a\\%[ppend]$", "flags":"BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_append"}), AttributeDict({"name":"abbreviate", "pat":"^ab\\%[breviate]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"abclear", "pat":"^abc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"aboveleft", "pat":"^abo\\%[veleft]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"all", "pat":"^al\\%[l]$", "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"amenu", "pat":"^am\\%[enu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"anoremenu", "pat":"^an\\%[oremenu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"args", "pat":"^ar\\%[gs]$", "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argadd", "pat":"^arga\\%[dd]$", "flags":"BANG|NEEDARG|RANGE|NOTADR|ZEROR|FILES|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argdelete", "pat":"^argd\\%[elete]$", "flags":"BANG|RANGE|NOTADR|FILES|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argedit", "pat":"^arge\\%[dit]$", "flags":"BANG|NEEDARG|RANGE|NOTADR|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argdo", "pat":"^argdo$", "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"argglobal", "pat":"^argg\\%[lobal]$", "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"arglocal", "pat":"^argl\\%[ocal]$", "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argument", "pat":"^argu\\%[ment]$", "flags":"BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ascii", "pat":"^as\\%[cii]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"autocmd", "pat":"^au\\%[tocmd]$", "flags":"BANG|EXTRA|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"augroup", "pat":"^aug\\%[roup]$", "flags":"BANG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"aunmenu", "pat":"^aun\\%[menu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"buffer", "pat":"^b\\%[uffer]$", "flags":"BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bNext", "pat":"^bN\\%[ext]$", "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ball", "pat":"^ba\\%[ll]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"badd", "pat":"^bad\\%[d]$", "flags":"NEEDARG|FILE1|EDITCMD|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"bdelete", "pat":"^bd\\%[elete]$", "flags":"BANG|RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"behave", "pat":"^be\\%[have]$", "flags":"NEEDARG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"belowright", "pat":"^bel\\%[owright]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"bfirst", "pat":"^bf\\%[irst]$", "flags":"BANG|RANGE|NOTADR|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"blast", "pat":"^bl\\%[ast]$", "flags":"BANG|RANGE|NOTADR|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bmodified", "pat":"^bm\\%[odified]$", "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bnext", "pat":"^bn\\%[ext]$", "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"botright", "pat":"^bo\\%[tright]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"bprevious", "pat":"^bp\\%[revious]$", "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"brewind", "pat":"^br\\%[ewind]$", "flags":"BANG|RANGE|NOTADR|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"break", "pat":"^brea\\%[k]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_break"}), AttributeDict({"name":"breakadd", "pat":"^breaka\\%[dd]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"breakdel", "pat":"^breakd\\%[el]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"breaklist", "pat":"^breakl\\%[ist]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"browse", "pat":"^bro\\%[wse]$", "flags":"NEEDARG|EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"bufdo", "pat":"^bufdo$", "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"buffers", "pat":"^buffers$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"bunload", "pat":"^bun\\%[load]$", "flags":"BANG|RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bwipeout", "pat":"^bw\\%[ipeout]$", "flags":"BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"change", "pat":"^c\\%[hange]$", "flags":"BANG|WHOLEFOLD|RANGE|COUNT|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"cNext", "pat":"^cN\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cNfile", "pat":"^cNf\\%[ile]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cabbrev", "pat":"^ca\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cabclear", "pat":"^cabc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"caddbuffer", "pat":"^caddb\\%[uffer]$", "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"caddexpr", "pat":"^cad\\%[dexpr]$", "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"caddfile", "pat":"^caddf\\%[ile]$", "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"call", "pat":"^cal\\%[l]$", "flags":"RANGE|NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_call"}), AttributeDict({"name":"catch", "pat":"^cat\\%[ch]$", "flags":"EXTRA|SBOXOK|CMDWIN", "parser":"parse_cmd_catch"}), AttributeDict({"name":"cbuffer", "pat":"^cb\\%[uffer]$", "flags":"BANG|RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cc", "pat":"^cc$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cclose", "pat":"^ccl\\%[ose]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cd", "pat":"^cd$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"center", "pat":"^ce\\%[nter]$", "flags":"TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"cexpr", "pat":"^cex\\%[pr]$", "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cfile", "pat":"^cf\\%[ile]$", "flags":"TRLBAR|FILE1|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cfirst", "pat":"^cfir\\%[st]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cgetbuffer", "pat":"^cgetb\\%[uffer]$", "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cgetexpr", "pat":"^cgete\\%[xpr]$", "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cgetfile", "pat":"^cg\\%[etfile]$", "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"changes", "pat":"^changes$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"chdir", "pat":"^chd\\%[ir]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"checkpath", "pat":"^che\\%[ckpath]$", "flags":"TRLBAR|BANG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"checktime", "pat":"^checkt\\%[ime]$", "flags":"RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"clist", "pat":"^cl\\%[ist]$", "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"clast", "pat":"^cla\\%[st]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"close", "pat":"^clo\\%[se]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cmap", "pat":"^cm\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cmapclear", "pat":"^cmapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cmenu", "pat":"^cme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnext", "pat":"^cn\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnewer", "pat":"^cnew\\%[er]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnfile", "pat":"^cnf\\%[ile]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnoremap", "pat":"^cno\\%[remap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnoreabbrev", "pat":"^cnorea\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnoremenu", "pat":"^cnoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"copy", "pat":"^co\\%[py]$", "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"colder", "pat":"^col\\%[der]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"colorscheme", "pat":"^colo\\%[rscheme]$", "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"command", "pat":"^com\\%[mand]$", "flags":"EXTRA|BANG|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"comclear", "pat":"^comc\\%[lear]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"compiler", "pat":"^comp\\%[iler]$", "flags":"BANG|TRLBAR|WORD1|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"continue", "pat":"^con\\%[tinue]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_continue"}), AttributeDict({"name":"confirm", "pat":"^conf\\%[irm]$", "flags":"NEEDARG|EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"copen", "pat":"^cope\\%[n]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cprevious", "pat":"^cp\\%[revious]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cpfile", "pat":"^cpf\\%[ile]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cquit", "pat":"^cq\\%[uit]$", "flags":"TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"crewind", "pat":"^cr\\%[ewind]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cscope", "pat":"^cs\\%[cope]$", "flags":"EXTRA|NOTRLCOM|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"cstag", "pat":"^cst\\%[ag]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"cunmap", "pat":"^cu\\%[nmap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cunabbrev", "pat":"^cuna\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cunmenu", "pat":"^cunme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cwindow", "pat":"^cw\\%[indow]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"delete", "pat":"^d\\%[elete]$", "flags":"RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"delmarks", "pat":"^delm\\%[arks]$", "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"debug", "pat":"^deb\\%[ug]$", "flags":"NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"debuggreedy", "pat":"^debugg\\%[reedy]$", "flags":"RANGE|NOTADR|ZEROR|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"delcommand", "pat":"^delc\\%[ommand]$", "flags":"NEEDARG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"delfunction", "pat":"^delf\\%[unction]$", "flags":"NEEDARG|WORD1|CMDWIN", "parser":"parse_cmd_delfunction"}), AttributeDict({"name":"diffupdate", "pat":"^dif\\%[fupdate]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffget", "pat":"^diffg\\%[et]$", "flags":"RANGE|EXTRA|TRLBAR|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffoff", "pat":"^diffo\\%[ff]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffpatch", "pat":"^diffp\\%[atch]$", "flags":"EXTRA|FILE1|TRLBAR|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffput", "pat":"^diffpu\\%[t]$", "flags":"RANGE|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffsplit", "pat":"^diffs\\%[plit]$", "flags":"EXTRA|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffthis", "pat":"^diffthis$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"digraphs", "pat":"^dig\\%[raphs]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"display", "pat":"^di\\%[splay]$", "flags":"EXTRA|NOTRLCOM|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"djump", "pat":"^dj\\%[ump]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"dlist", "pat":"^dl\\%[ist]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"doautocmd", "pat":"^do\\%[autocmd]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"doautoall", "pat":"^doautoa\\%[ll]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"drop", "pat":"^dr\\%[op]$", "flags":"FILES|EDITCMD|NEEDARG|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"dsearch", "pat":"^ds\\%[earch]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"dsplit", "pat":"^dsp\\%[lit]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"edit", "pat":"^e\\%[dit]$", "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"earlier", "pat":"^ea\\%[rlier]$", "flags":"TRLBAR|EXTRA|NOSPC|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"echo", "pat":"^ec\\%[ho]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echo"}), AttributeDict({"name":"echoerr", "pat":"^echoe\\%[rr]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echoerr"}), AttributeDict({"name":"echohl", "pat":"^echoh\\%[l]$", "flags":"EXTRA|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_echohl"}), AttributeDict({"name":"echomsg", "pat":"^echom\\%[sg]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echomsg"}), AttributeDict({"name":"echon", "pat":"^echon$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echon"}), AttributeDict({"name":"else", "pat":"^el\\%[se]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_else"}), AttributeDict({"name":"elseif", "pat":"^elsei\\%[f]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_elseif"}), AttributeDict({"name":"emenu", "pat":"^em\\%[enu]$", "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|RANGE|NOTADR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"endif", "pat":"^en\\%[dif]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endif"}), AttributeDict({"name":"endfor", "pat":"^endfo\\%[r]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endfor"}), AttributeDict({"name":"endfunction", "pat":"^endf\\%[unction]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_endfunction"}), AttributeDict({"name":"endtry", "pat":"^endt\\%[ry]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endtry"}), AttributeDict({"name":"endwhile", "pat":"^endw\\%[hile]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endwhile"}), AttributeDict({"name":"enew", "pat":"^ene\\%[w]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ex", "pat":"^ex$", "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"execute", "pat":"^exe\\%[cute]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_execute"}), AttributeDict({"name":"exit", "pat":"^exi\\%[t]$", "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"exusage", "pat":"^exu\\%[sage]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"file", "pat":"^f\\%[ile]$", "flags":"RANGE|NOTADR|ZEROR|BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"files", "pat":"^files$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"filetype", "pat":"^filet\\%[ype]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"find", "pat":"^fin\\%[d]$", "flags":"RANGE|NOTADR|BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"finally", "pat":"^fina\\%[lly]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_finally"}), AttributeDict({"name":"finish", "pat":"^fini\\%[sh]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_finish"}), AttributeDict({"name":"first", "pat":"^fir\\%[st]$", "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"fixdel", "pat":"^fix\\%[del]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"fold", "pat":"^fo\\%[ld]$", "flags":"RANGE|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"foldclose", "pat":"^foldc\\%[lose]$", "flags":"RANGE|BANG|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"folddoopen", "pat":"^foldd\\%[oopen]$", "flags":"RANGE|DFLALL|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"folddoclosed", "pat":"^folddoc\\%[losed]$", "flags":"RANGE|DFLALL|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"foldopen", "pat":"^foldo\\%[pen]$", "flags":"RANGE|BANG|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"for", "pat":"^for$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_for"}), AttributeDict({"name":"function", "pat":"^fu\\%[nction]$", "flags":"EXTRA|BANG|CMDWIN", "parser":"parse_cmd_function"}), AttributeDict({"name":"global", "pat":"^g\\%[lobal]$", "flags":"RANGE|WHOLEFOLD|BANG|EXTRA|DFLALL|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"goto", "pat":"^go\\%[to]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"grep", "pat":"^gr\\%[ep]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"grepadd", "pat":"^grepa\\%[dd]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"gui", "pat":"^gu\\%[i]$", "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"gvim", "pat":"^gv\\%[im]$", "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"hardcopy", "pat":"^ha\\%[rdcopy]$", "flags":"RANGE|COUNT|EXTRA|TRLBAR|DFLALL|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"help", "pat":"^h\\%[elp]$", "flags":"BANG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"helpfind", "pat":"^helpf\\%[ind]$", "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"helpgrep", "pat":"^helpg\\%[rep]$", "flags":"EXTRA|NOTRLCOM|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"helptags", "pat":"^helpt\\%[ags]$", "flags":"NEEDARG|FILES|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"highlight", "pat":"^hi\\%[ghlight]$", "flags":"BANG|EXTRA|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"hide", "pat":"^hid\\%[e]$", "flags":"BANG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"history", "pat":"^his\\%[tory]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"insert", "pat":"^i\\%[nsert]$", "flags":"BANG|RANGE|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_insert"}), AttributeDict({"name":"iabbrev", "pat":"^ia\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"iabclear", "pat":"^iabc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"if", "pat":"^if$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_if"}), AttributeDict({"name":"ijump", "pat":"^ij\\%[ump]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"ilist", "pat":"^il\\%[ist]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"imap", "pat":"^im\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"imapclear", "pat":"^imapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"imenu", "pat":"^ime\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"inoremap", "pat":"^ino\\%[remap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"inoreabbrev", "pat":"^inorea\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"inoremenu", "pat":"^inoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"intro", "pat":"^int\\%[ro]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"isearch", "pat":"^is\\%[earch]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"isplit", "pat":"^isp\\%[lit]$", "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"iunmap", "pat":"^iu\\%[nmap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"iunabbrev", "pat":"^iuna\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"iunmenu", "pat":"^iunme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"join", "pat":"^j\\%[oin]$", "flags":"BANG|RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"jumps", "pat":"^ju\\%[mps]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"k", "pat":"^k$", "flags":"RANGE|WORD1|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"keepalt", "pat":"^keepa\\%[lt]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"keepmarks", "pat":"^kee\\%[pmarks]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"keepjumps", "pat":"^keepj\\%[umps]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"lNext", "pat":"^lN\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lNfile", "pat":"^lNf\\%[ile]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"list", "pat":"^l\\%[ist]$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"laddexpr", "pat":"^lad\\%[dexpr]$", "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"laddbuffer", "pat":"^laddb\\%[uffer]$", "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"laddfile", "pat":"^laddf\\%[ile]$", "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"last", "pat":"^la\\%[st]$", "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"language", "pat":"^lan\\%[guage]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"later", "pat":"^lat\\%[er]$", "flags":"TRLBAR|EXTRA|NOSPC|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lbuffer", "pat":"^lb\\%[uffer]$", "flags":"BANG|RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lcd", "pat":"^lc\\%[d]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lchdir", "pat":"^lch\\%[dir]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lclose", "pat":"^lcl\\%[ose]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lcscope", "pat":"^lcs\\%[cope]$", "flags":"EXTRA|NOTRLCOM|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"left", "pat":"^le\\%[ft]$", "flags":"TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"leftabove", "pat":"^lefta\\%[bove]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"let", "pat":"^let$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_let"}), AttributeDict({"name":"lexpr", "pat":"^lex\\%[pr]$", "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lfile", "pat":"^lf\\%[ile]$", "flags":"TRLBAR|FILE1|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lfirst", "pat":"^lfir\\%[st]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgetbuffer", "pat":"^lgetb\\%[uffer]$", "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgetexpr", "pat":"^lgete\\%[xpr]$", "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgetfile", "pat":"^lg\\%[etfile]$", "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgrep", "pat":"^lgr\\%[ep]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgrepadd", "pat":"^lgrepa\\%[dd]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lhelpgrep", "pat":"^lh\\%[elpgrep]$", "flags":"EXTRA|NOTRLCOM|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"ll", "pat":"^ll$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"llast", "pat":"^lla\\%[st]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"llist", "pat":"^lli\\%[st]$", "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lmake", "pat":"^lmak\\%[e]$", "flags":"BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lmap", "pat":"^lm\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lmapclear", "pat":"^lmapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnext", "pat":"^lne\\%[xt]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnewer", "pat":"^lnew\\%[er]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnfile", "pat":"^lnf\\%[ile]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnoremap", "pat":"^ln\\%[oremap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"loadkeymap", "pat":"^loadk\\%[eymap]$", "flags":"CMDWIN", "parser":"parse_cmd_loadkeymap"}), AttributeDict({"name":"loadview", "pat":"^lo\\%[adview]$", "flags":"FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lockmarks", "pat":"^loc\\%[kmarks]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"lockvar", "pat":"^lockv\\%[ar]$", "flags":"BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_lockvar"}), AttributeDict({"name":"lolder", "pat":"^lol\\%[der]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lopen", "pat":"^lope\\%[n]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lprevious", "pat":"^lp\\%[revious]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lpfile", "pat":"^lpf\\%[ile]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lrewind", "pat":"^lr\\%[ewind]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"ls", "pat":"^ls$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ltag", "pat":"^lt\\%[ag]$", "flags":"NOTADR|TRLBAR|BANG|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"lunmap", "pat":"^lu\\%[nmap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lua", "pat":"^lua$", "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_lua"}), AttributeDict({"name":"luado", "pat":"^luad\\%[o]$", "flags":"RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"luafile", "pat":"^luaf\\%[ile]$", "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lvimgrep", "pat":"^lv\\%[imgrep]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lvimgrepadd", "pat":"^lvimgrepa\\%[dd]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lwindow", "pat":"^lw\\%[indow]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"move", "pat":"^m\\%[ove]$", "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"mark", "pat":"^ma\\%[rk]$", "flags":"RANGE|WORD1|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"make", "pat":"^mak\\%[e]$", "flags":"BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"map", "pat":"^map$", "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mapclear", "pat":"^mapc\\%[lear]$", "flags":"EXTRA|BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"marks", "pat":"^marks$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"match", "pat":"^mat\\%[ch]$", "flags":"RANGE|NOTADR|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"menu", "pat":"^me\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"menutranslate", "pat":"^menut\\%[ranslate]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"messages", "pat":"^mes\\%[sages]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkexrc", "pat":"^mk\\%[exrc]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mksession", "pat":"^mks\\%[ession]$", "flags":"BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkspell", "pat":"^mksp\\%[ell]$", "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkvimrc", "pat":"^mkv\\%[imrc]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkview", "pat":"^mkvie\\%[w]$", "flags":"BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"mode", "pat":"^mod\\%[e]$", "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mzscheme", "pat":"^mz\\%[scheme]$", "flags":"RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN|SBOXOK", "parser":"parse_cmd_mzscheme"}), AttributeDict({"name":"mzfile", "pat":"^mzf\\%[ile]$", "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nbclose", "pat":"^nbc\\%[lose]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nbkey", "pat":"^nb\\%[key]$", "flags":"EXTRA|NOTADR|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"nbstart", "pat":"^nbs\\%[art]$", "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"next", "pat":"^n\\%[ext]$", "flags":"RANGE|NOTADR|BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"new", "pat":"^new$", "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"nmap", "pat":"^nm\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nmapclear", "pat":"^nmapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nmenu", "pat":"^nme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nnoremap", "pat":"^nn\\%[oremap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nnoremenu", "pat":"^nnoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"noautocmd", "pat":"^noa\\%[utocmd]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"noremap", "pat":"^no\\%[remap]$", "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nohlsearch", "pat":"^noh\\%[lsearch]$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"noreabbrev", "pat":"^norea\\%[bbrev]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"noremenu", "pat":"^noreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"normal", "pat":"^norm\\%[al]$", "flags":"RANGE|BANG|EXTRA|NEEDARG|NOTRLCOM|USECTRLV|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"number", "pat":"^nu\\%[mber]$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nunmap", "pat":"^nun\\%[map]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nunmenu", "pat":"^nunme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"oldfiles", "pat":"^ol\\%[dfiles]$", "flags":"BANG|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"open", "pat":"^o\\%[pen]$", "flags":"RANGE|BANG|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"omap", "pat":"^om\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"omapclear", "pat":"^omapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"omenu", "pat":"^ome\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"only", "pat":"^on\\%[ly]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"onoremap", "pat":"^ono\\%[remap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"onoremenu", "pat":"^onoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"options", "pat":"^opt\\%[ions]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ounmap", "pat":"^ou\\%[nmap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ounmenu", "pat":"^ounme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ownsyntax", "pat":"^ow\\%[nsyntax]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"pclose", "pat":"^pc\\%[lose]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"pedit", "pat":"^ped\\%[it]$", "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"perl", "pat":"^pe\\%[rl]$", "flags":"RANGE|EXTRA|DFLALL|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_perl"}), AttributeDict({"name":"print", "pat":"^p\\%[rint]$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"profdel", "pat":"^profd\\%[el]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"profile", "pat":"^prof\\%[ile]$", "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"promptfind", "pat":"^pro\\%[mptfind]$", "flags":"EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"promptrepl", "pat":"^promptr\\%[epl]$", "flags":"EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"perldo", "pat":"^perld\\%[o]$", "flags":"RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"pop", "pat":"^po\\%[p]$", "flags":"RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"popup", "pat":"^popu\\%[p]$", "flags":"NEEDARG|EXTRA|BANG|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ppop", "pat":"^pp\\%[op]$", "flags":"RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"preserve", "pat":"^pre\\%[serve]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"previous", "pat":"^prev\\%[ious]$", "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"psearch", "pat":"^ps\\%[earch]$", "flags":"BANG|RANGE|WHOLEFOLD|DFLALL|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptag", "pat":"^pt\\%[ag]$", "flags":"RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptNext", "pat":"^ptN\\%[ext]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptfirst", "pat":"^ptf\\%[irst]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptjump", "pat":"^ptj\\%[ump]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptlast", "pat":"^ptl\\%[ast]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptnext", "pat":"^ptn\\%[ext]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptprevious", "pat":"^ptp\\%[revious]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptrewind", "pat":"^ptr\\%[ewind]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptselect", "pat":"^pts\\%[elect]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"put", "pat":"^pu\\%[t]$", "flags":"RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZEROR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"pwd", "pat":"^pw\\%[d]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"py3", "pat":"^py3$", "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_python3"}), AttributeDict({"name":"python3", "pat":"^python3$", "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_python3"}), AttributeDict({"name":"py3file", "pat":"^py3f\\%[ile]$", "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"python", "pat":"^py\\%[thon]$", "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_python"}), AttributeDict({"name":"pyfile", "pat":"^pyf\\%[ile]$", "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"quit", "pat":"^q\\%[uit]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"quitall", "pat":"^quita\\%[ll]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"qall", "pat":"^qa\\%[ll]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"read", "pat":"^r\\%[ead]$", "flags":"BANG|RANGE|WHOLEFOLD|FILE1|ARGOPT|TRLBAR|ZEROR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"recover", "pat":"^rec\\%[over]$", "flags":"BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"redo", "pat":"^red\\%[o]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"redir", "pat":"^redi\\%[r]$", "flags":"BANG|FILES|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"redraw", "pat":"^redr\\%[aw]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"redrawstatus", "pat":"^redraws\\%[tatus]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"registers", "pat":"^reg\\%[isters]$", "flags":"EXTRA|NOTRLCOM|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"resize", "pat":"^res\\%[ize]$", "flags":"RANGE|NOTADR|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"retab", "pat":"^ret\\%[ab]$", "flags":"TRLBAR|RANGE|WHOLEFOLD|DFLALL|BANG|WORD1|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"return", "pat":"^retu\\%[rn]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_return"}), AttributeDict({"name":"rewind", "pat":"^rew\\%[ind]$", "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"right", "pat":"^ri\\%[ght]$", "flags":"TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"rightbelow", "pat":"^rightb\\%[elow]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"ruby", "pat":"^rub\\%[y]$", "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_ruby"}), AttributeDict({"name":"rubydo", "pat":"^rubyd\\%[o]$", "flags":"RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"rubyfile", "pat":"^rubyf\\%[ile]$", "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"rundo", "pat":"^rund\\%[o]$", "flags":"NEEDARG|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"runtime", "pat":"^ru\\%[ntime]$", "flags":"BANG|NEEDARG|FILES|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"rviminfo", "pat":"^rv\\%[iminfo]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"substitute", "pat":"^s\\%[ubstitute]$", "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sNext", "pat":"^sN\\%[ext]$", "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sandbox", "pat":"^san\\%[dbox]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"sargument", "pat":"^sa\\%[rgument]$", "flags":"BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sall", "pat":"^sal\\%[l]$", "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"saveas", "pat":"^sav\\%[eas]$", "flags":"BANG|DFLALL|FILE1|ARGOPT|CMDWIN|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbuffer", "pat":"^sb\\%[uffer]$", "flags":"BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbNext", "pat":"^sbN\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sball", "pat":"^sba\\%[ll]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbfirst", "pat":"^sbf\\%[irst]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sblast", "pat":"^sbl\\%[ast]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbmodified", "pat":"^sbm\\%[odified]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbnext", "pat":"^sbn\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbprevious", "pat":"^sbp\\%[revious]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbrewind", "pat":"^sbr\\%[ewind]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"scriptnames", "pat":"^scrip\\%[tnames]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"scriptencoding", "pat":"^scripte\\%[ncoding]$", "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"scscope", "pat":"^scs\\%[cope]$", "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"set", "pat":"^se\\%[t]$", "flags":"TRLBAR|EXTRA|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"setfiletype", "pat":"^setf\\%[iletype]$", "flags":"TRLBAR|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"setglobal", "pat":"^setg\\%[lobal]$", "flags":"TRLBAR|EXTRA|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"setlocal", "pat":"^setl\\%[ocal]$", "flags":"TRLBAR|EXTRA|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"sfind", "pat":"^sf\\%[ind]$", "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sfirst", "pat":"^sfir\\%[st]$", "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"shell", "pat":"^sh\\%[ell]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"simalt", "pat":"^sim\\%[alt]$", "flags":"NEEDARG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sign", "pat":"^sig\\%[n]$", "flags":"NEEDARG|RANGE|NOTADR|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"silent", "pat":"^sil\\%[ent]$", "flags":"NEEDARG|EXTRA|BANG|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sleep", "pat":"^sl\\%[eep]$", "flags":"RANGE|NOTADR|COUNT|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"slast", "pat":"^sla\\%[st]$", "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"smagic", "pat":"^sm\\%[agic]$", "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"smap", "pat":"^smap$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"smapclear", "pat":"^smapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"smenu", "pat":"^sme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"snext", "pat":"^sn\\%[ext]$", "flags":"RANGE|NOTADR|BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sniff", "pat":"^sni\\%[ff]$", "flags":"EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"snomagic", "pat":"^sno\\%[magic]$", "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"snoremap", "pat":"^snor\\%[emap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"snoremenu", "pat":"^snoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sort", "pat":"^sor\\%[t]$", "flags":"RANGE|DFLALL|WHOLEFOLD|BANG|EXTRA|NOTRLCOM|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"source", "pat":"^so\\%[urce]$", "flags":"BANG|FILE1|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"spelldump", "pat":"^spelld\\%[ump]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellgood", "pat":"^spe\\%[llgood]$", "flags":"BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellinfo", "pat":"^spelli\\%[nfo]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellrepall", "pat":"^spellr\\%[epall]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellundo", "pat":"^spellu\\%[ndo]$", "flags":"BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellwrong", "pat":"^spellw\\%[rong]$", "flags":"BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"split", "pat":"^sp\\%[lit]$", "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sprevious", "pat":"^spr\\%[evious]$", "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"srewind", "pat":"^sre\\%[wind]$", "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"stop", "pat":"^st\\%[op]$", "flags":"TRLBAR|BANG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"stag", "pat":"^sta\\%[g]$", "flags":"RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"startinsert", "pat":"^star\\%[tinsert]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"startgreplace", "pat":"^startg\\%[replace]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"startreplace", "pat":"^startr\\%[eplace]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"stopinsert", "pat":"^stopi\\%[nsert]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"stjump", "pat":"^stj\\%[ump]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"stselect", "pat":"^sts\\%[elect]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"sunhide", "pat":"^sun\\%[hide]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sunmap", "pat":"^sunm\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sunmenu", "pat":"^sunme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"suspend", "pat":"^sus\\%[pend]$", "flags":"TRLBAR|BANG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sview", "pat":"^sv\\%[iew]$", "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"swapname", "pat":"^sw\\%[apname]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"syntax", "pat":"^sy\\%[ntax]$", "flags":"EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"syncbind", "pat":"^sync\\%[bind]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"t", "pat":"^t$", "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"tNext", "pat":"^tN\\%[ext]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabNext", "pat":"^tabN\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabclose", "pat":"^tabc\\%[lose]$", "flags":"RANGE|NOTADR|COUNT|BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabdo", "pat":"^tabdo$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabedit", "pat":"^tabe\\%[dit]$", "flags":"BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabfind", "pat":"^tabf\\%[ind]$", "flags":"BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|NEEDARG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabfirst", "pat":"^tabfir\\%[st]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tablast", "pat":"^tabl\\%[ast]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabmove", "pat":"^tabm\\%[ove]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|NOSPC|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabnew", "pat":"^tabnew$", "flags":"BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabnext", "pat":"^tabn\\%[ext]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabonly", "pat":"^tabo\\%[nly]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabprevious", "pat":"^tabp\\%[revious]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabrewind", "pat":"^tabr\\%[ewind]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabs", "pat":"^tabs$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tab", "pat":"^tab$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"tag", "pat":"^ta\\%[g]$", "flags":"RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tags", "pat":"^tags$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tcl", "pat":"^tc\\%[l]$", "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_tcl"}), AttributeDict({"name":"tcldo", "pat":"^tcld\\%[o]$", "flags":"RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tclfile", "pat":"^tclf\\%[ile]$", "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tearoff", "pat":"^te\\%[aroff]$", "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tfirst", "pat":"^tf\\%[irst]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"throw", "pat":"^th\\%[row]$", "flags":"EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_throw"}), AttributeDict({"name":"tjump", "pat":"^tj\\%[ump]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"tlast", "pat":"^tl\\%[ast]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tmenu", "pat":"^tm\\%[enu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tnext", "pat":"^tn\\%[ext]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"topleft", "pat":"^to\\%[pleft]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"tprevious", "pat":"^tp\\%[revious]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"trewind", "pat":"^tr\\%[ewind]$", "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"try", "pat":"^try$", "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_try"}), AttributeDict({"name":"tselect", "pat":"^ts\\%[elect]$", "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"tunmenu", "pat":"^tu\\%[nmenu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"undo", "pat":"^u\\%[ndo]$", "flags":"RANGE|NOTADR|COUNT|ZEROR|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"undojoin", "pat":"^undoj\\%[oin]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"undolist", "pat":"^undol\\%[ist]$", "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unabbreviate", "pat":"^una\\%[bbreviate]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unhide", "pat":"^unh\\%[ide]$", "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"unlet", "pat":"^unl\\%[et]$", "flags":"BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_unlet"}), AttributeDict({"name":"unlockvar", "pat":"^unlo\\%[ckvar]$", "flags":"BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_unlockvar"}), AttributeDict({"name":"unmap", "pat":"^unm\\%[ap]$", "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unmenu", "pat":"^unme\\%[nu]$", "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unsilent", "pat":"^uns\\%[ilent]$", "flags":"NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"update", "pat":"^up\\%[date]$", "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vglobal", "pat":"^v\\%[global]$", "flags":"RANGE|WHOLEFOLD|EXTRA|DFLALL|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"version", "pat":"^ve\\%[rsion]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"verbose", "pat":"^verb\\%[ose]$", "flags":"NEEDARG|RANGE|NOTADR|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vertical", "pat":"^vert\\%[ical]$", "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"vimgrep", "pat":"^vim\\%[grep]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"vimgrepadd", "pat":"^vimgrepa\\%[dd]$", "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"visual", "pat":"^vi\\%[sual]$", "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"viusage", "pat":"^viu\\%[sage]$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"view", "pat":"^vie\\%[w]$", "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vmap", "pat":"^vm\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vmapclear", "pat":"^vmapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vmenu", "pat":"^vme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vnew", "pat":"^vne\\%[w]$", "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vnoremap", "pat":"^vn\\%[oremap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vnoremenu", "pat":"^vnoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vsplit", "pat":"^vs\\%[plit]$", "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vunmap", "pat":"^vu\\%[nmap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vunmenu", "pat":"^vunme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"windo", "pat":"^windo$", "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"write", "pat":"^w\\%[rite]$", "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"wNext", "pat":"^wN\\%[ext]$", "flags":"RANGE|WHOLEFOLD|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wall", "pat":"^wa\\%[ll]$", "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"while", "pat":"^wh\\%[ile]$", "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_while"}), AttributeDict({"name":"winsize", "pat":"^wi\\%[nsize]$", "flags":"EXTRA|NEEDARG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wincmd", "pat":"^winc\\%[md]$", "flags":"NEEDARG|WORD1|RANGE|NOTADR", "parser":"parse_cmd_common"}), AttributeDict({"name":"winpos", "pat":"^winp\\%[os]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"wnext", "pat":"^wn\\%[ext]$", "flags":"RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wprevious", "pat":"^wp\\%[revious]$", "flags":"RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wq", "pat":"^wq$", "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wqall", "pat":"^wqa\\%[ll]$", "flags":"BANG|FILE1|ARGOPT|DFLALL|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wsverb", "pat":"^ws\\%[verb]$", "flags":"EXTRA|NOTADR|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"wundo", "pat":"^wu\\%[ndo]$", "flags":"BANG|NEEDARG|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"wviminfo", "pat":"^wv\\%[iminfo]$", "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xit", "pat":"^x\\%[it]$", "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xall", "pat":"^xa\\%[ll]$", "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"xmapclear", "pat":"^xmapc\\%[lear]$", "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xmap", "pat":"^xm\\%[ap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xmenu", "pat":"^xme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xnoremap", "pat":"^xn\\%[oremap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xnoremenu", "pat":"^xnoreme\\%[nu]$", "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xunmap", "pat":"^xu\\%[nmap]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xunmenu", "pat":"^xunme\\%[nu]$", "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"yank", "pat":"^y\\%[ank]$", "flags":"RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"z", "pat":"^z$", "flags":"RANGE|WHOLEFOLD|EXTRA|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"!", "pat":"^!$", "flags":"RANGE|WHOLEFOLD|BANG|FILES|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"#", "pat":"^#$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"&", "pat":"^&$", "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"*", "pat":"^\\*$", "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"<", "pat":"^<$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"=", "pat":"^=$", "flags":"RANGE|TRLBAR|DFLALL|EXFLAGS|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":">", "pat":"^>$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"@", "pat":"^@$", "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"Next", "pat":"^N\\%[ext]$", "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"Print", "pat":"^P\\%[rint]$", "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"X", "pat":"^X$", "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"~", "pat":"^\\~$", "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"})]
+VimLParser.builtin_commands = [AttributeDict({"name":"append", "minlen":1, "flags":"BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_append"}), AttributeDict({"name":"abbreviate", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"abclear", "minlen":3, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"aboveleft", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"all", "minlen":2, "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"amenu", "minlen":2, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"anoremenu", "minlen":2, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"args", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argadd", "minlen":4, "flags":"BANG|NEEDARG|RANGE|NOTADR|ZEROR|FILES|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argdelete", "minlen":4, "flags":"BANG|RANGE|NOTADR|FILES|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argedit", "minlen":4, "flags":"BANG|NEEDARG|RANGE|NOTADR|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argdo", "minlen":5, "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"argglobal", "minlen":4, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"arglocal", "minlen":4, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"argument", "minlen":4, "flags":"BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ascii", "minlen":2, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"autocmd", "minlen":2, "flags":"BANG|EXTRA|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"augroup", "minlen":3, "flags":"BANG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"aunmenu", "minlen":3, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"buffer", "minlen":1, "flags":"BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bNext", "minlen":2, "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ball", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"badd", "minlen":3, "flags":"NEEDARG|FILE1|EDITCMD|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"bdelete", "minlen":2, "flags":"BANG|RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"behave", "minlen":2, "flags":"NEEDARG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"belowright", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"bfirst", "minlen":2, "flags":"BANG|RANGE|NOTADR|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"blast", "minlen":2, "flags":"BANG|RANGE|NOTADR|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bmodified", "minlen":2, "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bnext", "minlen":2, "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"botright", "minlen":2, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"bprevious", "minlen":2, "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"brewind", "minlen":2, "flags":"BANG|RANGE|NOTADR|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"break", "minlen":4, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_break"}), AttributeDict({"name":"breakadd", "minlen":6, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"breakdel", "minlen":6, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"breaklist", "minlen":6, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"browse", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"bufdo", "minlen":5, "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"buffers", "minlen":7, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"bunload", "minlen":3, "flags":"BANG|RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"bwipeout", "minlen":2, "flags":"BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"change", "minlen":1, "flags":"BANG|WHOLEFOLD|RANGE|COUNT|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"cNext", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cNfile", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cabbrev", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cabclear", "minlen":4, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"caddbuffer", "minlen":5, "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"caddexpr", "minlen":3, "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"caddfile", "minlen":5, "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"call", "minlen":3, "flags":"RANGE|NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_call"}), AttributeDict({"name":"catch", "minlen":3, "flags":"EXTRA|SBOXOK|CMDWIN", "parser":"parse_cmd_catch"}), AttributeDict({"name":"cbuffer", "minlen":2, "flags":"BANG|RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cc", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cclose", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cd", "minlen":2, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"center", "minlen":2, "flags":"TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"cexpr", "minlen":3, "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cfile", "minlen":2, "flags":"TRLBAR|FILE1|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cfirst", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cgetbuffer", "minlen":5, "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cgetexpr", "minlen":5, "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cgetfile", "minlen":2, "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"changes", "minlen":7, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"chdir", "minlen":3, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"checkpath", "minlen":3, "flags":"TRLBAR|BANG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"checktime", "minlen":6, "flags":"RANGE|NOTADR|BUFNAME|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"clist", "minlen":2, "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"clast", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"close", "minlen":3, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cmapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cmenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnext", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnewer", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnfile", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnoremap", "minlen":3, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnoreabbrev", "minlen":6, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cnoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"copy", "minlen":2, "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"colder", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"colorscheme", "minlen":4, "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"command", "minlen":3, "flags":"EXTRA|BANG|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"comclear", "minlen":4, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"compiler", "minlen":4, "flags":"BANG|TRLBAR|WORD1|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"continue", "minlen":3, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_continue"}), AttributeDict({"name":"confirm", "minlen":4, "flags":"NEEDARG|EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"copen", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"cprevious", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cpfile", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cquit", "minlen":2, "flags":"TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"crewind", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"cscope", "minlen":2, "flags":"EXTRA|NOTRLCOM|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"cstag", "minlen":3, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"cunmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cunabbrev", "minlen":4, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cunmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"cwindow", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"delete", "minlen":1, "flags":"RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"delmarks", "minlen":4, "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"debug", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"debuggreedy", "minlen":6, "flags":"RANGE|NOTADR|ZEROR|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"delcommand", "minlen":4, "flags":"NEEDARG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"delfunction", "minlen":4, "flags":"NEEDARG|WORD1|CMDWIN", "parser":"parse_cmd_delfunction"}), AttributeDict({"name":"diffupdate", "minlen":3, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffget", "minlen":5, "flags":"RANGE|EXTRA|TRLBAR|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffoff", "minlen":5, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffpatch", "minlen":5, "flags":"EXTRA|FILE1|TRLBAR|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffput", "minlen":6, "flags":"RANGE|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffsplit", "minlen":5, "flags":"EXTRA|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"diffthis", "minlen":8, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"digraphs", "minlen":3, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"display", "minlen":2, "flags":"EXTRA|NOTRLCOM|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"djump", "minlen":2, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"dlist", "minlen":2, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"doautocmd", "minlen":2, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"doautoall", "minlen":7, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"drop", "minlen":2, "flags":"FILES|EDITCMD|NEEDARG|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"dsearch", "minlen":2, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"dsplit", "minlen":3, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"edit", "minlen":1, "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"earlier", "minlen":2, "flags":"TRLBAR|EXTRA|NOSPC|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"echo", "minlen":2, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echo"}), AttributeDict({"name":"echoerr", "minlen":5, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echoerr"}), AttributeDict({"name":"echohl", "minlen":5, "flags":"EXTRA|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_echohl"}), AttributeDict({"name":"echomsg", "minlen":5, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echomsg"}), AttributeDict({"name":"echon", "minlen":5, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_echon"}), AttributeDict({"name":"else", "minlen":2, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_else"}), AttributeDict({"name":"elseif", "minlen":5, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_elseif"}), AttributeDict({"name":"emenu", "minlen":2, "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|RANGE|NOTADR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"endif", "minlen":2, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endif"}), AttributeDict({"name":"endfor", "minlen":5, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endfor"}), AttributeDict({"name":"endfunction", "minlen":4, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_endfunction"}), AttributeDict({"name":"endtry", "minlen":4, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endtry"}), AttributeDict({"name":"endwhile", "minlen":4, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_endwhile"}), AttributeDict({"name":"enew", "minlen":3, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ex", "minlen":2, "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"execute", "minlen":3, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_execute"}), AttributeDict({"name":"exit", "minlen":3, "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"exusage", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"file", "minlen":1, "flags":"RANGE|NOTADR|ZEROR|BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"files", "minlen":5, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"filetype", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"find", "minlen":3, "flags":"RANGE|NOTADR|BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"finally", "minlen":4, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_finally"}), AttributeDict({"name":"finish", "minlen":4, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_finish"}), AttributeDict({"name":"first", "minlen":3, "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"fixdel", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"fold", "minlen":2, "flags":"RANGE|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"foldclose", "minlen":5, "flags":"RANGE|BANG|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"folddoopen", "minlen":5, "flags":"RANGE|DFLALL|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"folddoclosed", "minlen":7, "flags":"RANGE|DFLALL|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"foldopen", "minlen":5, "flags":"RANGE|BANG|WHOLEFOLD|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"for", "minlen":3, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_for"}), AttributeDict({"name":"function", "minlen":2, "flags":"EXTRA|BANG|CMDWIN", "parser":"parse_cmd_function"}), AttributeDict({"name":"global", "minlen":1, "flags":"RANGE|WHOLEFOLD|BANG|EXTRA|DFLALL|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"goto", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"grep", "minlen":2, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"grepadd", "minlen":5, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"gui", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"gvim", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"hardcopy", "minlen":2, "flags":"RANGE|COUNT|EXTRA|TRLBAR|DFLALL|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"help", "minlen":1, "flags":"BANG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"helpfind", "minlen":5, "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"helpgrep", "minlen":5, "flags":"EXTRA|NOTRLCOM|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"helptags", "minlen":5, "flags":"NEEDARG|FILES|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"highlight", "minlen":2, "flags":"BANG|EXTRA|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"hide", "minlen":3, "flags":"BANG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"history", "minlen":3, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"insert", "minlen":1, "flags":"BANG|RANGE|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_insert"}), AttributeDict({"name":"iabbrev", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"iabclear", "minlen":4, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"if", "minlen":2, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_if"}), AttributeDict({"name":"ijump", "minlen":2, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"ilist", "minlen":2, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"imap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"imapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"imenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"inoremap", "minlen":3, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"inoreabbrev", "minlen":6, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"inoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"intro", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"isearch", "minlen":2, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"isplit", "minlen":3, "flags":"BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"iunmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"iunabbrev", "minlen":4, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"iunmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"join", "minlen":1, "flags":"BANG|RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"jumps", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"k", "minlen":1, "flags":"RANGE|WORD1|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"keepalt", "minlen":5, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"keepmarks", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"keepjumps", "minlen":5, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"lNext", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lNfile", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"list", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"laddexpr", "minlen":3, "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"laddbuffer", "minlen":5, "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"laddfile", "minlen":5, "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"last", "minlen":2, "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"language", "minlen":3, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"later", "minlen":3, "flags":"TRLBAR|EXTRA|NOSPC|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lbuffer", "minlen":2, "flags":"BANG|RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lcd", "minlen":2, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lchdir", "minlen":3, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lclose", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lcscope", "minlen":3, "flags":"EXTRA|NOTRLCOM|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"left", "minlen":2, "flags":"TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"leftabove", "minlen":5, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"let", "minlen":3, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_let"}), AttributeDict({"name":"lexpr", "minlen":3, "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lfile", "minlen":2, "flags":"TRLBAR|FILE1|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lfirst", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgetbuffer", "minlen":5, "flags":"RANGE|NOTADR|WORD1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgetexpr", "minlen":5, "flags":"NEEDARG|WORD1|NOTRLCOM|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgetfile", "minlen":2, "flags":"TRLBAR|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgrep", "minlen":3, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lgrepadd", "minlen":6, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lhelpgrep", "minlen":2, "flags":"EXTRA|NOTRLCOM|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"ll", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"llast", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"llist", "minlen":3, "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lmake", "minlen":4, "flags":"BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lmapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnext", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnewer", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnfile", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lnoremap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"loadkeymap", "minlen":5, "flags":"CMDWIN", "parser":"parse_cmd_loadkeymap"}), AttributeDict({"name":"loadview", "minlen":2, "flags":"FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lockmarks", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"lockvar", "minlen":5, "flags":"BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_lockvar"}), AttributeDict({"name":"lolder", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lopen", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"lprevious", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lpfile", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"lrewind", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR|BANG", "parser":"parse_cmd_common"}), AttributeDict({"name":"ls", "minlen":2, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ltag", "minlen":2, "flags":"NOTADR|TRLBAR|BANG|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"lunmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lua", "minlen":3, "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_lua"}), AttributeDict({"name":"luado", "minlen":4, "flags":"RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"luafile", "minlen":4, "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"lvimgrep", "minlen":2, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lvimgrepadd", "minlen":9, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"lwindow", "minlen":2, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"move", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"mark", "minlen":2, "flags":"RANGE|WORD1|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"make", "minlen":3, "flags":"BANG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"map", "minlen":3, "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mapclear", "minlen":4, "flags":"EXTRA|BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"marks", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"match", "minlen":3, "flags":"RANGE|NOTADR|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"menu", "minlen":2, "flags":"RANGE|NOTADR|ZEROR|BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"menutranslate", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"messages", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkexrc", "minlen":2, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mksession", "minlen":3, "flags":"BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkspell", "minlen":4, "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkvimrc", "minlen":3, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mkview", "minlen":5, "flags":"BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"mode", "minlen":3, "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"mzscheme", "minlen":2, "flags":"RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN|SBOXOK", "parser":"parse_cmd_mzscheme"}), AttributeDict({"name":"mzfile", "minlen":3, "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nbclose", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nbkey", "minlen":2, "flags":"EXTRA|NOTADR|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"nbstart", "minlen":3, "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"next", "minlen":1, "flags":"RANGE|NOTADR|BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"new", "minlen":3, "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"nmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nmapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nmenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nnoremap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nnoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"noautocmd", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"noremap", "minlen":2, "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nohlsearch", "minlen":3, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"noreabbrev", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"noremenu", "minlen":6, "flags":"RANGE|NOTADR|ZEROR|BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"normal", "minlen":4, "flags":"RANGE|BANG|EXTRA|NEEDARG|NOTRLCOM|USECTRLV|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"number", "minlen":2, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nunmap", "minlen":3, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"nunmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"oldfiles", "minlen":2, "flags":"BANG|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"open", "minlen":1, "flags":"RANGE|BANG|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"omap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"omapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"omenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"only", "minlen":2, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"onoremap", "minlen":3, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"onoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"options", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ounmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ounmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ownsyntax", "minlen":2, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"pclose", "minlen":2, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"pedit", "minlen":3, "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"perl", "minlen":2, "flags":"RANGE|EXTRA|DFLALL|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_perl"}), AttributeDict({"name":"print", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"profdel", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"profile", "minlen":4, "flags":"BANG|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"promptfind", "minlen":3, "flags":"EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"promptrepl", "minlen":7, "flags":"EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"perldo", "minlen":5, "flags":"RANGE|EXTRA|DFLALL|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"pop", "minlen":2, "flags":"RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"popup", "minlen":4, "flags":"NEEDARG|EXTRA|BANG|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"ppop", "minlen":2, "flags":"RANGE|NOTADR|BANG|COUNT|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"preserve", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"previous", "minlen":4, "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"psearch", "minlen":2, "flags":"BANG|RANGE|WHOLEFOLD|DFLALL|EXTRA", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptag", "minlen":2, "flags":"RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptNext", "minlen":3, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptfirst", "minlen":3, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptjump", "minlen":3, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptlast", "minlen":3, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptnext", "minlen":3, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptprevious", "minlen":3, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptrewind", "minlen":3, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"ptselect", "minlen":3, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"put", "minlen":2, "flags":"RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZEROR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"pwd", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"py3", "minlen":3, "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_python3"}), AttributeDict({"name":"python3", "minlen":7, "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_python3"}), AttributeDict({"name":"py3file", "minlen":4, "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"python", "minlen":2, "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_python"}), AttributeDict({"name":"pyfile", "minlen":3, "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"quit", "minlen":1, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"quitall", "minlen":5, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"qall", "minlen":2, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"read", "minlen":1, "flags":"BANG|RANGE|WHOLEFOLD|FILE1|ARGOPT|TRLBAR|ZEROR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"recover", "minlen":3, "flags":"BANG|FILE1|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"redo", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"redir", "minlen":4, "flags":"BANG|FILES|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"redraw", "minlen":4, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"redrawstatus", "minlen":7, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"registers", "minlen":3, "flags":"EXTRA|NOTRLCOM|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"resize", "minlen":3, "flags":"RANGE|NOTADR|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"retab", "minlen":3, "flags":"TRLBAR|RANGE|WHOLEFOLD|DFLALL|BANG|WORD1|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"return", "minlen":4, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_return"}), AttributeDict({"name":"rewind", "minlen":3, "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"right", "minlen":2, "flags":"TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"rightbelow", "minlen":6, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"ruby", "minlen":3, "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_ruby"}), AttributeDict({"name":"rubydo", "minlen":5, "flags":"RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"rubyfile", "minlen":5, "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"rundo", "minlen":4, "flags":"NEEDARG|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"runtime", "minlen":2, "flags":"BANG|NEEDARG|FILES|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"rviminfo", "minlen":2, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"substitute", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sNext", "minlen":2, "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sandbox", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"sargument", "minlen":2, "flags":"BANG|RANGE|NOTADR|COUNT|EXTRA|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sall", "minlen":3, "flags":"BANG|RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"saveas", "minlen":3, "flags":"BANG|DFLALL|FILE1|ARGOPT|CMDWIN|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbuffer", "minlen":2, "flags":"BANG|RANGE|NOTADR|BUFNAME|BUFUNL|COUNT|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbNext", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sball", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbfirst", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sblast", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbmodified", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbnext", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbprevious", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sbrewind", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"scriptnames", "minlen":5, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"scriptencoding", "minlen":7, "flags":"WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"scscope", "minlen":3, "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"set", "minlen":2, "flags":"TRLBAR|EXTRA|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"setfiletype", "minlen":4, "flags":"TRLBAR|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"setglobal", "minlen":4, "flags":"TRLBAR|EXTRA|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"setlocal", "minlen":4, "flags":"TRLBAR|EXTRA|CMDWIN|SBOXOK", "parser":"parse_cmd_common"}), AttributeDict({"name":"sfind", "minlen":2, "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sfirst", "minlen":4, "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"shell", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"simalt", "minlen":3, "flags":"NEEDARG|WORD1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sign", "minlen":3, "flags":"NEEDARG|RANGE|NOTADR|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"silent", "minlen":3, "flags":"NEEDARG|EXTRA|BANG|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sleep", "minlen":2, "flags":"RANGE|NOTADR|COUNT|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"slast", "minlen":3, "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"smagic", "minlen":2, "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"smap", "minlen":4, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"smapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"smenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"snext", "minlen":2, "flags":"RANGE|NOTADR|BANG|FILES|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sniff", "minlen":3, "flags":"EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"snomagic", "minlen":3, "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"snoremap", "minlen":4, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"snoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sort", "minlen":3, "flags":"RANGE|DFLALL|WHOLEFOLD|BANG|EXTRA|NOTRLCOM|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"source", "minlen":2, "flags":"BANG|FILE1|TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"spelldump", "minlen":6, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellgood", "minlen":3, "flags":"BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellinfo", "minlen":6, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellrepall", "minlen":6, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellundo", "minlen":6, "flags":"BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"spellwrong", "minlen":6, "flags":"BANG|RANGE|NOTADR|NEEDARG|EXTRA|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"split", "minlen":2, "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sprevious", "minlen":3, "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"srewind", "minlen":3, "flags":"EXTRA|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"stop", "minlen":2, "flags":"TRLBAR|BANG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"stag", "minlen":3, "flags":"RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"startinsert", "minlen":4, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"startgreplace", "minlen":6, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"startreplace", "minlen":6, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"stopinsert", "minlen":5, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"stjump", "minlen":3, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"stselect", "minlen":3, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"sunhide", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"sunmap", "minlen":4, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sunmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"suspend", "minlen":3, "flags":"TRLBAR|BANG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"sview", "minlen":2, "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"swapname", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"syntax", "minlen":2, "flags":"EXTRA|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"syncbind", "minlen":4, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"t", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"tNext", "minlen":2, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabNext", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabclose", "minlen":4, "flags":"RANGE|NOTADR|COUNT|BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabdo", "minlen":5, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabedit", "minlen":4, "flags":"BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabfind", "minlen":4, "flags":"BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|NEEDARG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabfirst", "minlen":6, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tablast", "minlen":4, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabmove", "minlen":4, "flags":"RANGE|NOTADR|ZEROR|EXTRA|NOSPC|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabnew", "minlen":6, "flags":"BANG|FILE1|RANGE|NOTADR|ZEROR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabnext", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabonly", "minlen":4, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabprevious", "minlen":4, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabrewind", "minlen":4, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tabs", "minlen":4, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tab", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"tag", "minlen":2, "flags":"RANGE|NOTADR|BANG|WORD1|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tags", "minlen":4, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tcl", "minlen":2, "flags":"RANGE|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_tcl"}), AttributeDict({"name":"tcldo", "minlen":4, "flags":"RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tclfile", "minlen":4, "flags":"RANGE|FILE1|NEEDARG|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tearoff", "minlen":2, "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tfirst", "minlen":2, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"throw", "minlen":2, "flags":"EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_throw"}), AttributeDict({"name":"tjump", "minlen":2, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"tlast", "minlen":2, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"tmenu", "minlen":2, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"tnext", "minlen":2, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"topleft", "minlen":2, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"tprevious", "minlen":2, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"trewind", "minlen":2, "flags":"RANGE|NOTADR|BANG|TRLBAR|ZEROR", "parser":"parse_cmd_common"}), AttributeDict({"name":"try", "minlen":3, "flags":"TRLBAR|SBOXOK|CMDWIN", "parser":"parse_cmd_try"}), AttributeDict({"name":"tselect", "minlen":2, "flags":"BANG|TRLBAR|WORD1", "parser":"parse_cmd_common"}), AttributeDict({"name":"tunmenu", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"undo", "minlen":1, "flags":"RANGE|NOTADR|COUNT|ZEROR|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"undojoin", "minlen":5, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"undolist", "minlen":5, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unabbreviate", "minlen":3, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unhide", "minlen":3, "flags":"RANGE|NOTADR|COUNT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"unlet", "minlen":3, "flags":"BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_unlet"}), AttributeDict({"name":"unlockvar", "minlen":4, "flags":"BANG|EXTRA|NEEDARG|SBOXOK|CMDWIN", "parser":"parse_cmd_unlockvar"}), AttributeDict({"name":"unmap", "minlen":3, "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unmenu", "minlen":4, "flags":"BANG|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"unsilent", "minlen":3, "flags":"NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"update", "minlen":2, "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vglobal", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|DFLALL|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"version", "minlen":2, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"verbose", "minlen":4, "flags":"NEEDARG|RANGE|NOTADR|EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vertical", "minlen":4, "flags":"NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"vimgrep", "minlen":3, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"vimgrepadd", "minlen":8, "flags":"RANGE|NOTADR|BANG|NEEDARG|EXTRA|NOTRLCOM|TRLBAR|XFILE", "parser":"parse_cmd_common"}), AttributeDict({"name":"visual", "minlen":2, "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"viusage", "minlen":3, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"view", "minlen":3, "flags":"BANG|FILE1|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vmapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vmenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vnew", "minlen":3, "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vnoremap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vnoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vsplit", "minlen":2, "flags":"BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"vunmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"vunmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"windo", "minlen":5, "flags":"BANG|NEEDARG|EXTRA|NOTRLCOM", "parser":"parse_cmd_common"}), AttributeDict({"name":"write", "minlen":1, "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"wNext", "minlen":2, "flags":"RANGE|WHOLEFOLD|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wall", "minlen":2, "flags":"BANG|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"while", "minlen":2, "flags":"EXTRA|NOTRLCOM|SBOXOK|CMDWIN", "parser":"parse_cmd_while"}), AttributeDict({"name":"winsize", "minlen":2, "flags":"EXTRA|NEEDARG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wincmd", "minlen":4, "flags":"NEEDARG|WORD1|RANGE|NOTADR", "parser":"parse_cmd_common"}), AttributeDict({"name":"winpos", "minlen":4, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"wnext", "minlen":2, "flags":"RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wprevious", "minlen":2, "flags":"RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wq", "minlen":2, "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wqall", "minlen":3, "flags":"BANG|FILE1|ARGOPT|DFLALL|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"wsverb", "minlen":2, "flags":"EXTRA|NOTADR|NEEDARG", "parser":"parse_cmd_common"}), AttributeDict({"name":"wundo", "minlen":2, "flags":"BANG|NEEDARG|FILE1", "parser":"parse_cmd_common"}), AttributeDict({"name":"wviminfo", "minlen":2, "flags":"BANG|FILE1|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xit", "minlen":1, "flags":"RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xall", "minlen":2, "flags":"BANG|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"xmapclear", "minlen":5, "flags":"EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xmenu", "minlen":3, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xnoremap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xnoremenu", "minlen":7, "flags":"RANGE|NOTADR|ZEROR|EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xunmap", "minlen":2, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"xunmenu", "minlen":5, "flags":"EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"yank", "minlen":1, "flags":"RANGE|WHOLEFOLD|REGSTR|COUNT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"z", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"!", "minlen":1, "flags":"RANGE|WHOLEFOLD|BANG|FILES|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"#", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"&", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"*", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"<", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"=", "minlen":1, "flags":"RANGE|TRLBAR|DFLALL|EXFLAGS|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":">", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN|MODIFY", "parser":"parse_cmd_common"}), AttributeDict({"name":"@", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"Next", "minlen":1, "flags":"EXTRA|RANGE|NOTADR|COUNT|BANG|EDITCMD|ARGOPT|TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"Print", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}), AttributeDict({"name":"X", "minlen":1, "flags":"TRLBAR", "parser":"parse_cmd_common"}), AttributeDict({"name":"~", "minlen":1, "flags":"RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY", "parser":"parse_cmd_common"})]
 class ExprTokenizer:
     def __init__(self, reader):
         self.reader = reader
@@ -1981,35 +1414,24 @@ class ExprTokenizer:
         return AttributeDict({"type":type, "value":value})
 
     def peek(self):
-        pos = self.reader.getpos()
+        pos = self.reader.tell()
         r = self.get()
-        self.reader.setpos(pos)
+        self.reader.seek_set(pos)
         return r
 
     def get(self):
-        while 1:
-            r = self.get_keepspace()
-            if r.type != TOKEN_SPACE:
-                return r
-
-    def peek_keepspace(self):
-        pos = self.reader.getpos()
-        r = self.get_keepspace()
-        self.reader.setpos(pos)
-        return r
-
-    def get_keepspace(self):
         # FIXME: remove dirty hack
         if viml_has_key(self.cache, self.reader.tell()):
             x = self.cache[self.reader.tell()]
             self.reader.seek_set(x[0])
             return x[1]
         pos = self.reader.tell()
-        r = self.get_keepspace2()
+        self.reader.skip_white()
+        r = self.get2()
         self.cache[pos] = [self.reader.tell(), r]
         return r
 
-    def get_keepspace2(self):
+    def get2(self):
         r = self.reader
         c = r.peek()
         if c == "<EOF>":
@@ -2291,44 +1713,51 @@ class ExprParser:
 # expr1: expr2 ? expr1 : expr1
     def parse_expr1(self):
         lhs = self.parse_expr2()
-        token = self.tokenizer.peek()
+        pos = self.tokenizer.reader.tell()
+        token = self.tokenizer.get()
         if token.type == TOKEN_QUESTION:
-            self.tokenizer.get()
             node = self.exprnode(NODE_CONDEXP)
             node.cond = lhs
             node.then = self.parse_expr1()
-            token = self.tokenizer.peek()
+            token = self.tokenizer.get()
             if token.type != TOKEN_COLON:
                 raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-            self.tokenizer.get()
             node._else = self.parse_expr1()
             lhs = node
+        else:
+            self.tokenizer.reader.seek_set(pos)
         return lhs
 
 # expr2: expr3 || expr3 ..
     def parse_expr2(self):
         lhs = self.parse_expr3()
-        token = self.tokenizer.peek()
-        while token.type == TOKEN_OROR:
-            self.tokenizer.get()
-            node = self.exprnode(NODE_LOGOR)
-            node.lhs = lhs
-            node.rhs = self.parse_expr3()
-            lhs = node
-            token = self.tokenizer.peek()
+        while 1:
+            pos = self.tokenizer.reader.tell()
+            token = self.tokenizer.get()
+            if token.type == TOKEN_OROR:
+                node = self.exprnode(NODE_LOGOR)
+                node.lhs = lhs
+                node.rhs = self.parse_expr3()
+                lhs = node
+            else:
+                self.tokenizer.reader.seek_set(pos)
+                break
         return lhs
 
 # expr3: expr4 && expr4
     def parse_expr3(self):
         lhs = self.parse_expr4()
-        token = self.tokenizer.peek()
-        while token.type == TOKEN_ANDAND:
-            self.tokenizer.get()
-            node = self.exprnode(NODE_LOGAND)
-            node.lhs = lhs
-            node.rhs = self.parse_expr4()
-            lhs = node
-            token = self.tokenizer.peek()
+        while 1:
+            pos = self.tokenizer.reader.tell()
+            token = self.tokenizer.get()
+            if token.type == TOKEN_ANDAND:
+                node = self.exprnode(NODE_LOGAND)
+                node.lhs = lhs
+                node.rhs = self.parse_expr4()
+                lhs = node
+            else:
+                self.tokenizer.reader.seek_set(pos)
+                break
         return lhs
 
 # expr4: expr5 == expr5
@@ -2348,187 +1777,160 @@ class ExprParser:
 #        expr5 isnot expr5
     def parse_expr4(self):
         lhs = self.parse_expr5()
-        token = self.tokenizer.peek()
+        pos = self.tokenizer.reader.tell()
+        token = self.tokenizer.get()
         if token.type == TOKEN_EQEQQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_EQEQQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_EQEQH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_EQEQH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_NOTEQQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOTEQQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_NOTEQH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOTEQH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GTEQQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_GTEQQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GTEQH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_GTEQH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LTEQQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LTEQQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LTEQH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LTEQH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_EQTILDQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_EQTILDQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_EQTILDH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_EQTILDH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_NOTTILDQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOTTILDQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_NOTTILDH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOTTILDH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GTQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_GTQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GTH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_GTH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LTQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LTQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LTH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LTH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_EQEQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_EQEQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_NOTEQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOTEQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GTEQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_GTEQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LTEQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LTEQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_EQTILD:
-            self.tokenizer.get()
             node = self.exprnode(NODE_EQTILD)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_NOTTILD:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOTTILD)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GT:
-            self.tokenizer.get()
             node = self.exprnode(NODE_GT)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LT:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LT)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_ISH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ISH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_ISQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ISQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_ISNOTH:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ISNOTH)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_ISNOTQ:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ISNOTQ)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_IS:
-            self.tokenizer.get()
             node = self.exprnode(NODE_IS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_ISNOT:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ISNOT)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
+        else:
+            self.tokenizer.reader.seek_set(pos)
         return lhs
 
 # expr5: expr6 + expr6 ..
@@ -2537,26 +1939,25 @@ class ExprParser:
     def parse_expr5(self):
         lhs = self.parse_expr6()
         while 1:
-            token = self.tokenizer.peek()
+            pos = self.tokenizer.reader.tell()
+            token = self.tokenizer.get()
             if token.type == TOKEN_PLUS:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_ADD)
                 node.lhs = lhs
                 node.rhs = self.parse_expr6()
                 lhs = node
             elif token.type == TOKEN_MINUS:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_SUB)
                 node.lhs = lhs
                 node.rhs = self.parse_expr6()
                 lhs = node
             elif token.type == TOKEN_DOT:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_CONCAT)
                 node.lhs = lhs
                 node.rhs = self.parse_expr6()
                 lhs = node
             else:
+                self.tokenizer.reader.seek_set(pos)
                 break
         return lhs
 
@@ -2566,26 +1967,25 @@ class ExprParser:
     def parse_expr6(self):
         lhs = self.parse_expr7()
         while 1:
-            token = self.tokenizer.peek()
+            pos = self.tokenizer.reader.tell()
+            token = self.tokenizer.get()
             if token.type == TOKEN_STAR:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_MUL)
                 node.lhs = lhs
                 node.rhs = self.parse_expr7()
                 lhs = node
             elif token.type == TOKEN_SLASH:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_DIV)
                 node.lhs = lhs
                 node.rhs = self.parse_expr7()
                 lhs = node
             elif token.type == TOKEN_PER:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_MOD)
                 node.lhs = lhs
                 node.rhs = self.parse_expr7()
                 lhs = node
             else:
+                self.tokenizer.reader.seek_set(pos)
                 break
         return lhs
 
@@ -2593,20 +1993,19 @@ class ExprParser:
 #        - expr7
 #        + expr7
     def parse_expr7(self):
-        token = self.tokenizer.peek()
+        pos = self.tokenizer.reader.tell()
+        token = self.tokenizer.get()
         if token.type == TOKEN_NOT:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NOT)
             node.expr = self.parse_expr7()
         elif token.type == TOKEN_MINUS:
-            self.tokenizer.get()
             node = self.exprnode(NODE_MINUS)
             node.expr = self.parse_expr7()
         elif token.type == TOKEN_PLUS:
-            self.tokenizer.get()
             node = self.exprnode(NODE_PLUS)
             node.expr = self.parse_expr7()
         else:
+            self.tokenizer.reader.seek_set(pos)
             node = self.parse_expr8()
         return node
 
@@ -2617,10 +2016,10 @@ class ExprParser:
     def parse_expr8(self):
         lhs = self.parse_expr9()
         while 1:
-            token = self.tokenizer.peek()
-            token2 = self.tokenizer.peek_keepspace()
-            if token2.type == TOKEN_LBRA:
-                self.tokenizer.get()
+            pos = self.tokenizer.reader.tell()
+            c = self.tokenizer.reader.peek()
+            token = self.tokenizer.get()
+            if not iswhite(c) and token.type == TOKEN_LBRA:
                 if self.tokenizer.peek().type == TOKEN_COLON:
                     self.tokenizer.get()
                     node = self.exprnode(NODE_SLICE)
@@ -2630,10 +2029,9 @@ class ExprParser:
                     token = self.tokenizer.peek()
                     if token.type != TOKEN_RBRA:
                         node.expr2 = self.parse_expr1()
-                    token = self.tokenizer.peek()
+                    token = self.tokenizer.get()
                     if token.type != TOKEN_RBRA:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-                    self.tokenizer.get()
                 else:
                     expr1 = self.parse_expr1()
                     if self.tokenizer.peek().type == TOKEN_COLON:
@@ -2645,21 +2043,18 @@ class ExprParser:
                         token = self.tokenizer.peek()
                         if token.type != TOKEN_RBRA:
                             node.expr2 = self.parse_expr1()
-                        token = self.tokenizer.peek()
+                        token = self.tokenizer.get()
                         if token.type != TOKEN_RBRA:
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-                        self.tokenizer.get()
                     else:
                         node = self.exprnode(NODE_INDEX)
                         node.expr = lhs
                         node.expr1 = expr1
-                        token = self.tokenizer.peek()
+                        token = self.tokenizer.get()
                         if token.type != TOKEN_RBRA:
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-                        self.tokenizer.get()
                 lhs = node
             elif token.type == TOKEN_LPAR:
-                self.tokenizer.get()
                 node = self.exprnode(NODE_CALL)
                 node.expr = lhs
                 node.args = []
@@ -2668,21 +2063,19 @@ class ExprParser:
                 else:
                     while 1:
                         viml_add(node.args, self.parse_expr1())
-                        token = self.tokenizer.peek()
+                        token = self.tokenizer.get()
                         if token.type == TOKEN_COMMA:
-                            self.tokenizer.get()
+                            pass
                         elif token.type == TOKEN_RPAR:
-                            self.tokenizer.get()
                             break
                         else:
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                 lhs = node
-            elif token2.type == TOKEN_DOT:
+            elif not iswhite(c) and token.type == TOKEN_DOT:
                 # INDEX or CONCAT
-                pos = self.tokenizer.reader.getpos()
-                self.tokenizer.get()
-                token2 = self.tokenizer.peek_keepspace()
-                if token2.type == TOKEN_IDENTIFIER:
+                c = self.tokenizer.reader.peek()
+                token = self.tokenizer.peek()
+                if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
                     rhs = self.exprnode(NODE_IDENTIFIER)
                     rhs.value = self.parse_identifier()
                     node = self.exprnode(NODE_DOT)
@@ -2690,10 +2083,11 @@ class ExprParser:
                     node.rhs = rhs
                 else:
                     # to be CONCAT
-                    self.tokenizer.reader.setpos(pos)
+                    self.tokenizer.reader.seek_set(pos)
                     break
                 lhs = node
             else:
+                self.tokenizer.reader.seek_set(pos)
                 break
         return lhs
 
@@ -2711,19 +2105,20 @@ class ExprParser:
 #        function(expr1, ...)
 #        func{ti}on(expr1, ...)
     def parse_expr9(self):
-        token = self.tokenizer.peek()
+        pos = self.tokenizer.reader.tell()
+        token = self.tokenizer.get()
         if token.type == TOKEN_NUMBER:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NUMBER)
             node.value = token.value
         elif token.type == TOKEN_DQUOTE:
+            self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_STRING)
             node.value = "\"" + self.tokenizer.get_dstring() + "\""
         elif token.type == TOKEN_SQUOTE:
+            self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_STRING)
             node.value = "'" + self.tokenizer.get_sstring() + "'"
         elif token.type == TOKEN_LBRA:
-            self.tokenizer.get()
             node = self.exprnode(NODE_LIST)
             node.items = []
             token = self.tokenizer.peek()
@@ -2744,8 +2139,6 @@ class ExprParser:
                     else:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
         elif token.type == TOKEN_LBPAR:
-            pos = self.tokenizer.reader.getpos()
-            self.tokenizer.get()
             node = self.exprnode(NODE_DICT)
             node.items = []
             token = self.tokenizer.peek()
@@ -2758,7 +2151,7 @@ class ExprParser:
                     if token.type == TOKEN_RBPAR:
                         if not viml_empty(node.items):
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-                        self.tokenizer.reader.setpos(pos)
+                        self.tokenizer.reader.seek_set(pos)
                         node = self.exprnode(NODE_IDENTIFIER)
                         node.value = self.parse_identifier()
                         break
@@ -2766,37 +2159,32 @@ class ExprParser:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                     val = self.parse_expr1()
                     viml_add(node.items, [key, val])
-                    token = self.tokenizer.peek()
+                    token = self.tokenizer.get()
                     if token.type == TOKEN_COMMA:
-                        self.tokenizer.get()
                         if self.tokenizer.peek().type == TOKEN_RBPAR:
                             self.tokenizer.get()
                             break
                     elif token.type == TOKEN_RBPAR:
-                        self.tokenizer.get()
                         break
                     else:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
         elif token.type == TOKEN_LPAR:
-            self.tokenizer.get()
             node = self.exprnode(NODE_NESTING)
             node.expr = self.parse_expr1()
             token = self.tokenizer.get()
             if token.type != TOKEN_RPAR:
                 raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
         elif token.type == TOKEN_OPTION:
-            self.tokenizer.get()
             node = self.exprnode(NODE_OPTION)
             node.value = token.value
         elif token.type == TOKEN_IDENTIFIER:
+            self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_IDENTIFIER)
             node.value = self.parse_identifier()
         elif token.type == TOKEN_ENV:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ENV)
             node.value = token.value
         elif token.type == TOKEN_REG:
-            self.tokenizer.get()
             node = self.exprnode(NODE_REG)
             node.value = token.value
         else:
@@ -2833,10 +2221,10 @@ class LvalueParser(ExprParser):
     def parse_lv8(self):
         lhs = self.parse_lv9()
         while 1:
-            token = self.tokenizer.peek()
-            token2 = self.tokenizer.peek_keepspace()
-            if token2.type == TOKEN_LBRA:
-                self.tokenizer.get()
+            pos = self.tokenizer.reader.tell()
+            c = self.tokenizer.reader.peek()
+            token = self.tokenizer.get()
+            if not iswhite(c) and token.type == TOKEN_LBRA:
                 if self.tokenizer.peek().type == TOKEN_COLON:
                     self.tokenizer.get()
                     node = self.exprnode(NODE_SLICE)
@@ -2846,10 +2234,9 @@ class LvalueParser(ExprParser):
                     token = self.tokenizer.peek()
                     if token.type != TOKEN_RBRA:
                         node.expr2 = self.parse_expr1()
-                    token = self.tokenizer.peek()
+                    token = self.tokenizer.get()
                     if token.type != TOKEN_RBRA:
                         raise Exception(self.err("LvalueParser: unexpected token: %s", token.value))
-                    self.tokenizer.get()
                 else:
                     expr1 = self.parse_expr1()
                     if self.tokenizer.peek().type == TOKEN_COLON:
@@ -2861,25 +2248,22 @@ class LvalueParser(ExprParser):
                         token = self.tokenizer.peek()
                         if token.type != TOKEN_RBRA:
                             node.expr2 = self.parse_expr1()
-                        token = self.tokenizer.peek()
+                        token = self.tokenizer.get()
                         if token.type != TOKEN_RBRA:
                             raise Exception(self.err("LvalueParser: unexpected token: %s", token.value))
-                        self.tokenizer.get()
                     else:
                         node = self.exprnode(NODE_INDEX)
                         node.expr = lhs
                         node.expr1 = expr1
-                        token = self.tokenizer.peek()
+                        token = self.tokenizer.get()
                         if token.type != TOKEN_RBRA:
                             raise Exception(self.err("LvalueParser: unexpected token: %s", token.value))
-                        self.tokenizer.get()
                 lhs = node
-            elif token2.type == TOKEN_DOT:
+            elif token.type == TOKEN_DOT:
                 # INDEX or CONCAT
-                pos = self.tokenizer.reader.getpos()
-                self.tokenizer.get()
-                token2 = self.tokenizer.peek_keepspace()
-                if token2.type == TOKEN_IDENTIFIER:
+                c = self.tokenizer.reader.peek()
+                token = self.tokenizer.peek()
+                if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
                     rhs = self.exprnode(NODE_IDENTIFIER)
                     rhs.value = self.parse_identifier()
                     node = self.exprnode(NODE_DOT)
@@ -2887,10 +2271,11 @@ class LvalueParser(ExprParser):
                     node.rhs = rhs
                 else:
                     # to be CONCAT
-                    self.tokenizer.reader.setpos(pos)
+                    self.tokenizer.reader.seek_set(pos)
                     break
                 lhs = node
             else:
+                self.tokenizer.reader.seek_set(pos)
                 break
         return lhs
 
@@ -2900,23 +2285,23 @@ class LvalueParser(ExprParser):
 #        $VAR
 #        @r
     def parse_lv9(self):
-        token = self.tokenizer.peek()
+        pos = self.tokenizer.reader.tell()
+        token = self.tokenizer.get()
         if token.type == TOKEN_LBPAR:
+            self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_IDENTIFIER)
             node.value = self.parse_identifier()
         elif token.type == TOKEN_OPTION:
-            self.tokenizer.get()
             node = self.exprnode(NODE_OPTION)
             node.value = token.value
         elif token.type == TOKEN_IDENTIFIER:
+            self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_IDENTIFIER)
             node.value = self.parse_identifier()
         elif token.type == TOKEN_ENV:
-            self.tokenizer.get()
             node = self.exprnode(NODE_ENV)
             node.value = token.value
         elif token.type == TOKEN_REG:
-            self.tokenizer.get()
             node = self.exprnode(NODE_REG)
             node.value = token.value
         else:
@@ -2986,9 +2371,9 @@ class StringReader:
         return self.buf[self.i - 1]
 
     def peekn(self, n):
-        pos = self.getpos()
+        pos = self.tell()
         r = self.getn(n)
-        self.setpos(pos)
+        self.seek_set(pos)
         return r
 
     def getn(self, n):
