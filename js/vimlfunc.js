@@ -97,7 +97,7 @@ function viml_escape(s, chars) {
         if (chars.indexOf(s.charAt(i)) != -1) {
             r = r + "\\" + s.charAt(i);
         } else {
-            r = r + c;
+            r = r + s.charAt(i);
         }
     }
     return r;
@@ -151,7 +151,8 @@ function viml_range(start) {
 }
 
 function viml_readfile(path) {
-    return fs.readFileSync(path, 'utf-8').split(/\r\n|\r|\n/);
+    // FIXME: newline?
+    return fs.readFileSync(path, 'utf-8').split(/\n/);
 }
 
 function viml_remove(lst, idx) {
