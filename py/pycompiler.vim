@@ -286,10 +286,10 @@ function s:PythonCompiler.compile_let(node)
     call self.out('class LvalueParser(ExprParser):')
   elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
     call self.out('class %s:', lhs)
-  elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.$'
-    let lhs = matchstr(name, '\.\zs.*')
+  elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+    let lhs = matchstr(lhs, '\.\zs.*')
     call self.incindent('    ')
-    call self.out('%s %s %s', lhs, op. rhs)
+    call self.out('%s %s %s', lhs, op, rhs)
     call self.decindent()
   else
     call self.out('%s %s %s', lhs, op, rhs)
