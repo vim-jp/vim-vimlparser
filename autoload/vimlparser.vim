@@ -382,7 +382,7 @@ endfunction
 function s:VimLParser.parse_command_modifiers()
   let modifiers = []
   while 1
-    let pos = self.reader.getpos()
+    let pos = self.reader.tell()
     if s:isdigit(self.reader.peekn(1))
       let d = self.reader.read_digit()
       call self.reader.skip_white()
@@ -449,7 +449,7 @@ function s:VimLParser.parse_command_modifiers()
         call add(modifiers, {'name': 'verbose', 'count': 1})
       endif
     else
-      call self.reader.setpos(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -663,10 +663,10 @@ function s:VimLParser.find_command()
   elseif self.reader.peekn(2) ==# 'py'
     let name = self.reader.read_alnum()
   else
-    let pos = self.reader.getpos()
+    let pos = self.reader.tell()
     let name = self.reader.read_alpha()
     if name !=# 'del' && name =~# '\v^d%[elete][lp]$'
-      call self.reader.setpos(pos)
+      call self.reader.seek_set(pos)
       let name = self.reader.getn(len(name) - 1)
     endif
   endif
@@ -1024,18 +1024,18 @@ function s:VimLParser.parse_cmd_usercmd()
 endfunction
 
 function s:VimLParser.parse_cmd_function()
-  let pos = self.reader.getpos()
+  let pos = self.reader.tell()
   call self.reader.skip_white()
 
   " :function
   if self.ends_excmds(self.reader.peek())
-    call self.reader.setpos(pos)
+    call self.reader.seek_set(pos)
     return self.parse_cmd_common()
   endif
 
   " :function /pattern
   if self.reader.peekn(1) ==# '/'
-    call self.reader.setpos(pos)
+    call self.reader.seek_set(pos)
     return self.parse_cmd_common()
   endif
 
@@ -1044,7 +1044,7 @@ function s:VimLParser.parse_cmd_function()
 
   " :function {name}
   if self.reader.peekn(1) !=# '('
-    call self.reader.setpos(pos)
+    call self.reader.seek_set(pos)
     return self.parse_cmd_common()
   endif
 
@@ -1165,12 +1165,12 @@ function s:VimLParser.parse_cmd_call()
 endfunction
 
 function s:VimLParser.parse_cmd_let()
-  let pos = self.reader.getpos()
+  let pos = self.reader.tell()
   call self.reader.skip_white()
 
   " :let
   if self.ends_excmds(self.reader.peek())
-    call self.reader.setpos(pos)
+    call self.reader.seek_set(pos)
     return self.parse_cmd_common()
   endif
 
@@ -1181,7 +1181,7 @@ function s:VimLParser.parse_cmd_let()
 
   " :let {var-name} ..
   if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s1 !=# '=')
-    call self.reader.setpos(pos)
+    call self.reader.seek_set(pos)
     return self.parse_cmd_common()
   endif
 
@@ -2088,29 +2088,13 @@ function s:ExprTokenizer.token(type, value)
 endfunction
 
 function s:ExprTokenizer.peek()
-  let pos = self.reader.getpos()
+  let pos = self.reader.tell()
   let r = self.get()
-  call self.reader.setpos(pos)
+  call self.reader.seek_set(pos)
   return r
 endfunction
 
 function s:ExprTokenizer.get()
-  while 1
-    let r = self.get_keepspace()
-    if r.type != s:TOKEN_SPACE
-      return r
-    endif
-  endwhile
-endfunction
-
-function s:ExprTokenizer.peek_keepspace()
-  let pos = self.reader.getpos()
-  let r = self.get_keepspace()
-  call self.reader.setpos(pos)
-  return r
-endfunction
-
-function s:ExprTokenizer.get_keepspace()
   " FIXME: remove dirty hack
   if has_key(self.cache, self.reader.tell())
     let x = self.cache[self.reader.tell()]
@@ -2118,12 +2102,13 @@ function s:ExprTokenizer.get_keepspace()
     return x[1]
   endif
   let pos = self.reader.tell()
-  let r = self.get_keepspace2()
+  call self.reader.skip_white()
+  let r = self.get2()
   let self.cache[pos] = [self.reader.tell(), r]
   return r
 endfunction
 
-function s:ExprTokenizer.get_keepspace2()
+function s:ExprTokenizer.get2()
   let r = self.reader
   let c = r.peek()
   if c ==# '<EOF>'
@@ -2442,19 +2427,20 @@ endfunction
 " expr1: expr2 ? expr1 : expr1
 function s:ExprParser.parse_expr1()
   let lhs = self.parse_expr2()
-  let token = self.tokenizer.peek()
+  let pos = self.tokenizer.reader.tell()
+  let token = self.tokenizer.get()
   if token.type == s:TOKEN_QUESTION
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_CONDEXP)
     let node.cond = lhs
     let node.then = self.parse_expr1()
-    let token = self.tokenizer.peek()
+    let token = self.tokenizer.get()
     if token.type != s:TOKEN_COLON
       throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
-    call self.tokenizer.get()
     let node.else = self.parse_expr1()
     let lhs = node
+  else
+    call self.tokenizer.reader.seek_set(pos)
   endif
   return lhs
 endfunction
@@ -2462,14 +2448,18 @@ endfunction
 " expr2: expr3 || expr3 ..
 function s:ExprParser.parse_expr2()
   let lhs = self.parse_expr3()
-  let token = self.tokenizer.peek()
-  while token.type == s:TOKEN_OROR
-    call self.tokenizer.get()
-    let node = self.exprnode(s:NODE_LOGOR)
-    let node.lhs = lhs
-    let node.rhs = self.parse_expr3()
-    let lhs = node
-    let token = self.tokenizer.peek()
+  while 1
+    let pos = self.tokenizer.reader.tell()
+    let token = self.tokenizer.get()
+    if token.type == s:TOKEN_OROR
+      let node = self.exprnode(s:NODE_LOGOR)
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr3()
+      let lhs = node
+    else
+      call self.tokenizer.reader.seek_set(pos)
+      break
+    endif
   endwhile
   return lhs
 endfunction
@@ -2477,14 +2467,18 @@ endfunction
 " expr3: expr4 && expr4
 function s:ExprParser.parse_expr3()
   let lhs = self.parse_expr4()
-  let token = self.tokenizer.peek()
-  while token.type == s:TOKEN_ANDAND
-    call self.tokenizer.get()
-    let node = self.exprnode(s:NODE_LOGAND)
-    let node.lhs = lhs
-    let node.rhs = self.parse_expr4()
-    let lhs = node
-    let token = self.tokenizer.peek()
+  while 1
+    let pos = self.tokenizer.reader.tell()
+    let token = self.tokenizer.get()
+    if token.type == s:TOKEN_ANDAND
+      let node = self.exprnode(s:NODE_LOGAND)
+      let node.lhs = lhs
+      let node.rhs = self.parse_expr4()
+      let lhs = node
+    else
+      call self.tokenizer.reader.seek_set(pos)
+      break
+    endif
   endwhile
   return lhs
 endfunction
@@ -2506,187 +2500,160 @@ endfunction
 "        expr5 isnot expr5
 function s:ExprParser.parse_expr4()
   let lhs = self.parse_expr5()
-  let token = self.tokenizer.peek()
+  let pos = self.tokenizer.reader.tell()
+  let token = self.tokenizer.get()
   if token.type == s:TOKEN_EQEQQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_EQEQQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_EQEQH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_EQEQH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_NOTEQQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOTEQQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_NOTEQH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOTEQH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_GTEQQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_GTEQQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_GTEQH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_GTEQH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_LTEQQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LTEQQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_LTEQH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LTEQH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_EQTILDQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_EQTILDQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_EQTILDH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_EQTILDH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_NOTTILDQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOTTILDQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_NOTTILDH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOTTILDH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_GTQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_GTQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_GTH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_GTH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_LTQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LTQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_LTH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LTH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_EQEQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_EQEQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_NOTEQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOTEQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_GTEQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_GTEQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_LTEQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LTEQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_EQTILD
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_EQTILD)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_NOTTILD
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOTTILD)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_GT
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_GT)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_LT
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LT)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_ISH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ISH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_ISQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ISQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_ISNOTH
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ISNOTH)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_ISNOTQ
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ISNOTQ)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_IS
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_IS)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
   elseif token.type == s:TOKEN_ISNOT
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ISNOT)
     let node.lhs = lhs
     let node.rhs = self.parse_expr5()
     let lhs = node
+  else
+    call self.tokenizer.reader.seek_set(pos)
   endif
   return lhs
 endfunction
@@ -2697,26 +2664,25 @@ endfunction
 function s:ExprParser.parse_expr5()
   let lhs = self.parse_expr6()
   while 1
-    let token = self.tokenizer.peek()
+    let pos = self.tokenizer.reader.tell()
+    let token = self.tokenizer.get()
     if token.type == s:TOKEN_PLUS
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_ADD)
       let node.lhs = lhs
       let node.rhs = self.parse_expr6()
       let lhs = node
     elseif token.type == s:TOKEN_MINUS
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_SUB)
       let node.lhs = lhs
       let node.rhs = self.parse_expr6()
       let lhs = node
     elseif token.type == s:TOKEN_DOT
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_CONCAT)
       let node.lhs = lhs
       let node.rhs = self.parse_expr6()
       let lhs = node
     else
+      call self.tokenizer.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2729,26 +2695,25 @@ endfunction
 function s:ExprParser.parse_expr6()
   let lhs = self.parse_expr7()
   while 1
-    let token = self.tokenizer.peek()
+    let pos = self.tokenizer.reader.tell()
+    let token = self.tokenizer.get()
     if token.type == s:TOKEN_STAR
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_MUL)
       let node.lhs = lhs
       let node.rhs = self.parse_expr7()
       let lhs = node
     elseif token.type == s:TOKEN_SLASH
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_DIV)
       let node.lhs = lhs
       let node.rhs = self.parse_expr7()
       let lhs = node
     elseif token.type == s:TOKEN_PER
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_MOD)
       let node.lhs = lhs
       let node.rhs = self.parse_expr7()
       let lhs = node
     else
+      call self.tokenizer.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2759,20 +2724,19 @@ endfunction
 "        - expr7
 "        + expr7
 function s:ExprParser.parse_expr7()
-  let token = self.tokenizer.peek()
+  let pos = self.tokenizer.reader.tell()
+  let token = self.tokenizer.get()
   if token.type == s:TOKEN_NOT
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NOT)
     let node.expr = self.parse_expr7()
   elseif token.type == s:TOKEN_MINUS
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_MINUS)
     let node.expr = self.parse_expr7()
   elseif token.type == s:TOKEN_PLUS
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_PLUS)
     let node.expr = self.parse_expr7()
   else
+    call self.tokenizer.reader.seek_set(pos)
     let node = self.parse_expr8()
   endif
   return node
@@ -2785,10 +2749,10 @@ endfunction
 function s:ExprParser.parse_expr8()
   let lhs = self.parse_expr9()
   while 1
-    let token = self.tokenizer.peek()
-    let token2 = self.tokenizer.peek_keepspace()
-    if token2.type == s:TOKEN_LBRA
-      call self.tokenizer.get()
+    let pos = self.tokenizer.reader.tell()
+    let c = self.tokenizer.reader.peek()
+    let token = self.tokenizer.get()
+    if !s:iswhite(c) && token.type == s:TOKEN_LBRA
       if self.tokenizer.peek().type == s:TOKEN_COLON
         call self.tokenizer.get()
         let node = self.exprnode(s:NODE_SLICE)
@@ -2799,11 +2763,10 @@ function s:ExprParser.parse_expr8()
         if token.type != s:TOKEN_RBRA
           let node.expr2 = self.parse_expr1()
         endif
-        let token = self.tokenizer.peek()
+        let token = self.tokenizer.get()
         if token.type != s:TOKEN_RBRA
           throw self.err('ExprParser: unexpected token: %s', token.value)
         endif
-        call self.tokenizer.get()
       else
         let expr1 = self.parse_expr1()
         if self.tokenizer.peek().type == s:TOKEN_COLON
@@ -2816,25 +2779,22 @@ function s:ExprParser.parse_expr8()
           if token.type != s:TOKEN_RBRA
             let node.expr2 = self.parse_expr1()
           endif
-          let token = self.tokenizer.peek()
+          let token = self.tokenizer.get()
           if token.type != s:TOKEN_RBRA
             throw self.err('ExprParser: unexpected token: %s', token.value)
           endif
-          call self.tokenizer.get()
         else
           let node = self.exprnode(s:NODE_INDEX)
           let node.expr = lhs
           let node.expr1 = expr1
-          let token = self.tokenizer.peek()
+          let token = self.tokenizer.get()
           if token.type != s:TOKEN_RBRA
             throw self.err('ExprParser: unexpected token: %s', token.value)
           endif
-          call self.tokenizer.get()
         endif
       endif
       let lhs = node
     elseif token.type == s:TOKEN_LPAR
-      call self.tokenizer.get()
       let node = self.exprnode(s:NODE_CALL)
       let node.expr = lhs
       let node.args = []
@@ -2843,11 +2803,9 @@ function s:ExprParser.parse_expr8()
       else
         while 1
           call add(node.args, self.parse_expr1())
-          let token = self.tokenizer.peek()
+          let token = self.tokenizer.get()
           if token.type == s:TOKEN_COMMA
-            call self.tokenizer.get()
           elseif token.type == s:TOKEN_RPAR
-            call self.tokenizer.get()
             break
           else
             throw self.err('ExprParser: unexpected token: %s', token.value)
@@ -2855,12 +2813,11 @@ function s:ExprParser.parse_expr8()
         endwhile
       endif
       let lhs = node
-    elseif token2.type == s:TOKEN_DOT
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
       " INDEX or CONCAT
-      let pos = self.tokenizer.reader.getpos()
-      call self.tokenizer.get()
-      let token2 = self.tokenizer.peek_keepspace()
-      if token2.type == s:TOKEN_IDENTIFIER
+      let c = self.tokenizer.reader.peek()
+      let token = self.tokenizer.peek()
+      if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
         let rhs = self.exprnode(s:NODE_IDENTIFIER)
         let rhs.value = self.parse_identifier()
         let node = self.exprnode(s:NODE_DOT)
@@ -2868,11 +2825,12 @@ function s:ExprParser.parse_expr8()
         let node.rhs = rhs
       else
         " to be CONCAT
-        call self.tokenizer.reader.setpos(pos)
+        call self.tokenizer.reader.seek_set(pos)
         break
       endif
       let lhs = node
     else
+      call self.tokenizer.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2893,19 +2851,20 @@ endfunction
 "        function(expr1, ...)
 "        func{ti}on(expr1, ...)
 function s:ExprParser.parse_expr9()
-  let token = self.tokenizer.peek()
+  let pos = self.tokenizer.reader.tell()
+  let token = self.tokenizer.get()
   if token.type == s:TOKEN_NUMBER
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NUMBER)
     let node.value = token.value
   elseif token.type == s:TOKEN_DQUOTE
+    call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_STRING)
     let node.value = '"' . self.tokenizer.get_dstring() . '"'
   elseif token.type == s:TOKEN_SQUOTE
+    call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_STRING)
     let node.value = "'" . self.tokenizer.get_sstring() . "'"
   elseif token.type == s:TOKEN_LBRA
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_LIST)
     let node.items = []
     let token = self.tokenizer.peek()
@@ -2930,8 +2889,6 @@ function s:ExprParser.parse_expr9()
       endwhile
     endif
   elseif token.type == s:TOKEN_LBPAR
-    let pos = self.tokenizer.reader.getpos()
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_DICT)
     let node.items = []
     let token = self.tokenizer.peek()
@@ -2945,7 +2902,7 @@ function s:ExprParser.parse_expr9()
           if !empty(node.items)
             throw self.err('ExprParser: unexpected token: %s', token.value)
           endif
-          call self.tokenizer.reader.setpos(pos)
+          call self.tokenizer.reader.seek_set(pos)
           let node = self.exprnode(s:NODE_IDENTIFIER)
           let node.value = self.parse_identifier()
           break
@@ -2955,15 +2912,13 @@ function s:ExprParser.parse_expr9()
         endif
         let val = self.parse_expr1()
         call add(node.items, [key, val])
-        let token = self.tokenizer.peek()
+        let token = self.tokenizer.get()
         if token.type == s:TOKEN_COMMA
-          call self.tokenizer.get()
           if self.tokenizer.peek().type == s:TOKEN_RBPAR
             call self.tokenizer.get()
             break
           endif
         elseif token.type == s:TOKEN_RBPAR
-          call self.tokenizer.get()
           break
         else
           throw self.err('ExprParser: unexpected token: %s', token.value)
@@ -2971,7 +2926,6 @@ function s:ExprParser.parse_expr9()
       endwhile
     endif
   elseif token.type == s:TOKEN_LPAR
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_NESTING)
     let node.expr = self.parse_expr1()
     let token = self.tokenizer.get()
@@ -2979,18 +2933,16 @@ function s:ExprParser.parse_expr9()
       throw self.err('ExprParser: unexpected token: %s', token.value)
     endif
   elseif token.type == s:TOKEN_OPTION
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_OPTION)
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
+    call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_IDENTIFIER)
     let node.value = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ENV)
     let node.value = token.value
   elseif token.type == s:TOKEN_REG
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_REG)
     let node.value = token.value
   else
@@ -3035,10 +2987,10 @@ endfunction
 function! s:LvalueParser.parse_lv8()
   let lhs = self.parse_lv9()
   while 1
-    let token = self.tokenizer.peek()
-    let token2 = self.tokenizer.peek_keepspace()
-    if token2.type == s:TOKEN_LBRA
-      call self.tokenizer.get()
+    let pos = self.tokenizer.reader.tell()
+    let c = self.tokenizer.reader.peek()
+    let token = self.tokenizer.get()
+    if !s:iswhite(c) && token.type == s:TOKEN_LBRA
       if self.tokenizer.peek().type == s:TOKEN_COLON
         call self.tokenizer.get()
         let node = self.exprnode(s:NODE_SLICE)
@@ -3049,11 +3001,10 @@ function! s:LvalueParser.parse_lv8()
         if token.type != s:TOKEN_RBRA
           let node.expr2 = self.parse_expr1()
         endif
-        let token = self.tokenizer.peek()
+        let token = self.tokenizer.get()
         if token.type != s:TOKEN_RBRA
           throw self.err('LvalueParser: unexpected token: %s', token.value)
         endif
-        call self.tokenizer.get()
       else
         let expr1 = self.parse_expr1()
         if self.tokenizer.peek().type == s:TOKEN_COLON
@@ -3066,29 +3017,26 @@ function! s:LvalueParser.parse_lv8()
           if token.type != s:TOKEN_RBRA
             let node.expr2 = self.parse_expr1()
           endif
-          let token = self.tokenizer.peek()
+          let token = self.tokenizer.get()
           if token.type != s:TOKEN_RBRA
             throw self.err('LvalueParser: unexpected token: %s', token.value)
           endif
-          call self.tokenizer.get()
         else
           let node = self.exprnode(s:NODE_INDEX)
           let node.expr = lhs
           let node.expr1 = expr1
-          let token = self.tokenizer.peek()
+          let token = self.tokenizer.get()
           if token.type != s:TOKEN_RBRA
             throw self.err('LvalueParser: unexpected token: %s', token.value)
           endif
-          call self.tokenizer.get()
         endif
       endif
       let lhs = node
-    elseif token2.type == s:TOKEN_DOT
+    elseif token.type == s:TOKEN_DOT
       " INDEX or CONCAT
-      let pos = self.tokenizer.reader.getpos()
-      call self.tokenizer.get()
-      let token2 = self.tokenizer.peek_keepspace()
-      if token2.type == s:TOKEN_IDENTIFIER
+      let c = self.tokenizer.reader.peek()
+      let token = self.tokenizer.peek()
+      if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
         let rhs = self.exprnode(s:NODE_IDENTIFIER)
         let rhs.value = self.parse_identifier()
         let node = self.exprnode(s:NODE_DOT)
@@ -3096,11 +3044,12 @@ function! s:LvalueParser.parse_lv8()
         let node.rhs = rhs
       else
         " to be CONCAT
-        call self.tokenizer.reader.setpos(pos)
+        call self.tokenizer.reader.seek_set(pos)
         break
       endif
       let lhs = node
     else
+      call self.tokenizer.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -3113,23 +3062,23 @@ endfunction
 "        $VAR
 "        @r
 function! s:LvalueParser.parse_lv9()
-  let token = self.tokenizer.peek()
+  let pos = self.tokenizer.reader.tell()
+  let token = self.tokenizer.get()
   if token.type == s:TOKEN_LBPAR
+    call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_IDENTIFIER)
     let node.value = self.parse_identifier()
   elseif token.type == s:TOKEN_OPTION
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_OPTION)
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
+    call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_IDENTIFIER)
     let node.value = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_ENV)
     let node.value = token.value
   elseif token.type == s:TOKEN_REG
-    call self.tokenizer.get()
     let node = self.exprnode(s:NODE_REG)
     let node.value = token.value
   else
@@ -3226,9 +3175,9 @@ function s:StringReader.get()
 endfunction
 
 function s:StringReader.peekn(n)
-  let pos = self.getpos()
+  let pos = self.tell()
   let r = self.getn(a:n)
-  call self.setpos(pos)
+  call self.seek_set(pos)
   return r
 endfunction
 
