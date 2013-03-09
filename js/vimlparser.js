@@ -1862,7 +1862,7 @@ ExprTokenizer.prototype.get2 = function() {
             return this.token(TOKEN_ISNOT, "isnot");
         }
     }
-    else if (c == "<" && (r.p(1) == "S" || r.p(1) == "s") && (r.p(2) == "I" || r.p(2) == "s") && (r.p(3) == "D" || r.p(3) == "d") && r.p(4) == ">" && isnamec1(r.p(5))) {
+    else if (c == "<" && (r.p(1) == "S" || r.p(1) == "s") && (r.p(2) == "I" || r.p(2) == "i") && (r.p(3) == "D" || r.p(3) == "d") && r.p(4) == ">") {
         var s = r.getn(6);
         s += r.read_name();
         return this.token(TOKEN_IDENTIFIER, s);
@@ -2780,23 +2780,28 @@ ExprParser.prototype.parse_expr9 = function() {
 }
 
 ExprParser.prototype.parse_identifier = function() {
+    var r = this.tokenizer.reader;
     var id = [];
-    this.tokenizer.reader.skip_white();
+    r.skip_white();
     while (1) {
-        var c = this.tokenizer.reader.peek();
+        var c = r.peek();
         if (isnamec(c)) {
-            var name = this.tokenizer.reader.read_name();
+            var name = r.read_name();
             viml_add(id, {"curly":0, "value":name});
         }
         else if (c == "{") {
-            this.tokenizer.reader.get();
+            r.get();
             var node = this.parse_expr1();
-            this.tokenizer.reader.skip_white();
-            var c = this.tokenizer.reader.get();
+            r.skip_white();
+            var c = r.get();
             if (c != "}") {
                 throw this.err("ExprParser: unexpected token: %s", c);
             }
             viml_add(id, {"curly":1, "value":node});
+        }
+        else if (c == "<" && (r.p(1) == "S" || r.p(1) == "s") && (r.p(2) == "I" || r.p(2) == "i") && (r.p(3) == "D" || r.p(3) == "d") && r.p(4) == ">") {
+            var name = r.getn(5) + r.read_name();
+            viml_add(id, {"curly":0, "value":name});
         }
         else {
             break;
@@ -3823,7 +3828,12 @@ Compiler.prototype.compile_dot = function(node) {
 
 Compiler.prototype.compile_call = function(node) {
     var args = node.args.map((function(vval) { return this.compile(vval); }).bind(this));
-    return viml_printf("(%s %s)", this.compile(node.expr), viml_join(args, " "));
+    if (viml_empty(args)) {
+        return viml_printf("(%s)", this.compile(node.expr));
+    }
+    else {
+        return viml_printf("(%s %s)", this.compile(node.expr), viml_join(args, " "));
+    }
 }
 
 Compiler.prototype.compile_number = function(node) {
