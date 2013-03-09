@@ -3901,7 +3901,11 @@ endfunction
 
 function s:Compiler.compile_call(node)
   let args = map(a:node.args, 'self.compile(v:val)')
-  return printf('(%s %s)', self.compile(a:node.expr), join(args, ' '))
+  if empty(args)
+    return printf('(%s)', self.compile(a:node.expr))
+  else
+    return printf('(%s %s)', self.compile(a:node.expr), join(args, ' '))
+  endif
 endfunction
 
 function s:Compiler.compile_number(node)
