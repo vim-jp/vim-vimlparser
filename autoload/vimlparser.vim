@@ -2954,6 +2954,10 @@ function s:ExprParser.parse_identifier()
   let r = self.tokenizer.reader
   let id = []
   call r.skip_white()
+  if r.p(0) ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
+    let name = r.getn(5)
+    call add(id, {'curly': 0, 'value': name})
+  endif
   while 1
     let c = r.peek()
     if s:isnamec(c)
@@ -2968,9 +2972,6 @@ function s:ExprParser.parse_identifier()
         throw self.err('ExprParser: unexpected token: %s', c)
       endif
       call add(id, {'curly': 1, 'value': node})
-    elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
-      let name = r.getn(5)
-      call add(id, {'curly': 0, 'value': name})
     else
       break
     endif
