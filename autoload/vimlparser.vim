@@ -2156,7 +2156,7 @@ function s:ExprTokenizer.get2()
       call r.seek_cur(5)
       return self.token(s:TOKEN_ISNOT, 'isnot')
     endif
-  elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 's') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>' && s:isnamec1(r.p(5))
+  elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
     let s = r.getn(6)
     let s .= r.read_name()
     return self.token(s:TOKEN_IDENTIFIER, s)
@@ -2952,22 +2952,26 @@ function s:ExprParser.parse_expr9()
 endfunction
 
 function s:ExprParser.parse_identifier()
+  let r = self.tokenizer.reader
   let id = []
-  call self.tokenizer.reader.skip_white()
+  call r.skip_white()
   while 1
-    let c = self.tokenizer.reader.peek()
+    let c = r.peek()
     if s:isnamec(c)
-      let name = self.tokenizer.reader.read_name()
+      let name = r.read_name()
       call add(id, {'curly': 0, 'value': name})
     elseif c ==# '{'
-      call self.tokenizer.reader.get()
+      call r.get()
       let node = self.parse_expr1()
-      call self.tokenizer.reader.skip_white()
-      let c = self.tokenizer.reader.get()
+      call r.skip_white()
+      let c = r.get()
       if c !=# '}'
         throw self.err('ExprParser: unexpected token: %s', c)
       endif
       call add(id, {'curly': 1, 'value': node})
+    elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
+      let name = r.getn(5) . r.read_name()
+      call add(id, {'curly': 0, 'value': name})
     else
       break
     endif
