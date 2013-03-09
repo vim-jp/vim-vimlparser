@@ -2157,8 +2157,7 @@ function s:ExprTokenizer.get2()
       return self.token(s:TOKEN_ISNOT, 'isnot')
     endif
   elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
-    let s = r.getn(6)
-    let s .= r.read_name()
+    let s = r.getn(5)
     return self.token(s:TOKEN_IDENTIFIER, s)
   elseif s:isnamec1(c)
     let s = r.read_name()
@@ -2970,7 +2969,7 @@ function s:ExprParser.parse_identifier()
       endif
       call add(id, {'curly': 1, 'value': node})
     elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
-      let name = r.getn(5) . r.read_name()
+      let name = r.getn(5)
       call add(id, {'curly': 0, 'value': name})
     else
       break
