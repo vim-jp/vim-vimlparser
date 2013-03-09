@@ -1475,7 +1475,7 @@ class ExprTokenizer:
             else:
                 r.seek_cur(5)
                 return self.token(TOKEN_ISNOT, "isnot")
-        elif c == "<" and (r.p(1) == "S" or r.p(1) == "s") and (r.p(2) == "I" or r.p(2) == "s") and (r.p(3) == "D" or r.p(3) == "d") and r.p(4) == ">" and isnamec1(r.p(5)):
+        elif c == "<" and (r.p(1) == "S" or r.p(1) == "s") and (r.p(2) == "I" or r.p(2) == "i") and (r.p(3) == "D" or r.p(3) == "d") and r.p(4) == ">":
             s = r.getn(6)
             s += r.read_name()
             return self.token(TOKEN_IDENTIFIER, s)
@@ -2192,21 +2192,25 @@ class ExprParser:
         return node
 
     def parse_identifier(self):
+        r = self.tokenizer.reader
         id = []
-        self.tokenizer.reader.skip_white()
+        r.skip_white()
         while 1:
-            c = self.tokenizer.reader.peek()
+            c = r.peek()
             if isnamec(c):
-                name = self.tokenizer.reader.read_name()
+                name = r.read_name()
                 viml_add(id, AttributeDict({"curly":0, "value":name}))
             elif c == "{":
-                self.tokenizer.reader.get()
+                r.get()
                 node = self.parse_expr1()
-                self.tokenizer.reader.skip_white()
-                c = self.tokenizer.reader.get()
+                r.skip_white()
+                c = r.get()
                 if c != "}":
                     raise Exception(self.err("ExprParser: unexpected token: %s", c))
                 viml_add(id, AttributeDict({"curly":1, "value":node}))
+            elif c == "<" and (r.p(1) == "S" or r.p(1) == "s") and (r.p(2) == "I" or r.p(2) == "i") and (r.p(3) == "D" or r.p(3) == "d") and r.p(4) == ">":
+                name = r.getn(5) + r.read_name()
+                viml_add(id, AttributeDict({"curly":0, "value":name}))
             else:
                 break
         return id
@@ -2961,7 +2965,10 @@ class Compiler:
 
     def compile_call(self, node):
         args = [self.compile(vval) for vval in node.args]
-        return viml_printf("(%s %s)", self.compile(node.expr), viml_join(args, " "))
+        if viml_empty(args):
+            return viml_printf("(%s)", self.compile(node.expr))
+        else:
+            return viml_printf("(%s %s)", self.compile(node.expr), viml_join(args, " "))
 
     def compile_number(self, node):
         return node.value
