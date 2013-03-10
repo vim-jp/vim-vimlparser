@@ -2156,9 +2156,6 @@ function s:ExprTokenizer.get2()
       call r.seek_cur(5)
       return self.token(s:TOKEN_ISNOT, 'isnot')
     endif
-  elseif c ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
-    let s = r.getn(5)
-    return self.token(s:TOKEN_IDENTIFIER, s)
   elseif s:isnamec1(c)
     let s = r.read_name()
     return self.token(s:TOKEN_IDENTIFIER, s)
@@ -2938,6 +2935,10 @@ function s:ExprParser.parse_expr9()
     call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_IDENTIFIER)
     let node.value = self.parse_identifier()
+  elseif token.type == s:TOKEN_LT && self.tokenizer.reader.getn(4) ==? 'SID>'
+    call self.tokenizer.reader.seek_set(pos)
+    let node = self.exprnode(s:NODE_IDENTIFIER)
+    let node.value = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
     let node = self.exprnode(s:NODE_ENV)
     let node.value = token.value
@@ -2951,23 +2952,23 @@ function s:ExprParser.parse_expr9()
 endfunction
 
 function s:ExprParser.parse_identifier()
-  let r = self.tokenizer.reader
   let id = []
-  call r.skip_white()
-  if r.p(0) ==# '<' && (r.p(1) ==# 'S' || r.p(1) ==# 's') && (r.p(2) ==# 'I' || r.p(2) ==# 'i') && (r.p(3) ==# 'D' || r.p(3) ==# 'd') && r.p(4) ==# '>'
-    let name = r.getn(5)
+  call self.tokenizer.reader.skip_white()
+  let c = self.tokenizer.reader.peek()
+  if c ==# '<' && self.tokenizer.reader.peekn(5) ==? '<SID>'
+    let name = self.tokenizer.reader.getn(5)
     call add(id, {'curly': 0, 'value': name})
   endif
   while 1
-    let c = r.peek()
+    let c = self.tokenizer.reader.peek()
     if s:isnamec(c)
-      let name = r.read_name()
+      let name = self.tokenizer.reader.read_name()
       call add(id, {'curly': 0, 'value': name})
     elseif c ==# '{'
-      call r.get()
+      call self.tokenizer.reader.get()
       let node = self.parse_expr1()
-      call r.skip_white()
-      let c = r.get()
+      call self.tokenizer.reader.skip_white()
+      let c = self.tokenizer.reader.get()
       if c !=# '}'
         throw self.err('ExprParser: unexpected token: %s', c)
       endif
@@ -3076,6 +3077,10 @@ function! s:LvalueParser.parse_lv9()
     let node = self.exprnode(s:NODE_OPTION)
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
+    call self.tokenizer.reader.seek_set(pos)
+    let node = self.exprnode(s:NODE_IDENTIFIER)
+    let node.value = self.parse_identifier()
+  elseif token.type == s:TOKEN_LT && self.tokenizer.reader.getn(4) ==? 'SID>'
     call self.tokenizer.reader.seek_set(pos)
     let node = self.exprnode(s:NODE_IDENTIFIER)
     let node.value = self.parse_identifier()
