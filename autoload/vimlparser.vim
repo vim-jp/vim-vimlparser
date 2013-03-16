@@ -1215,7 +1215,7 @@ endfunction
 function s:VimLParser.parse_cmd_lockvar()
   let node = self.exnode(s:NODE_LOCKVAR)
   let node.ea = self.ea
-  let node.depth = 2
+  let node.depth = s:NIL
   let node.args = []
   call self.reader.skip_white()
   if s:isdigit(self.reader.peekn(1))
@@ -1228,7 +1228,7 @@ endfunction
 function s:VimLParser.parse_cmd_unlockvar()
   let node = self.exnode(s:NODE_UNLOCKVAR)
   let node.ea = self.ea
-  let node.depth = 2
+  let node.depth = s:NIL
   let node.args = []
   call self.reader.skip_white()
   if s:isdigit(self.reader.peekn(1))
@@ -3600,12 +3600,20 @@ endfunction
 
 function s:Compiler.compile_lockvar(node)
   let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('(lockvar %s %s)', a:node.depth, join(args, ' '))
+  if a:node.depth is s:NIL
+    call self.out('(lockvar %s)', join(args, ' '))
+  else
+    call self.out('(lockvar %s %s)', a:node.depth, join(args, ' '))
+  endif
 endfunction
 
 function s:Compiler.compile_unlockvar(node)
   let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('(unlockvar %s %s)', a:node.depth, join(args, ' '))
+  if a:node.depth is s:NIL
+    call self.out('(unlockvar %s)', join(args, ' '))
+  else
+    call self.out('(unlockvar %s %s)', a:node.depth, join(args, ' '))
+  endif
 endfunction
 
 function s:Compiler.compile_if(node)

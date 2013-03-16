@@ -24,7 +24,9 @@ let [a, b; c] += [1, 2, 3]
 let [a, b; c] -= [1, 2, 3]
 let [a, b; c] .= [1, 2, 3]
 unlet a b c
+lockvar a b c
 lockvar 1 a b c
+unlockvar a b c
 unlockvar 1 a b c
 try
   throw "err"
