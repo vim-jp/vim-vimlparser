@@ -270,8 +270,9 @@ var NODE_DICT = 83;
 var NODE_NESTING = 84;
 var NODE_OPTION = 85;
 var NODE_IDENTIFIER = 86;
-var NODE_ENV = 87;
-var NODE_REG = 88;
+var NODE_CURLYNAME = 87;
+var NODE_ENV = 88;
+var NODE_REG = 89;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -1695,7 +1696,7 @@ VimLParser.prototype.parse_exprlist = function() {
 VimLParser.prototype.parse_lvalue = function() {
     var p = new LvalueParser(new ExprTokenizer(this.reader));
     var node = p.parse();
-    if (node.type == NODE_IDENTIFIER || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
+    if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
         return node;
     }
     throw this.err("VimLParser: lvalue error: %s", node.value);
@@ -2623,11 +2624,9 @@ ExprParser.prototype.parse_expr8 = function() {
             var c = this.tokenizer.reader.peek();
             var token = this.tokenizer.peek();
             if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
-                var rhs = this.exprnode(NODE_IDENTIFIER);
-                rhs.value = this.parse_identifier();
                 var node = this.exprnode(NODE_DOT);
                 node.lhs = lhs;
-                node.rhs = rhs;
+                node.rhs = this.parse_identifier();
             }
             else {
                 // to be CONCAT
@@ -2718,8 +2717,7 @@ ExprParser.prototype.parse_expr9 = function() {
                         throw this.err("ExprParser: unexpected token: %s", token.value);
                     }
                     this.tokenizer.reader.seek_set(pos);
-                    var node = this.exprnode(NODE_IDENTIFIER);
-                    node.value = this.parse_identifier();
+                    var node = this.parse_identifier();
                     break;
                 }
                 if (token.type != TOKEN_COLON) {
@@ -2757,13 +2755,11 @@ ExprParser.prototype.parse_expr9 = function() {
     }
     else if (token.type == TOKEN_IDENTIFIER) {
         this.tokenizer.reader.seek_set(pos);
-        var node = this.exprnode(NODE_IDENTIFIER);
-        node.value = this.parse_identifier();
+        var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_LT && this.tokenizer.reader.getn(4).toLowerCase() == "SID>".toLowerCase()) {
         this.tokenizer.reader.seek_set(pos);
-        var node = this.exprnode(NODE_IDENTIFIER);
-        node.value = this.parse_identifier();
+        var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_ENV) {
         var node = this.exprnode(NODE_ENV);
@@ -2807,7 +2803,15 @@ ExprParser.prototype.parse_identifier = function() {
             break;
         }
     }
-    return id;
+    if (viml_len(id) == 1 && id[0].curly == 0) {
+        var node = this.exprnode(NODE_IDENTIFIER);
+        node.value = id[0].value;
+    }
+    else {
+        var node = this.exprnode(NODE_CURLYNAME);
+        node.value = id;
+    }
+    return node;
 }
 
 function LvalueParser() { ExprParser.apply(this, arguments); this.__init__.apply(this, arguments); }
@@ -2875,11 +2879,9 @@ LvalueParser.prototype.parse_lv8 = function() {
             var c = this.tokenizer.reader.peek();
             var token = this.tokenizer.peek();
             if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
-                var rhs = this.exprnode(NODE_IDENTIFIER);
-                rhs.value = this.parse_identifier();
                 var node = this.exprnode(NODE_DOT);
                 node.lhs = lhs;
-                node.rhs = rhs;
+                node.rhs = this.parse_identifier();
             }
             else {
                 // to be CONCAT
@@ -2906,8 +2908,7 @@ LvalueParser.prototype.parse_lv9 = function() {
     var token = this.tokenizer.get();
     if (token.type == TOKEN_COPEN) {
         this.tokenizer.reader.seek_set(pos);
-        var node = this.exprnode(NODE_IDENTIFIER);
-        node.value = this.parse_identifier();
+        var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_OPTION) {
         var node = this.exprnode(NODE_OPTION);
@@ -2915,13 +2916,11 @@ LvalueParser.prototype.parse_lv9 = function() {
     }
     else if (token.type == TOKEN_IDENTIFIER) {
         this.tokenizer.reader.seek_set(pos);
-        var node = this.exprnode(NODE_IDENTIFIER);
-        node.value = this.parse_identifier();
+        var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_LT && this.tokenizer.reader.getn(4).toLowerCase() == "SID>".toLowerCase()) {
         this.tokenizer.reader.seek_set(pos);
-        var node = this.exprnode(NODE_IDENTIFIER);
-        node.value = this.parse_identifier();
+        var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_ENV) {
         var node = this.exprnode(NODE_ENV);
@@ -3432,6 +3431,9 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_IDENTIFIER) {
         return this.compile_identifier(node);
     }
+    else if (node.type == NODE_CURLYNAME) {
+        return this.compile_curlyname(node);
+    }
     else if (node.type == NODE_ENV) {
         return this.compile_env(node);
     }
@@ -3878,18 +3880,22 @@ Compiler.prototype.compile_option = function(node) {
 }
 
 Compiler.prototype.compile_identifier = function(node) {
-    var v = "";
+    return node.value;
+}
+
+Compiler.prototype.compile_curlyname = function(node) {
+    var name = "";
     var __c11 = node.value;
     for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
         var x = __c11[__i11]
         if (x.curly) {
-            v += "{" + this.compile(x.value) + "}";
+            name += "{" + this.compile(x.value) + "}";
         }
         else {
-            v += x.value;
+            name += x.value;
         }
     }
-    return v;
+    return name;
 }
 
 Compiler.prototype.compile_env = function(node) {
