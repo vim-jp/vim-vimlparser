@@ -194,6 +194,8 @@ function s:PythonCompiler.compile(node)
     return self.compile_option(a:node)
   elseif a:node.type == s:NODE_IDENTIFIER
     return self.compile_identifier(a:node)
+  elseif a:node.type == s:NODE_CURLYNAME
+    return self.compile_curlyname(a:node)
   elseif a:node.type == s:NODE_ENV
     return self.compile_env(a:node)
   elseif a:node.type == s:NODE_REG
@@ -667,22 +669,19 @@ function s:PythonCompiler.compile_option(node)
 endfunction
 
 function s:PythonCompiler.compile_identifier(node)
-  let v = ''
-  for x in a:node.value
-    if x.curly
-      throw 'NotImplemented: curly'
-    else
-      let v .= x.value
-    endif
-  endfor
-  if v == 'a:000'
-    let v = 'a000'
-  elseif v == 'v:val'
-    let v = 'vval'
-  elseif v =~ '^[sa]:'
-    let v = v[2:]
+  let name = a:node.value
+  if name == 'a:000'
+    let name = 'a000'
+  elseif name == 'v:val'
+    let name = 'vval'
+  elseif name =~ '^[sa]:'
+    let name = name[2:]
   endif
-  return v
+  return name
+endfunction
+
+function s:PythonCompiler.compile_curlyname(node)
+  throw 'NotImplemented: curlyname'
 endfunction
 
 function s:PythonCompiler.compile_env(node)

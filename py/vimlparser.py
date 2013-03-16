@@ -235,8 +235,9 @@ NODE_DICT = 83
 NODE_NESTING = 84
 NODE_OPTION = 85
 NODE_IDENTIFIER = 86
-NODE_ENV = 87
-NODE_REG = 88
+NODE_CURLYNAME = 87
+NODE_ENV = 88
+NODE_REG = 89
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -1348,7 +1349,7 @@ class VimLParser:
     def parse_lvalue(self):
         p = LvalueParser(ExprTokenizer(self.reader))
         node = p.parse()
-        if node.type == NODE_IDENTIFIER or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
+        if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
             return node
         raise Exception(self.err("VimLParser: lvalue error: %s", node.value))
 
@@ -2072,11 +2073,9 @@ class ExprParser:
                 c = self.tokenizer.reader.peek()
                 token = self.tokenizer.peek()
                 if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
-                    rhs = self.exprnode(NODE_IDENTIFIER)
-                    rhs.value = self.parse_identifier()
                     node = self.exprnode(NODE_DOT)
                     node.lhs = lhs
-                    node.rhs = rhs
+                    node.rhs = self.parse_identifier()
                 else:
                     # to be CONCAT
                     self.tokenizer.reader.seek_set(pos)
@@ -2148,8 +2147,7 @@ class ExprParser:
                         if not viml_empty(node.items):
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                         self.tokenizer.reader.seek_set(pos)
-                        node = self.exprnode(NODE_IDENTIFIER)
-                        node.value = self.parse_identifier()
+                        node = self.parse_identifier()
                         break
                     if token.type != TOKEN_COLON:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
@@ -2175,12 +2173,10 @@ class ExprParser:
             node.value = token.value
         elif token.type == TOKEN_IDENTIFIER:
             self.tokenizer.reader.seek_set(pos)
-            node = self.exprnode(NODE_IDENTIFIER)
-            node.value = self.parse_identifier()
+            node = self.parse_identifier()
         elif token.type == TOKEN_LT and self.tokenizer.reader.getn(4).lower() == "SID>".lower():
             self.tokenizer.reader.seek_set(pos)
-            node = self.exprnode(NODE_IDENTIFIER)
-            node.value = self.parse_identifier()
+            node = self.parse_identifier()
         elif token.type == TOKEN_ENV:
             node = self.exprnode(NODE_ENV)
             node.value = token.value
@@ -2213,7 +2209,13 @@ class ExprParser:
                 viml_add(id, AttributeDict({"curly":1, "value":node}))
             else:
                 break
-        return id
+        if viml_len(id) == 1 and id[0].curly == 0:
+            node = self.exprnode(NODE_IDENTIFIER)
+            node.value = id[0].value
+        else:
+            node = self.exprnode(NODE_CURLYNAME)
+            node.value = id
+        return node
 
 class LvalueParser(ExprParser):
     def parse(self):
@@ -2268,11 +2270,9 @@ class LvalueParser(ExprParser):
                 c = self.tokenizer.reader.peek()
                 token = self.tokenizer.peek()
                 if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
-                    rhs = self.exprnode(NODE_IDENTIFIER)
-                    rhs.value = self.parse_identifier()
                     node = self.exprnode(NODE_DOT)
                     node.lhs = lhs
-                    node.rhs = rhs
+                    node.rhs = self.parse_identifier()
                 else:
                     # to be CONCAT
                     self.tokenizer.reader.seek_set(pos)
@@ -2293,19 +2293,16 @@ class LvalueParser(ExprParser):
         token = self.tokenizer.get()
         if token.type == TOKEN_COPEN:
             self.tokenizer.reader.seek_set(pos)
-            node = self.exprnode(NODE_IDENTIFIER)
-            node.value = self.parse_identifier()
+            node = self.parse_identifier()
         elif token.type == TOKEN_OPTION:
             node = self.exprnode(NODE_OPTION)
             node.value = token.value
         elif token.type == TOKEN_IDENTIFIER:
             self.tokenizer.reader.seek_set(pos)
-            node = self.exprnode(NODE_IDENTIFIER)
-            node.value = self.parse_identifier()
+            node = self.parse_identifier()
         elif token.type == TOKEN_LT and self.tokenizer.reader.getn(4).lower() == "SID>".lower():
             self.tokenizer.reader.seek_set(pos)
-            node = self.exprnode(NODE_IDENTIFIER)
-            node.value = self.parse_identifier()
+            node = self.parse_identifier()
         elif token.type == TOKEN_ENV:
             node = self.exprnode(NODE_ENV)
             node.value = token.value
@@ -2663,6 +2660,8 @@ class Compiler:
             return self.compile_option(node)
         elif node.type == NODE_IDENTIFIER:
             return self.compile_identifier(node)
+        elif node.type == NODE_CURLYNAME:
+            return self.compile_curlyname(node)
         elif node.type == NODE_ENV:
             return self.compile_env(node)
         elif node.type == NODE_REG:
@@ -3001,13 +3000,16 @@ class Compiler:
         return node.value
 
     def compile_identifier(self, node):
-        v = ""
+        return node.value
+
+    def compile_curlyname(self, node):
+        name = ""
         for x in node.value:
             if x.curly:
-                v += "{" + self.compile(x.value) + "}"
+                name += "{" + self.compile(x.value) + "}"
             else:
-                v += x.value
-        return v
+                name += x.value
+        return name
 
     def compile_env(self, node):
         return node.value
