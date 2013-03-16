@@ -118,8 +118,9 @@ let s:NODE_DICT = 83
 let s:NODE_NESTING = 84
 let s:NODE_OPTION = 85
 let s:NODE_IDENTIFIER = 86
-let s:NODE_ENV = 87
-let s:NODE_REG = 88
+let s:NODE_CURLYNAME = 87
+let s:NODE_ENV = 88
+let s:NODE_REG = 89
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -1481,7 +1482,7 @@ endfunction
 function s:VimLParser.parse_lvalue()
   let p = s:LvalueParser.new(s:ExprTokenizer.new(self.reader))
   let node = p.parse()
-  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
+  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
     return node
   endif
   throw self.err('VimLParser: lvalue error: %s', node.value)
@@ -2814,11 +2815,9 @@ function s:ExprParser.parse_expr8()
       let c = self.tokenizer.reader.peek()
       let token = self.tokenizer.peek()
       if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
-        let rhs = self.exprnode(s:NODE_IDENTIFIER)
-        let rhs.value = self.parse_identifier()
         let node = self.exprnode(s:NODE_DOT)
         let node.lhs = lhs
-        let node.rhs = rhs
+        let node.rhs = self.parse_identifier()
       else
         " to be CONCAT
         call self.tokenizer.reader.seek_set(pos)
@@ -2899,8 +2898,7 @@ function s:ExprParser.parse_expr9()
             throw self.err('ExprParser: unexpected token: %s', token.value)
           endif
           call self.tokenizer.reader.seek_set(pos)
-          let node = self.exprnode(s:NODE_IDENTIFIER)
-          let node.value = self.parse_identifier()
+          let node = self.parse_identifier()
           break
         endif
         if token.type != s:TOKEN_COLON
@@ -2933,12 +2931,10 @@ function s:ExprParser.parse_expr9()
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
     call self.tokenizer.reader.seek_set(pos)
-    let node = self.exprnode(s:NODE_IDENTIFIER)
-    let node.value = self.parse_identifier()
+    let node = self.parse_identifier()
   elseif token.type == s:TOKEN_LT && self.tokenizer.reader.getn(4) ==? 'SID>'
     call self.tokenizer.reader.seek_set(pos)
-    let node = self.exprnode(s:NODE_IDENTIFIER)
-    let node.value = self.parse_identifier()
+    let node = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
     let node = self.exprnode(s:NODE_ENV)
     let node.value = token.value
@@ -2977,7 +2973,14 @@ function s:ExprParser.parse_identifier()
       break
     endif
   endwhile
-  return id
+  if len(id) == 1 && id[0].curly == 0
+    let node = self.exprnode(s:NODE_IDENTIFIER)
+    let node.value = id[0].value
+  else
+    let node = self.exprnode(s:NODE_CURLYNAME)
+    let node.value = id
+  endif
+  return node
 endfunction
 
 let s:LvalueParser = copy(s:ExprParser)
@@ -3042,11 +3045,9 @@ function! s:LvalueParser.parse_lv8()
       let c = self.tokenizer.reader.peek()
       let token = self.tokenizer.peek()
       if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
-        let rhs = self.exprnode(s:NODE_IDENTIFIER)
-        let rhs.value = self.parse_identifier()
         let node = self.exprnode(s:NODE_DOT)
         let node.lhs = lhs
-        let node.rhs = rhs
+        let node.rhs = self.parse_identifier()
       else
         " to be CONCAT
         call self.tokenizer.reader.seek_set(pos)
@@ -3071,19 +3072,16 @@ function! s:LvalueParser.parse_lv9()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_COPEN
     call self.tokenizer.reader.seek_set(pos)
-    let node = self.exprnode(s:NODE_IDENTIFIER)
-    let node.value = self.parse_identifier()
+    let node = self.parse_identifier()
   elseif token.type == s:TOKEN_OPTION
     let node = self.exprnode(s:NODE_OPTION)
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
     call self.tokenizer.reader.seek_set(pos)
-    let node = self.exprnode(s:NODE_IDENTIFIER)
-    let node.value = self.parse_identifier()
+    let node = self.parse_identifier()
   elseif token.type == s:TOKEN_LT && self.tokenizer.reader.getn(4) ==? 'SID>'
     call self.tokenizer.reader.seek_set(pos)
-    let node = self.exprnode(s:NODE_IDENTIFIER)
-    let node.value = self.parse_identifier()
+    let node = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
     let node = self.exprnode(s:NODE_ENV)
     let node.value = token.value
@@ -3516,6 +3514,8 @@ function s:Compiler.compile(node)
     return self.compile_option(a:node)
   elseif a:node.type == s:NODE_IDENTIFIER
     return self.compile_identifier(a:node)
+  elseif a:node.type == s:NODE_CURLYNAME
+    return self.compile_curlyname(a:node)
   elseif a:node.type == s:NODE_ENV
     return self.compile_env(a:node)
   elseif a:node.type == s:NODE_REG
@@ -3948,15 +3948,19 @@ function s:Compiler.compile_option(node)
 endfunction
 
 function s:Compiler.compile_identifier(node)
-  let v = ''
+  return a:node.value
+endfunction
+
+function s:Compiler.compile_curlyname(node)
+  let name = ''
   for x in a:node.value
     if x.curly
-      let v .= '{' . self.compile(x.value) . '}'
+      let name .= '{' . self.compile(x.value) . '}'
     else
-      let v .= x.value
+      let name .= x.value
     endif
   endfor
-  return v
+  return name
 endfunction
 
 function s:Compiler.compile_env(node)
