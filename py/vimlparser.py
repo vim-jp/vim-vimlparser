@@ -182,49 +182,49 @@ NODE_ECHOHL = 30
 NODE_ECHOMSG = 31
 NODE_ECHOERR = 32
 NODE_EXECUTE = 33
-NODE_CONDEXP = 34
-NODE_LOGOR = 35
-NODE_LOGAND = 36
-NODE_EQEQQ = 37
-NODE_EQEQH = 38
-NODE_NOTEQQ = 39
-NODE_NOTEQH = 40
-NODE_GTEQQ = 41
-NODE_GTEQH = 42
-NODE_LTEQQ = 43
-NODE_LTEQH = 44
-NODE_EQTILDQ = 45
-NODE_EQTILDH = 46
-NODE_NOTTILDQ = 47
-NODE_NOTTILDH = 48
-NODE_GTQ = 49
-NODE_GTH = 50
-NODE_LTQ = 51
-NODE_LTH = 52
-NODE_EQEQ = 53
-NODE_NOTEQ = 54
-NODE_GTEQ = 55
-NODE_LTEQ = 56
-NODE_EQTILD = 57
-NODE_NOTTILD = 58
-NODE_GT = 59
-NODE_LT = 60
-NODE_ISH = 61
-NODE_ISQ = 62
-NODE_ISNOTH = 63
-NODE_ISNOTQ = 64
-NODE_IS = 65
-NODE_ISNOT = 66
+NODE_TERNARY = 34
+NODE_OR = 35
+NODE_AND = 36
+NODE_EQUAL = 37
+NODE_EQUALCI = 38
+NODE_EQUALCS = 39
+NODE_NEQUAL = 40
+NODE_NEQUALCI = 41
+NODE_NEQUALCS = 42
+NODE_GREATER = 43
+NODE_GREATERCI = 44
+NODE_GREATERCS = 45
+NODE_GEQUAL = 46
+NODE_GEQUALCI = 47
+NODE_GEQUALCS = 48
+NODE_SMALLER = 49
+NODE_SMALLERCI = 50
+NODE_SMALLERCS = 51
+NODE_SEQUAL = 52
+NODE_SEQUALCI = 53
+NODE_SEQUALCS = 54
+NODE_MATCH = 55
+NODE_MATCHCI = 56
+NODE_MATCHCS = 57
+NODE_NOMATCH = 58
+NODE_NOMATCHCI = 59
+NODE_NOMATCHCS = 60
+NODE_IS = 61
+NODE_ISCI = 62
+NODE_ISCS = 63
+NODE_ISNOT = 64
+NODE_ISNOTCI = 65
+NODE_ISNOTCS = 66
 NODE_ADD = 67
-NODE_SUB = 68
+NODE_SUBTRACT = 68
 NODE_CONCAT = 69
-NODE_MUL = 70
-NODE_DIV = 71
-NODE_MOD = 72
+NODE_MULTIPLY = 70
+NODE_DIVIDE = 71
+NODE_REMAINDER = 72
 NODE_NOT = 73
 NODE_MINUS = 74
 NODE_PLUS = 75
-NODE_INDEX = 76
+NODE_SUBSCRIPT = 76
 NODE_SLICE = 77
 NODE_CALL = 78
 NODE_DOT = 79
@@ -240,61 +240,61 @@ NODE_REG = 88
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
-TOKEN_NUMBER = 4
-TOKEN_ISH = 5
-TOKEN_ISQ = 6
-TOKEN_ISNOTH = 7
-TOKEN_ISNOTQ = 8
-TOKEN_IS = 9
-TOKEN_ISNOT = 10
-TOKEN_IDENTIFIER = 11
-TOKEN_EQEQQ = 12
-TOKEN_EQEQH = 13
-TOKEN_NOTEQQ = 14
-TOKEN_NOTEQH = 15
-TOKEN_GTEQQ = 16
-TOKEN_GTEQH = 17
-TOKEN_LTEQQ = 18
-TOKEN_LTEQH = 19
-TOKEN_EQTILDQ = 20
-TOKEN_EQTILDH = 21
-TOKEN_NOTTILDQ = 22
-TOKEN_NOTTILDH = 23
-TOKEN_GTQ = 24
-TOKEN_GTH = 25
-TOKEN_LTQ = 26
-TOKEN_LTH = 27
-TOKEN_OROR = 28
-TOKEN_ANDAND = 29
-TOKEN_EQEQ = 30
-TOKEN_NOTEQ = 31
-TOKEN_GTEQ = 32
-TOKEN_LTEQ = 33
-TOKEN_EQTILD = 34
-TOKEN_NOTTILD = 35
-TOKEN_GT = 36
-TOKEN_LT = 37
-TOKEN_PLUS = 38
-TOKEN_MINUS = 39
-TOKEN_DOT = 40
-TOKEN_STAR = 41
-TOKEN_SLASH = 42
-TOKEN_PER = 43
-TOKEN_NOT = 44
-TOKEN_QUESTION = 45
-TOKEN_COLON = 46
-TOKEN_LPAR = 47
-TOKEN_RPAR = 48
-TOKEN_LBRA = 49
-TOKEN_RBRA = 50
-TOKEN_LBPAR = 51
-TOKEN_RBPAR = 52
-TOKEN_COMMA = 53
-TOKEN_SQUOTE = 54
-TOKEN_DQUOTE = 55
-TOKEN_ENV = 56
-TOKEN_REG = 57
-TOKEN_OPTION = 58
+TOKEN_OROR = 4
+TOKEN_ANDAND = 5
+TOKEN_EQEQ = 6
+TOKEN_EQEQCI = 7
+TOKEN_EQEQCS = 8
+TOKEN_NEQ = 9
+TOKEN_NEQCI = 10
+TOKEN_NEQCS = 11
+TOKEN_GT = 12
+TOKEN_GTCI = 13
+TOKEN_GTCS = 14
+TOKEN_GTEQ = 15
+TOKEN_GTEQCI = 16
+TOKEN_GTEQCS = 17
+TOKEN_LT = 18
+TOKEN_LTCI = 19
+TOKEN_LTCS = 20
+TOKEN_LTEQ = 21
+TOKEN_LTEQCI = 22
+TOKEN_LTEQCS = 23
+TOKEN_MATCH = 24
+TOKEN_MATCHCI = 25
+TOKEN_MATCHCS = 26
+TOKEN_NOMATCH = 27
+TOKEN_NOMATCHCI = 28
+TOKEN_NOMATCHCS = 29
+TOKEN_IS = 30
+TOKEN_ISCI = 31
+TOKEN_ISCS = 32
+TOKEN_ISNOT = 33
+TOKEN_ISNOTCI = 34
+TOKEN_ISNOTCS = 35
+TOKEN_PLUS = 36
+TOKEN_MINUS = 37
+TOKEN_DOT = 38
+TOKEN_STAR = 39
+TOKEN_SLASH = 40
+TOKEN_PERCENT = 41
+TOKEN_NOT = 42
+TOKEN_QUESTION = 43
+TOKEN_COLON = 44
+TOKEN_POPEN = 45
+TOKEN_PCLOSE = 46
+TOKEN_SQOPEN = 47
+TOKEN_SQCLOSE = 48
+TOKEN_COPEN = 49
+TOKEN_CCLOSE = 50
+TOKEN_COMMA = 51
+TOKEN_NUMBER = 52
+TOKEN_SQUOTE = 53
+TOKEN_DQUOTE = 54
+TOKEN_OPTION = 55
+TOKEN_IDENTIFIER = 56
+TOKEN_ENV = 57
+TOKEN_REG = 58
 TOKEN_EQ = 59
 TOKEN_OR = 60
 TOKEN_SEMICOLON = 61
@@ -1348,7 +1348,7 @@ class VimLParser:
     def parse_lvalue(self):
         p = LvalueParser(ExprTokenizer(self.reader))
         node = p.parse()
-        if node.type == NODE_IDENTIFIER or node.type == NODE_INDEX or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
+        if node.type == NODE_IDENTIFIER or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
             return node
         raise Exception(self.err("VimLParser: lvalue error: %s", node.value))
 
@@ -1368,13 +1368,13 @@ class VimLParser:
     def parse_letlhs(self):
         values = AttributeDict({"args":[], "rest":NIL})
         tokenizer = ExprTokenizer(self.reader)
-        if tokenizer.peek().type == TOKEN_LBRA:
+        if tokenizer.peek().type == TOKEN_SQOPEN:
             tokenizer.get()
             while 1:
                 node = self.parse_lvalue()
                 viml_add(values.args, node)
                 token = tokenizer.get()
-                if token.type == TOKEN_RBRA:
+                if token.type == TOKEN_SQCLOSE:
                     break
                 elif token.type == TOKEN_COMMA:
                     continue
@@ -1382,7 +1382,7 @@ class VimLParser:
                     node = self.parse_lvalue()
                     values.rest = node
                     token = tokenizer.get()
-                    if token.type == TOKEN_RBRA:
+                    if token.type == TOKEN_SQCLOSE:
                         break
                     else:
                         raise Exception(self.err("VimLParser: E475 Invalid argument: %s", token.value))
@@ -1458,27 +1458,23 @@ class ExprTokenizer:
         elif c == "i" and r.p(1) == "s" and not isidc(r.p(2)):
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_ISQ, "is?")
+                return self.token(TOKEN_ISCI, "is?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_ISH, "is#")
+                return self.token(TOKEN_ISCS, "is#")
             else:
                 r.seek_cur(2)
                 return self.token(TOKEN_IS, "is")
         elif c == "i" and r.p(1) == "s" and r.p(2) == "n" and r.p(3) == "o" and r.p(4) == "t" and not isidc(r.p(5)):
             if r.p(5) == "?":
                 r.seek_cur(6)
-                return self.token(TOKEN_ISNOTQ, "isnot?")
+                return self.token(TOKEN_ISNOTCI, "isnot?")
             elif r.p(5) == "#":
                 r.seek_cur(6)
-                return self.token(TOKEN_ISNOTH, "isnot#")
+                return self.token(TOKEN_ISNOTCS, "isnot#")
             else:
                 r.seek_cur(5)
                 return self.token(TOKEN_ISNOT, "isnot")
-        elif c == "<" and (r.p(1) == "S" or r.p(1) == "s") and (r.p(2) == "I" or r.p(2) == "i") and (r.p(3) == "D" or r.p(3) == "d") and r.p(4) == ">":
-            s = r.getn(6)
-            s += r.read_name()
-            return self.token(TOKEN_IDENTIFIER, s)
         elif isnamec1(c):
             s = r.read_name()
             return self.token(TOKEN_IDENTIFIER, s)
@@ -1491,80 +1487,80 @@ class ExprTokenizer:
         elif c == "=" and r.p(1) == "=":
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_EQEQQ, "==?")
+                return self.token(TOKEN_EQEQCI, "==?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_EQEQH, "==#")
+                return self.token(TOKEN_EQEQCS, "==#")
             else:
                 r.seek_cur(2)
                 return self.token(TOKEN_EQEQ, "==")
         elif c == "!" and r.p(1) == "=":
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_NOTEQQ, "!=?")
+                return self.token(TOKEN_NEQCI, "!=?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_NOTEQH, "!=#")
+                return self.token(TOKEN_NEQCS, "!=#")
             else:
                 r.seek_cur(2)
-                return self.token(TOKEN_NOTEQ, "!=")
+                return self.token(TOKEN_NEQ, "!=")
         elif c == ">" and r.p(1) == "=":
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_GTEQQ, ">=?")
+                return self.token(TOKEN_GTEQCI, ">=?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_GTEQH, ">=#")
+                return self.token(TOKEN_GTEQCS, ">=#")
             else:
                 r.seek_cur(2)
                 return self.token(TOKEN_GTEQ, ">=")
         elif c == "<" and r.p(1) == "=":
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_LTEQQ, "<=?")
+                return self.token(TOKEN_LTEQCI, "<=?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_LTEQH, "<=#")
+                return self.token(TOKEN_LTEQCS, "<=#")
             else:
                 r.seek_cur(2)
                 return self.token(TOKEN_LTEQ, "<=")
         elif c == "=" and r.p(1) == "~":
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_EQTILDQ, "=~?")
+                return self.token(TOKEN_MATCHCI, "=~?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_EQTILDH, "=~#")
+                return self.token(TOKEN_MATCHCS, "=~#")
             else:
                 r.seek_cur(2)
-                return self.token(TOKEN_EQTILD, "=~")
+                return self.token(TOKEN_MATCH, "=~")
         elif c == "!" and r.p(1) == "~":
             if r.p(2) == "?":
                 r.seek_cur(3)
-                return self.token(TOKEN_NOTTILDQ, "!~?")
+                return self.token(TOKEN_NOMATCHCI, "!~?")
             elif r.p(2) == "#":
                 r.seek_cur(3)
-                return self.token(TOKEN_NOTTILDH, "!~#")
+                return self.token(TOKEN_NOMATCHCS, "!~#")
             else:
                 r.seek_cur(2)
-                return self.token(TOKEN_NOTTILD, "!~")
+                return self.token(TOKEN_NOMATCH, "!~")
         elif c == ">":
             if r.p(1) == "?":
                 r.seek_cur(2)
-                return self.token(TOKEN_GTQ, ">?")
+                return self.token(TOKEN_GTCI, ">?")
             elif r.p(1) == "#":
                 r.seek_cur(2)
-                return self.token(TOKEN_GTH, ">#")
+                return self.token(TOKEN_GTCS, ">#")
             else:
                 r.seek_cur(1)
                 return self.token(TOKEN_GT, ">")
         elif c == "<":
             if r.p(1) == "?":
                 r.seek_cur(2)
-                return self.token(TOKEN_LTQ, "<?")
+                return self.token(TOKEN_LTCI, "<?")
             elif r.p(1) == "#":
                 r.seek_cur(2)
-                return self.token(TOKEN_LTH, "<#")
+                return self.token(TOKEN_LTCS, "<#")
             else:
                 r.seek_cur(1)
                 return self.token(TOKEN_LT, "<")
@@ -1585,7 +1581,7 @@ class ExprTokenizer:
             return self.token(TOKEN_SLASH, "/")
         elif c == "%":
             r.seek_cur(1)
-            return self.token(TOKEN_PER, "%")
+            return self.token(TOKEN_PERCENT, "%")
         elif c == "!":
             r.seek_cur(1)
             return self.token(TOKEN_NOT, "!")
@@ -1597,22 +1593,22 @@ class ExprTokenizer:
             return self.token(TOKEN_COLON, ":")
         elif c == "(":
             r.seek_cur(1)
-            return self.token(TOKEN_LPAR, "(")
+            return self.token(TOKEN_POPEN, "(")
         elif c == ")":
             r.seek_cur(1)
-            return self.token(TOKEN_RPAR, ")")
+            return self.token(TOKEN_PCLOSE, ")")
         elif c == "[":
             r.seek_cur(1)
-            return self.token(TOKEN_LBRA, "[")
+            return self.token(TOKEN_SQOPEN, "[")
         elif c == "]":
             r.seek_cur(1)
-            return self.token(TOKEN_RBRA, "]")
+            return self.token(TOKEN_SQCLOSE, "]")
         elif c == "{":
             r.seek_cur(1)
-            return self.token(TOKEN_LBPAR, "{")
+            return self.token(TOKEN_COPEN, "{")
         elif c == "}":
             r.seek_cur(1)
-            return self.token(TOKEN_RBPAR, "}")
+            return self.token(TOKEN_CCLOSE, "}")
         elif c == ",":
             r.seek_cur(1)
             return self.token(TOKEN_COMMA, ",")
@@ -1716,7 +1712,7 @@ class ExprParser:
         pos = self.tokenizer.reader.tell()
         token = self.tokenizer.get()
         if token.type == TOKEN_QUESTION:
-            node = self.exprnode(NODE_CONDEXP)
+            node = self.exprnode(NODE_TERNARY)
             node.cond = lhs
             node.then = self.parse_expr1()
             token = self.tokenizer.get()
@@ -1735,7 +1731,7 @@ class ExprParser:
             pos = self.tokenizer.reader.tell()
             token = self.tokenizer.get()
             if token.type == TOKEN_OROR:
-                node = self.exprnode(NODE_LOGOR)
+                node = self.exprnode(NODE_OR)
                 node.lhs = lhs
                 node.rhs = self.parse_expr3()
                 lhs = node
@@ -1751,7 +1747,7 @@ class ExprParser:
             pos = self.tokenizer.reader.tell()
             token = self.tokenizer.get()
             if token.type == TOKEN_ANDAND:
-                node = self.exprnode(NODE_LOGAND)
+                node = self.exprnode(NODE_AND)
                 node.lhs = lhs
                 node.rhs = self.parse_expr4()
                 lhs = node
@@ -1769,7 +1765,7 @@ class ExprParser:
 #        expr5 =~ expr5
 #        expr5 !~ expr5
 #
-#        expr5 ==?  expr5
+#        expr5 ==? expr5
 #        expr5 ==# expr5
 #        etc.
 #
@@ -1779,143 +1775,123 @@ class ExprParser:
         lhs = self.parse_expr5()
         pos = self.tokenizer.reader.tell()
         token = self.tokenizer.get()
-        if token.type == TOKEN_EQEQQ:
-            node = self.exprnode(NODE_EQEQQ)
+        if token.type == TOKEN_EQEQ:
+            node = self.exprnode(NODE_EQUAL)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_EQEQH:
-            node = self.exprnode(NODE_EQEQH)
+        elif token.type == TOKEN_EQEQCI:
+            node = self.exprnode(NODE_EQUALCI)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_NOTEQQ:
-            node = self.exprnode(NODE_NOTEQQ)
+        elif token.type == TOKEN_EQEQCS:
+            node = self.exprnode(NODE_EQUALCS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_NOTEQH:
-            node = self.exprnode(NODE_NOTEQH)
+        elif token.type == TOKEN_NEQ:
+            node = self.exprnode(NODE_NEQUAL)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_GTEQQ:
-            node = self.exprnode(NODE_GTEQQ)
+        elif token.type == TOKEN_NEQCI:
+            node = self.exprnode(NODE_NEQUALCI)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_GTEQH:
-            node = self.exprnode(NODE_GTEQH)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_LTEQQ:
-            node = self.exprnode(NODE_LTEQQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_LTEQH:
-            node = self.exprnode(NODE_LTEQH)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_EQTILDQ:
-            node = self.exprnode(NODE_EQTILDQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_EQTILDH:
-            node = self.exprnode(NODE_EQTILDH)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_NOTTILDQ:
-            node = self.exprnode(NODE_NOTTILDQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_NOTTILDH:
-            node = self.exprnode(NODE_NOTTILDH)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_GTQ:
-            node = self.exprnode(NODE_GTQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_GTH:
-            node = self.exprnode(NODE_GTH)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_LTQ:
-            node = self.exprnode(NODE_LTQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_LTH:
-            node = self.exprnode(NODE_LTH)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_EQEQ:
-            node = self.exprnode(NODE_EQEQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_NOTEQ:
-            node = self.exprnode(NODE_NOTEQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_GTEQ:
-            node = self.exprnode(NODE_GTEQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_LTEQ:
-            node = self.exprnode(NODE_LTEQ)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_EQTILD:
-            node = self.exprnode(NODE_EQTILD)
-            node.lhs = lhs
-            node.rhs = self.parse_expr5()
-            lhs = node
-        elif token.type == TOKEN_NOTTILD:
-            node = self.exprnode(NODE_NOTTILD)
+        elif token.type == TOKEN_NEQCS:
+            node = self.exprnode(NODE_NEQUALCS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_GT:
-            node = self.exprnode(NODE_GT)
+            node = self.exprnode(NODE_GREATER)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_GTCI:
+            node = self.exprnode(NODE_GREATERCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_GTCS:
+            node = self.exprnode(NODE_GREATERCS)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_GTEQ:
+            node = self.exprnode(NODE_GEQUAL)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_GTEQCI:
+            node = self.exprnode(NODE_GEQUALCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_GTEQCS:
+            node = self.exprnode(NODE_GEQUALCS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
         elif token.type == TOKEN_LT:
-            node = self.exprnode(NODE_LT)
+            node = self.exprnode(NODE_SMALLER)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_ISH:
-            node = self.exprnode(NODE_ISH)
+        elif token.type == TOKEN_LTCI:
+            node = self.exprnode(NODE_SMALLERCI)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_ISQ:
-            node = self.exprnode(NODE_ISQ)
+        elif token.type == TOKEN_LTCS:
+            node = self.exprnode(NODE_SMALLERCS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_ISNOTH:
-            node = self.exprnode(NODE_ISNOTH)
+        elif token.type == TOKEN_LTEQ:
+            node = self.exprnode(NODE_SEQUAL)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
-        elif token.type == TOKEN_ISNOTQ:
-            node = self.exprnode(NODE_ISNOTQ)
+        elif token.type == TOKEN_LTEQCI:
+            node = self.exprnode(NODE_SEQUALCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_LTEQCS:
+            node = self.exprnode(NODE_SEQUALCS)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_MATCH:
+            node = self.exprnode(NODE_MATCH)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_MATCHCI:
+            node = self.exprnode(NODE_MATCHCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_MATCHCS:
+            node = self.exprnode(NODE_MATCHCS)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_NOMATCH:
+            node = self.exprnode(NODE_NOMATCH)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_NOMATCHCI:
+            node = self.exprnode(NODE_NOMATCHCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_NOMATCHCS:
+            node = self.exprnode(NODE_NOMATCHCS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
@@ -1924,8 +1900,28 @@ class ExprParser:
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
+        elif token.type == TOKEN_ISCI:
+            node = self.exprnode(NODE_ISCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_ISCS:
+            node = self.exprnode(NODE_ISCS)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
         elif token.type == TOKEN_ISNOT:
             node = self.exprnode(NODE_ISNOT)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_ISNOTCI:
+            node = self.exprnode(NODE_ISNOTCI)
+            node.lhs = lhs
+            node.rhs = self.parse_expr5()
+            lhs = node
+        elif token.type == TOKEN_ISNOTCS:
+            node = self.exprnode(NODE_ISNOTCS)
             node.lhs = lhs
             node.rhs = self.parse_expr5()
             lhs = node
@@ -1947,7 +1943,7 @@ class ExprParser:
                 node.rhs = self.parse_expr6()
                 lhs = node
             elif token.type == TOKEN_MINUS:
-                node = self.exprnode(NODE_SUB)
+                node = self.exprnode(NODE_SUBTRACT)
                 node.lhs = lhs
                 node.rhs = self.parse_expr6()
                 lhs = node
@@ -1970,17 +1966,17 @@ class ExprParser:
             pos = self.tokenizer.reader.tell()
             token = self.tokenizer.get()
             if token.type == TOKEN_STAR:
-                node = self.exprnode(NODE_MUL)
+                node = self.exprnode(NODE_MULTIPLY)
                 node.lhs = lhs
                 node.rhs = self.parse_expr7()
                 lhs = node
             elif token.type == TOKEN_SLASH:
-                node = self.exprnode(NODE_DIV)
+                node = self.exprnode(NODE_DIVIDE)
                 node.lhs = lhs
                 node.rhs = self.parse_expr7()
                 lhs = node
-            elif token.type == TOKEN_PER:
-                node = self.exprnode(NODE_MOD)
+            elif token.type == TOKEN_PERCENT:
+                node = self.exprnode(NODE_REMAINDER)
                 node.lhs = lhs
                 node.rhs = self.parse_expr7()
                 lhs = node
@@ -2019,7 +2015,7 @@ class ExprParser:
             pos = self.tokenizer.reader.tell()
             c = self.tokenizer.reader.peek()
             token = self.tokenizer.get()
-            if not iswhite(c) and token.type == TOKEN_LBRA:
+            if not iswhite(c) and token.type == TOKEN_SQOPEN:
                 if self.tokenizer.peek().type == TOKEN_COLON:
                     self.tokenizer.get()
                     node = self.exprnode(NODE_SLICE)
@@ -2027,10 +2023,10 @@ class ExprParser:
                     node.expr1 = NIL
                     node.expr2 = NIL
                     token = self.tokenizer.peek()
-                    if token.type != TOKEN_RBRA:
+                    if token.type != TOKEN_SQCLOSE:
                         node.expr2 = self.parse_expr1()
                     token = self.tokenizer.get()
-                    if token.type != TOKEN_RBRA:
+                    if token.type != TOKEN_SQCLOSE:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                 else:
                     expr1 = self.parse_expr1()
@@ -2041,24 +2037,24 @@ class ExprParser:
                         node.expr1 = expr1
                         node.expr2 = NIL
                         token = self.tokenizer.peek()
-                        if token.type != TOKEN_RBRA:
+                        if token.type != TOKEN_SQCLOSE:
                             node.expr2 = self.parse_expr1()
                         token = self.tokenizer.get()
-                        if token.type != TOKEN_RBRA:
+                        if token.type != TOKEN_SQCLOSE:
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                     else:
-                        node = self.exprnode(NODE_INDEX)
+                        node = self.exprnode(NODE_SUBSCRIPT)
                         node.expr = lhs
                         node.expr1 = expr1
                         token = self.tokenizer.get()
-                        if token.type != TOKEN_RBRA:
+                        if token.type != TOKEN_SQCLOSE:
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                 lhs = node
-            elif token.type == TOKEN_LPAR:
+            elif token.type == TOKEN_POPEN:
                 node = self.exprnode(NODE_CALL)
                 node.expr = lhs
                 node.args = []
-                if self.tokenizer.peek().type == TOKEN_RPAR:
+                if self.tokenizer.peek().type == TOKEN_PCLOSE:
                     self.tokenizer.get()
                 else:
                     while 1:
@@ -2066,13 +2062,13 @@ class ExprParser:
                         token = self.tokenizer.get()
                         if token.type == TOKEN_COMMA:
                             pass
-                        elif token.type == TOKEN_RPAR:
+                        elif token.type == TOKEN_PCLOSE:
                             break
                         else:
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                 lhs = node
             elif not iswhite(c) and token.type == TOKEN_DOT:
-                # INDEX or CONCAT
+                # SUBSCRIPT or CONCAT
                 c = self.tokenizer.reader.peek()
                 token = self.tokenizer.peek()
                 if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
@@ -2118,11 +2114,11 @@ class ExprParser:
             self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_STRING)
             node.value = "'" + self.tokenizer.get_sstring() + "'"
-        elif token.type == TOKEN_LBRA:
+        elif token.type == TOKEN_SQOPEN:
             node = self.exprnode(NODE_LIST)
             node.items = []
             token = self.tokenizer.peek()
-            if token.type == TOKEN_RBRA:
+            if token.type == TOKEN_SQCLOSE:
                 self.tokenizer.get()
             else:
                 while 1:
@@ -2130,25 +2126,25 @@ class ExprParser:
                     token = self.tokenizer.peek()
                     if token.type == TOKEN_COMMA:
                         self.tokenizer.get()
-                        if self.tokenizer.peek().type == TOKEN_RBRA:
+                        if self.tokenizer.peek().type == TOKEN_SQCLOSE:
                             self.tokenizer.get()
                             break
-                    elif token.type == TOKEN_RBRA:
+                    elif token.type == TOKEN_SQCLOSE:
                         self.tokenizer.get()
                         break
                     else:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-        elif token.type == TOKEN_LBPAR:
+        elif token.type == TOKEN_COPEN:
             node = self.exprnode(NODE_DICT)
             node.items = []
             token = self.tokenizer.peek()
-            if token.type == TOKEN_RBPAR:
+            if token.type == TOKEN_CCLOSE:
                 self.tokenizer.get()
             else:
                 while 1:
                     key = self.parse_expr1()
                     token = self.tokenizer.get()
-                    if token.type == TOKEN_RBPAR:
+                    if token.type == TOKEN_CCLOSE:
                         if not viml_empty(node.items):
                             raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
                         self.tokenizer.reader.seek_set(pos)
@@ -2161,23 +2157,27 @@ class ExprParser:
                     viml_add(node.items, [key, val])
                     token = self.tokenizer.get()
                     if token.type == TOKEN_COMMA:
-                        if self.tokenizer.peek().type == TOKEN_RBPAR:
+                        if self.tokenizer.peek().type == TOKEN_CCLOSE:
                             self.tokenizer.get()
                             break
-                    elif token.type == TOKEN_RBPAR:
+                    elif token.type == TOKEN_CCLOSE:
                         break
                     else:
                         raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
-        elif token.type == TOKEN_LPAR:
+        elif token.type == TOKEN_POPEN:
             node = self.exprnode(NODE_NESTING)
             node.expr = self.parse_expr1()
             token = self.tokenizer.get()
-            if token.type != TOKEN_RPAR:
+            if token.type != TOKEN_PCLOSE:
                 raise Exception(self.err("ExprParser: unexpected token: %s", token.value))
         elif token.type == TOKEN_OPTION:
             node = self.exprnode(NODE_OPTION)
             node.value = token.value
         elif token.type == TOKEN_IDENTIFIER:
+            self.tokenizer.reader.seek_set(pos)
+            node = self.exprnode(NODE_IDENTIFIER)
+            node.value = self.parse_identifier()
+        elif token.type == TOKEN_LT and self.tokenizer.reader.getn(4).lower() == "SID>".lower():
             self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_IDENTIFIER)
             node.value = self.parse_identifier()
@@ -2192,25 +2192,25 @@ class ExprParser:
         return node
 
     def parse_identifier(self):
-        r = self.tokenizer.reader
         id = []
-        r.skip_white()
+        self.tokenizer.reader.skip_white()
+        c = self.tokenizer.reader.peek()
+        if c == "<" and self.tokenizer.reader.peekn(5).lower() == "<SID>".lower():
+            name = self.tokenizer.reader.getn(5)
+            viml_add(id, AttributeDict({"curly":0, "value":name}))
         while 1:
-            c = r.peek()
+            c = self.tokenizer.reader.peek()
             if isnamec(c):
-                name = r.read_name()
+                name = self.tokenizer.reader.read_name()
                 viml_add(id, AttributeDict({"curly":0, "value":name}))
             elif c == "{":
-                r.get()
+                self.tokenizer.reader.get()
                 node = self.parse_expr1()
-                r.skip_white()
-                c = r.get()
+                self.tokenizer.reader.skip_white()
+                c = self.tokenizer.reader.get()
                 if c != "}":
                     raise Exception(self.err("ExprParser: unexpected token: %s", c))
                 viml_add(id, AttributeDict({"curly":1, "value":node}))
-            elif c == "<" and (r.p(1) == "S" or r.p(1) == "s") and (r.p(2) == "I" or r.p(2) == "i") and (r.p(3) == "D" or r.p(3) == "d") and r.p(4) == ">":
-                name = r.getn(5) + r.read_name()
-                viml_add(id, AttributeDict({"curly":0, "value":name}))
             else:
                 break
         return id
@@ -2228,7 +2228,7 @@ class LvalueParser(ExprParser):
             pos = self.tokenizer.reader.tell()
             c = self.tokenizer.reader.peek()
             token = self.tokenizer.get()
-            if not iswhite(c) and token.type == TOKEN_LBRA:
+            if not iswhite(c) and token.type == TOKEN_SQOPEN:
                 if self.tokenizer.peek().type == TOKEN_COLON:
                     self.tokenizer.get()
                     node = self.exprnode(NODE_SLICE)
@@ -2236,10 +2236,10 @@ class LvalueParser(ExprParser):
                     node.expr1 = NIL
                     node.expr2 = NIL
                     token = self.tokenizer.peek()
-                    if token.type != TOKEN_RBRA:
+                    if token.type != TOKEN_SQCLOSE:
                         node.expr2 = self.parse_expr1()
                     token = self.tokenizer.get()
-                    if token.type != TOKEN_RBRA:
+                    if token.type != TOKEN_SQCLOSE:
                         raise Exception(self.err("LvalueParser: unexpected token: %s", token.value))
                 else:
                     expr1 = self.parse_expr1()
@@ -2250,21 +2250,21 @@ class LvalueParser(ExprParser):
                         node.expr1 = expr1
                         node.expr2 = NIL
                         token = self.tokenizer.peek()
-                        if token.type != TOKEN_RBRA:
+                        if token.type != TOKEN_SQCLOSE:
                             node.expr2 = self.parse_expr1()
                         token = self.tokenizer.get()
-                        if token.type != TOKEN_RBRA:
+                        if token.type != TOKEN_SQCLOSE:
                             raise Exception(self.err("LvalueParser: unexpected token: %s", token.value))
                     else:
-                        node = self.exprnode(NODE_INDEX)
+                        node = self.exprnode(NODE_SUBSCRIPT)
                         node.expr = lhs
                         node.expr1 = expr1
                         token = self.tokenizer.get()
-                        if token.type != TOKEN_RBRA:
+                        if token.type != TOKEN_SQCLOSE:
                             raise Exception(self.err("LvalueParser: unexpected token: %s", token.value))
                 lhs = node
             elif token.type == TOKEN_DOT:
-                # INDEX or CONCAT
+                # SUBSCRIPT or CONCAT
                 c = self.tokenizer.reader.peek()
                 token = self.tokenizer.peek()
                 if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
@@ -2291,7 +2291,7 @@ class LvalueParser(ExprParser):
     def parse_lv9(self):
         pos = self.tokenizer.reader.tell()
         token = self.tokenizer.get()
-        if token.type == TOKEN_LBPAR:
+        if token.type == TOKEN_COPEN:
             self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_IDENTIFIER)
             node.value = self.parse_identifier()
@@ -2299,6 +2299,10 @@ class LvalueParser(ExprParser):
             node = self.exprnode(NODE_OPTION)
             node.value = token.value
         elif token.type == TOKEN_IDENTIFIER:
+            self.tokenizer.reader.seek_set(pos)
+            node = self.exprnode(NODE_IDENTIFIER)
+            node.value = self.parse_identifier()
+        elif token.type == TOKEN_LT and self.tokenizer.reader.getn(4).lower() == "SID>".lower():
             self.tokenizer.reader.seek_set(pos)
             node = self.exprnode(NODE_IDENTIFIER)
             node.value = self.parse_identifier()
@@ -2553,92 +2557,92 @@ class Compiler:
             return self.compile_echoerr(node)
         elif node.type == NODE_EXECUTE:
             return self.compile_execute(node)
-        elif node.type == NODE_CONDEXP:
-            return self.compile_condexp(node)
-        elif node.type == NODE_LOGOR:
-            return self.compile_logor(node)
-        elif node.type == NODE_LOGAND:
-            return self.compile_logand(node)
-        elif node.type == NODE_EQEQQ:
-            return self.compile_eqeqq(node)
-        elif node.type == NODE_EQEQH:
-            return self.compile_eqeqh(node)
-        elif node.type == NODE_NOTEQQ:
-            return self.compile_noteqq(node)
-        elif node.type == NODE_NOTEQH:
-            return self.compile_noteqh(node)
-        elif node.type == NODE_GTEQQ:
-            return self.compile_gteqq(node)
-        elif node.type == NODE_GTEQH:
-            return self.compile_gteqh(node)
-        elif node.type == NODE_LTEQQ:
-            return self.compile_lteqq(node)
-        elif node.type == NODE_LTEQH:
-            return self.compile_lteqh(node)
-        elif node.type == NODE_EQTILDQ:
-            return self.compile_eqtildq(node)
-        elif node.type == NODE_EQTILDH:
-            return self.compile_eqtildh(node)
-        elif node.type == NODE_NOTTILDQ:
-            return self.compile_nottildq(node)
-        elif node.type == NODE_NOTTILDH:
-            return self.compile_nottildh(node)
-        elif node.type == NODE_GTQ:
-            return self.compile_gtq(node)
-        elif node.type == NODE_GTH:
-            return self.compile_gth(node)
-        elif node.type == NODE_LTQ:
-            return self.compile_ltq(node)
-        elif node.type == NODE_LTH:
-            return self.compile_lth(node)
-        elif node.type == NODE_EQEQ:
-            return self.compile_eqeq(node)
-        elif node.type == NODE_NOTEQ:
-            return self.compile_noteq(node)
-        elif node.type == NODE_GTEQ:
-            return self.compile_gteq(node)
-        elif node.type == NODE_LTEQ:
-            return self.compile_lteq(node)
-        elif node.type == NODE_EQTILD:
-            return self.compile_eqtild(node)
-        elif node.type == NODE_NOTTILD:
-            return self.compile_nottild(node)
-        elif node.type == NODE_GT:
-            return self.compile_gt(node)
-        elif node.type == NODE_LT:
-            return self.compile_lt(node)
-        elif node.type == NODE_ISQ:
-            return self.compile_isq(node)
-        elif node.type == NODE_ISH:
-            return self.compile_ish(node)
-        elif node.type == NODE_ISNOTQ:
-            return self.compile_isnotq(node)
-        elif node.type == NODE_ISNOTH:
-            return self.compile_isnoth(node)
+        elif node.type == NODE_TERNARY:
+            return self.compile_ternary(node)
+        elif node.type == NODE_OR:
+            return self.compile_or(node)
+        elif node.type == NODE_AND:
+            return self.compile_and(node)
+        elif node.type == NODE_EQUAL:
+            return self.compile_equal(node)
+        elif node.type == NODE_EQUALCI:
+            return self.compile_equalci(node)
+        elif node.type == NODE_EQUALCS:
+            return self.compile_equalcs(node)
+        elif node.type == NODE_NEQUAL:
+            return self.compile_nequal(node)
+        elif node.type == NODE_NEQUALCI:
+            return self.compile_nequalci(node)
+        elif node.type == NODE_NEQUALCS:
+            return self.compile_nequalcs(node)
+        elif node.type == NODE_GREATER:
+            return self.compile_greater(node)
+        elif node.type == NODE_GREATERCI:
+            return self.compile_greaterci(node)
+        elif node.type == NODE_GREATERCS:
+            return self.compile_greatercs(node)
+        elif node.type == NODE_GEQUAL:
+            return self.compile_gequal(node)
+        elif node.type == NODE_GEQUALCI:
+            return self.compile_gequalci(node)
+        elif node.type == NODE_GEQUALCS:
+            return self.compile_gequalcs(node)
+        elif node.type == NODE_SMALLER:
+            return self.compile_smaller(node)
+        elif node.type == NODE_SMALLERCI:
+            return self.compile_smallerci(node)
+        elif node.type == NODE_SMALLERCS:
+            return self.compile_smallercs(node)
+        elif node.type == NODE_SEQUAL:
+            return self.compile_sequal(node)
+        elif node.type == NODE_SEQUALCI:
+            return self.compile_sequalci(node)
+        elif node.type == NODE_SEQUALCS:
+            return self.compile_sequalcs(node)
+        elif node.type == NODE_MATCH:
+            return self.compile_match(node)
+        elif node.type == NODE_MATCHCI:
+            return self.compile_matchci(node)
+        elif node.type == NODE_MATCHCS:
+            return self.compile_matchcs(node)
+        elif node.type == NODE_NOMATCH:
+            return self.compile_nomatch(node)
+        elif node.type == NODE_NOMATCHCI:
+            return self.compile_nomatchci(node)
+        elif node.type == NODE_NOMATCHCS:
+            return self.compile_nomatchcs(node)
         elif node.type == NODE_IS:
             return self.compile_is(node)
+        elif node.type == NODE_ISCI:
+            return self.compile_isci(node)
+        elif node.type == NODE_ISCS:
+            return self.compile_iscs(node)
         elif node.type == NODE_ISNOT:
             return self.compile_isnot(node)
+        elif node.type == NODE_ISNOTCI:
+            return self.compile_isnotci(node)
+        elif node.type == NODE_ISNOTCS:
+            return self.compile_isnotcs(node)
         elif node.type == NODE_ADD:
             return self.compile_add(node)
-        elif node.type == NODE_SUB:
-            return self.compile_sub(node)
+        elif node.type == NODE_SUBTRACT:
+            return self.compile_subtract(node)
         elif node.type == NODE_CONCAT:
             return self.compile_concat(node)
-        elif node.type == NODE_MUL:
-            return self.compile_mul(node)
-        elif node.type == NODE_DIV:
-            return self.compile_div(node)
-        elif node.type == NODE_MOD:
-            return self.compile_mod(node)
+        elif node.type == NODE_MULTIPLY:
+            return self.compile_multiply(node)
+        elif node.type == NODE_DIVIDE:
+            return self.compile_divide(node)
+        elif node.type == NODE_REMAINDER:
+            return self.compile_remainder(node)
         elif node.type == NODE_NOT:
             return self.compile_not(node)
         elif node.type == NODE_PLUS:
             return self.compile_plus(node)
         elif node.type == NODE_MINUS:
             return self.compile_minus(node)
-        elif node.type == NODE_INDEX:
-            return self.compile_index(node)
+        elif node.type == NODE_SUBSCRIPT:
+            return self.compile_subscript(node)
         elif node.type == NODE_SLICE:
             return self.compile_slice(node)
         elif node.type == NODE_DOT:
@@ -2826,121 +2830,121 @@ class Compiler:
         args = [self.compile(vval) for vval in node.args]
         self.out("(execute %s)", viml_join(args, " "))
 
-    def compile_condexp(self, node):
+    def compile_ternary(self, node):
         return viml_printf("(?: %s %s %s)", self.compile(node.cond), self.compile(node.then), self.compile(node._else))
 
-    def compile_logor(self, node):
+    def compile_or(self, node):
         return viml_printf("(|| %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_logand(self, node):
+    def compile_and(self, node):
         return viml_printf("(&& %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_eqeqq(self, node):
-        return viml_printf("(==? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_eqeqh(self, node):
-        return viml_printf("(==# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_noteqq(self, node):
-        return viml_printf("(!=? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_noteqh(self, node):
-        return viml_printf("(!=# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_gteqq(self, node):
-        return viml_printf("(>=? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_gteqh(self, node):
-        return viml_printf("(>=# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_lteqq(self, node):
-        return viml_printf("(<=? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_lteqh(self, node):
-        return viml_printf("(<=# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_eqtildq(self, node):
-        return viml_printf("(=~? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_eqtildh(self, node):
-        return viml_printf("(=~# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_nottildq(self, node):
-        return viml_printf("(!~? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_nottildh(self, node):
-        return viml_printf("(!~# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_gtq(self, node):
-        return viml_printf("(>? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_gth(self, node):
-        return viml_printf("(># %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_ltq(self, node):
-        return viml_printf("(<? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_lth(self, node):
-        return viml_printf("(<# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_eqeq(self, node):
+    def compile_equal(self, node):
         return viml_printf("(== %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_noteq(self, node):
+    def compile_equalci(self, node):
+        return viml_printf("(==? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_equalcs(self, node):
+        return viml_printf("(==# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_nequal(self, node):
         return viml_printf("(!= %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_gteq(self, node):
-        return viml_printf("(>= %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+    def compile_nequalci(self, node):
+        return viml_printf("(!=? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_lteq(self, node):
-        return viml_printf("(<= %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+    def compile_nequalcs(self, node):
+        return viml_printf("(!=# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_eqtild(self, node):
-        return viml_printf("(=~ %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_nottild(self, node):
-        return viml_printf("(!~ %s %s)", self.compile(node.lhs), self.compile(node.rhs))
-
-    def compile_gt(self, node):
+    def compile_greater(self, node):
         return viml_printf("(> %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_lt(self, node):
+    def compile_greaterci(self, node):
+        return viml_printf("(>? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_greatercs(self, node):
+        return viml_printf("(># %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_gequal(self, node):
+        return viml_printf("(>= %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_gequalci(self, node):
+        return viml_printf("(>=? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_gequalcs(self, node):
+        return viml_printf("(>=# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_smaller(self, node):
         return viml_printf("(< %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_isq(self, node):
-        return viml_printf("(is? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+    def compile_smallerci(self, node):
+        return viml_printf("(<? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_ish(self, node):
-        return viml_printf("(is# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+    def compile_smallercs(self, node):
+        return viml_printf("(<# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_isnotq(self, node):
-        return viml_printf("(isnot? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+    def compile_sequal(self, node):
+        return viml_printf("(<= %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_isnoth(self, node):
-        return viml_printf("(isnot# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+    def compile_sequalci(self, node):
+        return viml_printf("(<=? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_sequalcs(self, node):
+        return viml_printf("(<=# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_match(self, node):
+        return viml_printf("(=~ %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_matchci(self, node):
+        return viml_printf("(=~? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_matchcs(self, node):
+        return viml_printf("(=~# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_nomatch(self, node):
+        return viml_printf("(!~ %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_nomatchci(self, node):
+        return viml_printf("(!~? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_nomatchcs(self, node):
+        return viml_printf("(!~# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
     def compile_is(self, node):
         return viml_printf("(is %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
+    def compile_isci(self, node):
+        return viml_printf("(is? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_iscs(self, node):
+        return viml_printf("(is# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
     def compile_isnot(self, node):
         return viml_printf("(isnot %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_isnotci(self, node):
+        return viml_printf("(isnot? %s %s)", self.compile(node.lhs), self.compile(node.rhs))
+
+    def compile_isnotcs(self, node):
+        return viml_printf("(isnot# %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
     def compile_add(self, node):
         return viml_printf("(+ %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_sub(self, node):
+    def compile_subtract(self, node):
         return viml_printf("(- %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
     def compile_concat(self, node):
         return viml_printf("(concat %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_mul(self, node):
+    def compile_multiply(self, node):
         return viml_printf("(* %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_div(self, node):
+    def compile_divide(self, node):
         return viml_printf("(/ %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
-    def compile_mod(self, node):
+    def compile_remainder(self, node):
         return viml_printf("(%% %s %s)", self.compile(node.lhs), self.compile(node.rhs))
 
     def compile_not(self, node):
@@ -2952,8 +2956,8 @@ class Compiler:
     def compile_minus(self, node):
         return viml_printf("(- %s)", self.compile(node.expr))
 
-    def compile_index(self, node):
-        return viml_printf("(index %s %s)", self.compile(node.expr), self.compile(node.expr1))
+    def compile_subscript(self, node):
+        return viml_printf("(subscript %s %s)", self.compile(node.expr), self.compile(node.expr1))
 
     def compile_slice(self, node):
         expr1 = "nil" if node.expr1 is NIL else self.compile(node.expr1)

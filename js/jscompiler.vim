@@ -89,92 +89,92 @@ function s:JavascriptCompiler.compile(node)
     return self.compile_echoerr(a:node)
   elseif a:node.type == s:NODE_EXECUTE
     return self.compile_execute(a:node)
-  elseif a:node.type == s:NODE_CONDEXP
-    return self.compile_condexp(a:node)
-  elseif a:node.type == s:NODE_LOGOR
-    return self.compile_logor(a:node)
-  elseif a:node.type == s:NODE_LOGAND
-    return self.compile_logand(a:node)
-  elseif a:node.type == s:NODE_EQEQQ
-    return self.compile_eqeqq(a:node)
-  elseif a:node.type == s:NODE_EQEQH
-    return self.compile_eqeqh(a:node)
-  elseif a:node.type == s:NODE_NOTEQQ
-    return self.compile_noteqq(a:node)
-  elseif a:node.type == s:NODE_NOTEQH
-    return self.compile_noteqh(a:node)
-  elseif a:node.type == s:NODE_GTEQQ
-    return self.compile_gteqq(a:node)
-  elseif a:node.type == s:NODE_GTEQH
-    return self.compile_gteqh(a:node)
-  elseif a:node.type == s:NODE_LTEQQ
-    return self.compile_lteqq(a:node)
-  elseif a:node.type == s:NODE_LTEQH
-    return self.compile_lteqh(a:node)
-  elseif a:node.type == s:NODE_EQTILDQ
-    return self.compile_eqtildq(a:node)
-  elseif a:node.type == s:NODE_EQTILDH
-    return self.compile_eqtildh(a:node)
-  elseif a:node.type == s:NODE_NOTTILDQ
-    return self.compile_nottildq(a:node)
-  elseif a:node.type == s:NODE_NOTTILDH
-    return self.compile_nottildh(a:node)
-  elseif a:node.type == s:NODE_GTQ
-    return self.compile_gtq(a:node)
-  elseif a:node.type == s:NODE_GTH
-    return self.compile_gth(a:node)
-  elseif a:node.type == s:NODE_LTQ
-    return self.compile_ltq(a:node)
-  elseif a:node.type == s:NODE_LTH
-    return self.compile_lth(a:node)
-  elseif a:node.type == s:NODE_EQEQ
-    return self.compile_eqeq(a:node)
-  elseif a:node.type == s:NODE_NOTEQ
-    return self.compile_noteq(a:node)
-  elseif a:node.type == s:NODE_GTEQ
-    return self.compile_gteq(a:node)
-  elseif a:node.type == s:NODE_LTEQ
-    return self.compile_lteq(a:node)
-  elseif a:node.type == s:NODE_EQTILD
-    return self.compile_eqtild(a:node)
-  elseif a:node.type == s:NODE_NOTTILD
-    return self.compile_nottild(a:node)
-  elseif a:node.type == s:NODE_GT
-    return self.compile_gt(a:node)
-  elseif a:node.type == s:NODE_LT
-    return self.compile_lt(a:node)
-  elseif a:node.type == s:NODE_ISQ
-    return self.compile_isq(a:node)
-  elseif a:node.type == s:NODE_ISH
-    return self.compile_ish(a:node)
-  elseif a:node.type == s:NODE_ISNOTQ
-    return self.compile_isnotq(a:node)
-  elseif a:node.type == s:NODE_ISNOTH
-    return self.compile_isnoth(a:node)
+  elseif a:node.type == s:NODE_TERNARY
+    return self.compile_ternary(a:node)
+  elseif a:node.type == s:NODE_OR
+    return self.compile_or(a:node)
+  elseif a:node.type == s:NODE_AND
+    return self.compile_and(a:node)
+  elseif a:node.type == s:NODE_EQUAL
+    return self.compile_equal(a:node)
+  elseif a:node.type == s:NODE_EQUALCI
+    return self.compile_equalci(a:node)
+  elseif a:node.type == s:NODE_EQUALCS
+    return self.compile_equalcs(a:node)
+  elseif a:node.type == s:NODE_NEQUAL
+    return self.compile_nequal(a:node)
+  elseif a:node.type == s:NODE_NEQUALCI
+    return self.compile_nequalci(a:node)
+  elseif a:node.type == s:NODE_NEQUALCS
+    return self.compile_nequalcs(a:node)
+  elseif a:node.type == s:NODE_GREATER
+    return self.compile_greater(a:node)
+  elseif a:node.type == s:NODE_GREATERCI
+    return self.compile_greaterci(a:node)
+  elseif a:node.type == s:NODE_GREATERCS
+    return self.compile_greatercs(a:node)
+  elseif a:node.type == s:NODE_GEQUAL
+    return self.compile_gequal(a:node)
+  elseif a:node.type == s:NODE_GEQUALCI
+    return self.compile_gequalci(a:node)
+  elseif a:node.type == s:NODE_GEQUALCS
+    return self.compile_gequalcs(a:node)
+  elseif a:node.type == s:NODE_SMALLER
+    return self.compile_smaller(a:node)
+  elseif a:node.type == s:NODE_SMALLERCI
+    return self.compile_smallerci(a:node)
+  elseif a:node.type == s:NODE_SMALLERCS
+    return self.compile_smallercs(a:node)
+  elseif a:node.type == s:NODE_SEQUAL
+    return self.compile_sequal(a:node)
+  elseif a:node.type == s:NODE_SEQUALCI
+    return self.compile_sequalci(a:node)
+  elseif a:node.type == s:NODE_SEQUALCS
+    return self.compile_sequalcs(a:node)
+  elseif a:node.type == s:NODE_MATCH
+    return self.compile_match(a:node)
+  elseif a:node.type == s:NODE_MATCHCI
+    return self.compile_matchci(a:node)
+  elseif a:node.type == s:NODE_MATCHCS
+    return self.compile_matchcs(a:node)
+  elseif a:node.type == s:NODE_NOMATCH
+    return self.compile_nomatch(a:node)
+  elseif a:node.type == s:NODE_NOMATCHCI
+    return self.compile_nomatchci(a:node)
+  elseif a:node.type == s:NODE_NOMATCHCS
+    return self.compile_nomatchcs(a:node)
   elseif a:node.type == s:NODE_IS
     return self.compile_is(a:node)
+  elseif a:node.type == s:NODE_ISCI
+    return self.compile_isci(a:node)
+  elseif a:node.type == s:NODE_ISCS
+    return self.compile_iscs(a:node)
   elseif a:node.type == s:NODE_ISNOT
     return self.compile_isnot(a:node)
+  elseif a:node.type == s:NODE_ISNOTCI
+    return self.compile_isnotci(a:node)
+  elseif a:node.type == s:NODE_ISNOTCS
+    return self.compile_isnotcs(a:node)
   elseif a:node.type == s:NODE_ADD
     return self.compile_add(a:node)
-  elseif a:node.type == s:NODE_SUB
-    return self.compile_sub(a:node)
+  elseif a:node.type == s:NODE_SUBTRACT
+    return self.compile_subtract(a:node)
   elseif a:node.type == s:NODE_CONCAT
     return self.compile_concat(a:node)
-  elseif a:node.type == s:NODE_MUL
-    return self.compile_mul(a:node)
-  elseif a:node.type == s:NODE_DIV
-    return self.compile_div(a:node)
-  elseif a:node.type == s:NODE_MOD
-    return self.compile_mod(a:node)
+  elseif a:node.type == s:NODE_MULTIPLY
+    return self.compile_multiply(a:node)
+  elseif a:node.type == s:NODE_DIVIDE
+    return self.compile_divide(a:node)
+  elseif a:node.type == s:NODE_REMAINDER
+    return self.compile_remainder(a:node)
   elseif a:node.type == s:NODE_NOT
     return self.compile_not(a:node)
   elseif a:node.type == s:NODE_PLUS
     return self.compile_plus(a:node)
   elseif a:node.type == s:NODE_MINUS
     return self.compile_minus(a:node)
-  elseif a:node.type == s:NODE_INDEX
-    return self.compile_index(a:node)
+  elseif a:node.type == s:NODE_SUBSCRIPT
+    return self.compile_subscript(a:node)
   elseif a:node.type == s:NODE_SLICE
     return self.compile_slice(a:node)
   elseif a:node.type == s:NODE_DOT
@@ -444,128 +444,112 @@ function s:JavascriptCompiler.compile_execute(node)
   throw 'NotImplemented: execute'
 endfunction
 
-function s:JavascriptCompiler.compile_condexp(node)
+function s:JavascriptCompiler.compile_ternary(node)
   return printf('%s ? %s : %s', self.compile(a:node.cond), self.compile(a:node.then), self.compile(a:node.else))
 endfunction
 
-function s:JavascriptCompiler.compile_logor(node)
+function s:JavascriptCompiler.compile_or(node)
   return printf('%s || %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_logand(node)
+function s:JavascriptCompiler.compile_and(node)
   return printf('%s && %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_eqeqq(node)
+function s:JavascriptCompiler.compile_equal(node)
+  return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_equalci(node)
   return printf('%s.toLowerCase() == %s.toLowerCase()', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_eqeqh(node)
+function s:JavascriptCompiler.compile_equalcs(node)
   return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_noteqq(node)
+function s:JavascriptCompiler.compile_nequal(node)
+  return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_nequalci(node)
   return printf('%s.lower() != %s.lower()', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_noteqh(node)
+function s:JavascriptCompiler.compile_nequalcs(node)
   return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_gteqq(node)
-  throw 'NotImplemented: >=?'
-endfunction
-
-function s:JavascriptCompiler.compile_gteqh(node)
-  throw 'NotImplemented: >=#'
-endfunction
-
-function s:JavascriptCompiler.compile_lteqq(node)
-  throw 'NotImplemented: <=?'
-endfunction
-
-function s:JavascriptCompiler.compile_lteqh(node)
-  throw 'NotImplemented: <=#'
-endfunction
-
-function s:JavascriptCompiler.compile_eqtildq(node)
-  return printf('viml_eqregq(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_eqtildh(node)
-  return printf('viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_nottildq(node)
-  return printf('!viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_nottildh(node)
-  return printf('!viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_gtq(node)
-  throw 'NotImplemented: >?'
-endfunction
-
-function s:JavascriptCompiler.compile_gth(node)
-  throw 'NotImplemented: >#'
-endfunction
-
-function s:JavascriptCompiler.compile_ltq(node)
-  throw 'NotImplemented: <?'
-endfunction
-
-function s:JavascriptCompiler.compile_lth(node)
-  throw 'NotImplemented: <#'
-endfunction
-
-function s:JavascriptCompiler.compile_eqeq(node)
-  return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_noteq(node)
-  return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_gteq(node)
-  return printf('%s >= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_lteq(node)
-  return printf('%s <= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_eqtild(node)
-  return printf('viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_nottild(node)
-  return printf('!viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
-endfunction
-
-function s:JavascriptCompiler.compile_gt(node)
+function s:JavascriptCompiler.compile_greater(node)
   return printf('%s > %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_lt(node)
+function s:JavascriptCompiler.compile_greaterci(node)
+  throw 'NotImplemented: >?'
+endfunction
+
+function s:JavascriptCompiler.compile_greatercs(node)
+  throw 'NotImplemented: >#'
+endfunction
+
+function s:JavascriptCompiler.compile_gequal(node)
+  return printf('%s >= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_gequalci(node)
+  throw 'NotImplemented: >=?'
+endfunction
+
+function s:JavascriptCompiler.compile_gequalcs(node)
+  throw 'NotImplemented: >=#'
+endfunction
+
+function s:JavascriptCompiler.compile_smaller(node)
   return printf('%s < %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_isq(node)
-  throw 'NotImplemented: is?'
+function s:JavascriptCompiler.compile_smallerci(node)
+  throw 'NotImplemented: <?'
 endfunction
 
-function s:JavascriptCompiler.compile_ish(node)
-  throw 'NotImplemented: is#'
+function s:JavascriptCompiler.compile_smallercs(node)
+  throw 'NotImplemented: <#'
 endfunction
 
-function s:JavascriptCompiler.compile_isnotq(node)
-  throw 'NotImplemented: isnot?'
+function s:JavascriptCompiler.compile_sequal(node)
+  return printf('%s <= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_isnoth(node)
-  throw 'NotImplemented: isnot#'
+function s:JavascriptCompiler.compile_sequalci(node)
+  throw 'NotImplemented: <=?'
+endfunction
+
+function s:JavascriptCompiler.compile_sequalcs(node)
+  throw 'NotImplemented: <=#'
+endfunction
+
+function s:JavascriptCompiler.compile_match(node)
+  return printf('viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_matchci(node)
+  return printf('viml_eqregq(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_matchcs(node)
+  return printf('viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_nomatch(node)
+  return printf('!viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_nomatchci(node)
+  return printf('!viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_nomatchcs(node)
+  return printf('!viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
 " TODO
@@ -573,15 +557,31 @@ function s:JavascriptCompiler.compile_is(node)
   return printf('%s === %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
+function s:JavascriptCompiler.compile_isci(node)
+  throw 'NotImplemented: is?'
+endfunction
+
+function s:JavascriptCompiler.compile_iscs(node)
+  throw 'NotImplemented: is#'
+endfunction
+
 function s:JavascriptCompiler.compile_isnot(node)
   return printf('%s !== %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+endfunction
+
+function s:JavascriptCompiler.compile_isnotci(node)
+  throw 'NotImplemented: isnot?'
+endfunction
+
+function s:JavascriptCompiler.compile_isnotcs(node)
+  throw 'NotImplemented: isnot#'
 endfunction
 
 function s:JavascriptCompiler.compile_add(node)
   return printf('%s + %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_sub(node)
+function s:JavascriptCompiler.compile_subtract(node)
   return printf('%s - %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
@@ -589,15 +589,15 @@ function s:JavascriptCompiler.compile_concat(node)
   return printf('%s + %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_mul(node)
+function s:JavascriptCompiler.compile_multiply(node)
   return printf('%s * %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_div(node)
+function s:JavascriptCompiler.compile_divide(node)
   return printf('%s / %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
-function s:JavascriptCompiler.compile_mod(node)
+function s:JavascriptCompiler.compile_remainder(node)
   return printf('%s %% %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
 endfunction
 
@@ -613,7 +613,7 @@ function s:JavascriptCompiler.compile_minus(node)
   return printf('-%s', self.compile(a:node.expr))
 endfunction
 
-function s:JavascriptCompiler.compile_index(node)
+function s:JavascriptCompiler.compile_subscript(node)
   let expr = self.compile(a:node.expr)
   let expr1 = self.compile(a:node.expr1)
   if expr1[0] == '-'

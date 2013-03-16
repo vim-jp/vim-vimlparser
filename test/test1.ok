@@ -37,6 +37,6 @@
 (execute "normal ihello")
 (echo (list) (list 1 2 3) (list 1 2 3))
 (echo (dict) (dict ("x" "y")) (dict ("x" "y") ("z" "w")))
-(echo (index x 0) (index x y))
+(echo (subscript x 0) (subscript x y))
 (echo (slice x 1 2) (slice x 1 nil) (slice x nil 2) (slice x nil nil))
 (echo (dot x y) (dot (dot x y) z))

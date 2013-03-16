@@ -217,49 +217,49 @@ var NODE_ECHOHL = 30;
 var NODE_ECHOMSG = 31;
 var NODE_ECHOERR = 32;
 var NODE_EXECUTE = 33;
-var NODE_CONDEXP = 34;
-var NODE_LOGOR = 35;
-var NODE_LOGAND = 36;
-var NODE_EQEQQ = 37;
-var NODE_EQEQH = 38;
-var NODE_NOTEQQ = 39;
-var NODE_NOTEQH = 40;
-var NODE_GTEQQ = 41;
-var NODE_GTEQH = 42;
-var NODE_LTEQQ = 43;
-var NODE_LTEQH = 44;
-var NODE_EQTILDQ = 45;
-var NODE_EQTILDH = 46;
-var NODE_NOTTILDQ = 47;
-var NODE_NOTTILDH = 48;
-var NODE_GTQ = 49;
-var NODE_GTH = 50;
-var NODE_LTQ = 51;
-var NODE_LTH = 52;
-var NODE_EQEQ = 53;
-var NODE_NOTEQ = 54;
-var NODE_GTEQ = 55;
-var NODE_LTEQ = 56;
-var NODE_EQTILD = 57;
-var NODE_NOTTILD = 58;
-var NODE_GT = 59;
-var NODE_LT = 60;
-var NODE_ISH = 61;
-var NODE_ISQ = 62;
-var NODE_ISNOTH = 63;
-var NODE_ISNOTQ = 64;
-var NODE_IS = 65;
-var NODE_ISNOT = 66;
+var NODE_TERNARY = 34;
+var NODE_OR = 35;
+var NODE_AND = 36;
+var NODE_EQUAL = 37;
+var NODE_EQUALCI = 38;
+var NODE_EQUALCS = 39;
+var NODE_NEQUAL = 40;
+var NODE_NEQUALCI = 41;
+var NODE_NEQUALCS = 42;
+var NODE_GREATER = 43;
+var NODE_GREATERCI = 44;
+var NODE_GREATERCS = 45;
+var NODE_GEQUAL = 46;
+var NODE_GEQUALCI = 47;
+var NODE_GEQUALCS = 48;
+var NODE_SMALLER = 49;
+var NODE_SMALLERCI = 50;
+var NODE_SMALLERCS = 51;
+var NODE_SEQUAL = 52;
+var NODE_SEQUALCI = 53;
+var NODE_SEQUALCS = 54;
+var NODE_MATCH = 55;
+var NODE_MATCHCI = 56;
+var NODE_MATCHCS = 57;
+var NODE_NOMATCH = 58;
+var NODE_NOMATCHCI = 59;
+var NODE_NOMATCHCS = 60;
+var NODE_IS = 61;
+var NODE_ISCI = 62;
+var NODE_ISCS = 63;
+var NODE_ISNOT = 64;
+var NODE_ISNOTCI = 65;
+var NODE_ISNOTCS = 66;
 var NODE_ADD = 67;
-var NODE_SUB = 68;
+var NODE_SUBTRACT = 68;
 var NODE_CONCAT = 69;
-var NODE_MUL = 70;
-var NODE_DIV = 71;
-var NODE_MOD = 72;
+var NODE_MULTIPLY = 70;
+var NODE_DIVIDE = 71;
+var NODE_REMAINDER = 72;
 var NODE_NOT = 73;
 var NODE_MINUS = 74;
 var NODE_PLUS = 75;
-var NODE_INDEX = 76;
+var NODE_SUBSCRIPT = 76;
 var NODE_SLICE = 77;
 var NODE_CALL = 78;
 var NODE_DOT = 79;
@@ -275,61 +275,61 @@ var NODE_REG = 88;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
-var TOKEN_NUMBER = 4;
-var TOKEN_ISH = 5;
-var TOKEN_ISQ = 6;
-var TOKEN_ISNOTH = 7;
-var TOKEN_ISNOTQ = 8;
-var TOKEN_IS = 9;
-var TOKEN_ISNOT = 10;
-var TOKEN_IDENTIFIER = 11;
-var TOKEN_EQEQQ = 12;
-var TOKEN_EQEQH = 13;
-var TOKEN_NOTEQQ = 14;
-var TOKEN_NOTEQH = 15;
-var TOKEN_GTEQQ = 16;
-var TOKEN_GTEQH = 17;
-var TOKEN_LTEQQ = 18;
-var TOKEN_LTEQH = 19;
-var TOKEN_EQTILDQ = 20;
-var TOKEN_EQTILDH = 21;
-var TOKEN_NOTTILDQ = 22;
-var TOKEN_NOTTILDH = 23;
-var TOKEN_GTQ = 24;
-var TOKEN_GTH = 25;
-var TOKEN_LTQ = 26;
-var TOKEN_LTH = 27;
-var TOKEN_OROR = 28;
-var TOKEN_ANDAND = 29;
-var TOKEN_EQEQ = 30;
-var TOKEN_NOTEQ = 31;
-var TOKEN_GTEQ = 32;
-var TOKEN_LTEQ = 33;
-var TOKEN_EQTILD = 34;
-var TOKEN_NOTTILD = 35;
-var TOKEN_GT = 36;
-var TOKEN_LT = 37;
-var TOKEN_PLUS = 38;
-var TOKEN_MINUS = 39;
-var TOKEN_DOT = 40;
-var TOKEN_STAR = 41;
-var TOKEN_SLASH = 42;
-var TOKEN_PER = 43;
-var TOKEN_NOT = 44;
-var TOKEN_QUESTION = 45;
-var TOKEN_COLON = 46;
-var TOKEN_LPAR = 47;
-var TOKEN_RPAR = 48;
-var TOKEN_LBRA = 49;
-var TOKEN_RBRA = 50;
-var TOKEN_LBPAR = 51;
-var TOKEN_RBPAR = 52;
-var TOKEN_COMMA = 53;
-var TOKEN_SQUOTE = 54;
-var TOKEN_DQUOTE = 55;
-var TOKEN_ENV = 56;
-var TOKEN_REG = 57;
-var TOKEN_OPTION = 58;
+var TOKEN_OROR = 4;
+var TOKEN_ANDAND = 5;
+var TOKEN_EQEQ = 6;
+var TOKEN_EQEQCI = 7;
+var TOKEN_EQEQCS = 8;
+var TOKEN_NEQ = 9;
+var TOKEN_NEQCI = 10;
+var TOKEN_NEQCS = 11;
+var TOKEN_GT = 12;
+var TOKEN_GTCI = 13;
+var TOKEN_GTCS = 14;
+var TOKEN_GTEQ = 15;
+var TOKEN_GTEQCI = 16;
+var TOKEN_GTEQCS = 17;
+var TOKEN_LT = 18;
+var TOKEN_LTCI = 19;
+var TOKEN_LTCS = 20;
+var TOKEN_LTEQ = 21;
+var TOKEN_LTEQCI = 22;
+var TOKEN_LTEQCS = 23;
+var TOKEN_MATCH = 24;
+var TOKEN_MATCHCI = 25;
+var TOKEN_MATCHCS = 26;
+var TOKEN_NOMATCH = 27;
+var TOKEN_NOMATCHCI = 28;
+var TOKEN_NOMATCHCS = 29;
+var TOKEN_IS = 30;
+var TOKEN_ISCI = 31;
+var TOKEN_ISCS = 32;
+var TOKEN_ISNOT = 33;
+var TOKEN_ISNOTCI = 34;
+var TOKEN_ISNOTCS = 35;
+var TOKEN_PLUS = 36;
+var TOKEN_MINUS = 37;
+var TOKEN_DOT = 38;
+var TOKEN_STAR = 39;
+var TOKEN_SLASH = 40;
+var TOKEN_PERCENT = 41;
+var TOKEN_NOT = 42;
+var TOKEN_QUESTION = 43;
+var TOKEN_COLON = 44;
+var TOKEN_POPEN = 45;
+var TOKEN_PCLOSE = 46;
+var TOKEN_SQOPEN = 47;
+var TOKEN_SQCLOSE = 48;
+var TOKEN_COPEN = 49;
+var TOKEN_CCLOSE = 50;
+var TOKEN_COMMA = 51;
+var TOKEN_NUMBER = 52;
+var TOKEN_SQUOTE = 53;
+var TOKEN_DQUOTE = 54;
+var TOKEN_OPTION = 55;
+var TOKEN_IDENTIFIER = 56;
+var TOKEN_ENV = 57;
+var TOKEN_REG = 58;
 var TOKEN_EQ = 59;
 var TOKEN_OR = 60;
 var TOKEN_SEMICOLON = 61;
@@ -1695,7 +1695,7 @@ VimLParser.prototype.parse_exprlist = function() {
 VimLParser.prototype.parse_lvalue = function() {
     var p = new LvalueParser(new ExprTokenizer(this.reader));
     var node = p.parse();
-    if (node.type == NODE_IDENTIFIER || node.type == NODE_INDEX || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
+    if (node.type == NODE_IDENTIFIER || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
         return node;
     }
     throw this.err("VimLParser: lvalue error: %s", node.value);
@@ -1720,13 +1720,13 @@ VimLParser.prototype.parse_lvaluelist = function() {
 VimLParser.prototype.parse_letlhs = function() {
     var values = {"args":[], "rest":NIL};
     var tokenizer = new ExprTokenizer(this.reader);
-    if (tokenizer.peek().type == TOKEN_LBRA) {
+    if (tokenizer.peek().type == TOKEN_SQOPEN) {
         tokenizer.get();
         while (1) {
             var node = this.parse_lvalue();
             viml_add(values.args, node);
             var token = tokenizer.get();
-            if (token.type == TOKEN_RBRA) {
+            if (token.type == TOKEN_SQCLOSE) {
                 break;
             }
             else if (token.type == TOKEN_COMMA) {
@@ -1736,7 +1736,7 @@ VimLParser.prototype.parse_letlhs = function() {
                 var node = this.parse_lvalue();
                 values.rest = node;
                 var token = tokenizer.get();
-                if (token.type == TOKEN_RBRA) {
+                if (token.type == TOKEN_SQCLOSE) {
                     break;
                 }
                 else {
@@ -1837,11 +1837,11 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "i" && r.p(1) == "s" && !isidc(r.p(2))) {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_ISQ, "is?");
+            return this.token(TOKEN_ISCI, "is?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_ISH, "is#");
+            return this.token(TOKEN_ISCS, "is#");
         }
         else {
             r.seek_cur(2);
@@ -1851,21 +1851,16 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "i" && r.p(1) == "s" && r.p(2) == "n" && r.p(3) == "o" && r.p(4) == "t" && !isidc(r.p(5))) {
         if (r.p(5) == "?") {
             r.seek_cur(6);
-            return this.token(TOKEN_ISNOTQ, "isnot?");
+            return this.token(TOKEN_ISNOTCI, "isnot?");
         }
         else if (r.p(5) == "#") {
             r.seek_cur(6);
-            return this.token(TOKEN_ISNOTH, "isnot#");
+            return this.token(TOKEN_ISNOTCS, "isnot#");
         }
         else {
             r.seek_cur(5);
             return this.token(TOKEN_ISNOT, "isnot");
         }
-    }
-    else if (c == "<" && (r.p(1) == "S" || r.p(1) == "s") && (r.p(2) == "I" || r.p(2) == "i") && (r.p(3) == "D" || r.p(3) == "d") && r.p(4) == ">") {
-        var s = r.getn(6);
-        s += r.read_name();
-        return this.token(TOKEN_IDENTIFIER, s);
     }
     else if (isnamec1(c)) {
         var s = r.read_name();
@@ -1882,11 +1877,11 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "=" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_EQEQQ, "==?");
+            return this.token(TOKEN_EQEQCI, "==?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_EQEQH, "==#");
+            return this.token(TOKEN_EQEQCS, "==#");
         }
         else {
             r.seek_cur(2);
@@ -1896,25 +1891,25 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "!" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_NOTEQQ, "!=?");
+            return this.token(TOKEN_NEQCI, "!=?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_NOTEQH, "!=#");
+            return this.token(TOKEN_NEQCS, "!=#");
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_NOTEQ, "!=");
+            return this.token(TOKEN_NEQ, "!=");
         }
     }
     else if (c == ">" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_GTEQQ, ">=?");
+            return this.token(TOKEN_GTEQCI, ">=?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_GTEQH, ">=#");
+            return this.token(TOKEN_GTEQCS, ">=#");
         }
         else {
             r.seek_cur(2);
@@ -1924,11 +1919,11 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "<" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_LTEQQ, "<=?");
+            return this.token(TOKEN_LTEQCI, "<=?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_LTEQH, "<=#");
+            return this.token(TOKEN_LTEQCS, "<=#");
         }
         else {
             r.seek_cur(2);
@@ -1938,39 +1933,39 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "=" && r.p(1) == "~") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_EQTILDQ, "=~?");
+            return this.token(TOKEN_MATCHCI, "=~?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_EQTILDH, "=~#");
+            return this.token(TOKEN_MATCHCS, "=~#");
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_EQTILD, "=~");
+            return this.token(TOKEN_MATCH, "=~");
         }
     }
     else if (c == "!" && r.p(1) == "~") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_NOTTILDQ, "!~?");
+            return this.token(TOKEN_NOMATCHCI, "!~?");
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_NOTTILDH, "!~#");
+            return this.token(TOKEN_NOMATCHCS, "!~#");
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_NOTTILD, "!~");
+            return this.token(TOKEN_NOMATCH, "!~");
         }
     }
     else if (c == ">") {
         if (r.p(1) == "?") {
             r.seek_cur(2);
-            return this.token(TOKEN_GTQ, ">?");
+            return this.token(TOKEN_GTCI, ">?");
         }
         else if (r.p(1) == "#") {
             r.seek_cur(2);
-            return this.token(TOKEN_GTH, ">#");
+            return this.token(TOKEN_GTCS, ">#");
         }
         else {
             r.seek_cur(1);
@@ -1980,11 +1975,11 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "<") {
         if (r.p(1) == "?") {
             r.seek_cur(2);
-            return this.token(TOKEN_LTQ, "<?");
+            return this.token(TOKEN_LTCI, "<?");
         }
         else if (r.p(1) == "#") {
             r.seek_cur(2);
-            return this.token(TOKEN_LTH, "<#");
+            return this.token(TOKEN_LTCS, "<#");
         }
         else {
             r.seek_cur(1);
@@ -2013,7 +2008,7 @@ ExprTokenizer.prototype.get2 = function() {
     }
     else if (c == "%") {
         r.seek_cur(1);
-        return this.token(TOKEN_PER, "%");
+        return this.token(TOKEN_PERCENT, "%");
     }
     else if (c == "!") {
         r.seek_cur(1);
@@ -2029,27 +2024,27 @@ ExprTokenizer.prototype.get2 = function() {
     }
     else if (c == "(") {
         r.seek_cur(1);
-        return this.token(TOKEN_LPAR, "(");
+        return this.token(TOKEN_POPEN, "(");
     }
     else if (c == ")") {
         r.seek_cur(1);
-        return this.token(TOKEN_RPAR, ")");
+        return this.token(TOKEN_PCLOSE, ")");
     }
     else if (c == "[") {
         r.seek_cur(1);
-        return this.token(TOKEN_LBRA, "[");
+        return this.token(TOKEN_SQOPEN, "[");
     }
     else if (c == "]") {
         r.seek_cur(1);
-        return this.token(TOKEN_RBRA, "]");
+        return this.token(TOKEN_SQCLOSE, "]");
     }
     else if (c == "{") {
         r.seek_cur(1);
-        return this.token(TOKEN_LBPAR, "{");
+        return this.token(TOKEN_COPEN, "{");
     }
     else if (c == "}") {
         r.seek_cur(1);
-        return this.token(TOKEN_RBPAR, "}");
+        return this.token(TOKEN_CCLOSE, "}");
     }
     else if (c == ",") {
         r.seek_cur(1);
@@ -2191,7 +2186,7 @@ ExprParser.prototype.parse_expr1 = function() {
     var pos = this.tokenizer.reader.tell();
     var token = this.tokenizer.get();
     if (token.type == TOKEN_QUESTION) {
-        var node = this.exprnode(NODE_CONDEXP);
+        var node = this.exprnode(NODE_TERNARY);
         node.cond = lhs;
         node.then = this.parse_expr1();
         var token = this.tokenizer.get();
@@ -2214,7 +2209,7 @@ ExprParser.prototype.parse_expr2 = function() {
         var pos = this.tokenizer.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_OROR) {
-            var node = this.exprnode(NODE_LOGOR);
+            var node = this.exprnode(NODE_OR);
             node.lhs = lhs;
             node.rhs = this.parse_expr3();
             var lhs = node;
@@ -2234,7 +2229,7 @@ ExprParser.prototype.parse_expr3 = function() {
         var pos = this.tokenizer.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_ANDAND) {
-            var node = this.exprnode(NODE_LOGAND);
+            var node = this.exprnode(NODE_AND);
             node.lhs = lhs;
             node.rhs = this.parse_expr4();
             var lhs = node;
@@ -2256,7 +2251,7 @@ ExprParser.prototype.parse_expr3 = function() {
 //        expr5 =~ expr5
 //        expr5 !~ expr5
 //
-//        expr5 ==?  expr5
+//        expr5 ==? expr5
 //        expr5 ==# expr5
 //        etc.
 //
@@ -2266,170 +2261,146 @@ ExprParser.prototype.parse_expr4 = function() {
     var lhs = this.parse_expr5();
     var pos = this.tokenizer.reader.tell();
     var token = this.tokenizer.get();
-    if (token.type == TOKEN_EQEQQ) {
-        var node = this.exprnode(NODE_EQEQQ);
+    if (token.type == TOKEN_EQEQ) {
+        var node = this.exprnode(NODE_EQUAL);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_EQEQH) {
-        var node = this.exprnode(NODE_EQEQH);
+    else if (token.type == TOKEN_EQEQCI) {
+        var node = this.exprnode(NODE_EQUALCI);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_NOTEQQ) {
-        var node = this.exprnode(NODE_NOTEQQ);
+    else if (token.type == TOKEN_EQEQCS) {
+        var node = this.exprnode(NODE_EQUALCS);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_NOTEQH) {
-        var node = this.exprnode(NODE_NOTEQH);
+    else if (token.type == TOKEN_NEQ) {
+        var node = this.exprnode(NODE_NEQUAL);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_GTEQQ) {
-        var node = this.exprnode(NODE_GTEQQ);
+    else if (token.type == TOKEN_NEQCI) {
+        var node = this.exprnode(NODE_NEQUALCI);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_GTEQH) {
-        var node = this.exprnode(NODE_GTEQH);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_LTEQQ) {
-        var node = this.exprnode(NODE_LTEQQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_LTEQH) {
-        var node = this.exprnode(NODE_LTEQH);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_EQTILDQ) {
-        var node = this.exprnode(NODE_EQTILDQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_EQTILDH) {
-        var node = this.exprnode(NODE_EQTILDH);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_NOTTILDQ) {
-        var node = this.exprnode(NODE_NOTTILDQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_NOTTILDH) {
-        var node = this.exprnode(NODE_NOTTILDH);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_GTQ) {
-        var node = this.exprnode(NODE_GTQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_GTH) {
-        var node = this.exprnode(NODE_GTH);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_LTQ) {
-        var node = this.exprnode(NODE_LTQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_LTH) {
-        var node = this.exprnode(NODE_LTH);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_EQEQ) {
-        var node = this.exprnode(NODE_EQEQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_NOTEQ) {
-        var node = this.exprnode(NODE_NOTEQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_GTEQ) {
-        var node = this.exprnode(NODE_GTEQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_LTEQ) {
-        var node = this.exprnode(NODE_LTEQ);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_EQTILD) {
-        var node = this.exprnode(NODE_EQTILD);
-        node.lhs = lhs;
-        node.rhs = this.parse_expr5();
-        var lhs = node;
-    }
-    else if (token.type == TOKEN_NOTTILD) {
-        var node = this.exprnode(NODE_NOTTILD);
+    else if (token.type == TOKEN_NEQCS) {
+        var node = this.exprnode(NODE_NEQUALCS);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
     else if (token.type == TOKEN_GT) {
-        var node = this.exprnode(NODE_GT);
+        var node = this.exprnode(NODE_GREATER);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_GTCI) {
+        var node = this.exprnode(NODE_GREATERCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_GTCS) {
+        var node = this.exprnode(NODE_GREATERCS);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_GTEQ) {
+        var node = this.exprnode(NODE_GEQUAL);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_GTEQCI) {
+        var node = this.exprnode(NODE_GEQUALCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_GTEQCS) {
+        var node = this.exprnode(NODE_GEQUALCS);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
     else if (token.type == TOKEN_LT) {
-        var node = this.exprnode(NODE_LT);
+        var node = this.exprnode(NODE_SMALLER);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_ISH) {
-        var node = this.exprnode(NODE_ISH);
+    else if (token.type == TOKEN_LTCI) {
+        var node = this.exprnode(NODE_SMALLERCI);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_ISQ) {
-        var node = this.exprnode(NODE_ISQ);
+    else if (token.type == TOKEN_LTCS) {
+        var node = this.exprnode(NODE_SMALLERCS);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_ISNOTH) {
-        var node = this.exprnode(NODE_ISNOTH);
+    else if (token.type == TOKEN_LTEQ) {
+        var node = this.exprnode(NODE_SEQUAL);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
-    else if (token.type == TOKEN_ISNOTQ) {
-        var node = this.exprnode(NODE_ISNOTQ);
+    else if (token.type == TOKEN_LTEQCI) {
+        var node = this.exprnode(NODE_SEQUALCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_LTEQCS) {
+        var node = this.exprnode(NODE_SEQUALCS);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_MATCH) {
+        var node = this.exprnode(NODE_MATCH);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_MATCHCI) {
+        var node = this.exprnode(NODE_MATCHCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_MATCHCS) {
+        var node = this.exprnode(NODE_MATCHCS);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_NOMATCH) {
+        var node = this.exprnode(NODE_NOMATCH);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_NOMATCHCI) {
+        var node = this.exprnode(NODE_NOMATCHCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_NOMATCHCS) {
+        var node = this.exprnode(NODE_NOMATCHCS);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
@@ -2440,8 +2411,32 @@ ExprParser.prototype.parse_expr4 = function() {
         node.rhs = this.parse_expr5();
         var lhs = node;
     }
+    else if (token.type == TOKEN_ISCI) {
+        var node = this.exprnode(NODE_ISCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_ISCS) {
+        var node = this.exprnode(NODE_ISCS);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
     else if (token.type == TOKEN_ISNOT) {
         var node = this.exprnode(NODE_ISNOT);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_ISNOTCI) {
+        var node = this.exprnode(NODE_ISNOTCI);
+        node.lhs = lhs;
+        node.rhs = this.parse_expr5();
+        var lhs = node;
+    }
+    else if (token.type == TOKEN_ISNOTCS) {
+        var node = this.exprnode(NODE_ISNOTCS);
         node.lhs = lhs;
         node.rhs = this.parse_expr5();
         var lhs = node;
@@ -2467,7 +2462,7 @@ ExprParser.prototype.parse_expr5 = function() {
             var lhs = node;
         }
         else if (token.type == TOKEN_MINUS) {
-            var node = this.exprnode(NODE_SUB);
+            var node = this.exprnode(NODE_SUBTRACT);
             node.lhs = lhs;
             node.rhs = this.parse_expr6();
             var lhs = node;
@@ -2495,19 +2490,19 @@ ExprParser.prototype.parse_expr6 = function() {
         var pos = this.tokenizer.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_STAR) {
-            var node = this.exprnode(NODE_MUL);
+            var node = this.exprnode(NODE_MULTIPLY);
             node.lhs = lhs;
             node.rhs = this.parse_expr7();
             var lhs = node;
         }
         else if (token.type == TOKEN_SLASH) {
-            var node = this.exprnode(NODE_DIV);
+            var node = this.exprnode(NODE_DIVIDE);
             node.lhs = lhs;
             node.rhs = this.parse_expr7();
             var lhs = node;
         }
-        else if (token.type == TOKEN_PER) {
-            var node = this.exprnode(NODE_MOD);
+        else if (token.type == TOKEN_PERCENT) {
+            var node = this.exprnode(NODE_REMAINDER);
             node.lhs = lhs;
             node.rhs = this.parse_expr7();
             var lhs = node;
@@ -2555,7 +2550,7 @@ ExprParser.prototype.parse_expr8 = function() {
         var pos = this.tokenizer.reader.tell();
         var c = this.tokenizer.reader.peek();
         var token = this.tokenizer.get();
-        if (!iswhite(c) && token.type == TOKEN_LBRA) {
+        if (!iswhite(c) && token.type == TOKEN_SQOPEN) {
             if (this.tokenizer.peek().type == TOKEN_COLON) {
                 this.tokenizer.get();
                 var node = this.exprnode(NODE_SLICE);
@@ -2563,11 +2558,11 @@ ExprParser.prototype.parse_expr8 = function() {
                 node.expr1 = NIL;
                 node.expr2 = NIL;
                 var token = this.tokenizer.peek();
-                if (token.type != TOKEN_RBRA) {
+                if (token.type != TOKEN_SQCLOSE) {
                     node.expr2 = this.parse_expr1();
                 }
                 var token = this.tokenizer.get();
-                if (token.type != TOKEN_RBRA) {
+                if (token.type != TOKEN_SQCLOSE) {
                     throw this.err("ExprParser: unexpected token: %s", token.value);
                 }
             }
@@ -2580,31 +2575,31 @@ ExprParser.prototype.parse_expr8 = function() {
                     node.expr1 = expr1;
                     node.expr2 = NIL;
                     var token = this.tokenizer.peek();
-                    if (token.type != TOKEN_RBRA) {
+                    if (token.type != TOKEN_SQCLOSE) {
                         node.expr2 = this.parse_expr1();
                     }
                     var token = this.tokenizer.get();
-                    if (token.type != TOKEN_RBRA) {
+                    if (token.type != TOKEN_SQCLOSE) {
                         throw this.err("ExprParser: unexpected token: %s", token.value);
                     }
                 }
                 else {
-                    var node = this.exprnode(NODE_INDEX);
+                    var node = this.exprnode(NODE_SUBSCRIPT);
                     node.expr = lhs;
                     node.expr1 = expr1;
                     var token = this.tokenizer.get();
-                    if (token.type != TOKEN_RBRA) {
+                    if (token.type != TOKEN_SQCLOSE) {
                         throw this.err("ExprParser: unexpected token: %s", token.value);
                     }
                 }
             }
             var lhs = node;
         }
-        else if (token.type == TOKEN_LPAR) {
+        else if (token.type == TOKEN_POPEN) {
             var node = this.exprnode(NODE_CALL);
             node.expr = lhs;
             node.args = [];
-            if (this.tokenizer.peek().type == TOKEN_RPAR) {
+            if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
                 this.tokenizer.get();
             }
             else {
@@ -2613,7 +2608,7 @@ ExprParser.prototype.parse_expr8 = function() {
                     var token = this.tokenizer.get();
                     if (token.type == TOKEN_COMMA) {
                     }
-                    else if (token.type == TOKEN_RPAR) {
+                    else if (token.type == TOKEN_PCLOSE) {
                         break;
                     }
                     else {
@@ -2624,7 +2619,7 @@ ExprParser.prototype.parse_expr8 = function() {
             var lhs = node;
         }
         else if (!iswhite(c) && token.type == TOKEN_DOT) {
-            // INDEX or CONCAT
+            // SUBSCRIPT or CONCAT
             var c = this.tokenizer.reader.peek();
             var token = this.tokenizer.peek();
             if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
@@ -2679,11 +2674,11 @@ ExprParser.prototype.parse_expr9 = function() {
         var node = this.exprnode(NODE_STRING);
         node.value = "'" + this.tokenizer.get_sstring() + "'";
     }
-    else if (token.type == TOKEN_LBRA) {
+    else if (token.type == TOKEN_SQOPEN) {
         var node = this.exprnode(NODE_LIST);
         node.items = [];
         var token = this.tokenizer.peek();
-        if (token.type == TOKEN_RBRA) {
+        if (token.type == TOKEN_SQCLOSE) {
             this.tokenizer.get();
         }
         else {
@@ -2692,12 +2687,12 @@ ExprParser.prototype.parse_expr9 = function() {
                 var token = this.tokenizer.peek();
                 if (token.type == TOKEN_COMMA) {
                     this.tokenizer.get();
-                    if (this.tokenizer.peek().type == TOKEN_RBRA) {
+                    if (this.tokenizer.peek().type == TOKEN_SQCLOSE) {
                         this.tokenizer.get();
                         break;
                     }
                 }
-                else if (token.type == TOKEN_RBRA) {
+                else if (token.type == TOKEN_SQCLOSE) {
                     this.tokenizer.get();
                     break;
                 }
@@ -2707,18 +2702,18 @@ ExprParser.prototype.parse_expr9 = function() {
             }
         }
     }
-    else if (token.type == TOKEN_LBPAR) {
+    else if (token.type == TOKEN_COPEN) {
         var node = this.exprnode(NODE_DICT);
         node.items = [];
         var token = this.tokenizer.peek();
-        if (token.type == TOKEN_RBPAR) {
+        if (token.type == TOKEN_CCLOSE) {
             this.tokenizer.get();
         }
         else {
             while (1) {
                 var key = this.parse_expr1();
                 var token = this.tokenizer.get();
-                if (token.type == TOKEN_RBPAR) {
+                if (token.type == TOKEN_CCLOSE) {
                     if (!viml_empty(node.items)) {
                         throw this.err("ExprParser: unexpected token: %s", token.value);
                     }
@@ -2734,12 +2729,12 @@ ExprParser.prototype.parse_expr9 = function() {
                 viml_add(node.items, [key, val]);
                 var token = this.tokenizer.get();
                 if (token.type == TOKEN_COMMA) {
-                    if (this.tokenizer.peek().type == TOKEN_RBPAR) {
+                    if (this.tokenizer.peek().type == TOKEN_CCLOSE) {
                         this.tokenizer.get();
                         break;
                     }
                 }
-                else if (token.type == TOKEN_RBPAR) {
+                else if (token.type == TOKEN_CCLOSE) {
                     break;
                 }
                 else {
@@ -2748,11 +2743,11 @@ ExprParser.prototype.parse_expr9 = function() {
             }
         }
     }
-    else if (token.type == TOKEN_LPAR) {
+    else if (token.type == TOKEN_POPEN) {
         var node = this.exprnode(NODE_NESTING);
         node.expr = this.parse_expr1();
         var token = this.tokenizer.get();
-        if (token.type != TOKEN_RPAR) {
+        if (token.type != TOKEN_PCLOSE) {
             throw this.err("ExprParser: unexpected token: %s", token.value);
         }
     }
@@ -2761,6 +2756,11 @@ ExprParser.prototype.parse_expr9 = function() {
         node.value = token.value;
     }
     else if (token.type == TOKEN_IDENTIFIER) {
+        this.tokenizer.reader.seek_set(pos);
+        var node = this.exprnode(NODE_IDENTIFIER);
+        node.value = this.parse_identifier();
+    }
+    else if (token.type == TOKEN_LT && this.tokenizer.reader.getn(4).toLowerCase() == "SID>".toLowerCase()) {
         this.tokenizer.reader.seek_set(pos);
         var node = this.exprnode(NODE_IDENTIFIER);
         node.value = this.parse_identifier();
@@ -2780,28 +2780,28 @@ ExprParser.prototype.parse_expr9 = function() {
 }
 
 ExprParser.prototype.parse_identifier = function() {
-    var r = this.tokenizer.reader;
     var id = [];
-    r.skip_white();
+    this.tokenizer.reader.skip_white();
+    var c = this.tokenizer.reader.peek();
+    if (c == "<" && this.tokenizer.reader.peekn(5).toLowerCase() == "<SID>".toLowerCase()) {
+        var name = this.tokenizer.reader.getn(5);
+        viml_add(id, {"curly":0, "value":name});
+    }
     while (1) {
-        var c = r.peek();
+        var c = this.tokenizer.reader.peek();
         if (isnamec(c)) {
-            var name = r.read_name();
+            var name = this.tokenizer.reader.read_name();
             viml_add(id, {"curly":0, "value":name});
         }
         else if (c == "{") {
-            r.get();
+            this.tokenizer.reader.get();
             var node = this.parse_expr1();
-            r.skip_white();
-            var c = r.get();
+            this.tokenizer.reader.skip_white();
+            var c = this.tokenizer.reader.get();
             if (c != "}") {
                 throw this.err("ExprParser: unexpected token: %s", c);
             }
             viml_add(id, {"curly":1, "value":node});
-        }
-        else if (c == "<" && (r.p(1) == "S" || r.p(1) == "s") && (r.p(2) == "I" || r.p(2) == "i") && (r.p(3) == "D" || r.p(3) == "d") && r.p(4) == ">") {
-            var name = r.getn(5) + r.read_name();
-            viml_add(id, {"curly":0, "value":name});
         }
         else {
             break;
@@ -2825,7 +2825,7 @@ LvalueParser.prototype.parse_lv8 = function() {
         var pos = this.tokenizer.reader.tell();
         var c = this.tokenizer.reader.peek();
         var token = this.tokenizer.get();
-        if (!iswhite(c) && token.type == TOKEN_LBRA) {
+        if (!iswhite(c) && token.type == TOKEN_SQOPEN) {
             if (this.tokenizer.peek().type == TOKEN_COLON) {
                 this.tokenizer.get();
                 var node = this.exprnode(NODE_SLICE);
@@ -2833,11 +2833,11 @@ LvalueParser.prototype.parse_lv8 = function() {
                 node.expr1 = NIL;
                 node.expr2 = NIL;
                 var token = this.tokenizer.peek();
-                if (token.type != TOKEN_RBRA) {
+                if (token.type != TOKEN_SQCLOSE) {
                     node.expr2 = this.parse_expr1();
                 }
                 var token = this.tokenizer.get();
-                if (token.type != TOKEN_RBRA) {
+                if (token.type != TOKEN_SQCLOSE) {
                     throw this.err("LvalueParser: unexpected token: %s", token.value);
                 }
             }
@@ -2850,20 +2850,20 @@ LvalueParser.prototype.parse_lv8 = function() {
                     node.expr1 = expr1;
                     node.expr2 = NIL;
                     var token = this.tokenizer.peek();
-                    if (token.type != TOKEN_RBRA) {
+                    if (token.type != TOKEN_SQCLOSE) {
                         node.expr2 = this.parse_expr1();
                     }
                     var token = this.tokenizer.get();
-                    if (token.type != TOKEN_RBRA) {
+                    if (token.type != TOKEN_SQCLOSE) {
                         throw this.err("LvalueParser: unexpected token: %s", token.value);
                     }
                 }
                 else {
-                    var node = this.exprnode(NODE_INDEX);
+                    var node = this.exprnode(NODE_SUBSCRIPT);
                     node.expr = lhs;
                     node.expr1 = expr1;
                     var token = this.tokenizer.get();
-                    if (token.type != TOKEN_RBRA) {
+                    if (token.type != TOKEN_SQCLOSE) {
                         throw this.err("LvalueParser: unexpected token: %s", token.value);
                     }
                 }
@@ -2871,7 +2871,7 @@ LvalueParser.prototype.parse_lv8 = function() {
             var lhs = node;
         }
         else if (token.type == TOKEN_DOT) {
-            // INDEX or CONCAT
+            // SUBSCRIPT or CONCAT
             var c = this.tokenizer.reader.peek();
             var token = this.tokenizer.peek();
             if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
@@ -2904,7 +2904,7 @@ LvalueParser.prototype.parse_lv8 = function() {
 LvalueParser.prototype.parse_lv9 = function() {
     var pos = this.tokenizer.reader.tell();
     var token = this.tokenizer.get();
-    if (token.type == TOKEN_LBPAR) {
+    if (token.type == TOKEN_COPEN) {
         this.tokenizer.reader.seek_set(pos);
         var node = this.exprnode(NODE_IDENTIFIER);
         node.value = this.parse_identifier();
@@ -2914,6 +2914,11 @@ LvalueParser.prototype.parse_lv9 = function() {
         node.value = token.value;
     }
     else if (token.type == TOKEN_IDENTIFIER) {
+        this.tokenizer.reader.seek_set(pos);
+        var node = this.exprnode(NODE_IDENTIFIER);
+        node.value = this.parse_identifier();
+    }
+    else if (token.type == TOKEN_LT && this.tokenizer.reader.getn(4).toLowerCase() == "SID>".toLowerCase()) {
         this.tokenizer.reader.seek_set(pos);
         var node = this.exprnode(NODE_IDENTIFIER);
         node.value = this.parse_identifier();
@@ -3268,122 +3273,122 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_EXECUTE) {
         return this.compile_execute(node);
     }
-    else if (node.type == NODE_CONDEXP) {
-        return this.compile_condexp(node);
+    else if (node.type == NODE_TERNARY) {
+        return this.compile_ternary(node);
     }
-    else if (node.type == NODE_LOGOR) {
-        return this.compile_logor(node);
+    else if (node.type == NODE_OR) {
+        return this.compile_or(node);
     }
-    else if (node.type == NODE_LOGAND) {
-        return this.compile_logand(node);
+    else if (node.type == NODE_AND) {
+        return this.compile_and(node);
     }
-    else if (node.type == NODE_EQEQQ) {
-        return this.compile_eqeqq(node);
+    else if (node.type == NODE_EQUAL) {
+        return this.compile_equal(node);
     }
-    else if (node.type == NODE_EQEQH) {
-        return this.compile_eqeqh(node);
+    else if (node.type == NODE_EQUALCI) {
+        return this.compile_equalci(node);
     }
-    else if (node.type == NODE_NOTEQQ) {
-        return this.compile_noteqq(node);
+    else if (node.type == NODE_EQUALCS) {
+        return this.compile_equalcs(node);
     }
-    else if (node.type == NODE_NOTEQH) {
-        return this.compile_noteqh(node);
+    else if (node.type == NODE_NEQUAL) {
+        return this.compile_nequal(node);
     }
-    else if (node.type == NODE_GTEQQ) {
-        return this.compile_gteqq(node);
+    else if (node.type == NODE_NEQUALCI) {
+        return this.compile_nequalci(node);
     }
-    else if (node.type == NODE_GTEQH) {
-        return this.compile_gteqh(node);
+    else if (node.type == NODE_NEQUALCS) {
+        return this.compile_nequalcs(node);
     }
-    else if (node.type == NODE_LTEQQ) {
-        return this.compile_lteqq(node);
+    else if (node.type == NODE_GREATER) {
+        return this.compile_greater(node);
     }
-    else if (node.type == NODE_LTEQH) {
-        return this.compile_lteqh(node);
+    else if (node.type == NODE_GREATERCI) {
+        return this.compile_greaterci(node);
     }
-    else if (node.type == NODE_EQTILDQ) {
-        return this.compile_eqtildq(node);
+    else if (node.type == NODE_GREATERCS) {
+        return this.compile_greatercs(node);
     }
-    else if (node.type == NODE_EQTILDH) {
-        return this.compile_eqtildh(node);
+    else if (node.type == NODE_GEQUAL) {
+        return this.compile_gequal(node);
     }
-    else if (node.type == NODE_NOTTILDQ) {
-        return this.compile_nottildq(node);
+    else if (node.type == NODE_GEQUALCI) {
+        return this.compile_gequalci(node);
     }
-    else if (node.type == NODE_NOTTILDH) {
-        return this.compile_nottildh(node);
+    else if (node.type == NODE_GEQUALCS) {
+        return this.compile_gequalcs(node);
     }
-    else if (node.type == NODE_GTQ) {
-        return this.compile_gtq(node);
+    else if (node.type == NODE_SMALLER) {
+        return this.compile_smaller(node);
     }
-    else if (node.type == NODE_GTH) {
-        return this.compile_gth(node);
+    else if (node.type == NODE_SMALLERCI) {
+        return this.compile_smallerci(node);
     }
-    else if (node.type == NODE_LTQ) {
-        return this.compile_ltq(node);
+    else if (node.type == NODE_SMALLERCS) {
+        return this.compile_smallercs(node);
     }
-    else if (node.type == NODE_LTH) {
-        return this.compile_lth(node);
+    else if (node.type == NODE_SEQUAL) {
+        return this.compile_sequal(node);
     }
-    else if (node.type == NODE_EQEQ) {
-        return this.compile_eqeq(node);
+    else if (node.type == NODE_SEQUALCI) {
+        return this.compile_sequalci(node);
     }
-    else if (node.type == NODE_NOTEQ) {
-        return this.compile_noteq(node);
+    else if (node.type == NODE_SEQUALCS) {
+        return this.compile_sequalcs(node);
     }
-    else if (node.type == NODE_GTEQ) {
-        return this.compile_gteq(node);
+    else if (node.type == NODE_MATCH) {
+        return this.compile_match(node);
     }
-    else if (node.type == NODE_LTEQ) {
-        return this.compile_lteq(node);
+    else if (node.type == NODE_MATCHCI) {
+        return this.compile_matchci(node);
     }
-    else if (node.type == NODE_EQTILD) {
-        return this.compile_eqtild(node);
+    else if (node.type == NODE_MATCHCS) {
+        return this.compile_matchcs(node);
     }
-    else if (node.type == NODE_NOTTILD) {
-        return this.compile_nottild(node);
+    else if (node.type == NODE_NOMATCH) {
+        return this.compile_nomatch(node);
     }
-    else if (node.type == NODE_GT) {
-        return this.compile_gt(node);
+    else if (node.type == NODE_NOMATCHCI) {
+        return this.compile_nomatchci(node);
     }
-    else if (node.type == NODE_LT) {
-        return this.compile_lt(node);
-    }
-    else if (node.type == NODE_ISQ) {
-        return this.compile_isq(node);
-    }
-    else if (node.type == NODE_ISH) {
-        return this.compile_ish(node);
-    }
-    else if (node.type == NODE_ISNOTQ) {
-        return this.compile_isnotq(node);
-    }
-    else if (node.type == NODE_ISNOTH) {
-        return this.compile_isnoth(node);
+    else if (node.type == NODE_NOMATCHCS) {
+        return this.compile_nomatchcs(node);
     }
     else if (node.type == NODE_IS) {
         return this.compile_is(node);
     }
+    else if (node.type == NODE_ISCI) {
+        return this.compile_isci(node);
+    }
+    else if (node.type == NODE_ISCS) {
+        return this.compile_iscs(node);
+    }
     else if (node.type == NODE_ISNOT) {
         return this.compile_isnot(node);
+    }
+    else if (node.type == NODE_ISNOTCI) {
+        return this.compile_isnotci(node);
+    }
+    else if (node.type == NODE_ISNOTCS) {
+        return this.compile_isnotcs(node);
     }
     else if (node.type == NODE_ADD) {
         return this.compile_add(node);
     }
-    else if (node.type == NODE_SUB) {
-        return this.compile_sub(node);
+    else if (node.type == NODE_SUBTRACT) {
+        return this.compile_subtract(node);
     }
     else if (node.type == NODE_CONCAT) {
         return this.compile_concat(node);
     }
-    else if (node.type == NODE_MUL) {
-        return this.compile_mul(node);
+    else if (node.type == NODE_MULTIPLY) {
+        return this.compile_multiply(node);
     }
-    else if (node.type == NODE_DIV) {
-        return this.compile_div(node);
+    else if (node.type == NODE_DIVIDE) {
+        return this.compile_divide(node);
     }
-    else if (node.type == NODE_MOD) {
-        return this.compile_mod(node);
+    else if (node.type == NODE_REMAINDER) {
+        return this.compile_remainder(node);
     }
     else if (node.type == NODE_NOT) {
         return this.compile_not(node);
@@ -3394,8 +3399,8 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_MINUS) {
         return this.compile_minus(node);
     }
-    else if (node.type == NODE_INDEX) {
-        return this.compile_index(node);
+    else if (node.type == NODE_SUBSCRIPT) {
+        return this.compile_subscript(node);
     }
     else if (node.type == NODE_SLICE) {
         return this.compile_slice(node);
@@ -3644,143 +3649,143 @@ Compiler.prototype.compile_execute = function(node) {
     this.out("(execute %s)", viml_join(args, " "));
 }
 
-Compiler.prototype.compile_condexp = function(node) {
+Compiler.prototype.compile_ternary = function(node) {
     return viml_printf("(?: %s %s %s)", this.compile(node.cond), this.compile(node.then), this.compile(node._else));
 }
 
-Compiler.prototype.compile_logor = function(node) {
+Compiler.prototype.compile_or = function(node) {
     return viml_printf("(|| %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_logand = function(node) {
+Compiler.prototype.compile_and = function(node) {
     return viml_printf("(&& %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_eqeqq = function(node) {
-    return viml_printf("(==? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_eqeqh = function(node) {
-    return viml_printf("(==# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_noteqq = function(node) {
-    return viml_printf("(!=? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_noteqh = function(node) {
-    return viml_printf("(!=# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_gteqq = function(node) {
-    return viml_printf("(>=? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_gteqh = function(node) {
-    return viml_printf("(>=# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_lteqq = function(node) {
-    return viml_printf("(<=? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_lteqh = function(node) {
-    return viml_printf("(<=# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_eqtildq = function(node) {
-    return viml_printf("(=~? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_eqtildh = function(node) {
-    return viml_printf("(=~# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_nottildq = function(node) {
-    return viml_printf("(!~? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_nottildh = function(node) {
-    return viml_printf("(!~# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_gtq = function(node) {
-    return viml_printf("(>? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_gth = function(node) {
-    return viml_printf("(># %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_ltq = function(node) {
-    return viml_printf("(<? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_lth = function(node) {
-    return viml_printf("(<# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_eqeq = function(node) {
+Compiler.prototype.compile_equal = function(node) {
     return viml_printf("(== %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_noteq = function(node) {
+Compiler.prototype.compile_equalci = function(node) {
+    return viml_printf("(==? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_equalcs = function(node) {
+    return viml_printf("(==# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_nequal = function(node) {
     return viml_printf("(!= %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_gteq = function(node) {
-    return viml_printf("(>= %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+Compiler.prototype.compile_nequalci = function(node) {
+    return viml_printf("(!=? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_lteq = function(node) {
-    return viml_printf("(<= %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+Compiler.prototype.compile_nequalcs = function(node) {
+    return viml_printf("(!=# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_eqtild = function(node) {
-    return viml_printf("(=~ %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_nottild = function(node) {
-    return viml_printf("(!~ %s %s)", this.compile(node.lhs), this.compile(node.rhs));
-}
-
-Compiler.prototype.compile_gt = function(node) {
+Compiler.prototype.compile_greater = function(node) {
     return viml_printf("(> %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_lt = function(node) {
+Compiler.prototype.compile_greaterci = function(node) {
+    return viml_printf("(>? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_greatercs = function(node) {
+    return viml_printf("(># %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_gequal = function(node) {
+    return viml_printf("(>= %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_gequalci = function(node) {
+    return viml_printf("(>=? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_gequalcs = function(node) {
+    return viml_printf("(>=# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_smaller = function(node) {
     return viml_printf("(< %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_isq = function(node) {
-    return viml_printf("(is? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+Compiler.prototype.compile_smallerci = function(node) {
+    return viml_printf("(<? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_ish = function(node) {
-    return viml_printf("(is# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+Compiler.prototype.compile_smallercs = function(node) {
+    return viml_printf("(<# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_isnotq = function(node) {
-    return viml_printf("(isnot? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+Compiler.prototype.compile_sequal = function(node) {
+    return viml_printf("(<= %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_isnoth = function(node) {
-    return viml_printf("(isnot# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+Compiler.prototype.compile_sequalci = function(node) {
+    return viml_printf("(<=? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_sequalcs = function(node) {
+    return viml_printf("(<=# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_match = function(node) {
+    return viml_printf("(=~ %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_matchci = function(node) {
+    return viml_printf("(=~? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_matchcs = function(node) {
+    return viml_printf("(=~# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_nomatch = function(node) {
+    return viml_printf("(!~ %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_nomatchci = function(node) {
+    return viml_printf("(!~? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_nomatchcs = function(node) {
+    return viml_printf("(!~# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
 Compiler.prototype.compile_is = function(node) {
     return viml_printf("(is %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
+Compiler.prototype.compile_isci = function(node) {
+    return viml_printf("(is? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_iscs = function(node) {
+    return viml_printf("(is# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
 Compiler.prototype.compile_isnot = function(node) {
     return viml_printf("(isnot %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_isnotci = function(node) {
+    return viml_printf("(isnot? %s %s)", this.compile(node.lhs), this.compile(node.rhs));
+}
+
+Compiler.prototype.compile_isnotcs = function(node) {
+    return viml_printf("(isnot# %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
 Compiler.prototype.compile_add = function(node) {
     return viml_printf("(+ %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_sub = function(node) {
+Compiler.prototype.compile_subtract = function(node) {
     return viml_printf("(- %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
@@ -3788,15 +3793,15 @@ Compiler.prototype.compile_concat = function(node) {
     return viml_printf("(concat %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_mul = function(node) {
+Compiler.prototype.compile_multiply = function(node) {
     return viml_printf("(* %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_div = function(node) {
+Compiler.prototype.compile_divide = function(node) {
     return viml_printf("(/ %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
-Compiler.prototype.compile_mod = function(node) {
+Compiler.prototype.compile_remainder = function(node) {
     return viml_printf("(%% %s %s)", this.compile(node.lhs), this.compile(node.rhs));
 }
 
@@ -3812,8 +3817,8 @@ Compiler.prototype.compile_minus = function(node) {
     return viml_printf("(- %s)", this.compile(node.expr));
 }
 
-Compiler.prototype.compile_index = function(node) {
-    return viml_printf("(index %s %s)", this.compile(node.expr), this.compile(node.expr1));
+Compiler.prototype.compile_subscript = function(node) {
+    return viml_printf("(subscript %s %s)", this.compile(node.expr), this.compile(node.expr1));
 }
 
 Compiler.prototype.compile_slice = function(node) {
