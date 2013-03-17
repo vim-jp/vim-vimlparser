@@ -230,28 +230,32 @@ function s:JavascriptCompiler.compile_excmd(node)
 endfunction
 
 function s:JavascriptCompiler.compile_function(node)
-  let name = self.compile(a:node.name)
+  let left = self.compile(a:node.left)
+  let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let va = 0
-  if !empty(a:node.args) && a:node.args[-1] == '...'
-    unlet a:node.args[-1]
+  if !empty(rlist) && rlist[-1] == '...'
+    unlet rlist[-1]
     let va = 1
   endif
-  if name =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
-    let [_0, klass, name; _] = matchlist(name, '^\(.*\)\.\(.*\)$')
+  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+    let [_0, klass, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
     if name == 'new'
       return
     endif
-    call self.out('%s.prototype.%s = function(%s) {', klass, name, join(a:node.args, ', '))
+    call self.out('%s.prototype.%s = function(%s) {', klass, name, join(rlist, ', '))
     call self.incindent('    ')
     if va
-      call self.out('var a000 = Array.prototype.slice.call(arguments, %d);', len(a:node.args))
+      call self.out('var a000 = Array.prototype.slice.call(arguments, %d);', len(rlist))
     endif
     call self.compile_body(a:node.body)
     call self.decindent()
     call self.out('}')
   else
-    call self.out('function %s(%s) {', name, join(a:node.args, ', '))
+    call self.out('function %s(%s) {', left, join(rlist, ', '))
     call self.incindent('    ')
+    if va
+      call self.out('var a000 = Array.prototype.slice.call(arguments, %d);', len(rlist))
+    endif
     call self.compile_body(a:node.body)
     call self.decindent()
     call self.out('}')
@@ -264,59 +268,72 @@ function s:JavascriptCompiler.compile_delfunction(node)
 endfunction
 
 function s:JavascriptCompiler.compile_return(node)
-  if a:node.arg is s:NIL
+  if a:node.left is s:NIL
     call self.out('return;')
   else
-    call self.out('return %s;', self.compile(a:node.arg))
+    call self.out('return %s;', self.compile(a:node.left))
   endif
 endfunction
 
 function s:JavascriptCompiler.compile_excall(node)
-  call self.out('%s;', self.compile(a:node.expr))
+  call self.out('%s;', self.compile(a:node.left))
 endfunction
 
 function s:JavascriptCompiler.compile_let(node)
-  let args = map(a:node.lhs.args, 'self.compile(v:val)')
-  if a:node.lhs.rest isnot s:NIL
-    call add(args, '*' . self.compile, a:node.lhs.rest)
-  endif
   let op = a:node.op
   if op == '.='
     let op = '+='
   endif
-  let lhs = join(args, ', ')
-  let rhs = self.compile(a:node.rhs)
-  if lhs == 'LvalueParser'
-    call self.out('function LvalueParser() { ExprParser.apply(this, arguments); this.__init__.apply(this, arguments); }')
-    call self.out('LvalueParser.prototype = Object.create(ExprParser.prototype);')
-  elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
-    call self.out('function %s() { this.__init__.apply(this, arguments); }', lhs)
-  elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
-    let [_0, klass, name; _] = matchlist(lhs, '^\(.*\)\.\(.*\)$')
-    call self.out('%s.prototype.%s %s %s;', klass, name, op, rhs)
-  else
-    if len(args) != 1
-      call self.out('var __tmp = %s;', rhs)
-      for i in range(len(args))
-        if args[i] =~ '\.'
-          call self.out('%s = __tmp[%s];', args[i], i)
-        else
-          call self.out('var %s = __tmp[%s];', args[i], i)
-        endif
-      endfor
+  let right = self.compile(a:node.right)
+  if a:node.left isnot s:NIL
+    let left = self.compile(a:node.left)
+    if left == 'LvalueParser'
+      call self.out('function LvalueParser() { ExprParser.apply(this, arguments); this.__init__.apply(this, arguments); }')
+      call self.out('LvalueParser.prototype = Object.create(ExprParser.prototype);')
+      return
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
+      call self.out('function %s() { this.__init__.apply(this, arguments); }', left)
+      return
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+      let [_0, klass, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
+      call self.out('%s.prototype.%s %s %s;', klass, name, op, right)
+      return
+    endif
+    if left =~ '\.' || op != '='
+      call self.out('%s %s %s;', left, op, right)
     else
-      if lhs =~ '\.' || op != '='
-        call self.out('%s %s %s;', lhs, op, rhs)
+      call self.out('var %s %s %s;', left, op, right)
+    endif
+  else
+    let list = map(a:node.list, 'self.compile(v:val)')
+    if a:node.rest is s:NIL
+      let rest = s:NIL
+    else
+      let rest = self.compile(a:node.rest)
+    endif
+    call self.out('var __tmp = %s;', right)
+    let i = 0
+    while i < len(list)
+      if list[i] =~ '\.'
+        call self.out('%s = __tmp[%s];', list[i], i)
       else
-        call self.out('var %s %s %s;', lhs, op, rhs)
+        call self.out('var %s = __tmp[%s];', list[i], i)
+      endif
+      let i += 1
+    endwhile
+    if a:node.rest isnot s:NIL
+      if rest[i] =~ '\.'
+        call self.out('%s = __tmp.slice(%d);', i)
+      else
+        call self.out('var %s = __tmp.slice(%d);', i)
       endif
     endif
   endif
 endfunction
 
 function s:JavascriptCompiler.compile_unlet(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('delete %s;', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('delete %s;', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_lockvar(node)
@@ -361,16 +378,32 @@ let s:fori = 0
 
 function s:JavascriptCompiler.compile_for(node)
   let s:fori += 1
-  let args = map(a:node.lhs.args, 'self.compile(v:val)')
-  if a:node.lhs.rest isnot s:NIL
-    call add(args, '*' . self.compile(a:node.lhs.rest))
+  if a:node.left isnot s:NIL
+    let left = self.compile(a:node.left)
+  else
+    let list = map(a:node.list, 'self.compile(v:val)')
+    if a:node.rest is s:NIL
+      let rest = s:NIL
+    else
+      let rest = self.compile(a:node.rest)
+    endif
   endif
-  let lhs = join(args, ', ')
-  let rhs = self.compile(a:node.rhs)
-  call self.out('var __c%d = %s;', s:fori, rhs)
+  let right = self.compile(a:node.right)
+  call self.out('var __c%d = %s;', s:fori, right)
   call self.out('for (var __i%d = 0; __i%d < __c%d.length; ++__i%d) {', s:fori, s:fori, s:fori, s:fori)
   call self.incindent('    ')
-  call self.out('var %s = __c%d[__i%d]', lhs, s:fori, s:fori)
+  if a:node.left isnot s:NIL
+    call self.out('var %s = __c%d[__i%d];', left, s:fori, s:fori)
+  else
+    let i = 0
+    while i < len(list)
+      call self.out('var %s = __c%d[__i%d][%d];', list[i], s:fori, s:fori, i)
+      let i += 1
+    endwhile
+    if a:node.rest isnot s:NIL
+      call self.out('var %s = __c%d[__i%d].slice(%d);', list[i], s:fori, s:fori, i)
+    endif
+  endif
   call self.compile_body(a:node.body)
   call self.decindent()
   call self.out('}')
@@ -415,17 +448,17 @@ function s:JavascriptCompiler.compile_try(node)
 endfunction
 
 function s:JavascriptCompiler.compile_throw(node)
-  call self.out('throw %s;', self.compile(a:node.arg))
+  call self.out('throw %s;', self.compile(a:node.left))
 endfunction
 
 function s:JavascriptCompiler.compile_echo(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('process.stdout.write(%s + "\n");', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('process.stdout.write(%s + "\n");', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_echon(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('process.stdout.write(%s + "\n");', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('process.stdout.write(%s + "\n");', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_echohl(node)
@@ -433,13 +466,13 @@ function s:JavascriptCompiler.compile_echohl(node)
 endfunction
 
 function s:JavascriptCompiler.compile_echomsg(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('process.stdout.write(%s + "\n");', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('process.stdout.write(%s + "\n");', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_echoerr(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('throw %s;', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('throw %s;', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_execute(node)
@@ -447,43 +480,43 @@ function s:JavascriptCompiler.compile_execute(node)
 endfunction
 
 function s:JavascriptCompiler.compile_ternary(node)
-  return printf('%s ? %s : %s', self.compile(a:node.cond), self.compile(a:node.then), self.compile(a:node.else))
+  return printf('%s ? %s : %s', self.compile(a:node.cond), self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_or(node)
-  return printf('%s || %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s || %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_and(node)
-  return printf('%s && %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s && %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_equal(node)
-  return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s == %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_equalci(node)
-  return printf('%s.toLowerCase() == %s.toLowerCase()', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s.toLowerCase() == %s.toLowerCase()', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_equalcs(node)
-  return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s == %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_nequal(node)
-  return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s != %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_nequalci(node)
-  return printf('%s.lower() != %s.lower()', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s.lower() != %s.lower()', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_nequalcs(node)
-  return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s != %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_greater(node)
-  return printf('%s > %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s > %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_greaterci(node)
@@ -495,7 +528,7 @@ function s:JavascriptCompiler.compile_greatercs(node)
 endfunction
 
 function s:JavascriptCompiler.compile_gequal(node)
-  return printf('%s >= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s >= %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_gequalci(node)
@@ -507,7 +540,7 @@ function s:JavascriptCompiler.compile_gequalcs(node)
 endfunction
 
 function s:JavascriptCompiler.compile_smaller(node)
-  return printf('%s < %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s < %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_smallerci(node)
@@ -519,7 +552,7 @@ function s:JavascriptCompiler.compile_smallercs(node)
 endfunction
 
 function s:JavascriptCompiler.compile_sequal(node)
-  return printf('%s <= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s <= %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_sequalci(node)
@@ -531,32 +564,32 @@ function s:JavascriptCompiler.compile_sequalcs(node)
 endfunction
 
 function s:JavascriptCompiler.compile_match(node)
-  return printf('viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_matchci(node)
-  return printf('viml_eqregq(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('viml_eqregq(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_matchcs(node)
-  return printf('viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_nomatch(node)
-  return printf('!viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('!viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_nomatchci(node)
-  return printf('!viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('!viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_nomatchcs(node)
-  return printf('!viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('!viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 " TODO
 function s:JavascriptCompiler.compile_is(node)
-  return printf('%s === %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s === %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_isci(node)
@@ -568,7 +601,7 @@ function s:JavascriptCompiler.compile_iscs(node)
 endfunction
 
 function s:JavascriptCompiler.compile_isnot(node)
-  return printf('%s !== %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s !== %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_isnotci(node)
@@ -580,88 +613,88 @@ function s:JavascriptCompiler.compile_isnotcs(node)
 endfunction
 
 function s:JavascriptCompiler.compile_add(node)
-  return printf('%s + %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s + %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_subtract(node)
-  return printf('%s - %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s - %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_concat(node)
-  return printf('%s + %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s + %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_multiply(node)
-  return printf('%s * %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s * %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_divide(node)
-  return printf('%s / %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s / %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_remainder(node)
-  return printf('%s %% %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s %% %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:JavascriptCompiler.compile_not(node)
-  return printf('!%s', self.compile(a:node.expr))
+  return printf('!%s', self.compile(a:node.left))
 endfunction
 
 function s:JavascriptCompiler.compile_plus(node)
-  return printf('+%s', self.compile(a:node.expr))
+  return printf('+%s', self.compile(a:node.left))
 endfunction
 
 function s:JavascriptCompiler.compile_minus(node)
-  return printf('-%s', self.compile(a:node.expr))
+  return printf('-%s', self.compile(a:node.left))
 endfunction
 
 function s:JavascriptCompiler.compile_subscript(node)
-  let expr = self.compile(a:node.expr)
-  let expr1 = self.compile(a:node.expr1)
-  if expr1[0] == '-'
-    let expr1 = matchstr(expr1, '-\zs.*')
-    return printf('%s[%s.length - %s]', expr, expr, expr1)
+  let left = self.compile(a:node.left)
+  let right = self.compile(a:node.right)
+  if right[0] == '-'
+    let right = matchstr(right, '-\zs.*')
+    return printf('%s[%s.length - %s]', left, left, right)
   else
-    return printf('%s[%s]', expr, expr1)
+    return printf('%s[%s]', left, right)
   endif
 endfunction
 
 function s:JavascriptCompiler.compile_slice(node)
-  throw 'NotImplemented: slice';
+  throw 'NotImplemented: slice'
 endfunction
 
 function s:JavascriptCompiler.compile_dot(node)
-  let lhs = self.compile(a:node.lhs)
-  let rhs = self.compile(a:node.rhs)
-  if rhs =~ '^\(else\|finally\)$'
-    let rhs = '_' . rhs
+  let left = self.compile(a:node.left)
+  let right = self.compile(a:node.right)
+  if right =~ '^\(else\|finally\)$'
+    let right = '_' . right
   endif
-  return printf('%s.%s', lhs, rhs)
+  return printf('%s.%s', left, right)
 endfunction
 
 function s:JavascriptCompiler.compile_call(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  let expr = self.compile(a:node.expr)
-  if expr == 'map'
-    let r = s:StringReader.new([eval(args[1])])
+  let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  let left = self.compile(a:node.left)
+  if left == 'map'
+    let r = s:StringReader.new([eval(rlist[1])])
     let p = s:ExprParser.new(s:ExprTokenizer.new(r))
     let n = p.parse()
-    return printf('%s.map((function(vval) { return %s; }).bind(this))', args[0], self.compile(n))
-  elseif expr == 'call' && args[0][0] =~ '[''"]'
-    return printf('viml_%s.apply(null, %s)', args[0][1:-2], args[1])
+    return printf('%s.map((function(vval) { return %s; }).bind(this))', rlist[0], self.compile(n))
+  elseif left == 'call' && rlist[0][0] =~ '[''"]'
+    return printf('viml_%s.apply(null, %s)', rlist[0][1:-2], rlist[1])
   endif
   let isnew = 0
-  if expr =~ '\.new$'
-    let expr = matchstr(expr, '.*\ze\.new$')
+  if left =~ '\.new$'
+    let left = matchstr(left, '.*\ze\.new$')
     let isnew = 1
   endif
-  if index(s:viml_builtin_functions, expr) != -1
-    let expr = printf('viml_%s', expr)
+  if index(s:viml_builtin_functions, left) != -1
+    let left = printf('viml_%s', left)
   endif
   if isnew
-    return printf('new %s(%s)', expr, join(args, ', '))
+    return printf('new %s(%s)', left, join(rlist, ', '))
   else
-    return printf('%s(%s)', expr, join(args, ', '))
+    return printf('%s(%s)', left, join(rlist, ', '))
   endif
 endfunction
 
@@ -679,25 +712,25 @@ function s:JavascriptCompiler.compile_string(node)
 endfunction
 
 function s:JavascriptCompiler.compile_list(node)
-  let items = map(a:node.items, 'self.compile(v:val)')
-  if empty(items)
+  let value = map(a:node.value, 'self.compile(v:val)')
+  if empty(value)
     return '[]'
   else
-    return printf('[%s]', join(items, ', '))
+    return printf('[%s]', join(value, ', '))
   endif
 endfunction
 
 function s:JavascriptCompiler.compile_dict(node)
-  let items = map(a:node.items, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
-  if empty(items)
+  let value = map(a:node.value, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
+  if empty(value)
     return '{}'
   else
-    return printf('{%s}', join(items, ', '))
+    return printf('{%s}', join(value, ', '))
   endif
 endfunction
 
 function s:JavascriptCompiler.compile_nesting(node)
-  return '(' . self.compile(a:node.expr) . ')'
+  return '(' . self.compile(a:node.left) . ')'
 endfunction
 
 function s:JavascriptCompiler.compile_option(node)

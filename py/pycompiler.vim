@@ -232,24 +232,25 @@ function s:PythonCompiler.compile_excmd(node)
 endfunction
 
 function s:PythonCompiler.compile_function(node)
-  let name = self.compile(a:node.name)
-  if !empty(a:node.args) && a:node.args[-1] == '...'
-    let a:node.args[-1] = '*a000'
+  let left = self.compile(a:node.left)
+  let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  if !empty(rlist) && rlist[-1] == '...'
+    let rlist[-1] = '*a000'
   endif
-  if name =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
-    let name = matchstr(name, '\.\zs.*')
-    if name == 'new'
+  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+    let left = matchstr(left, '\.\zs.*')
+    if left == 'new'
       return
     endif
-    call insert(a:node.args, 'self')
+    call insert(rlist, 'self')
     call self.incindent('    ')
-    call self.out('def %s(%s):', name, join(a:node.args, ', '))
+    call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
     call self.decindent()
     call self.decindent()
   else
-    call self.out('def %s(%s):', name, join(a:node.args, ', '))
+    call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
     call self.decindent()
@@ -262,45 +263,53 @@ function s:PythonCompiler.compile_delfunction(node)
 endfunction
 
 function s:PythonCompiler.compile_return(node)
-  if a:node.arg is s:NIL
+  if a:node.left is s:NIL
     call self.out('return')
   else
-    call self.out('return %s', self.compile(a:node.arg))
+    call self.out('return %s', self.compile(a:node.left))
   endif
 endfunction
 
 function s:PythonCompiler.compile_excall(node)
-  call self.out('%s', self.compile(a:node.expr))
+  call self.out('%s', self.compile(a:node.left))
 endfunction
 
 function s:PythonCompiler.compile_let(node)
-  let args = map(a:node.lhs.args, 'self.compile(v:val)')
-  if a:node.lhs.rest isnot s:NIL
-    call add(args, '*' . self.compile, a:node.lhs.rest)
-  endif
   let op = a:node.op
   if op == '.='
     let op = '+='
   endif
-  let lhs = join(args, ', ')
-  let rhs = self.compile(a:node.rhs)
-  if lhs == 'LvalueParser'
-    call self.out('class LvalueParser(ExprParser):')
-  elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
-    call self.out('class %s:', lhs)
-  elseif lhs =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
-    let lhs = matchstr(lhs, '\.\zs.*')
-    call self.incindent('    ')
-    call self.out('%s %s %s', lhs, op, rhs)
-    call self.decindent()
+  let right = self.compile(a:node.right)
+  if a:node.left isnot s:NIL
+    let left = self.compile(a:node.left)
+    if left == 'LvalueParser'
+      call self.out('class LvalueParser(ExprParser):')
+      return
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
+      call self.out('class %s:', left)
+      return
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+      let left = matchstr(left, '\.\zs.*')
+      call self.incindent('    ')
+      call self.out('%s %s %s', left, op, right)
+      call self.decindent()
+      return
+    endif
+    call self.out('%s %s %s', left, op, right)
   else
-    call self.out('%s %s %s', lhs, op, rhs)
+    let list = map(a:node.list, 'self.compile(v:val)')
+    if a:node.rest isnot s:NIL
+      let rest = self.compile(a:node.rest)
+      call add(list, '*' . rest)
+    endif
+    let left = join(list, ', ')
+    call self.out('%s %s %s', left, op, right)
   endif
 endfunction
 
 function s:PythonCompiler.compile_unlet(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('del %s', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('del %s', join(list, ', '))
 endfunction
 
 function s:PythonCompiler.compile_lockvar(node)
@@ -338,13 +347,18 @@ function s:PythonCompiler.compile_while(node)
 endfunction
 
 function s:PythonCompiler.compile_for(node)
-  let args = map(a:node.lhs.args, 'self.compile(v:val)')
-  if a:node.lhs.rest isnot s:NIL
-    call add(args, '*' . self.compile(a:node.lhs.rest))
+  if a:node.left isnot s:NIL
+    let left = self.compile(a:node.left)
+  else
+    let list = map(a:node.left.list, 'self.compile(v:val)')
+    if a:node.left.rest isnot s:NIL
+      let rest = self.compile(a:node.rest)
+      call add(list, '*' . rest)
+    endif
+    let left = join(list, ', ')
   endif
-  let lhs = join(args, ', ')
-  let rhs = self.compile(a:node.rhs)
-  call self.out('for %s in %s:', lhs, rhs)
+  let right = self.compile(a:node.right)
+  call self.out('for %s in %s:', left, right)
   call self.incindent('    ')
   call self.compile_body(a:node.body)
   call self.decindent()
@@ -385,17 +399,17 @@ function s:PythonCompiler.compile_try(node)
 endfunction
 
 function s:PythonCompiler.compile_throw(node)
-  call self.out('raise Exception(%s)', self.compile(a:node.arg))
+  call self.out('raise Exception(%s)', self.compile(a:node.left))
 endfunction
 
 function s:PythonCompiler.compile_echo(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('print(%s)', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('print(%s)', join(list, ', '))
 endfunction
 
 function s:PythonCompiler.compile_echon(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('print(%s)', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('print(%s)', join(list, ', '))
 endfunction
 
 function s:PythonCompiler.compile_echohl(node)
@@ -403,13 +417,13 @@ function s:PythonCompiler.compile_echohl(node)
 endfunction
 
 function s:PythonCompiler.compile_echomsg(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('print(%s)', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('print(%s)', join(list, ', '))
 endfunction
 
 function s:PythonCompiler.compile_echoerr(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  call self.out('raise Exception([%s]))', join(args, ', '))
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('raise Exception([%s]))', join(list, ', '))
 endfunction
 
 function s:PythonCompiler.compile_execute(node)
@@ -417,43 +431,43 @@ function s:PythonCompiler.compile_execute(node)
 endfunction
 
 function s:PythonCompiler.compile_ternary(node)
-  return printf('%s if %s else %s', self.compile(a:node.then), self.compile(a:node.cond), self.compile(a:node.else))
+  return printf('%s if %s else %s', self.compile(a:node.left), self.compile(a:node.cond), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_or(node)
-  return printf('%s or %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s or %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_and(node)
-  return printf('%s and %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s and %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_equal(node)
-  return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s == %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_equalci(node)
-  return printf('%s.lower() == %s.lower()', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s.lower() == %s.lower()', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_equalcs(node)
-  return printf('%s == %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s == %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nequal(node)
-  return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s != %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nequalci(node)
-  return printf('%s.lower() != %s.lower()', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s.lower() != %s.lower()', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nequalcs(node)
-  return printf('%s != %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s != %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_greater(node)
-  return printf('%s > %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s > %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_greaterci(node)
@@ -465,7 +479,7 @@ function s:PythonCompiler.compile_greatercs(node)
 endfunction
 
 function s:PythonCompiler.compile_gequal(node)
-  return printf('%s >= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s >= %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_gequalci(node)
@@ -477,7 +491,7 @@ function s:PythonCompiler.compile_gequalcs(node)
 endfunction
 
 function s:PythonCompiler.compile_smaller(node)
-  return printf('%s < %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s < %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_smallerci(node)
@@ -489,7 +503,7 @@ function s:PythonCompiler.compile_smallercs(node)
 endfunction
 
 function s:PythonCompiler.compile_sequal(node)
-  return printf('%s <= %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s <= %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_sequalci(node)
@@ -501,31 +515,31 @@ function s:PythonCompiler.compile_sequalcs(node)
 endfunction
 
 function s:PythonCompiler.compile_match(node)
-  return printf('viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_matchci(node)
-  return printf('viml_eqregq(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('viml_eqregq(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_matchcs(node)
-  return printf('viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nomatch(node)
-  return printf('not viml_eqreg(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('not viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nomatchci(node)
-  return printf('not viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('not viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nomatchcs(node)
-  return printf('not viml_eqregh(%s, %s)', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('not viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_is(node)
-  return printf('%s is %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s is %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_isci(node)
@@ -537,7 +551,7 @@ function s:PythonCompiler.compile_iscs(node)
 endfunction
 
 function s:PythonCompiler.compile_isnot(node)
-  return printf('%s is not %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s is not %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_isnotci(node)
@@ -549,84 +563,82 @@ function s:PythonCompiler.compile_isnotcs(node)
 endfunction
 
 function s:PythonCompiler.compile_add(node)
-  return printf('%s + %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s + %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_subtract(node)
-  return printf('%s - %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s - %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_concat(node)
-  return printf('%s + %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s + %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_multiply(node)
-  return printf('%s * %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s * %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_divide(node)
-  return printf('%s // %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s // %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_remainder(node)
-  return printf('%s %% %s', self.compile(a:node.lhs), self.compile(a:node.rhs))
+  return printf('%s %% %s', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_not(node)
-  return printf('not %s', self.compile(a:node.expr))
+  return printf('not %s', self.compile(a:node.left))
 endfunction
 
 function s:PythonCompiler.compile_plus(node)
-  return printf('+%s', self.compile(a:node.expr))
+  return printf('+%s', self.compile(a:node.left))
 endfunction
 
 function s:PythonCompiler.compile_minus(node)
-  return printf('-%s', self.compile(a:node.expr))
+  return printf('-%s', self.compile(a:node.left))
 endfunction
 
 function s:PythonCompiler.compile_subscript(node)
-  let expr = self.compile(a:node.expr)
-  let expr1 = self.compile(a:node.expr1)
-  if expr == 'self'
-    return printf('getattr(%s, %s)', expr, expr1)
+  let left = self.compile(a:node.left)
+  let right = self.compile(a:node.right)
+  if left == 'self'
+    return printf('getattr(%s, %s)', left, right)
   else
-    return printf('%s[%s]', expr, expr1)
+    return printf('%s[%s]', left, right)
   endif
 endfunction
 
 function s:PythonCompiler.compile_slice(node)
-  let expr1 = a:node.expr1 is s:NIL ? 'nil' : self.compile(a:node.expr1)
-  let expr2 = a:node.expr2 is s:NIL ? 'nil' : self.compile(a:node.expr2)
-  return printf('%s[%s : %s]', self.compile(a:node.expr), expr1, expr2)
+  throw 'NotImplemented: slice'
 endfunction
 
 function s:PythonCompiler.compile_dot(node)
-  let lhs = self.compile(a:node.lhs)
-  let rhs = self.compile(a:node.rhs)
-  if rhs =~ '^\(else\|finally\)$'
-    let rhs = '_' . rhs
+  let left = self.compile(a:node.left)
+  let right = self.compile(a:node.right)
+  if right =~ '^\(else\|finally\)$'
+    let right = '_' . right
   endif
-  return printf('%s.%s', lhs, rhs)
+  return printf('%s.%s', left, right)
 endfunction
 
 function s:PythonCompiler.compile_call(node)
-  let args = map(a:node.args, 'self.compile(v:val)')
-  let expr = self.compile(a:node.expr)
-  if expr == 'map'
-    let r = s:StringReader.new([eval(args[1])])
+  let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  let left = self.compile(a:node.left)
+  if left == 'map'
+    let r = s:StringReader.new([eval(rlist[1])])
     let p = s:ExprParser.new(s:ExprTokenizer.new(r))
     let n = p.parse()
-    return printf('[%s for vval in %s]', self.compile(n), args[0])
-  elseif expr == 'call' && args[0][0] =~ '[''"]'
-    return printf('viml_%s(*%s)', args[0][1:-2], args[1])
+    return printf('[%s for vval in %s]', self.compile(n), rlist[0])
+  elseif left == 'call' && rlist[0][0] =~ '[''"]'
+    return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
   endif
-  if expr =~ '\.new$'
-    let expr = matchstr(expr, '.*\ze\.new$')
+  if left =~ '\.new$'
+    let left = matchstr(left, '.*\ze\.new$')
   endif
-  if index(s:viml_builtin_functions, expr) != -1
-    let expr = printf('viml_%s', expr)
+  if index(s:viml_builtin_functions, left) != -1
+    let left = printf('viml_%s', left)
   endif
-  return printf('%s(%s)', expr, join(args, ', '))
+  return printf('%s(%s)', left, join(rlist, ', '))
 endfunction
 
 function s:PythonCompiler.compile_number(node)
@@ -643,25 +655,25 @@ function s:PythonCompiler.compile_string(node)
 endfunction
 
 function s:PythonCompiler.compile_list(node)
-  let items = map(a:node.items, 'self.compile(v:val)')
-  if empty(items)
+  let value = map(a:node.value, 'self.compile(v:val)')
+  if empty(value)
     return '[]'
   else
-    return printf('[%s]', join(items, ', '))
+    return printf('[%s]', join(value, ', '))
   endif
 endfunction
 
 function s:PythonCompiler.compile_dict(node)
-  let items = map(a:node.items, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
-  if empty(items)
+  let value = map(a:node.value, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
+  if empty(value)
     return 'AttributeDict({})'
   else
-    return printf('AttributeDict({%s})', join(items, ', '))
+    return printf('AttributeDict({%s})', join(value, ', '))
   endif
 endfunction
 
 function s:PythonCompiler.compile_nesting(node)
-  return '(' . self.compile(a:node.expr) . ')'
+  return '(' . self.compile(a:node.left) . ')'
 endfunction
 
 function s:PythonCompiler.compile_option(node)
