@@ -229,7 +229,6 @@ endfunction
 
 function s:ExArg()
   let ea = {}
-  let ea = {}
   let ea.forceit = 0
   let ea.addr_count = 0
   let ea.line1 = 0
