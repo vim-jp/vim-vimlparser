@@ -714,7 +714,7 @@ function s:VimLParser.parse_command()
   if self.ea.cmd.name ==# 'write' || self.ea.cmd.name ==# 'update'
     if self.reader.peekn(1) ==# '>'
       call self.reader.getn(1)
-      if self.reader.peekn(1) ==# '>'
+      if self.reader.peekn(1) !=# '>'
         throw self.err('VimLParser: E494: Use w or w>>')
       endif
       call self.reader.skip_white()
