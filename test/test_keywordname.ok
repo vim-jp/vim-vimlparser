@@ -1,0 +1,2 @@
+(echo (dot foo is))
+(echo (dot foo isnot))
