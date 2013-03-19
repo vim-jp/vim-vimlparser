@@ -326,7 +326,7 @@ def isnamec(c):
     return viml_eqregh(c, "^[0-9A-Za-z_:#]$")
 
 def isnamec1(c):
-    return viml_eqregh(c, "^[0-9A-Za-z_]$")
+    return viml_eqregh(c, "^[A-Za-z_]$")
 
 # FIXME:
 def isidc(c):
@@ -2260,12 +2260,10 @@ class ExprParser:
                 left = node
             elif not iswhite(c) and token.type == TOKEN_DOT:
                 # SUBSCRIPT or CONCAT
-                npos = token.pos
                 c = self.reader.peek()
-                token = self.tokenizer.peek()
-                if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
+                if isnamec1(c):
                     node = Node(NODE_DOT)
-                    node.pos = npos
+                    node.pos = token.pos
                     node.left = left
                     node.right = self.parse_identifier()
                 else:
@@ -2474,12 +2472,11 @@ class LvalueParser(ExprParser):
                 left = node
             elif token.type == TOKEN_DOT:
                 # SUBSCRIPT or CONCAT
-                npos = token.pos
                 c = self.reader.peek()
                 token = self.tokenizer.peek()
-                if not iswhite(c) and token.type == TOKEN_IDENTIFIER:
+                if isnamec1(c):
                     node = Node(NODE_DOT)
-                    node.pos = npos
+                    node.pos = token.pos
                     node.left = left
                     node.right = self.parse_identifier()
                 else:
