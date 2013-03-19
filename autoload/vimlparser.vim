@@ -3242,7 +3242,6 @@ function! s:LvalueParser.parse_lv8()
     elseif token.type == s:TOKEN_DOT
       " SUBSCRIPT or CONCAT
       let c = self.reader.peek()
-      let token = self.tokenizer.peek()
       if s:isnamec1(c)
         let node = s:Node(s:NODE_DOT)
         let node.pos = token.pos
