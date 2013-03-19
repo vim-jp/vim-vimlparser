@@ -1609,7 +1609,7 @@ function s:VimLParser.parse_cmd_execute()
 endfunction
 
 function s:VimLParser.parse_expr()
-  return s:ExprParser.new(s:ExprTokenizer.new(self.reader)).parse()
+  return s:ExprParser.new(self.reader).parse()
 endfunction
 
 function s:VimLParser.parse_exprlist()
@@ -1628,7 +1628,7 @@ endfunction
 
 " FIXME:
 function s:VimLParser.parse_lvalue()
-  let p = s:LvalueParser.new(s:ExprTokenizer.new(self.reader))
+  let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
   if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
     return node
@@ -2551,8 +2551,9 @@ function s:ExprParser.new(...)
   return obj
 endfunction
 
-function s:ExprParser.__init__(tokenizer)
-  let self.tokenizer = a:tokenizer
+function s:ExprParser.__init__(reader)
+  let self.reader = a:reader
+  let self.tokenizer = s:ExprTokenizer.new(a:reader)
 endfunction
 
 function s:ExprParser.parse()
@@ -2562,7 +2563,7 @@ endfunction
 " expr1: expr2 ? expr1 : expr1
 function s:ExprParser.parse_expr1()
   let left = self.parse_expr2()
-  let pos = self.tokenizer.reader.tell()
+  let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_QUESTION
     let node = s:Node(s:NODE_TERNARY)
@@ -2576,7 +2577,7 @@ function s:ExprParser.parse_expr1()
     let node.right = self.parse_expr1()
     let left = node
   else
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
   endif
   return left
 endfunction
@@ -2585,7 +2586,7 @@ endfunction
 function s:ExprParser.parse_expr2()
   let left = self.parse_expr3()
   while 1
-    let pos = self.tokenizer.reader.tell()
+    let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_OROR
       let node = s:Node(s:NODE_OR)
@@ -2594,7 +2595,7 @@ function s:ExprParser.parse_expr2()
       let node.right = self.parse_expr3()
       let left = node
     else
-      call self.tokenizer.reader.seek_set(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2605,7 +2606,7 @@ endfunction
 function s:ExprParser.parse_expr3()
   let left = self.parse_expr4()
   while 1
-    let pos = self.tokenizer.reader.tell()
+    let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_ANDAND
       let node = s:Node(s:NODE_AND)
@@ -2614,7 +2615,7 @@ function s:ExprParser.parse_expr3()
       let node.right = self.parse_expr4()
       let left = node
     else
-      call self.tokenizer.reader.seek_set(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2638,7 +2639,7 @@ endfunction
 "        expr5 isnot expr5
 function s:ExprParser.parse_expr4()
   let left = self.parse_expr5()
-  let pos = self.tokenizer.reader.tell()
+  let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_EQEQ
     let node = s:Node(s:NODE_EQUAL)
@@ -2821,7 +2822,7 @@ function s:ExprParser.parse_expr4()
     let node.right = self.parse_expr5()
     let left = node
   else
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
   endif
   return left
 endfunction
@@ -2832,7 +2833,7 @@ endfunction
 function s:ExprParser.parse_expr5()
   let left = self.parse_expr6()
   while 1
-    let pos = self.tokenizer.reader.tell()
+    let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_PLUS
       let node = s:Node(s:NODE_ADD)
@@ -2853,7 +2854,7 @@ function s:ExprParser.parse_expr5()
       let node.right = self.parse_expr6()
       let left = node
     else
-      call self.tokenizer.reader.seek_set(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2866,7 +2867,7 @@ endfunction
 function s:ExprParser.parse_expr6()
   let left = self.parse_expr7()
   while 1
-    let pos = self.tokenizer.reader.tell()
+    let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_STAR
       let node = s:Node(s:NODE_MULTIPLY)
@@ -2887,7 +2888,7 @@ function s:ExprParser.parse_expr6()
       let node.right = self.parse_expr7()
       let left = node
     else
-      call self.tokenizer.reader.seek_set(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -2898,7 +2899,7 @@ endfunction
 "        - expr7
 "        + expr7
 function s:ExprParser.parse_expr7()
-  let pos = self.tokenizer.reader.tell()
+  let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_NOT
     let node = s:Node(s:NODE_NOT)
@@ -2913,7 +2914,7 @@ function s:ExprParser.parse_expr7()
     let node.pos = token.pos
     let node.left = self.parse_expr7()
   else
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
     let node = self.parse_expr8()
   endif
   return node
@@ -2926,8 +2927,8 @@ endfunction
 function s:ExprParser.parse_expr8()
   let left = self.parse_expr9()
   while 1
-    let pos = self.tokenizer.reader.tell()
-    let c = self.tokenizer.reader.peek()
+    let pos = self.reader.tell()
+    let c = self.reader.peek()
     let token = self.tokenizer.get()
     if !s:iswhite(c) && token.type == s:TOKEN_SQOPEN
       let npos = token.pos
@@ -2996,7 +2997,7 @@ function s:ExprParser.parse_expr8()
     elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
       " SUBSCRIPT or CONCAT
       let npos = token.pos
-      let c = self.tokenizer.reader.peek()
+      let c = self.reader.peek()
       let token = self.tokenizer.peek()
       if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
         let node = s:Node(s:NODE_DOT)
@@ -3005,12 +3006,12 @@ function s:ExprParser.parse_expr8()
         let node.right = self.parse_identifier()
       else
         " to be CONCAT
-        call self.tokenizer.reader.seek_set(pos)
+        call self.reader.seek_set(pos)
         break
       endif
       let left = node
     else
-      call self.tokenizer.reader.seek_set(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -3031,19 +3032,19 @@ endfunction
 "        function(expr1, ...)
 "        func{ti}on(expr1, ...)
 function s:ExprParser.parse_expr9()
-  let pos = self.tokenizer.reader.tell()
+  let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_NUMBER
     let node = s:Node(s:NODE_NUMBER)
     let node.pos = token.pos
     let node.value = token.value
   elseif token.type == s:TOKEN_DQUOTE
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
     let node = s:Node(s:NODE_STRING)
     let node.pos = token.pos
     let node.value = '"' . self.tokenizer.get_dstring() . '"'
   elseif token.type == s:TOKEN_SQUOTE
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
     let node = s:Node(s:NODE_STRING)
     let node.pos = token.pos
     let node.value = "'" . self.tokenizer.get_sstring() . "'"
@@ -3087,7 +3088,7 @@ function s:ExprParser.parse_expr9()
           if !empty(node.value)
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
-          call self.tokenizer.reader.seek_set(pos)
+          call self.reader.seek_set(pos)
           let node = self.parse_identifier()
           break
         endif
@@ -3122,10 +3123,10 @@ function s:ExprParser.parse_expr9()
     let node.pos = token.pos
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_LT && self.tokenizer.reader.peekn(4) ==? 'SID>'
-    call self.tokenizer.reader.seek_set(pos)
+  elseif token.type == s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
+    call self.reader.seek_set(pos)
     let node = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
     let node = s:Node(s:NODE_ENV)
@@ -3143,27 +3144,27 @@ endfunction
 
 function s:ExprParser.parse_identifier()
   let id = []
-  call self.tokenizer.reader.skip_white()
-  let npos = self.tokenizer.reader.getpos()
-  let c = self.tokenizer.reader.peek()
-  if c ==# '<' && self.tokenizer.reader.peekn(5) ==? '<SID>'
-    let name = self.tokenizer.reader.getn(5)
+  call self.reader.skip_white()
+  let npos = self.reader.getpos()
+  let c = self.reader.peek()
+  if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
+    let name = self.reader.getn(5)
     call add(id, {'curly': 0, 'value': name})
   endif
   while 1
-    let c = self.tokenizer.reader.peek()
+    let c = self.reader.peek()
     if s:isnamec(c)
-      let name = self.tokenizer.reader.read_name()
+      let name = self.reader.read_name()
       call add(id, {'curly': 0, 'value': name})
     elseif c ==# '{'
-      call self.tokenizer.reader.get()
+      call self.reader.get()
       let node = self.parse_expr1()
-      call self.tokenizer.reader.skip_white()
-      let c = self.tokenizer.reader.p(0)
+      call self.reader.skip_white()
+      let c = self.reader.p(0)
       if c !=# '}'
         throw s:Err(printf('unexpected token: %s', c), self.reader.getpos())
       endif
-      call self.tokenizer.reader.seek_cur(1)
+      call self.reader.seek_cur(1)
       call add(id, {'curly': 1, 'value': node})
     else
       break
@@ -3193,8 +3194,8 @@ endfunction
 function! s:LvalueParser.parse_lv8()
   let left = self.parse_lv9()
   while 1
-    let pos = self.tokenizer.reader.tell()
-    let c = self.tokenizer.reader.peek()
+    let pos = self.reader.tell()
+    let c = self.reader.peek()
     let token = self.tokenizer.get()
     if !s:iswhite(c) && token.type == s:TOKEN_SQOPEN
       let npos = token.pos
@@ -3243,7 +3244,7 @@ function! s:LvalueParser.parse_lv8()
     elseif token.type == s:TOKEN_DOT
       " SUBSCRIPT or CONCAT
       let npos = token.pos
-      let c = self.tokenizer.reader.peek()
+      let c = self.reader.peek()
       let token = self.tokenizer.peek()
       if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
         let node = s:Node(s:NODE_DOT)
@@ -3252,12 +3253,12 @@ function! s:LvalueParser.parse_lv8()
         let node.right = self.parse_identifier()
       else
         " to be CONCAT
-        call self.tokenizer.reader.seek_set(pos)
+        call self.reader.seek_set(pos)
         break
       endif
       let left = node
     else
-      call self.tokenizer.reader.seek_set(pos)
+      call self.reader.seek_set(pos)
       break
     endif
   endwhile
@@ -3270,20 +3271,20 @@ endfunction
 "        $VAR
 "        @r
 function! s:LvalueParser.parse_lv9()
-  let pos = self.tokenizer.reader.tell()
+  let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_COPEN
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
     let node = self.parse_identifier()
   elseif token.type == s:TOKEN_OPTION
     let node = s:Node(s:NODE_OPTION)
     let node.pos = token.pos
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
-    call self.tokenizer.reader.seek_set(pos)
+    call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_LT && self.tokenizer.reader.peekn(4) ==? 'SID>'
-    call self.tokenizer.reader.seek_set(pos)
+  elseif token.type == s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
+    call self.reader.seek_set(pos)
     let node = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
     let node = s:Node(s:NODE_ENV)
