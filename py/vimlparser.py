@@ -2374,6 +2374,9 @@ class ExprParser:
         elif token.type == TOKEN_LT and self.reader.peekn(4).lower() == "SID>".lower():
             self.reader.seek_set(pos)
             node = self.parse_identifier()
+        elif token.type == TOKEN_IS or token.type == TOKEN_ISCS or token.type == TOKEN_ISNOT or token.type == TOKEN_ISNOTCS:
+            self.reader.seek_set(pos)
+            node = self.parse_identifier()
         elif token.type == TOKEN_ENV:
             node = Node(NODE_ENV)
             node.pos = token.pos
@@ -2473,7 +2476,6 @@ class LvalueParser(ExprParser):
             elif token.type == TOKEN_DOT:
                 # SUBSCRIPT or CONCAT
                 c = self.reader.peek()
-                token = self.tokenizer.peek()
                 if isnamec1(c):
                     node = Node(NODE_DOT)
                     node.pos = token.pos
