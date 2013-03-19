@@ -219,7 +219,7 @@ function s:isnamec(c)
 endfunction
 
 function s:isnamec1(c)
-  return a:c =~# '^[0-9A-Za-z_]$'
+  return a:c =~# '^[A-Za-z_]$'
 endfunction
 
 " FIXME:
