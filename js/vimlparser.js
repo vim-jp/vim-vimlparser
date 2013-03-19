@@ -379,7 +379,6 @@ function isidc(c) {
 
 function ExArg() {
     var ea = {};
-    var ea = {};
     ea.forceit = 0;
     ea.addr_count = 0;
     ea.line1 = 0;
@@ -409,6 +408,7 @@ function ExArg() {
 
 // struct node {
 //   int     type
+//   pos     pos
 //   node    left
 //   node    right
 //   node    cond
@@ -514,21 +514,13 @@ function Node(type) {
     return {"type":type};
 }
 
+function Err(msg, pos) {
+    return viml_printf("vimlparser: %s: line %d col %d", msg, pos.lnum, pos.col);
+}
+
 function VimLParser() { this.__init__.apply(this, arguments); }
 VimLParser.prototype.__init__ = function() {
     this.find_command_cache = {};
-}
-
-VimLParser.prototype.err = function() {
-    var a000 = Array.prototype.slice.call(arguments, 0);
-    var pos = this.reader.getpos();
-    if (viml_len(a000) == 1) {
-        var msg = a000[0];
-    }
-    else {
-        var msg = viml_printf.apply(null, a000);
-    }
-    return viml_printf("%s: line %d col %d", msg, pos.lnum, pos.col);
 }
 
 VimLParser.prototype.push_context = function(node) {
@@ -556,33 +548,33 @@ VimLParser.prototype.add_node = function(node) {
     viml_add(this.context[0].body, node);
 }
 
-VimLParser.prototype.check_missing_endfunction = function(ends) {
+VimLParser.prototype.check_missing_endfunction = function(ends, pos) {
     if (this.context[0].type == NODE_FUNCTION) {
-        throw this.err("VimLParser: E126: Missing :endfunction:    %s", ends);
+        throw Err(viml_printf("E126: Missing :endfunction:    %s", ends), pos);
     }
 }
 
-VimLParser.prototype.check_missing_endif = function(ends) {
+VimLParser.prototype.check_missing_endif = function(ends, pos) {
     if (this.context[0].type == NODE_IF || this.context[0].type == NODE_ELSEIF || this.context[0].type == NODE_ELSE) {
-        throw this.err("VimLParser: E171: Missing :endif:    %s", ends);
+        throw Err(viml_printf("E171: Missing :endif:    %s", ends), pos);
     }
 }
 
-VimLParser.prototype.check_missing_endtry = function(ends) {
+VimLParser.prototype.check_missing_endtry = function(ends, pos) {
     if (this.context[0].type == NODE_TRY || this.context[0].type == NODE_CATCH || this.context[0].type == NODE_FINALLY) {
-        throw this.err("VimLParser: E600: Missing :endtry:    %s", ends);
+        throw Err(viml_printf("E600: Missing :endtry:    %s", ends), pos);
     }
 }
 
-VimLParser.prototype.check_missing_endwhile = function(ends) {
+VimLParser.prototype.check_missing_endwhile = function(ends, pos) {
     if (this.context[0].type == NODE_WHILE) {
-        throw this.err("VimLParser: E170: Missing :endwhile:    %s", ends);
+        throw Err(viml_printf("E170: Missing :endwhile:    %s", ends), pos);
     }
 }
 
-VimLParser.prototype.check_missing_endfor = function(ends) {
+VimLParser.prototype.check_missing_endfor = function(ends, pos) {
     if (this.context[0].type == NODE_FOR) {
-        throw this.err("VimLParser: E170: Missing :endfor:    %s", ends);
+        throw Err(viml_printf("E170: Missing :endfor:    %s", ends), pos);
     }
 }
 
@@ -595,11 +587,11 @@ VimLParser.prototype.parse = function(reader) {
     while (this.reader.peek() != "<EOF>") {
         this.parse_one_cmd();
     }
-    this.check_missing_endfunction("TOPLEVEL");
-    this.check_missing_endif("TOPLEVEL");
-    this.check_missing_endtry("TOPLEVEL");
-    this.check_missing_endwhile("TOPLEVEL");
-    this.check_missing_endfor("TOPLEVEL");
+    this.check_missing_endfunction("TOPLEVEL", this.reader.getpos());
+    this.check_missing_endif("TOPLEVEL", this.reader.getpos());
+    this.check_missing_endtry("TOPLEVEL", this.reader.getpos());
+    this.check_missing_endwhile("TOPLEVEL", this.reader.getpos());
+    this.check_missing_endfor("TOPLEVEL", this.reader.getpos());
     this.pop_context();
     return toplevel;
 }
@@ -789,13 +781,13 @@ VimLParser.prototype.parse_range = function() {
                 viml_add(tokens, pattern);
             }
             else if (c == "\\") {
-                this.reader.getn(1);
-                var m = this.reader.getn(1);
+                var m = this.reader.p(1);
                 if (m == "&" || m == "?" || m == "/") {
+                    this.reader.seek_cur(2);
                     viml_add(tokens, "\\" + m);
                 }
                 else {
-                    throw this.err("VimLParser: E10: \\\\ should be followed by /, ? or &");
+                    throw Err("E10: \\\\ should be followed by /, ? or &", this.reader.getpos());
                 }
             }
             else if (isdigit(c)) {
@@ -852,10 +844,11 @@ VimLParser.prototype.parse_pattern = function(delimiter) {
         }
         pattern += c;
         if (c == "\\") {
-            var c = this.reader.getn(1);
+            var c = this.reader.peekn(1);
             if (c == "") {
-                throw this.err("VimLParser: E682: Invalid search pattern or delimiter");
+                throw Err("E682: Invalid search pattern or delimiter", this.reader.getpos());
             }
+            this.reader.getn(1);
             pattern += c;
         }
         else if (c == "[") {
@@ -870,17 +863,16 @@ VimLParser.prototype.parse_pattern = function(delimiter) {
 
 VimLParser.prototype.parse_command = function() {
     this.reader.skip_white_and_colon();
+    this.ea.cmdpos = this.reader.getpos();
     if (this.reader.peekn(1) == "" || this.reader.peekn(1) == "\"") {
         if (!viml_empty(this.ea.modifiers) || !viml_empty(this.ea.range)) {
             this.parse_cmd_modifier_range();
         }
         return;
     }
-    this.ea.cmdpos = this.reader.getpos();
     this.ea.cmd = this.find_command();
     if (this.ea.cmd === NIL) {
-        this.reader.setpos(this.ea.cmdpos);
-        throw this.err("VimLParser: E492: Not an editor command: %s", this.reader.peekline());
+        throw Err(viml_printf("E492: Not an editor command: %s", this.reader.peekline()), this.ea.cmdpos);
     }
     if (this.reader.peekn(1) == "!" && this.ea.cmd.name != "substitute" && this.ea.cmd.name != "smagic" && this.ea.cmd.name != "snomagic") {
         this.reader.getn(1);
@@ -890,7 +882,7 @@ VimLParser.prototype.parse_command = function() {
         this.ea.forceit = 0;
     }
     if (!viml_eqregh(this.ea.cmd.flags, "\\<BANG\\>") && this.ea.forceit) {
-        throw this.err("VimLParser: E477: No ! allowed");
+        throw Err("E477: No ! allowed", this.ea.cmdpos);
     }
     if (this.ea.cmd.name != "!") {
         this.reader.skip_white();
@@ -900,11 +892,11 @@ VimLParser.prototype.parse_command = function() {
         this.parse_argopt();
     }
     if (this.ea.cmd.name == "write" || this.ea.cmd.name == "update") {
-        if (this.reader.peekn(1) == ">") {
-            this.reader.getn(1);
-            if (this.reader.peekn(1) == ">") {
-                throw this.err("VimLParser: E494: Use w or w>>");
+        if (this.reader.p(0) == ">") {
+            if (this.reader.p(1) != ">") {
+                throw Err("E494: Use w or w>>", this.ea.cmdpos);
             }
+            this.reader.seek_cur(2);
             this.reader.skip_white();
             this.ea.append = 1;
         }
@@ -1076,11 +1068,13 @@ VimLParser.prototype.read_cmdarg = function() {
 }
 
 VimLParser.prototype.parse_comment = function() {
+    var npos = this.reader.getpos();
     var c = this.reader.get();
     if (c != "\"") {
-        throw this.err("VimLParser: unexpected character: %s", c);
+        throw Err(viml_printf("unexpected character: %s", c), npos);
     }
     var node = Node(NODE_COMMENT);
+    node.pos = npos;
     node.str = this.reader.getn(-1);
     this.add_node(node);
 }
@@ -1102,13 +1096,14 @@ VimLParser.prototype.parse_trail = function() {
         this.reader.get();
     }
     else {
-        throw this.err("VimLParser: E488: Trailing characters: %s", c);
+        throw Err(viml_printf("E488: Trailing characters: %s", c), this.reader.getpos());
     }
 }
 
 // modifier or range only command line
 VimLParser.prototype.parse_cmd_modifier_range = function() {
     var node = Node(NODE_EXCMD);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = this.reader.getstr(this.ea.linepos, this.reader.getpos());
     this.add_node(node);
@@ -1136,6 +1131,7 @@ VimLParser.prototype.parse_cmd_common = function() {
         }
     }
     var node = Node(NODE_EXCMD);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = this.reader.getstr(this.ea.linepos, end);
     this.add_node(node);
@@ -1170,10 +1166,11 @@ VimLParser.prototype.separate_nextcmd = function() {
         else if (this.reader.peekn(2) == "`=" && viml_eqregh(this.ea.cmd.flags, "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>")) {
             this.reader.getn(2);
             this.parse_expr();
-            var c = this.reader.getn(1);
+            var c = this.reader.peekn(1);
             if (c != "`") {
-                throw this.err("VimLParser: unexpected character: %s", c);
+                throw Err(viml_printf("unexpected character: %s", c), this.reader.getpos());
             }
+            this.reader.getn(1);
         }
         else if (c == "|" || c == "\n" || (c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && ((this.ea.cmd.name != "@" && this.ea.cmd.name != "*") || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@"))) {
             var has_cpo_bar = 0;
@@ -1237,6 +1234,7 @@ VimLParser.prototype.parse_cmd_append = function() {
         this.reader.get();
     }
     var node = Node(NODE_EXCMD);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = viml_join(lines, "\n");
     this.add_node(node);
@@ -1258,6 +1256,7 @@ VimLParser.prototype.parse_cmd_loadkeymap = function() {
         viml_add(lines, line);
     }
     var node = Node(NODE_EXCMD);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = viml_join(lines, "\n");
     this.add_node(node);
@@ -1294,6 +1293,7 @@ VimLParser.prototype.parse_cmd_lua = function() {
         var lines = [cmdline];
     }
     var node = Node(NODE_EXCMD);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = viml_join(lines, "\n");
     this.add_node(node);
@@ -1357,6 +1357,7 @@ VimLParser.prototype.parse_cmd_function = function() {
     }
     // :function[!] {name}([arguments]) [range] [abort] [dict]
     var node = Node(NODE_FUNCTION);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.left = left;
@@ -1373,6 +1374,7 @@ VimLParser.prototype.parse_cmd_function = function() {
             var token = tokenizer.get();
             if (token.type == TOKEN_IDENTIFIER) {
                 var varnode = Node(NODE_IDENTIFIER);
+                varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
                 var token = tokenizer.get();
@@ -1382,11 +1384,12 @@ VimLParser.prototype.parse_cmd_function = function() {
                     break;
                 }
                 else {
-                    throw this.err("VimLParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
             }
             else if (token.type == TOKEN_DOTDOTDOT) {
                 var varnode = Node(NODE_IDENTIFIER);
+                varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
                 var token = tokenizer.get();
@@ -1394,16 +1397,17 @@ VimLParser.prototype.parse_cmd_function = function() {
                     break;
                 }
                 else {
-                    throw this.err("VimLParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
             }
             else {
-                throw this.err("VimLParser: unexpected token: %s", token.value);
+                throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
             }
         }
     }
     while (1) {
         this.reader.skip_white();
+        var epos = this.reader.getpos();
         var key = this.reader.read_alpha();
         if (key == "") {
             break;
@@ -1418,7 +1422,7 @@ VimLParser.prototype.parse_cmd_function = function() {
             node.attr.dict = 1;
         }
         else {
-            throw this.err("VimLParser: unexpected token: %s", key);
+            throw Err(viml_printf("unexpected token: %s", key), epos);
         }
     }
     this.add_node(node);
@@ -1426,15 +1430,16 @@ VimLParser.prototype.parse_cmd_function = function() {
 }
 
 VimLParser.prototype.parse_cmd_endfunction = function() {
-    this.check_missing_endif("ENDFUNCTION");
-    this.check_missing_endtry("ENDFUNCTION");
-    this.check_missing_endwhile("ENDFUNCTION");
-    this.check_missing_endfor("ENDFUNCTION");
+    this.check_missing_endif("ENDFUNCTION", this.ea.cmdpos);
+    this.check_missing_endtry("ENDFUNCTION", this.ea.cmdpos);
+    this.check_missing_endwhile("ENDFUNCTION", this.ea.cmdpos);
+    this.check_missing_endfor("ENDFUNCTION", this.ea.cmdpos);
     if (this.context[0].type != NODE_FUNCTION) {
-        throw this.err("VimLParser: E193: :endfunction not inside a function");
+        throw Err("E193: :endfunction not inside a function", this.ea.cmdpos);
     }
     this.reader.getn(-1);
     var node = Node(NODE_ENDFUNCTION);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.context[0].endfunction = node;
     this.pop_context();
@@ -1442,6 +1447,7 @@ VimLParser.prototype.parse_cmd_endfunction = function() {
 
 VimLParser.prototype.parse_cmd_delfunction = function() {
     var node = Node(NODE_DELFUNCTION);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.left = this.parse_lvalue();
     this.add_node(node);
@@ -1449,9 +1455,10 @@ VimLParser.prototype.parse_cmd_delfunction = function() {
 
 VimLParser.prototype.parse_cmd_return = function() {
     if (this.find_context(NODE_FUNCTION) == -1) {
-        throw this.err("VimLParser: E133: :return not inside a function");
+        throw Err("E133: :return not inside a function", this.ea.cmdpos);
     }
     var node = Node(NODE_RETURN);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.left = NIL;
     this.reader.skip_white();
@@ -1464,15 +1471,16 @@ VimLParser.prototype.parse_cmd_return = function() {
 
 VimLParser.prototype.parse_cmd_call = function() {
     var node = Node(NODE_EXCALL);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.reader.skip_white();
     var c = this.reader.peek();
     if (this.ends_excmds(c)) {
-        throw this.err("VimLParser: call error: %s", c);
+        throw Err("E471: Argument required", this.reader.getpos());
     }
     node.left = this.parse_expr();
     if (node.left.type != NODE_CALL) {
-        throw this.err("VimLParser: call error: %s", node.left.type);
+        throw Err("Not an function call", node.left.pos);
     }
     this.add_node(node);
 }
@@ -1496,6 +1504,7 @@ VimLParser.prototype.parse_cmd_let = function() {
     }
     // :let left op right
     var node = Node(NODE_LET);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.op = "";
     node.left = lhs.left;
@@ -1519,6 +1528,7 @@ VimLParser.prototype.parse_cmd_let = function() {
 
 VimLParser.prototype.parse_cmd_unlet = function() {
     var node = Node(NODE_UNLET);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.list = this.parse_lvaluelist();
     this.add_node(node);
@@ -1526,6 +1536,7 @@ VimLParser.prototype.parse_cmd_unlet = function() {
 
 VimLParser.prototype.parse_cmd_lockvar = function() {
     var node = Node(NODE_LOCKVAR);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.depth = NIL;
     node.list = [];
@@ -1539,6 +1550,7 @@ VimLParser.prototype.parse_cmd_lockvar = function() {
 
 VimLParser.prototype.parse_cmd_unlockvar = function() {
     var node = Node(NODE_UNLOCKVAR);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.depth = NIL;
     node.list = [];
@@ -1552,6 +1564,7 @@ VimLParser.prototype.parse_cmd_unlockvar = function() {
 
 VimLParser.prototype.parse_cmd_if = function() {
     var node = Node(NODE_IF);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.cond = this.parse_expr();
@@ -1564,12 +1577,13 @@ VimLParser.prototype.parse_cmd_if = function() {
 
 VimLParser.prototype.parse_cmd_elseif = function() {
     if (this.context[0].type != NODE_IF && this.context[0].type != NODE_ELSEIF) {
-        throw this.err("VimLParser: E582: :elseif without :if");
+        throw Err("E582: :elseif without :if", this.ea.cmdpos);
     }
     if (this.context[0].type != NODE_IF) {
         this.pop_context();
     }
     var node = Node(NODE_ELSEIF);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.cond = this.parse_expr();
@@ -1579,12 +1593,13 @@ VimLParser.prototype.parse_cmd_elseif = function() {
 
 VimLParser.prototype.parse_cmd_else = function() {
     if (this.context[0].type != NODE_IF && this.context[0].type != NODE_ELSEIF) {
-        throw this.err("VimLParser: E581: :else without :if");
+        throw Err("E581: :else without :if", this.ea.cmdpos);
     }
     if (this.context[0].type != NODE_IF) {
         this.pop_context();
     }
     var node = Node(NODE_ELSE);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     this.context[0]._else = node;
@@ -1593,12 +1608,13 @@ VimLParser.prototype.parse_cmd_else = function() {
 
 VimLParser.prototype.parse_cmd_endif = function() {
     if (this.context[0].type != NODE_IF && this.context[0].type != NODE_ELSEIF && this.context[0].type != NODE_ELSE) {
-        throw this.err("VimLParser: E580: :endif without :if");
+        throw Err("E580: :endif without :if", this.ea.cmdpos);
     }
     if (this.context[0].type != NODE_IF) {
         this.pop_context();
     }
     var node = Node(NODE_ENDIF);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.context[0].endif = node;
     this.pop_context();
@@ -1606,6 +1622,7 @@ VimLParser.prototype.parse_cmd_endif = function() {
 
 VimLParser.prototype.parse_cmd_while = function() {
     var node = Node(NODE_WHILE);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.cond = this.parse_expr();
@@ -1616,9 +1633,10 @@ VimLParser.prototype.parse_cmd_while = function() {
 
 VimLParser.prototype.parse_cmd_endwhile = function() {
     if (this.context[0].type != NODE_WHILE) {
-        throw this.err("VimLParser: E588: :endwhile without :while");
+        throw Err("E588: :endwhile without :while", this.ea.cmdpos);
     }
     var node = Node(NODE_ENDWHILE);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.context[0].endwhile = node;
     this.pop_context();
@@ -1626,6 +1644,7 @@ VimLParser.prototype.parse_cmd_endwhile = function() {
 
 VimLParser.prototype.parse_cmd_for = function() {
     var node = Node(NODE_FOR);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.left = NIL;
@@ -1636,8 +1655,9 @@ VimLParser.prototype.parse_cmd_for = function() {
     node.list = lhs.list;
     node.rest = lhs.rest;
     this.reader.skip_white();
+    var epos = this.reader.getpos();
     if (this.reader.read_alpha() != "in") {
-        throw this.err("VimLParser: Missing \"in\" after :for");
+        throw Err("Missing \"in\" after :for", epos);
     }
     node.right = this.parse_expr();
     this.add_node(node);
@@ -1646,9 +1666,10 @@ VimLParser.prototype.parse_cmd_for = function() {
 
 VimLParser.prototype.parse_cmd_endfor = function() {
     if (this.context[0].type != NODE_FOR) {
-        throw this.err("VimLParser: E588: :endfor without :for");
+        throw Err("E588: :endfor without :for", this.ea.cmdpos);
     }
     var node = Node(NODE_ENDFOR);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.context[0].endfor = node;
     this.pop_context();
@@ -1656,24 +1677,27 @@ VimLParser.prototype.parse_cmd_endfor = function() {
 
 VimLParser.prototype.parse_cmd_continue = function() {
     if (this.find_context(NODE_WHILE) == -1 && this.find_context(NODE_FOR) == -1) {
-        throw this.err("VimLParser: E586: :continue without :while or :for");
+        throw Err("E586: :continue without :while or :for", this.ea.cmdpos);
     }
     var node = Node(NODE_CONTINUE);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.add_node(node);
 }
 
 VimLParser.prototype.parse_cmd_break = function() {
     if (this.find_context(NODE_WHILE) == -1 && this.find_context(NODE_FOR) == -1) {
-        throw this.err("VimLParser: E587: :break without :while or :for");
+        throw Err("E587: :break without :while or :for", this.ea.cmdpos);
     }
     var node = Node(NODE_BREAK);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.add_node(node);
 }
 
 VimLParser.prototype.parse_cmd_try = function() {
     var node = Node(NODE_TRY);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.catch = [];
@@ -1685,15 +1709,16 @@ VimLParser.prototype.parse_cmd_try = function() {
 
 VimLParser.prototype.parse_cmd_catch = function() {
     if (this.context[0].type == NODE_FINALLY) {
-        throw this.err("VimLParser: E604: :catch after :finally");
+        throw Err("E604: :catch after :finally", this.ea.cmdpos);
     }
     else if (this.context[0].type != NODE_TRY && this.context[0].type != NODE_CATCH) {
-        throw this.err("VimLParser: E603: :catch without :try");
+        throw Err("E603: :catch without :try", this.ea.cmdpos);
     }
     if (this.context[0].type != NODE_TRY) {
         this.pop_context();
     }
     var node = Node(NODE_CATCH);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     node.pattern = NIL;
@@ -1709,12 +1734,13 @@ VimLParser.prototype.parse_cmd_catch = function() {
 
 VimLParser.prototype.parse_cmd_finally = function() {
     if (this.context[0].type != NODE_TRY && this.context[0].type != NODE_CATCH) {
-        throw this.err("VimLParser: E606: :finally without :try");
+        throw Err("E606: :finally without :try", this.ea.cmdos);
     }
     if (this.context[0].type != NODE_TRY) {
         this.pop_context();
     }
     var node = Node(NODE_FINALLY);
+    node.pos = this.ea.cmdpos;
     node.body = [];
     node.ea = this.ea;
     this.context[0]._finally = node;
@@ -1723,12 +1749,13 @@ VimLParser.prototype.parse_cmd_finally = function() {
 
 VimLParser.prototype.parse_cmd_endtry = function() {
     if (this.context[0].type != NODE_TRY && this.context[0].type != NODE_CATCH && this.context[0].type != NODE_FINALLY) {
-        throw this.err("VimLParser: E602: :endtry without :try");
+        throw Err("E602: :endtry without :try", this.ea.cmdpos);
     }
     if (this.context[0].type != NODE_TRY) {
         this.pop_context();
     }
     var node = Node(NODE_ENDTRY);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     this.context[0].endtry = node;
     this.pop_context();
@@ -1736,6 +1763,7 @@ VimLParser.prototype.parse_cmd_endtry = function() {
 
 VimLParser.prototype.parse_cmd_throw = function() {
     var node = Node(NODE_THROW);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.left = this.parse_expr();
     this.add_node(node);
@@ -1743,6 +1771,7 @@ VimLParser.prototype.parse_cmd_throw = function() {
 
 VimLParser.prototype.parse_cmd_echo = function() {
     var node = Node(NODE_ECHO);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.list = this.parse_exprlist();
     this.add_node(node);
@@ -1750,6 +1779,7 @@ VimLParser.prototype.parse_cmd_echo = function() {
 
 VimLParser.prototype.parse_cmd_echon = function() {
     var node = Node(NODE_ECHON);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.list = this.parse_exprlist();
     this.add_node(node);
@@ -1757,6 +1787,7 @@ VimLParser.prototype.parse_cmd_echon = function() {
 
 VimLParser.prototype.parse_cmd_echohl = function() {
     var node = Node(NODE_ECHOHL);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = "";
     while (!this.ends_excmds(this.reader.peek())) {
@@ -1767,6 +1798,7 @@ VimLParser.prototype.parse_cmd_echohl = function() {
 
 VimLParser.prototype.parse_cmd_echomsg = function() {
     var node = Node(NODE_ECHOMSG);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.list = this.parse_exprlist();
     this.add_node(node);
@@ -1774,6 +1806,7 @@ VimLParser.prototype.parse_cmd_echomsg = function() {
 
 VimLParser.prototype.parse_cmd_echoerr = function() {
     var node = Node(NODE_ECHOERR);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.list = this.parse_exprlist();
     this.add_node(node);
@@ -1781,13 +1814,14 @@ VimLParser.prototype.parse_cmd_echoerr = function() {
 
 VimLParser.prototype.parse_cmd_execute = function() {
     var node = Node(NODE_EXECUTE);
+    node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.list = this.parse_exprlist();
     this.add_node(node);
 }
 
 VimLParser.prototype.parse_expr = function() {
-    return new ExprParser(new ExprTokenizer(this.reader)).parse();
+    return new ExprParser(this.reader).parse();
 }
 
 VimLParser.prototype.parse_exprlist = function() {
@@ -1806,12 +1840,12 @@ VimLParser.prototype.parse_exprlist = function() {
 
 // FIXME:
 VimLParser.prototype.parse_lvalue = function() {
-    var p = new LvalueParser(new ExprTokenizer(this.reader));
+    var p = new LvalueParser(this.reader);
     var node = p.parse();
     if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
         return node;
     }
-    throw this.err("VimLParser: lvalue error: %s", node.value);
+    throw Err("Invalid Expression", node.pos);
 }
 
 VimLParser.prototype.parse_lvaluelist = function() {
@@ -1854,11 +1888,11 @@ VimLParser.prototype.parse_letlhs = function() {
                     break;
                 }
                 else {
-                    throw this.err("VimLParser: E475 Invalid argument: %s", token.value);
+                    throw Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos);
                 }
             }
             else {
-                throw this.err("VimLParser: E475 Invalid argument: %s", token.value);
+                throw Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos);
             }
         }
     }
@@ -1879,20 +1913,8 @@ ExprTokenizer.prototype.__init__ = function(reader) {
     this.cache = {};
 }
 
-ExprTokenizer.prototype.err = function() {
-    var a000 = Array.prototype.slice.call(arguments, 0);
-    var pos = this.reader.getpos();
-    if (viml_len(a000) == 1) {
-        var msg = a000[0];
-    }
-    else {
-        var msg = viml_printf.apply(null, a000);
-    }
-    return viml_printf("%s: line %d col %d", msg, pos.lnum, pos.col);
-}
-
-ExprTokenizer.prototype.token = function(type, value) {
-    return {"type":type, "value":value};
+ExprTokenizer.prototype.token = function(type, value, pos) {
+    return {"type":type, "value":value, "pos":pos};
 }
 
 ExprTokenizer.prototype.peek = function() {
@@ -1918,22 +1940,23 @@ ExprTokenizer.prototype.get = function() {
 
 ExprTokenizer.prototype.get2 = function() {
     var r = this.reader;
+    var pos = r.getpos();
     var c = r.peek();
     if (c == "<EOF>") {
-        return this.token(TOKEN_EOF, c);
+        return this.token(TOKEN_EOF, c, pos);
     }
     else if (c == "<EOL>") {
         r.seek_cur(1);
-        return this.token(TOKEN_EOL, c);
+        return this.token(TOKEN_EOL, c, pos);
     }
     else if (iswhite(c)) {
         var s = r.read_white();
-        return this.token(TOKEN_SPACE, s);
+        return this.token(TOKEN_SPACE, s, pos);
     }
     else if (c == "0" && (r.p(1) == "X" || r.p(1) == "x") && isxdigit(r.p(2))) {
         var s = r.getn(3);
         s += r.read_xdigit();
-        return this.token(TOKEN_NUMBER, s);
+        return this.token(TOKEN_NUMBER, s, pos);
     }
     else if (isdigit(c)) {
         var s = r.read_digit();
@@ -1945,246 +1968,246 @@ ExprTokenizer.prototype.get2 = function() {
                 s += r.read_digit();
             }
         }
-        return this.token(TOKEN_NUMBER, s);
+        return this.token(TOKEN_NUMBER, s, pos);
     }
     else if (c == "i" && r.p(1) == "s" && !isidc(r.p(2))) {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_ISCI, "is?");
+            return this.token(TOKEN_ISCI, "is?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_ISCS, "is#");
+            return this.token(TOKEN_ISCS, "is#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_IS, "is");
+            return this.token(TOKEN_IS, "is", pos);
         }
     }
     else if (c == "i" && r.p(1) == "s" && r.p(2) == "n" && r.p(3) == "o" && r.p(4) == "t" && !isidc(r.p(5))) {
         if (r.p(5) == "?") {
             r.seek_cur(6);
-            return this.token(TOKEN_ISNOTCI, "isnot?");
+            return this.token(TOKEN_ISNOTCI, "isnot?", pos);
         }
         else if (r.p(5) == "#") {
             r.seek_cur(6);
-            return this.token(TOKEN_ISNOTCS, "isnot#");
+            return this.token(TOKEN_ISNOTCS, "isnot#", pos);
         }
         else {
             r.seek_cur(5);
-            return this.token(TOKEN_ISNOT, "isnot");
+            return this.token(TOKEN_ISNOT, "isnot", pos);
         }
     }
     else if (isnamec1(c)) {
         var s = r.read_name();
-        return this.token(TOKEN_IDENTIFIER, s);
+        return this.token(TOKEN_IDENTIFIER, s, pos);
     }
     else if (c == "|" && r.p(1) == "|") {
         r.seek_cur(2);
-        return this.token(TOKEN_OROR, "||");
+        return this.token(TOKEN_OROR, "||", pos);
     }
     else if (c == "&" && r.p(1) == "&") {
         r.seek_cur(2);
-        return this.token(TOKEN_ANDAND, "&&");
+        return this.token(TOKEN_ANDAND, "&&", pos);
     }
     else if (c == "=" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_EQEQCI, "==?");
+            return this.token(TOKEN_EQEQCI, "==?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_EQEQCS, "==#");
+            return this.token(TOKEN_EQEQCS, "==#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_EQEQ, "==");
+            return this.token(TOKEN_EQEQ, "==", pos);
         }
     }
     else if (c == "!" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_NEQCI, "!=?");
+            return this.token(TOKEN_NEQCI, "!=?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_NEQCS, "!=#");
+            return this.token(TOKEN_NEQCS, "!=#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_NEQ, "!=");
+            return this.token(TOKEN_NEQ, "!=", pos);
         }
     }
     else if (c == ">" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_GTEQCI, ">=?");
+            return this.token(TOKEN_GTEQCI, ">=?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_GTEQCS, ">=#");
+            return this.token(TOKEN_GTEQCS, ">=#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_GTEQ, ">=");
+            return this.token(TOKEN_GTEQ, ">=", pos);
         }
     }
     else if (c == "<" && r.p(1) == "=") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_LTEQCI, "<=?");
+            return this.token(TOKEN_LTEQCI, "<=?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_LTEQCS, "<=#");
+            return this.token(TOKEN_LTEQCS, "<=#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_LTEQ, "<=");
+            return this.token(TOKEN_LTEQ, "<=", pos);
         }
     }
     else if (c == "=" && r.p(1) == "~") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_MATCHCI, "=~?");
+            return this.token(TOKEN_MATCHCI, "=~?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_MATCHCS, "=~#");
+            return this.token(TOKEN_MATCHCS, "=~#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_MATCH, "=~");
+            return this.token(TOKEN_MATCH, "=~", pos);
         }
     }
     else if (c == "!" && r.p(1) == "~") {
         if (r.p(2) == "?") {
             r.seek_cur(3);
-            return this.token(TOKEN_NOMATCHCI, "!~?");
+            return this.token(TOKEN_NOMATCHCI, "!~?", pos);
         }
         else if (r.p(2) == "#") {
             r.seek_cur(3);
-            return this.token(TOKEN_NOMATCHCS, "!~#");
+            return this.token(TOKEN_NOMATCHCS, "!~#", pos);
         }
         else {
             r.seek_cur(2);
-            return this.token(TOKEN_NOMATCH, "!~");
+            return this.token(TOKEN_NOMATCH, "!~", pos);
         }
     }
     else if (c == ">") {
         if (r.p(1) == "?") {
             r.seek_cur(2);
-            return this.token(TOKEN_GTCI, ">?");
+            return this.token(TOKEN_GTCI, ">?", pos);
         }
         else if (r.p(1) == "#") {
             r.seek_cur(2);
-            return this.token(TOKEN_GTCS, ">#");
+            return this.token(TOKEN_GTCS, ">#", pos);
         }
         else {
             r.seek_cur(1);
-            return this.token(TOKEN_GT, ">");
+            return this.token(TOKEN_GT, ">", pos);
         }
     }
     else if (c == "<") {
         if (r.p(1) == "?") {
             r.seek_cur(2);
-            return this.token(TOKEN_LTCI, "<?");
+            return this.token(TOKEN_LTCI, "<?", pos);
         }
         else if (r.p(1) == "#") {
             r.seek_cur(2);
-            return this.token(TOKEN_LTCS, "<#");
+            return this.token(TOKEN_LTCS, "<#", pos);
         }
         else {
             r.seek_cur(1);
-            return this.token(TOKEN_LT, "<");
+            return this.token(TOKEN_LT, "<", pos);
         }
     }
     else if (c == "+") {
         r.seek_cur(1);
-        return this.token(TOKEN_PLUS, "+");
+        return this.token(TOKEN_PLUS, "+", pos);
     }
     else if (c == "-") {
         r.seek_cur(1);
-        return this.token(TOKEN_MINUS, "-");
+        return this.token(TOKEN_MINUS, "-", pos);
     }
     else if (c == ".") {
         if (r.p(1) == "." && r.p(2) == ".") {
             r.seek_cur(3);
-            return this.token(TOKEN_DOTDOTDOT, "...");
+            return this.token(TOKEN_DOTDOTDOT, "...", pos);
         }
         else {
             r.seek_cur(1);
-            return this.token(TOKEN_DOT, ".");
+            return this.token(TOKEN_DOT, ".", pos);
         }
     }
     else if (c == "*") {
         r.seek_cur(1);
-        return this.token(TOKEN_STAR, "*");
+        return this.token(TOKEN_STAR, "*", pos);
     }
     else if (c == "/") {
         r.seek_cur(1);
-        return this.token(TOKEN_SLASH, "/");
+        return this.token(TOKEN_SLASH, "/", pos);
     }
     else if (c == "%") {
         r.seek_cur(1);
-        return this.token(TOKEN_PERCENT, "%");
+        return this.token(TOKEN_PERCENT, "%", pos);
     }
     else if (c == "!") {
         r.seek_cur(1);
-        return this.token(TOKEN_NOT, "!");
+        return this.token(TOKEN_NOT, "!", pos);
     }
     else if (c == "?") {
         r.seek_cur(1);
-        return this.token(TOKEN_QUESTION, "?");
+        return this.token(TOKEN_QUESTION, "?", pos);
     }
     else if (c == ":") {
         r.seek_cur(1);
-        return this.token(TOKEN_COLON, ":");
+        return this.token(TOKEN_COLON, ":", pos);
     }
     else if (c == "(") {
         r.seek_cur(1);
-        return this.token(TOKEN_POPEN, "(");
+        return this.token(TOKEN_POPEN, "(", pos);
     }
     else if (c == ")") {
         r.seek_cur(1);
-        return this.token(TOKEN_PCLOSE, ")");
+        return this.token(TOKEN_PCLOSE, ")", pos);
     }
     else if (c == "[") {
         r.seek_cur(1);
-        return this.token(TOKEN_SQOPEN, "[");
+        return this.token(TOKEN_SQOPEN, "[", pos);
     }
     else if (c == "]") {
         r.seek_cur(1);
-        return this.token(TOKEN_SQCLOSE, "]");
+        return this.token(TOKEN_SQCLOSE, "]", pos);
     }
     else if (c == "{") {
         r.seek_cur(1);
-        return this.token(TOKEN_COPEN, "{");
+        return this.token(TOKEN_COPEN, "{", pos);
     }
     else if (c == "}") {
         r.seek_cur(1);
-        return this.token(TOKEN_CCLOSE, "}");
+        return this.token(TOKEN_CCLOSE, "}", pos);
     }
     else if (c == ",") {
         r.seek_cur(1);
-        return this.token(TOKEN_COMMA, ",");
+        return this.token(TOKEN_COMMA, ",", pos);
     }
     else if (c == "'") {
         r.seek_cur(1);
-        return this.token(TOKEN_SQUOTE, "'");
+        return this.token(TOKEN_SQUOTE, "'", pos);
     }
     else if (c == "\"") {
         r.seek_cur(1);
-        return this.token(TOKEN_DQUOTE, "\"");
+        return this.token(TOKEN_DQUOTE, "\"", pos);
     }
     else if (c == "$") {
         var s = r.getn(1);
         s += r.read_word();
-        return this.token(TOKEN_ENV, s);
+        return this.token(TOKEN_ENV, s, pos);
     }
     else if (c == "@") {
         // @<EOL> is treated as @"
-        return this.token(TOKEN_REG, r.getn(2));
+        return this.token(TOKEN_REG, r.getn(2), pos);
     }
     else if (c == "&") {
         if ((r.p(1) == "g" || r.p(1) == "l") && r.p(2) == ":") {
@@ -2193,51 +2216,54 @@ ExprTokenizer.prototype.get2 = function() {
         else {
             var s = r.getn(1) + r.read_word();
         }
-        return this.token(TOKEN_OPTION, s);
+        return this.token(TOKEN_OPTION, s, pos);
     }
     else if (c == "=") {
         r.seek_cur(1);
-        return this.token(TOKEN_EQ, "=");
+        return this.token(TOKEN_EQ, "=", pos);
     }
     else if (c == "|") {
         r.seek_cur(1);
-        return this.token(TOKEN_OR, "|");
+        return this.token(TOKEN_OR, "|", pos);
     }
     else if (c == ";") {
         r.seek_cur(1);
-        return this.token(TOKEN_SEMICOLON, ";");
+        return this.token(TOKEN_SEMICOLON, ";", pos);
     }
     else if (c == "`") {
         r.seek_cur(1);
-        return this.token(TOKEN_BACKTICK, "`");
+        return this.token(TOKEN_BACKTICK, "`", pos);
     }
     else {
-        throw this.err("ExprTokenizer: %s", c);
+        throw Err(viml_printf("unexpected character: %s", c), this.reader.getpos());
     }
 }
 
 ExprTokenizer.prototype.get_sstring = function() {
     this.reader.skip_white();
-    var c = this.reader.getn(1);
+    var c = this.reader.p(0);
     if (c != "'") {
-        throw sefl.err("ExprTokenizer: unexpected character: %s", c);
+        throw Err(viml_printf("unexpected character: %s", c), this.reader.getpos());
     }
+    this.reader.seek_cur(1);
     var s = "";
     while (1) {
-        var c = this.reader.getn(1);
-        if (c == "") {
-            throw this.err("ExprTokenizer: unexpected EOL");
+        var c = this.reader.p(0);
+        if (c == "<EOF>" || c == "<EOL>") {
+            throw Err("unexpected EOL", this.reader.getpos());
         }
         else if (c == "'") {
-            if (this.reader.peekn(1) == "'") {
-                this.reader.getn(1);
-                s += c;
+            this.reader.seek_cur(1);
+            if (this.reader.p(0) == "'") {
+                this.reader.seek_cur(1);
+                s += "''";
             }
             else {
                 break;
             }
         }
         else {
+            this.reader.seek_cur(1);
             s += c;
         }
     }
@@ -2246,28 +2272,33 @@ ExprTokenizer.prototype.get_sstring = function() {
 
 ExprTokenizer.prototype.get_dstring = function() {
     this.reader.skip_white();
-    var c = this.reader.getn(1);
+    var c = this.reader.p(0);
     if (c != "\"") {
-        throw this.err("ExprTokenizer: unexpected character: %s", c);
+        throw Err(viml_printf("unexpected character: %s", c), this.reader.getpos());
     }
+    this.reader.seek_cur(1);
     var s = "";
     while (1) {
-        var c = this.reader.getn(1);
-        if (c == "") {
-            throw this.err("ExprTokenizer: unexpectd EOL");
+        var c = this.reader.p(0);
+        if (c == "<EOF>" || c == "<EOL>") {
+            throw Err("unexpectd EOL", this.reader.getpos());
         }
         else if (c == "\"") {
+            this.reader.seek_cur(1);
             break;
         }
         else if (c == "\\") {
+            this.reader.seek_cur(1);
             s += c;
-            var c = this.reader.getn(1);
-            if (c == "") {
-                throw this.err("ExprTokenizer: unexpected EOL");
+            var c = this.reader.p(0);
+            if (c == "<EOF>" || c == "<EOL>") {
+                throw Err("ExprTokenizer: unexpected EOL", this.reader.getpos());
             }
+            this.reader.seek_cur(1);
             s += c;
         }
         else {
+            this.reader.seek_cur(1);
             s += c;
         }
     }
@@ -2275,20 +2306,9 @@ ExprTokenizer.prototype.get_dstring = function() {
 }
 
 function ExprParser() { this.__init__.apply(this, arguments); }
-ExprParser.prototype.__init__ = function(tokenizer) {
-    this.tokenizer = tokenizer;
-}
-
-ExprParser.prototype.err = function() {
-    var a000 = Array.prototype.slice.call(arguments, 0);
-    var pos = this.tokenizer.reader.getpos();
-    if (viml_len(a000) == 1) {
-        var msg = a000[0];
-    }
-    else {
-        var msg = viml_printf.apply(null, a000);
-    }
-    return viml_printf("%s: line %d col %d", msg, pos.lnum, pos.col);
+ExprParser.prototype.__init__ = function(reader) {
+    this.reader = reader;
+    this.tokenizer = new ExprTokenizer(reader);
 }
 
 ExprParser.prototype.parse = function() {
@@ -2298,21 +2318,22 @@ ExprParser.prototype.parse = function() {
 // expr1: expr2 ? expr1 : expr1
 ExprParser.prototype.parse_expr1 = function() {
     var left = this.parse_expr2();
-    var pos = this.tokenizer.reader.tell();
+    var pos = this.reader.tell();
     var token = this.tokenizer.get();
     if (token.type == TOKEN_QUESTION) {
         var node = Node(NODE_TERNARY);
+        node.pos = token.pos;
         node.cond = left;
         node.left = this.parse_expr1();
         var token = this.tokenizer.get();
         if (token.type != TOKEN_COLON) {
-            throw this.err("ExprParser: unexpected token: %s", token.value);
+            throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
         }
         node.right = this.parse_expr1();
         var left = node;
     }
     else {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
     }
     return left;
 }
@@ -2321,16 +2342,17 @@ ExprParser.prototype.parse_expr1 = function() {
 ExprParser.prototype.parse_expr2 = function() {
     var left = this.parse_expr3();
     while (1) {
-        var pos = this.tokenizer.reader.tell();
+        var pos = this.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_OROR) {
             var node = Node(NODE_OR);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr3();
             var left = node;
         }
         else {
-            this.tokenizer.reader.seek_set(pos);
+            this.reader.seek_set(pos);
             break;
         }
     }
@@ -2341,16 +2363,17 @@ ExprParser.prototype.parse_expr2 = function() {
 ExprParser.prototype.parse_expr3 = function() {
     var left = this.parse_expr4();
     while (1) {
-        var pos = this.tokenizer.reader.tell();
+        var pos = this.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_ANDAND) {
             var node = Node(NODE_AND);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr4();
             var left = node;
         }
         else {
-            this.tokenizer.reader.seek_set(pos);
+            this.reader.seek_set(pos);
             break;
         }
     }
@@ -2374,190 +2397,220 @@ ExprParser.prototype.parse_expr3 = function() {
 //        expr5 isnot expr5
 ExprParser.prototype.parse_expr4 = function() {
     var left = this.parse_expr5();
-    var pos = this.tokenizer.reader.tell();
+    var pos = this.reader.tell();
     var token = this.tokenizer.get();
     if (token.type == TOKEN_EQEQ) {
         var node = Node(NODE_EQUAL);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_EQEQCI) {
         var node = Node(NODE_EQUALCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_EQEQCS) {
         var node = Node(NODE_EQUALCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_NEQ) {
         var node = Node(NODE_NEQUAL);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_NEQCI) {
         var node = Node(NODE_NEQUALCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_NEQCS) {
         var node = Node(NODE_NEQUALCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_GT) {
         var node = Node(NODE_GREATER);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_GTCI) {
         var node = Node(NODE_GREATERCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_GTCS) {
         var node = Node(NODE_GREATERCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_GTEQ) {
         var node = Node(NODE_GEQUAL);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_GTEQCI) {
         var node = Node(NODE_GEQUALCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_GTEQCS) {
         var node = Node(NODE_GEQUALCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_LT) {
         var node = Node(NODE_SMALLER);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_LTCI) {
         var node = Node(NODE_SMALLERCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_LTCS) {
         var node = Node(NODE_SMALLERCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_LTEQ) {
         var node = Node(NODE_SEQUAL);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_LTEQCI) {
         var node = Node(NODE_SEQUALCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_LTEQCS) {
         var node = Node(NODE_SEQUALCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_MATCH) {
         var node = Node(NODE_MATCH);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_MATCHCI) {
         var node = Node(NODE_MATCHCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_MATCHCS) {
         var node = Node(NODE_MATCHCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_NOMATCH) {
         var node = Node(NODE_NOMATCH);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_NOMATCHCI) {
         var node = Node(NODE_NOMATCHCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_NOMATCHCS) {
         var node = Node(NODE_NOMATCHCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_IS) {
         var node = Node(NODE_IS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_ISCI) {
         var node = Node(NODE_ISCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_ISCS) {
         var node = Node(NODE_ISCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_ISNOT) {
         var node = Node(NODE_ISNOT);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_ISNOTCI) {
         var node = Node(NODE_ISNOTCI);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else if (token.type == TOKEN_ISNOTCS) {
         var node = Node(NODE_ISNOTCS);
+        node.pos = token.pos;
         node.left = left;
         node.right = this.parse_expr5();
         var left = node;
     }
     else {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
     }
     return left;
 }
@@ -2568,28 +2621,31 @@ ExprParser.prototype.parse_expr4 = function() {
 ExprParser.prototype.parse_expr5 = function() {
     var left = this.parse_expr6();
     while (1) {
-        var pos = this.tokenizer.reader.tell();
+        var pos = this.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_PLUS) {
             var node = Node(NODE_ADD);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr6();
             var left = node;
         }
         else if (token.type == TOKEN_MINUS) {
             var node = Node(NODE_SUBTRACT);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr6();
             var left = node;
         }
         else if (token.type == TOKEN_DOT) {
             var node = Node(NODE_CONCAT);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr6();
             var left = node;
         }
         else {
-            this.tokenizer.reader.seek_set(pos);
+            this.reader.seek_set(pos);
             break;
         }
     }
@@ -2602,28 +2658,31 @@ ExprParser.prototype.parse_expr5 = function() {
 ExprParser.prototype.parse_expr6 = function() {
     var left = this.parse_expr7();
     while (1) {
-        var pos = this.tokenizer.reader.tell();
+        var pos = this.reader.tell();
         var token = this.tokenizer.get();
         if (token.type == TOKEN_STAR) {
             var node = Node(NODE_MULTIPLY);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr7();
             var left = node;
         }
         else if (token.type == TOKEN_SLASH) {
             var node = Node(NODE_DIVIDE);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr7();
             var left = node;
         }
         else if (token.type == TOKEN_PERCENT) {
             var node = Node(NODE_REMAINDER);
+            node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr7();
             var left = node;
         }
         else {
-            this.tokenizer.reader.seek_set(pos);
+            this.reader.seek_set(pos);
             break;
         }
     }
@@ -2634,22 +2693,25 @@ ExprParser.prototype.parse_expr6 = function() {
 //        - expr7
 //        + expr7
 ExprParser.prototype.parse_expr7 = function() {
-    var pos = this.tokenizer.reader.tell();
+    var pos = this.reader.tell();
     var token = this.tokenizer.get();
     if (token.type == TOKEN_NOT) {
         var node = Node(NODE_NOT);
+        node.pos = token.pos;
         node.left = this.parse_expr7();
     }
     else if (token.type == TOKEN_MINUS) {
         var node = Node(NODE_MINUS);
+        node.pos = token.pos;
         node.left = this.parse_expr7();
     }
     else if (token.type == TOKEN_PLUS) {
         var node = Node(NODE_PLUS);
+        node.pos = token.pos;
         node.left = this.parse_expr7();
     }
     else {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
         var node = this.parse_expr8();
     }
     return node;
@@ -2662,13 +2724,15 @@ ExprParser.prototype.parse_expr7 = function() {
 ExprParser.prototype.parse_expr8 = function() {
     var left = this.parse_expr9();
     while (1) {
-        var pos = this.tokenizer.reader.tell();
-        var c = this.tokenizer.reader.peek();
+        var pos = this.reader.tell();
+        var c = this.reader.peek();
         var token = this.tokenizer.get();
         if (!iswhite(c) && token.type == TOKEN_SQOPEN) {
+            var npos = token.pos;
             if (this.tokenizer.peek().type == TOKEN_COLON) {
                 this.tokenizer.get();
                 var node = Node(NODE_SLICE);
+                node.pos = npos;
                 node.left = left;
                 node.rlist = [NIL, NIL];
                 var token = this.tokenizer.peek();
@@ -2677,7 +2741,7 @@ ExprParser.prototype.parse_expr8 = function() {
                 }
                 var token = this.tokenizer.get();
                 if (token.type != TOKEN_SQCLOSE) {
-                    throw this.err("ExprParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
             }
             else {
@@ -2685,6 +2749,7 @@ ExprParser.prototype.parse_expr8 = function() {
                 if (this.tokenizer.peek().type == TOKEN_COLON) {
                     this.tokenizer.get();
                     var node = Node(NODE_SLICE);
+                    node.pos = npos;
                     node.left = left;
                     node.rlist = [right, NIL];
                     var token = this.tokenizer.peek();
@@ -2693,16 +2758,17 @@ ExprParser.prototype.parse_expr8 = function() {
                     }
                     var token = this.tokenizer.get();
                     if (token.type != TOKEN_SQCLOSE) {
-                        throw this.err("ExprParser: unexpected token: %s", token.value);
+                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
                 }
                 else {
                     var node = Node(NODE_SUBSCRIPT);
+                    node.pos = npos;
                     node.left = left;
                     node.right = right;
                     var token = this.tokenizer.get();
                     if (token.type != TOKEN_SQCLOSE) {
-                        throw this.err("ExprParser: unexpected token: %s", token.value);
+                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
                 }
             }
@@ -2710,6 +2776,7 @@ ExprParser.prototype.parse_expr8 = function() {
         }
         else if (token.type == TOKEN_POPEN) {
             var node = Node(NODE_CALL);
+            node.pos = token.pos;
             node.left = left;
             node.rlist = [];
             if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
@@ -2725,7 +2792,7 @@ ExprParser.prototype.parse_expr8 = function() {
                         break;
                     }
                     else {
-                        throw this.err("ExprParser: unexpected token: %s", token.value);
+                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
                 }
             }
@@ -2733,22 +2800,24 @@ ExprParser.prototype.parse_expr8 = function() {
         }
         else if (!iswhite(c) && token.type == TOKEN_DOT) {
             // SUBSCRIPT or CONCAT
-            var c = this.tokenizer.reader.peek();
+            var npos = token.pos;
+            var c = this.reader.peek();
             var token = this.tokenizer.peek();
             if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
                 var node = Node(NODE_DOT);
+                node.pos = npos;
                 node.left = left;
                 node.right = this.parse_identifier();
             }
             else {
                 // to be CONCAT
-                this.tokenizer.reader.seek_set(pos);
+                this.reader.seek_set(pos);
                 break;
             }
             var left = node;
         }
         else {
-            this.tokenizer.reader.seek_set(pos);
+            this.reader.seek_set(pos);
             break;
         }
     }
@@ -2769,24 +2838,28 @@ ExprParser.prototype.parse_expr8 = function() {
 //        function(expr1, ...)
 //        func{ti}on(expr1, ...)
 ExprParser.prototype.parse_expr9 = function() {
-    var pos = this.tokenizer.reader.tell();
+    var pos = this.reader.tell();
     var token = this.tokenizer.get();
     if (token.type == TOKEN_NUMBER) {
         var node = Node(NODE_NUMBER);
+        node.pos = token.pos;
         node.value = token.value;
     }
     else if (token.type == TOKEN_DQUOTE) {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
         var node = Node(NODE_STRING);
+        node.pos = token.pos;
         node.value = "\"" + this.tokenizer.get_dstring() + "\"";
     }
     else if (token.type == TOKEN_SQUOTE) {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
         var node = Node(NODE_STRING);
+        node.pos = token.pos;
         node.value = "'" + this.tokenizer.get_sstring() + "'";
     }
     else if (token.type == TOKEN_SQOPEN) {
         var node = Node(NODE_LIST);
+        node.pos = token.pos;
         node.value = [];
         var token = this.tokenizer.peek();
         if (token.type == TOKEN_SQCLOSE) {
@@ -2808,13 +2881,14 @@ ExprParser.prototype.parse_expr9 = function() {
                     break;
                 }
                 else {
-                    throw this.err("ExprParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
             }
         }
     }
     else if (token.type == TOKEN_COPEN) {
         var node = Node(NODE_DICT);
+        node.pos = token.pos;
         node.value = [];
         var token = this.tokenizer.peek();
         if (token.type == TOKEN_CCLOSE) {
@@ -2826,14 +2900,14 @@ ExprParser.prototype.parse_expr9 = function() {
                 var token = this.tokenizer.get();
                 if (token.type == TOKEN_CCLOSE) {
                     if (!viml_empty(node.value)) {
-                        throw this.err("ExprParser: unexpected token: %s", token.value);
+                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
-                    this.tokenizer.reader.seek_set(pos);
+                    this.reader.seek_set(pos);
                     var node = this.parse_identifier();
                     break;
                 }
                 if (token.type != TOKEN_COLON) {
-                    throw this.err("ExprParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
                 var val = this.parse_expr1();
                 viml_add(node.value, [key, val]);
@@ -2848,67 +2922,73 @@ ExprParser.prototype.parse_expr9 = function() {
                     break;
                 }
                 else {
-                    throw this.err("ExprParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
             }
         }
     }
     else if (token.type == TOKEN_POPEN) {
         var node = Node(NODE_NESTING);
+        node.pos = token.pos;
         node.left = this.parse_expr1();
         var token = this.tokenizer.get();
         if (token.type != TOKEN_PCLOSE) {
-            throw this.err("ExprParser: unexpected token: %s", token.value);
+            throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
         }
     }
     else if (token.type == TOKEN_OPTION) {
         var node = Node(NODE_OPTION);
+        node.pos = token.pos;
         node.value = token.value;
     }
     else if (token.type == TOKEN_IDENTIFIER) {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
-    else if (token.type == TOKEN_LT && this.tokenizer.reader.peekn(4).toLowerCase() == "SID>".toLowerCase()) {
-        this.tokenizer.reader.seek_set(pos);
+    else if (token.type == TOKEN_LT && this.reader.peekn(4).toLowerCase() == "SID>".toLowerCase()) {
+        this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_ENV) {
         var node = Node(NODE_ENV);
+        node.pos = token.pos;
         node.value = token.value;
     }
     else if (token.type == TOKEN_REG) {
         var node = Node(NODE_REG);
+        node.pos = token.pos;
         node.value = token.value;
     }
     else {
-        throw this.err("ExprParser: unexpected token: %s", token.value);
+        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
     }
     return node;
 }
 
 ExprParser.prototype.parse_identifier = function() {
     var id = [];
-    this.tokenizer.reader.skip_white();
-    var c = this.tokenizer.reader.peek();
-    if (c == "<" && this.tokenizer.reader.peekn(5).toLowerCase() == "<SID>".toLowerCase()) {
-        var name = this.tokenizer.reader.getn(5);
+    this.reader.skip_white();
+    var npos = this.reader.getpos();
+    var c = this.reader.peek();
+    if (c == "<" && this.reader.peekn(5).toLowerCase() == "<SID>".toLowerCase()) {
+        var name = this.reader.getn(5);
         viml_add(id, {"curly":0, "value":name});
     }
     while (1) {
-        var c = this.tokenizer.reader.peek();
+        var c = this.reader.peek();
         if (isnamec(c)) {
-            var name = this.tokenizer.reader.read_name();
+            var name = this.reader.read_name();
             viml_add(id, {"curly":0, "value":name});
         }
         else if (c == "{") {
-            this.tokenizer.reader.get();
+            this.reader.get();
             var node = this.parse_expr1();
-            this.tokenizer.reader.skip_white();
-            var c = this.tokenizer.reader.get();
+            this.reader.skip_white();
+            var c = this.reader.p(0);
             if (c != "}") {
-                throw this.err("ExprParser: unexpected token: %s", c);
+                throw Err(viml_printf("unexpected token: %s", c), this.reader.getpos());
             }
+            this.reader.seek_cur(1);
             viml_add(id, {"curly":1, "value":node});
         }
         else {
@@ -2917,10 +2997,12 @@ ExprParser.prototype.parse_identifier = function() {
     }
     if (viml_len(id) == 1 && id[0].curly == 0) {
         var node = Node(NODE_IDENTIFIER);
+        node.pos = npos;
         node.value = id[0].value;
     }
     else {
         var node = Node(NODE_CURLYNAME);
+        node.pos = npos;
         node.value = id;
     }
     return node;
@@ -2938,13 +3020,15 @@ LvalueParser.prototype.parse = function() {
 LvalueParser.prototype.parse_lv8 = function() {
     var left = this.parse_lv9();
     while (1) {
-        var pos = this.tokenizer.reader.tell();
-        var c = this.tokenizer.reader.peek();
+        var pos = this.reader.tell();
+        var c = this.reader.peek();
         var token = this.tokenizer.get();
         if (!iswhite(c) && token.type == TOKEN_SQOPEN) {
+            var npos = token.pos;
             if (this.tokenizer.peek().type == TOKEN_COLON) {
                 this.tokenizer.get();
                 var node = Node(NODE_SLICE);
+                node.pos = npos;
                 node.left = left;
                 node.rlist = [NIL, NIL];
                 var token = this.tokenizer.peek();
@@ -2953,7 +3037,7 @@ LvalueParser.prototype.parse_lv8 = function() {
                 }
                 var token = this.tokenizer.get();
                 if (token.type != TOKEN_SQCLOSE) {
-                    throw this.err("LvalueParser: unexpected token: %s", token.value);
+                    throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
             }
             else {
@@ -2961,6 +3045,7 @@ LvalueParser.prototype.parse_lv8 = function() {
                 if (this.tokenizer.peek().type == TOKEN_COLON) {
                     this.tokenizer.get();
                     var node = Node(NODE_SLICE);
+                    node.pos = npos;
                     node.left = left;
                     node.rlist = [right, NIL];
                     var token = this.tokenizer.peek();
@@ -2969,16 +3054,17 @@ LvalueParser.prototype.parse_lv8 = function() {
                     }
                     var token = this.tokenizer.get();
                     if (token.type != TOKEN_SQCLOSE) {
-                        throw this.err("LvalueParser: unexpected token: %s", token.value);
+                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
                 }
                 else {
                     var node = Node(NODE_SUBSCRIPT);
+                    node.pos = npos;
                     node.left = left;
                     node.right = right;
                     var token = this.tokenizer.get();
                     if (token.type != TOKEN_SQCLOSE) {
-                        throw this.err("LvalueParser: unexpected token: %s", token.value);
+                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
                 }
             }
@@ -2986,22 +3072,24 @@ LvalueParser.prototype.parse_lv8 = function() {
         }
         else if (token.type == TOKEN_DOT) {
             // SUBSCRIPT or CONCAT
-            var c = this.tokenizer.reader.peek();
+            var npos = token.pos;
+            var c = this.reader.peek();
             var token = this.tokenizer.peek();
             if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
                 var node = Node(NODE_DOT);
+                node.pos = npos;
                 node.left = left;
                 node.right = this.parse_identifier();
             }
             else {
                 // to be CONCAT
-                this.tokenizer.reader.seek_set(pos);
+                this.reader.seek_set(pos);
                 break;
             }
             var left = node;
         }
         else {
-            this.tokenizer.reader.seek_set(pos);
+            this.reader.seek_set(pos);
             break;
         }
     }
@@ -3014,34 +3102,38 @@ LvalueParser.prototype.parse_lv8 = function() {
 //        $VAR
 //        @r
 LvalueParser.prototype.parse_lv9 = function() {
-    var pos = this.tokenizer.reader.tell();
+    var pos = this.reader.tell();
     var token = this.tokenizer.get();
     if (token.type == TOKEN_COPEN) {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_OPTION) {
         var node = Node(NODE_OPTION);
+        node.pos = token.pos;
         node.value = token.value;
     }
     else if (token.type == TOKEN_IDENTIFIER) {
-        this.tokenizer.reader.seek_set(pos);
+        this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
-    else if (token.type == TOKEN_LT && this.tokenizer.reader.peekn(4).toLowerCase() == "SID>".toLowerCase()) {
-        this.tokenizer.reader.seek_set(pos);
+    else if (token.type == TOKEN_LT && this.reader.peekn(4).toLowerCase() == "SID>".toLowerCase()) {
+        this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
     else if (token.type == TOKEN_ENV) {
         var node = Node(NODE_ENV);
+        node.pos = token.pos;
         node.value = token.value;
     }
     else if (token.type == TOKEN_REG) {
         var node = Node(NODE_REG);
+        node.pos = token.pos;
+        node.pos = token.pos;
         node.value = token.value;
     }
     else {
-        throw this.err("LvalueParser: unexpected token: %s", token.value);
+        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
     }
     return node;
 }
@@ -3551,7 +3643,7 @@ Compiler.prototype.compile = function(node) {
         return this.compile_reg(node);
     }
     else {
-        throw this.err("Compiler: unknown node: %s", viml_string(node));
+        throw viml_printf("Compiler: unknown node: %s", viml_string(node));
     }
 }
 

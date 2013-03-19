@@ -677,7 +677,7 @@ function s:JavascriptCompiler.compile_call(node)
   let left = self.compile(a:node.left)
   if left == 'map'
     let r = s:StringReader.new([eval(rlist[1])])
-    let p = s:ExprParser.new(s:ExprTokenizer.new(r))
+    let p = s:ExprParser.new(r)
     let n = p.parse()
     return printf('%s.map((function(vval) { return %s; }).bind(this))', rlist[0], self.compile(n))
   elseif left == 'call' && rlist[0][0] =~ '[''"]'
