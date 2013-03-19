@@ -2947,6 +2947,10 @@ ExprParser.prototype.parse_expr9 = function() {
         this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
+    else if (token.type == TOKEN_IS || token.type == TOKEN_ISCS || token.type == TOKEN_ISNOT || token.type == TOKEN_ISNOTCS) {
+        this.reader.seek_set(pos);
+        var node = this.parse_identifier();
+    }
     else if (token.type == TOKEN_ENV) {
         var node = Node(NODE_ENV);
         node.pos = token.pos;
@@ -3071,7 +3075,6 @@ LvalueParser.prototype.parse_lv8 = function() {
         else if (token.type == TOKEN_DOT) {
             // SUBSCRIPT or CONCAT
             var c = this.reader.peek();
-            var token = this.tokenizer.peek();
             if (isnamec1(c)) {
                 var node = Node(NODE_DOT);
                 node.pos = token.pos;
