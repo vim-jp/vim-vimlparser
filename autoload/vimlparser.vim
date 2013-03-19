@@ -222,6 +222,10 @@ function s:isnamec1(c)
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
+function s:isargname(s)
+  return a:s =~# '^[A-Za-z_][0-9A-Za-z_]*$'
+endfunction
+
 " FIXME:
 function s:isidc(c)
   return a:c =~# '^[0-9A-Za-z_]$'
@@ -1170,7 +1174,7 @@ function s:VimLParser.parse_cmd_function()
   else
     while 1
       let token = tokenizer.get()
-      if token.type == s:TOKEN_IDENTIFIER
+      if token.type == s:TOKEN_IDENTIFIER && s:isargname(token.value)
         let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
