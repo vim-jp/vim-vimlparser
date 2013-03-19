@@ -3126,6 +3126,9 @@ function s:ExprParser.parse_expr9()
   elseif token.type == s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
+  elseif token.type == s:TOKEN_IS || token.type == s:TOKEN_ISCS || token.type == s:TOKEN_ISNOT || token.type == s:TOKEN_ISNOTCS
+    call self.reader.seek_set(pos)
+    let node = self.parse_identifier()
   elseif token.type == s:TOKEN_ENV
     let node = s:Node(s:NODE_ENV)
     let node.pos = token.pos
