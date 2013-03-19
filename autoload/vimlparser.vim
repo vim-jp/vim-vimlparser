@@ -2996,12 +2996,10 @@ function s:ExprParser.parse_expr8()
       let left = node
     elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
       " SUBSCRIPT or CONCAT
-      let npos = token.pos
       let c = self.reader.peek()
-      let token = self.tokenizer.peek()
-      if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
+      if s:isnamec1(c)
         let node = s:Node(s:NODE_DOT)
-        let node.pos = npos
+        let node.pos = token.pos
         let node.left = left
         let node.right = self.parse_identifier()
       else
@@ -3243,12 +3241,11 @@ function! s:LvalueParser.parse_lv8()
       let left = node
     elseif token.type == s:TOKEN_DOT
       " SUBSCRIPT or CONCAT
-      let npos = token.pos
       let c = self.reader.peek()
       let token = self.tokenizer.peek()
-      if !s:iswhite(c) && token.type == s:TOKEN_IDENTIFIER
+      if s:isnamec1(c)
         let node = s:Node(s:NODE_DOT)
-        let node.pos = npos
+        let node.pos = token.pos
         let node.left = left
         let node.right = self.parse_identifier()
       else
