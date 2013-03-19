@@ -64,6 +64,7 @@ pat_vim2py = {
   "^[0-9A-Za-z_]$" : "^[0-9A-Za-z_]$",
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
   "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
+  "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
 }
 
 def viml_add(lst, item):
@@ -327,6 +328,9 @@ def isnamec(c):
 
 def isnamec1(c):
     return viml_eqregh(c, "^[A-Za-z_]$")
+
+def isargname(s):
+    return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$")
 
 # FIXME:
 def isidc(c):
@@ -1112,7 +1116,7 @@ class VimLParser:
         else:
             while 1:
                 token = tokenizer.get()
-                if token.type == TOKEN_IDENTIFIER:
+                if token.type == TOKEN_IDENTIFIER and isargname(token.value):
                     varnode = Node(NODE_IDENTIFIER)
                     varnode.pos = token.pos
                     varnode.value = token.value
