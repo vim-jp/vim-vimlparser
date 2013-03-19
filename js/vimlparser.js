@@ -369,7 +369,7 @@ function isnamec(c) {
 }
 
 function isnamec1(c) {
-    return viml_eqregh(c, "^[0-9A-Za-z_]$");
+    return viml_eqregh(c, "^[A-Za-z_]$");
 }
 
 // FIXME:
@@ -2800,12 +2800,10 @@ ExprParser.prototype.parse_expr8 = function() {
         }
         else if (!iswhite(c) && token.type == TOKEN_DOT) {
             // SUBSCRIPT or CONCAT
-            var npos = token.pos;
             var c = this.reader.peek();
-            var token = this.tokenizer.peek();
-            if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
+            if (isnamec1(c)) {
                 var node = Node(NODE_DOT);
-                node.pos = npos;
+                node.pos = token.pos;
                 node.left = left;
                 node.right = this.parse_identifier();
             }
@@ -3072,12 +3070,11 @@ LvalueParser.prototype.parse_lv8 = function() {
         }
         else if (token.type == TOKEN_DOT) {
             // SUBSCRIPT or CONCAT
-            var npos = token.pos;
             var c = this.reader.peek();
             var token = this.tokenizer.peek();
-            if (!iswhite(c) && token.type == TOKEN_IDENTIFIER) {
+            if (isnamec1(c)) {
                 var node = Node(NODE_DOT);
-                node.pos = npos;
+                node.pos = token.pos;
                 node.left = left;
                 node.right = this.parse_identifier();
             }
