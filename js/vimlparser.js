@@ -62,6 +62,7 @@ var pat_vim2js = {
   "^[0-9A-Za-z_]$" : "^[0-9A-Za-z_]$",
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
   "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
+  "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
 }
 
 function viml_add(lst, item) {
@@ -370,6 +371,10 @@ function isnamec(c) {
 
 function isnamec1(c) {
     return viml_eqregh(c, "^[A-Za-z_]$");
+}
+
+function isargname(s) {
+    return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$");
 }
 
 // FIXME:
@@ -1372,7 +1377,7 @@ VimLParser.prototype.parse_cmd_function = function() {
     else {
         while (1) {
             var token = tokenizer.get();
-            if (token.type == TOKEN_IDENTIFIER) {
+            if (token.type == TOKEN_IDENTIFIER && isargname(token.value)) {
                 var varnode = Node(NODE_IDENTIFIER);
                 varnode.pos = token.pos;
                 varnode.value = token.value;
