@@ -773,6 +773,10 @@ function s:VimLParser.find_command()
     endif
   endif
 
+  if name == ''
+    return s:NIL
+  endif
+
   if has_key(self.find_command_cache, name)
     return self.find_command_cache[name]
   endif
