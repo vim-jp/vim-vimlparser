@@ -877,6 +877,7 @@ VimLParser.prototype.parse_command = function() {
     }
     this.ea.cmd = this.find_command();
     if (this.ea.cmd === NIL) {
+        this.reader.setpos(this.ea.cmdpos);
         throw Err(viml_printf("E492: Not an editor command: %s", this.reader.peekline()), this.ea.cmdpos);
     }
     if (this.reader.peekn(1) == "!" && this.ea.cmd.name != "substitute" && this.ea.cmd.name != "smagic" && this.ea.cmd.name != "snomagic") {
@@ -958,6 +959,9 @@ VimLParser.prototype.find_command = function() {
             this.reader.seek_set(pos);
             var name = this.reader.getn(viml_len(name) - 1);
         }
+    }
+    if (name == "") {
+        return NIL;
     }
     if (viml_has_key(this.find_command_cache, name)) {
         return this.find_command_cache[name];
