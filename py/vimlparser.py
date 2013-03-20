@@ -735,6 +735,7 @@ class VimLParser:
             return
         self.ea.cmd = self.find_command()
         if self.ea.cmd is NIL:
+            self.reader.setpos(self.ea.cmdpos)
             raise Exception(Err(viml_printf("E492: Not an editor command: %s", self.reader.peekline()), self.ea.cmdpos))
         if self.reader.peekn(1) == "!" and self.ea.cmd.name != "substitute" and self.ea.cmd.name != "smagic" and self.ea.cmd.name != "snomagic":
             self.reader.getn(1)
@@ -794,6 +795,8 @@ class VimLParser:
             if name != "del" and viml_eqregh(name, "\\v^d%[elete][lp]$"):
                 self.reader.seek_set(pos)
                 name = self.reader.getn(viml_len(name) - 1)
+        if name == "":
+            return NIL
         if viml_has_key(self.find_command_cache, name):
             return self.find_command_cache[name]
         cmd = NIL
