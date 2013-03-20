@@ -686,6 +686,7 @@ function s:VimLParser.parse_command()
   let self.ea.cmd = self.find_command()
 
   if self.ea.cmd is s:NIL
+    call self.reader.setpos(self.ea.cmdpos)
     throw s:Err(printf('E492: Not an editor command: %s', self.reader.peekline()), self.ea.cmdpos)
   endif
 
