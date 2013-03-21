@@ -3746,18 +3746,6 @@ function s:Compiler.compile_body(body)
   endfor
 endfunction
 
-function s:Compiler.compile_begin(body)
-  if len(a:body) == 1
-    call self.compile_body(a:body)
-  else
-    call self.out('(begin')
-    call self.incindent('  ')
-    call self.compile_body(a:body)
-    call self.out(')')
-    call self.decindent()
-  endif
-endfunction
-
 function s:Compiler.compile_toplevel(node)
   call self.compile_body(a:node.body)
   return self.lines
@@ -3844,18 +3832,18 @@ endfunction
 function s:Compiler.compile_if(node)
   call self.out('(if %s', self.compile(a:node.cond))
   call self.incindent('  ')
-  call self.compile_begin(a:node.body)
+  call self.compile_body(a:node.body)
   call self.decindent()
   for enode in a:node.elseif
     call self.out(' elseif %s', self.compile(enode.cond))
     call self.incindent('  ')
-    call self.compile_begin(enode.body)
+    call self.compile_body(enode.body)
     call self.decindent()
   endfor
   if a:node.else isnot s:NIL
     call self.out(' else')
     call self.incindent('  ')
-    call self.compile_begin(a:node.else.body)
+    call self.compile_body(a:node.else.body)
     call self.decindent()
   endif
   call self.incindent('  ')
@@ -3900,28 +3888,25 @@ endfunction
 function s:Compiler.compile_try(node)
   call self.out('(try')
   call self.incindent('  ')
-  call self.compile_begin(a:node.body)
+  call self.compile_body(a:node.body)
   for cnode in a:node.catch
     if cnode.pattern isnot s:NIL
-      call self.out('(#/%s/', cnode.pattern)
+      call self.decindent()
+      call self.out(' catch /%s/', cnode.pattern)
       call self.incindent('  ')
       call self.compile_body(cnode.body)
-      call self.out(')')
-      call self.decindent()
     else
-      call self.out('(else')
+      call self.decindent()
+      call self.out(' catch')
       call self.incindent('  ')
       call self.compile_body(cnode.body)
-      call self.out(')')
-      call self.decindent()
     endif
   endfor
   if a:node.finally isnot s:NIL
-    call self.out('(finally')
+    call self.decindent()
+    call self.out(' finally')
     call self.incindent('  ')
     call self.compile_body(a:node.finally.body)
-    call self.out(')')
-    call self.decindent()
   endif
   call self.out(')')
   call self.decindent()

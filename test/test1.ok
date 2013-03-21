@@ -29,12 +29,12 @@
 (unlockvar 1 a b c)
 (try
   (throw "err")
-  (#/err/
-    (echo "catch /err/"))
-  (else
-    (echo "catch"))
-  (finally
-    (echo "finally")))
+ catch /err/
+  (echo "catch /err/")
+ catch
+  (echo "catch")
+ finally
+  (echo "finally"))
 (echohl "Error")
 (echon "echon")
 (echomsg "echomsg")
