@@ -231,6 +231,14 @@ function s:isidc(c)
   return a:c =~# '^[0-9A-Za-z_]$'
 endfunction
 
+function s:isupper(c)
+  return a:c =~# '^[A-Z]$'
+endfunction
+
+function s:islower(c)
+  return a:c =~# '^[a-z]$'
+endfunction
+
 function s:ExArg()
   let ea = {}
   let ea.forceit = 0
@@ -1156,6 +1164,19 @@ function s:VimLParser.parse_cmd_function()
 
   let left = self.parse_lvalue()
   call self.reader.skip_white()
+
+  if left.type == s:NODE_IDENTIFIER
+    let s = left.value
+    if s[0] !=# '<' && !s:isupper(s[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
+      throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
+    endif
+  elseif left.type == s:NODE_CURLYNAME && !left.value[0].curly
+    " FIXME: "foo{':'}bar" should be passed, but who do it?
+    let s = left.value[0].value
+    if s[0] !=# '<' && !s:isupper(s[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
+      throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
+    endif
+  endif
 
   " :function {name}
   if self.reader.peekn(1) !=# '('
