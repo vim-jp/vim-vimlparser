@@ -1200,7 +1200,10 @@ function s:VimLParser.parse_cmd_function()
   else
     while 1
       let token = tokenizer.get()
-      if token.type == s:TOKEN_IDENTIFIER && s:isargname(token.value)
+      if token.type == s:TOKEN_IDENTIFIER
+        if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
+          throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
+        endif
         let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
