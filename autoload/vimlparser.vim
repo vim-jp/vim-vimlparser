@@ -1170,12 +1170,6 @@ function s:VimLParser.parse_cmd_function()
     if s[0] !=# '<' && !s:isupper(s[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
       throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
     endif
-  elseif left.type == s:NODE_CURLYNAME && !left.value[0].curly
-    " FIXME: "foo{':'}bar" should be passed, but who do it?
-    let s = left.value[0].value
-    if s[0] !=# '<' && !s:isupper(s[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
-      throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
-    endif
   endif
 
   " :function {name}
