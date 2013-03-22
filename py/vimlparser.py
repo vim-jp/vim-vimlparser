@@ -1134,9 +1134,15 @@ class VimLParser:
         if tokenizer.peek().type == TOKEN_PCLOSE:
             tokenizer.get()
         else:
+            named = AttributeDict({})
             while 1:
                 token = tokenizer.get()
-                if token.type == TOKEN_IDENTIFIER and isargname(token.value):
+                if token.type == TOKEN_IDENTIFIER:
+                    if not isargname(token.value) or token.value == "firstline" or token.value == "lastline":
+                        raise Exception(Err(viml_printf("E125: Illegal argument: %s", token.value), token.pos))
+                    elif viml_has_key(named, token.value):
+                        raise Exception(Err(viml_printf("E853: Duplicate argument name: %s", token.value), token.pos))
+                    named[token.value] = 1
                     varnode = Node(NODE_IDENTIFIER)
                     varnode.pos = token.pos
                     varnode.value = token.value
