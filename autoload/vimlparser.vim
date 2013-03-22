@@ -1198,12 +1198,16 @@ function s:VimLParser.parse_cmd_function()
   if tokenizer.peek().type == s:TOKEN_PCLOSE
     call tokenizer.get()
   else
+    let named = {}
     while 1
       let token = tokenizer.get()
       if token.type == s:TOKEN_IDENTIFIER
         if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
           throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
+        elseif has_key(named, token.value)
+          throw s:Err(printf('E853: Duplicate argument name: %s', token.value), token.pos)
         endif
+        let named[token.value] = 1
         let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
