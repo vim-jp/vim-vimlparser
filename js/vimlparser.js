@@ -63,6 +63,8 @@ var pat_vim2js = {
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
   "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
+  "^[A-Z]$" : "^[A-Z]$",
+  "^[a-z]$" : "^[a-z]$",
 }
 
 function viml_add(lst, item) {
@@ -380,6 +382,14 @@ function isargname(s) {
 // FIXME:
 function isidc(c) {
     return viml_eqregh(c, "^[0-9A-Za-z_]$");
+}
+
+function isupper(c) {
+    return viml_eqregh(c, "^[A-Z]$");
+}
+
+function islower(c) {
+    return viml_eqregh(c, "^[a-z]$");
 }
 
 function ExArg() {
@@ -1359,6 +1369,19 @@ VimLParser.prototype.parse_cmd_function = function() {
     }
     var left = this.parse_lvalue();
     this.reader.skip_white();
+    if (left.type == NODE_IDENTIFIER) {
+        var s = left.value;
+        if (s[0] != "<" && !isupper(s[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
+            throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
+        }
+    }
+    else if (left.type == NODE_CURLYNAME && !left.value[0].curly) {
+        // FIXME: "foo{':'}bar" should be passed, but who do it?
+        var s = left.value[0].value;
+        if (s[0] != "<" && !isupper(s[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
+            throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
+        }
+    }
     // :function {name}
     if (this.reader.peekn(1) != "(") {
         this.reader.seek_set(pos);
@@ -3664,19 +3687,6 @@ Compiler.prototype.compile_body = function(body) {
     }
 }
 
-Compiler.prototype.compile_begin = function(body) {
-    if (viml_len(body) == 1) {
-        this.compile_body(body);
-    }
-    else {
-        this.out("(begin");
-        this.incindent("  ");
-        this.compile_body(body);
-        this.out(")");
-        this.decindent();
-    }
-}
-
 Compiler.prototype.compile_toplevel = function(node) {
     this.compile_body(node.body);
     return this.lines;
@@ -3768,20 +3778,20 @@ Compiler.prototype.compile_unlockvar = function(node) {
 Compiler.prototype.compile_if = function(node) {
     this.out("(if %s", this.compile(node.cond));
     this.incindent("  ");
-    this.compile_begin(node.body);
+    this.compile_body(node.body);
     this.decindent();
     var __c9 = node.elseif;
     for (var __i9 = 0; __i9 < __c9.length; ++__i9) {
         var enode = __c9[__i9];
         this.out(" elseif %s", this.compile(enode.cond));
         this.incindent("  ");
-        this.compile_begin(enode.body);
+        this.compile_body(enode.body);
         this.decindent();
     }
     if (node._else !== NIL) {
         this.out(" else");
         this.incindent("  ");
-        this.compile_begin(node._else.body);
+        this.compile_body(node._else.body);
         this.decindent();
     }
     this.incindent("  ");
@@ -3827,31 +3837,28 @@ Compiler.prototype.compile_break = function(node) {
 Compiler.prototype.compile_try = function(node) {
     this.out("(try");
     this.incindent("  ");
-    this.compile_begin(node.body);
+    this.compile_body(node.body);
     var __c10 = node.catch;
     for (var __i10 = 0; __i10 < __c10.length; ++__i10) {
         var cnode = __c10[__i10];
         if (cnode.pattern !== NIL) {
-            this.out("(#/%s/", cnode.pattern);
+            this.decindent();
+            this.out(" catch /%s/", cnode.pattern);
             this.incindent("  ");
             this.compile_body(cnode.body);
-            this.out(")");
-            this.decindent();
         }
         else {
-            this.out("(else");
+            this.decindent();
+            this.out(" catch");
             this.incindent("  ");
             this.compile_body(cnode.body);
-            this.out(")");
-            this.decindent();
         }
     }
     if (node._finally !== NIL) {
-        this.out("(finally");
+        this.decindent();
+        this.out(" finally");
         this.incindent("  ");
         this.compile_body(node._finally.body);
-        this.out(")");
-        this.decindent();
     }
     this.out(")");
     this.decindent();

@@ -63,6 +63,8 @@ var pat_vim2js = {
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
   "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
+  "^[A-Z]$" : "^[A-Z]$",
+  "^[a-z]$" : "^[a-z]$",
 }
 
 function viml_add(lst, item) {
