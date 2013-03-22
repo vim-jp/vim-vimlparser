@@ -65,6 +65,8 @@ pat_vim2py = {
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
   "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
+  "^[A-Z]$" : "^[A-Z]$",
+  "^[a-z]$" : "^[a-z]$",
 }
 
 def viml_add(lst, item):
@@ -335,6 +337,12 @@ def isargname(s):
 # FIXME:
 def isidc(c):
     return viml_eqregh(c, "^[0-9A-Za-z_]$")
+
+def isupper(c):
+    return viml_eqregh(c, "^[A-Z]$")
+
+def islower(c):
+    return viml_eqregh(c, "^[a-z]$")
 
 def ExArg():
     ea = AttributeDict({})
@@ -1099,6 +1107,15 @@ class VimLParser:
             return self.parse_cmd_common()
         left = self.parse_lvalue()
         self.reader.skip_white()
+        if left.type == NODE_IDENTIFIER:
+            s = left.value
+            if s[0] != "<" and not isupper(s[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
+                raise Exception(Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos))
+        elif left.type == NODE_CURLYNAME and not left.value[0].curly:
+            # FIXME: "foo{':'}bar" should be passed, but who do it?
+            s = left.value[0].value
+            if s[0] != "<" and not isupper(s[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
+                raise Exception(Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos))
         # :function {name}
         if self.reader.peekn(1) != "(":
             self.reader.seek_set(pos)
@@ -2892,16 +2909,6 @@ class Compiler:
         for node in body:
             self.compile(node)
 
-    def compile_begin(self, body):
-        if viml_len(body) == 1:
-            self.compile_body(body)
-        else:
-            self.out("(begin")
-            self.incindent("  ")
-            self.compile_body(body)
-            self.out(")")
-            self.decindent()
-
     def compile_toplevel(self, node):
         self.compile_body(node.body)
         return self.lines
@@ -2970,17 +2977,17 @@ class Compiler:
     def compile_if(self, node):
         self.out("(if %s", self.compile(node.cond))
         self.incindent("  ")
-        self.compile_begin(node.body)
+        self.compile_body(node.body)
         self.decindent()
         for enode in node.elseif:
             self.out(" elseif %s", self.compile(enode.cond))
             self.incindent("  ")
-            self.compile_begin(enode.body)
+            self.compile_body(enode.body)
             self.decindent()
         if node._else is not NIL:
             self.out(" else")
             self.incindent("  ")
-            self.compile_begin(node._else.body)
+            self.compile_body(node._else.body)
             self.decindent()
         self.incindent("  ")
         self.out(")")
@@ -3017,26 +3024,23 @@ class Compiler:
     def compile_try(self, node):
         self.out("(try")
         self.incindent("  ")
-        self.compile_begin(node.body)
+        self.compile_body(node.body)
         for cnode in node.catch:
             if cnode.pattern is not NIL:
-                self.out("(#/%s/", cnode.pattern)
+                self.decindent()
+                self.out(" catch /%s/", cnode.pattern)
                 self.incindent("  ")
                 self.compile_body(cnode.body)
-                self.out(")")
-                self.decindent()
             else:
-                self.out("(else")
+                self.decindent()
+                self.out(" catch")
                 self.incindent("  ")
                 self.compile_body(cnode.body)
-                self.out(")")
-                self.decindent()
         if node._finally is not NIL:
-            self.out("(finally")
+            self.decindent()
+            self.out(" finally")
             self.incindent("  ")
             self.compile_body(node._finally.body)
-            self.out(")")
-            self.decindent()
         self.out(")")
         self.decindent()
 
