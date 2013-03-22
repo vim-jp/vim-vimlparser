@@ -1402,9 +1402,17 @@ VimLParser.prototype.parse_cmd_function = function() {
         tokenizer.get();
     }
     else {
+        var named = {};
         while (1) {
             var token = tokenizer.get();
-            if (token.type == TOKEN_IDENTIFIER && isargname(token.value)) {
+            if (token.type == TOKEN_IDENTIFIER) {
+                if (!isargname(token.value) || token.value == "firstline" || token.value == "lastline") {
+                    throw Err(viml_printf("E125: Illegal argument: %s", token.value), token.pos);
+                }
+                else if (viml_has_key(named, token.value)) {
+                    throw Err(viml_printf("E853: Duplicate argument name: %s", token.value), token.pos);
+                }
+                named[token.value] = 1;
                 var varnode = Node(NODE_IDENTIFIER);
                 varnode.pos = token.pos;
                 varnode.value = token.value;
