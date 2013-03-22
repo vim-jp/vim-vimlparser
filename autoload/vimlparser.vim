@@ -3201,7 +3201,7 @@ endfunction
 " expr8: expr8[expr1]
 "        expr8[expr1 : expr1]
 "        expr8.name
-function! s:LvalueParser.parse_lv8()
+function s:LvalueParser.parse_lv8()
   let left = self.parse_lv9()
   while 1
     let pos = self.reader.tell()
@@ -3278,7 +3278,7 @@ endfunction
 "        var{ria}ble
 "        $VAR
 "        @r
-function! s:LvalueParser.parse_lv9()
+function s:LvalueParser.parse_lv9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_COPEN
