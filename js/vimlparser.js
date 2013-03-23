@@ -65,6 +65,7 @@ var pat_vim2js = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
+  "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[gslabwt]:$|^([gslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
 }
 
 function viml_add(lst, item) {
@@ -339,6 +340,7 @@ var TOKEN_OR = 60;
 var TOKEN_SEMICOLON = 61;
 var TOKEN_BACKTICK = 62;
 var TOKEN_DOTDOTDOT = 63;
+var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
 }
@@ -377,6 +379,10 @@ function isnamec1(c) {
 
 function isargname(s) {
     return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$");
+}
+
+function isvarname(s) {
+    return viml_eqregh(s, "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$");
 }
 
 // FIXME:
@@ -1367,17 +1373,10 @@ VimLParser.prototype.parse_cmd_function = function() {
         this.reader.seek_set(pos);
         return this.parse_cmd_common();
     }
-    var left = this.parse_lvalue();
+    var left = this.parse_lvalue_func();
     this.reader.skip_white();
     if (left.type == NODE_IDENTIFIER) {
         var s = left.value;
-        if (s[0] != "<" && !isupper(s[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
-            throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
-        }
-    }
-    else if (left.type == NODE_CURLYNAME && !left.value[0].curly) {
-        // FIXME: "foo{':'}bar" should be passed, but who do it?
-        var s = left.value[0].value;
         if (s[0] != "<" && !isupper(s[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
             throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
         }
@@ -1489,7 +1488,7 @@ VimLParser.prototype.parse_cmd_delfunction = function() {
     var node = Node(NODE_DELFUNCTION);
     node.pos = this.ea.cmdpos;
     node.ea = this.ea;
-    node.left = this.parse_lvalue();
+    node.left = this.parse_lvalue_func();
     this.add_node(node);
 }
 
@@ -1878,10 +1877,24 @@ VimLParser.prototype.parse_exprlist = function() {
     return list;
 }
 
+VimLParser.prototype.parse_lvalue_func = function() {
+    var p = new LvalueParser(this.reader);
+    var node = p.parse();
+    if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
+        return node;
+    }
+    throw Err("Invalid Expression", node.pos);
+}
+
 // FIXME:
 VimLParser.prototype.parse_lvalue = function() {
     var p = new LvalueParser(this.reader);
     var node = p.parse();
+    if (node.type == NODE_IDENTIFIER) {
+        if (!isvarname(node.value)) {
+            throw Err(viml_printf("E461: Illegal variable name: %s", node.value), node.pos);
+        }
+    }
     if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
         return node;
     }
@@ -2835,6 +2848,10 @@ ExprParser.prototype.parse_expr8 = function() {
                         throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
                 }
+            }
+            if (viml_len(node.rlist) > MAX_FUNC_ARGS) {
+                // TODO: funcname E740: Too many arguments for function: %s
+                throw Err("E740: Too many arguments for function", node.pos);
             }
             var left = node;
         }
