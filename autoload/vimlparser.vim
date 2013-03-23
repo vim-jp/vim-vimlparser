@@ -186,6 +186,8 @@ let s:TOKEN_SEMICOLON = 61
 let s:TOKEN_BACKTICK = 62
 let s:TOKEN_DOTDOTDOT = 63
 
+let s:MAX_FUNC_ARGS = 20
+
 function s:isalpha(c)
   return a:c =~# '^[A-Za-z]$'
 endfunction
@@ -3023,6 +3025,10 @@ function s:ExprParser.parse_expr8()
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         endwhile
+      endif
+      if len(node.rlist) > s:MAX_FUNC_ARGS
+        " TODO: funcname E740: Too many arguments for function: %s
+        throw s:Err('E740: Too many arguments for function', node.pos)
       endif
       let left = node
     elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
