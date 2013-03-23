@@ -228,6 +228,10 @@ function s:isargname(s)
   return a:s =~# '^[A-Za-z_][0-9A-Za-z_]*$'
 endfunction
 
+function s:isvarname(s)
+  return a:s =~# '^[gslabwt]:$' || a:s =~# '^\([gslabwt]:\)\?[A-Za-z_][0-9A-Za-z_]*$'
+endfunction
+
 " FIXME:
 function s:isidc(c)
   return a:c =~# '^[0-9A-Za-z_]$'
@@ -1164,7 +1168,7 @@ function s:VimLParser.parse_cmd_function()
     return self.parse_cmd_common()
   endif
 
-  let left = self.parse_lvalue()
+  let left = self.parse_lvalue_func()
   call self.reader.skip_white()
 
   if left.type == s:NODE_IDENTIFIER
@@ -1271,7 +1275,7 @@ function s:VimLParser.parse_cmd_delfunction()
   let node = s:Node(s:NODE_DELFUNCTION)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
-  let node.left = self.parse_lvalue()
+  let node.left = self.parse_lvalue_func()
   call self.add_node(node)
 endfunction
 
@@ -1659,10 +1663,24 @@ function s:VimLParser.parse_exprlist()
   return list
 endfunction
 
+function s:VimLParser.parse_lvalue_func()
+  let p = s:LvalueParser.new(self.reader)
+  let node = p.parse()
+  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
+    return node
+  endif
+  throw s:Err('Invalid Expression', node.pos)
+endfunction
+
 " FIXME:
 function s:VimLParser.parse_lvalue()
   let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
+  if node.type == s:NODE_IDENTIFIER
+    if !s:isvarname(node.value)
+      throw s:Err(printf('E461: Illegal variable name: %s', node.value), node.pos)
+    endif
+  endif
   if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
     return node
   endif
