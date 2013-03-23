@@ -67,6 +67,7 @@ pat_vim2py = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
+  "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[gslabwt]:$|^([gslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
 }
 
 def viml_add(lst, item):
@@ -304,6 +305,7 @@ TOKEN_OR = 60
 TOKEN_SEMICOLON = 61
 TOKEN_BACKTICK = 62
 TOKEN_DOTDOTDOT = 63
+MAX_FUNC_ARGS = 20
 def isalpha(c):
     return viml_eqregh(c, "^[A-Za-z]$")
 
@@ -333,6 +335,9 @@ def isnamec1(c):
 
 def isargname(s):
     return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$")
+
+def isvarname(s):
+    return viml_eqregh(s, "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$")
 
 # FIXME:
 def isidc(c):
@@ -1105,15 +1110,10 @@ class VimLParser:
         if self.reader.peekn(1) == "/":
             self.reader.seek_set(pos)
             return self.parse_cmd_common()
-        left = self.parse_lvalue()
+        left = self.parse_lvalue_func()
         self.reader.skip_white()
         if left.type == NODE_IDENTIFIER:
             s = left.value
-            if s[0] != "<" and not isupper(s[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
-                raise Exception(Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos))
-        elif left.type == NODE_CURLYNAME and not left.value[0].curly:
-            # FIXME: "foo{':'}bar" should be passed, but who do it?
-            s = left.value[0].value
             if s[0] != "<" and not isupper(s[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
                 raise Exception(Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos))
         # :function {name}
@@ -1201,7 +1201,7 @@ class VimLParser:
         node = Node(NODE_DELFUNCTION)
         node.pos = self.ea.cmdpos
         node.ea = self.ea
-        node.left = self.parse_lvalue()
+        node.left = self.parse_lvalue_func()
         self.add_node(node)
 
     def parse_cmd_return(self):
@@ -1525,10 +1525,20 @@ class VimLParser:
             viml_add(list, node)
         return list
 
+    def parse_lvalue_func(self):
+        p = LvalueParser(self.reader)
+        node = p.parse()
+        if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
+            return node
+        raise Exception(Err("Invalid Expression", node.pos))
+
 # FIXME:
     def parse_lvalue(self):
         p = LvalueParser(self.reader)
         node = p.parse()
+        if node.type == NODE_IDENTIFIER:
+            if not isvarname(node.value):
+                raise Exception(Err(viml_printf("E461: Illegal variable name: %s", node.value), node.pos))
         if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
             return node
         raise Exception(Err("Invalid Expression", node.pos))
@@ -2287,6 +2297,9 @@ class ExprParser:
                             break
                         else:
                             raise Exception(Err(viml_printf("unexpected token: %s", token.value), token.pos))
+                if viml_len(node.rlist) > MAX_FUNC_ARGS:
+                    # TODO: funcname E740: Too many arguments for function: %s
+                    raise Exception(Err("E740: Too many arguments for function", node.pos))
                 left = node
             elif not iswhite(c) and token.type == TOKEN_DOT:
                 # SUBSCRIPT or CONCAT

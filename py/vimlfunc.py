@@ -67,6 +67,7 @@ pat_vim2py = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
+  "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[gslabwt]:$|^([gslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
 }
 
 def viml_add(lst, item):
