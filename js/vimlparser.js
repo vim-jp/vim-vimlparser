@@ -65,7 +65,7 @@ var pat_vim2js = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
-  "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[gslabwt]:$|^([gslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
+  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
 }
 
 function viml_add(lst, item) {
@@ -382,7 +382,7 @@ function isargname(s) {
 }
 
 function isvarname(s) {
-    return viml_eqregh(s, "^[gslabwt]:$\\|^\\([gslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$");
+    return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$");
 }
 
 // FIXME:
