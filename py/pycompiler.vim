@@ -350,8 +350,8 @@ function s:PythonCompiler.compile_for(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
-    let list = map(a:node.left.list, 'self.compile(v:val)')
-    if a:node.left.rest isnot s:NIL
+    let list = map(a:node.list, 'self.compile(v:val)')
+    if a:node.rest isnot s:NIL
       let rest = self.compile(a:node.rest)
       call add(list, '*' . rest)
     endif
