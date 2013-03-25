@@ -2319,7 +2319,7 @@ function s:ExprTokenizer.get2()
     if r.p(0) ==# '.' && s:isdigit(r.p(1))
       let s .= r.getn(1)
       let s .= r.read_digit()
-      if (r.p(0) ==# 'E' || r.p(0) ==# 'e') && (r.p(1) ==# '-' || r.p(1) ==# '+') && s:isdigit(r.p(2))
+      if (r.p(0) ==# 'E' || r.p(0) ==# 'e') && (s:isdigit(r.p(1)) || ((r.p(1) ==# '-' || r.p(1) ==# '+') && s:isdigit(r.p(2))))
         let s .= r.getn(3)
         let s .= r.read_digit()
       endif
