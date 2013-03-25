@@ -77,7 +77,11 @@ function viml_call(func, args) {
 }
 
 function viml_empty(obj) {
-    return obj.length == 0
+    return obj.length == 0;
+}
+
+function viml_equalci(a, b) {
+    return a.toLowerCase() == b.toLowerCase();
 }
 
 function viml_eqreg(s, reg) {

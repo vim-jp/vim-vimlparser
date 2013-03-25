@@ -77,7 +77,11 @@ function viml_call(func, args) {
 }
 
 function viml_empty(obj) {
-    return obj.length == 0
+    return obj.length == 0;
+}
+
+function viml_equalci(a, b) {
+    return a.toLowerCase() == b.toLowerCase();
 }
 
 function viml_eqreg(s, reg) {
@@ -271,7 +275,6 @@ var NODE_NUMBER = 80;
 var NODE_STRING = 81;
 var NODE_LIST = 82;
 var NODE_DICT = 83;
-var NODE_NESTING = 84;
 var NODE_OPTION = 85;
 var NODE_IDENTIFIER = 86;
 var NODE_CURLYNAME = 87;
@@ -375,6 +378,10 @@ function isnamec(c) {
 
 function isnamec1(c) {
     return viml_eqregh(c, "^[A-Za-z_]$");
+}
+
+function isattrc(c) {
+    return viml_eqregh(c, "^[0-9A-Za-z_]$");
 }
 
 function isargname(s) {
@@ -1197,7 +1204,7 @@ VimLParser.prototype.separate_nextcmd = function() {
             }
             this.reader.getn(1);
         }
-        else if (c == "|" || c == "\n" || (c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && ((this.ea.cmd.name != "@" && this.ea.cmd.name != "*") || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@"))) {
+        else if (c == "|" || c == "\n" || c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && (this.ea.cmd.name != "@" && this.ea.cmd.name != "*" || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@")) {
             var has_cpo_bar = 0;
             // &cpoptions =~ 'b'
             if ((!has_cpo_bar || !viml_eqregh(this.ea.cmd.flags, "\\<USECTRLV\\>")) && pc == "\\") {
@@ -1537,7 +1544,7 @@ VimLParser.prototype.parse_cmd_let = function() {
     var s1 = this.reader.peekn(1);
     var s2 = this.reader.peekn(2);
     // :let {var-name} ..
-    if (this.ends_excmds(s1) || (s2 != "+=" && s2 != "-=" && s2 != ".=" && s1 != "=")) {
+    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s1 != "=") {
         this.reader.seek_set(pos);
         return this.parse_cmd_common();
     }
@@ -2016,8 +2023,8 @@ ExprTokenizer.prototype.get2 = function() {
         if (r.p(0) == "." && isdigit(r.p(1))) {
             s += r.getn(1);
             s += r.read_digit();
-            if ((r.p(0) == "E" || r.p(0) == "e") && (r.p(1) == "-" || r.p(1) == "+") && isdigit(r.p(2))) {
-                s += r.getn(3);
+            if ((r.p(0) == "E" || r.p(0) == "e") && (isdigit(r.p(1)) || (r.p(1) == "-" || r.p(1) == "+") && isdigit(r.p(2)))) {
+                s += r.getn(2);
                 s += r.read_digit();
             }
         }
@@ -2855,20 +2862,14 @@ ExprParser.prototype.parse_expr8 = function() {
             }
             var left = node;
         }
-        else if (!iswhite(c) && token.type == TOKEN_DOT) {
+        else if (!iswhite(c) && token.type == TOKEN_DOT && isattrc(this.reader.p(0)) && (left.type == NODE_IDENTIFIER || left.type == NODE_CURLYNAME || left.type == NODE_DICT || left.type == NODE_SUBSCRIPT || left.type == NODE_CALL || left.type == NODE_DOT)) {
             // SUBSCRIPT or CONCAT
-            var c = this.reader.peek();
-            if (isnamec1(c)) {
-                var node = Node(NODE_DOT);
-                node.pos = token.pos;
-                node.left = left;
-                node.right = this.parse_identifier();
-            }
-            else {
-                // to be CONCAT
-                this.reader.seek_set(pos);
-                break;
-            }
+            var node = Node(NODE_DOT);
+            node.pos = token.pos;
+            node.left = left;
+            node.right = Node(NODE_IDENTIFIER);
+            node.right.pos = this.reader.getpos();
+            node.right.value = this.reader.read_attr();
             var left = node;
         }
         else {
@@ -2983,9 +2984,7 @@ ExprParser.prototype.parse_expr9 = function() {
         }
     }
     else if (token.type == TOKEN_POPEN) {
-        var node = Node(NODE_NESTING);
-        node.pos = token.pos;
-        node.left = this.parse_expr1();
+        var node = this.parse_expr1();
         var token = this.tokenizer.get();
         if (token.type != TOKEN_PCLOSE) {
             throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
@@ -3000,7 +2999,7 @@ ExprParser.prototype.parse_expr9 = function() {
         this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
-    else if (token.type == TOKEN_LT && this.reader.peekn(4).toLowerCase() == "SID>".toLowerCase()) {
+    else if (token.type == TOKEN_LT && viml_equalci(this.reader.peekn(4), "SID>")) {
         this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
@@ -3029,7 +3028,7 @@ ExprParser.prototype.parse_identifier = function() {
     this.reader.skip_white();
     var npos = this.reader.getpos();
     var c = this.reader.peek();
-    if (c == "<" && this.reader.peekn(5).toLowerCase() == "<SID>".toLowerCase()) {
+    if (c == "<" && viml_equalci(this.reader.peekn(5), "<SID>")) {
         var name = this.reader.getn(5);
         viml_add(id, {"curly":0, "value":name});
     }
@@ -3129,20 +3128,14 @@ LvalueParser.prototype.parse_lv8 = function() {
             }
             var left = node;
         }
-        else if (token.type == TOKEN_DOT) {
+        else if (!iswhite(c) && token.type == TOKEN_DOT && isattrc(this.reader.p(0)) && (left.type == NODE_IDENTIFIER || left.type == NODE_CURLYNAME || left.type == NODE_DICT || left.type == NODE_SUBSCRIPT || left.type == NODE_CALL || left.type == NODE_DOT)) {
             // SUBSCRIPT or CONCAT
-            var c = this.reader.peek();
-            if (isnamec1(c)) {
-                var node = Node(NODE_DOT);
-                node.pos = token.pos;
-                node.left = left;
-                node.right = this.parse_identifier();
-            }
-            else {
-                // to be CONCAT
-                this.reader.seek_set(pos);
-                break;
-            }
+            var node = Node(NODE_DOT);
+            node.pos = token.pos;
+            node.left = left;
+            node.right = Node(NODE_IDENTIFIER);
+            node.right.pos = this.reader.getpos();
+            node.right.value = this.reader.read_attr();
             var left = node;
         }
         else {
@@ -3174,7 +3167,7 @@ LvalueParser.prototype.parse_lv9 = function() {
         this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
-    else if (token.type == TOKEN_LT && this.reader.peekn(4).toLowerCase() == "SID>".toLowerCase()) {
+    else if (token.type == TOKEN_LT && viml_equalci(this.reader.peekn(4), "SID>")) {
         this.reader.seek_set(pos);
         var node = this.parse_identifier();
     }
@@ -3408,6 +3401,14 @@ StringReader.prototype.read_nonwhite = function() {
 StringReader.prototype.read_name = function() {
     var r = "";
     while (isnamec(this.peekn(1))) {
+        r += this.getn(1);
+    }
+    return r;
+}
+
+StringReader.prototype.read_attr = function() {
+    var r = "";
+    while (isattrc(this.peekn(1))) {
         r += this.getn(1);
     }
     return r;
@@ -3680,9 +3681,6 @@ Compiler.prototype.compile = function(node) {
     }
     else if (node.type == NODE_DICT) {
         return this.compile_dict(node);
-    }
-    else if (node.type == NODE_NESTING) {
-        return this.compile_nesting(node);
     }
     else if (node.type == NODE_OPTION) {
         return this.compile_option(node);
@@ -4140,10 +4138,6 @@ Compiler.prototype.compile_dict = function(node) {
     else {
         return viml_printf("(dict %s)", viml_join(value, " "));
     }
-}
-
-Compiler.prototype.compile_nesting = function(node) {
-    return this.compile(node.left);
 }
 
 Compiler.prototype.compile_option = function(node) {
