@@ -79,6 +79,9 @@ def viml_call(func, *args):
 def viml_empty(obj):
     return len(obj) == 0
 
+def viml_equalci(a, b):
+    return a.lower() == b.lower()
+
 def viml_eqreg(s, reg):
     return re.search(pat_vim2py[reg], s, re.IGNORECASE)
 
@@ -236,7 +239,6 @@ NODE_NUMBER = 80
 NODE_STRING = 81
 NODE_LIST = 82
 NODE_DICT = 83
-NODE_NESTING = 84
 NODE_OPTION = 85
 NODE_IDENTIFIER = 86
 NODE_CURLYNAME = 87
@@ -332,6 +334,9 @@ def isnamec(c):
 
 def isnamec1(c):
     return viml_eqregh(c, "^[A-Za-z_]$")
+
+def isattrc(c):
+    return viml_eqregh(c, "^[0-9A-Za-z_]$")
 
 def isargname(s):
     return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$")
@@ -974,7 +979,7 @@ class VimLParser:
                 if c != "`":
                     raise Exception(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
                 self.reader.getn(1)
-            elif c == "|" or c == "\n" or (c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and ((self.ea.cmd.name != "@" and self.ea.cmd.name != "*") or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@")):
+            elif c == "|" or c == "\n" or c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and (self.ea.cmd.name != "@" and self.ea.cmd.name != "*" or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@"):
                 has_cpo_bar = 0
                 # &cpoptions =~ 'b'
                 if (not has_cpo_bar or not viml_eqregh(self.ea.cmd.flags, "\\<USECTRLV\\>")) and pc == "\\":
@@ -1242,7 +1247,7 @@ class VimLParser:
         s1 = self.reader.peekn(1)
         s2 = self.reader.peekn(2)
         # :let {var-name} ..
-        if self.ends_excmds(s1) or (s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "="):
+        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "=":
             self.reader.seek_set(pos)
             return self.parse_cmd_common()
         # :let left op right
@@ -1635,8 +1640,8 @@ class ExprTokenizer:
             if r.p(0) == "." and isdigit(r.p(1)):
                 s += r.getn(1)
                 s += r.read_digit()
-                if (r.p(0) == "E" or r.p(0) == "e") and (r.p(1) == "-" or r.p(1) == "+") and isdigit(r.p(2)):
-                    s += r.getn(3)
+                if (r.p(0) == "E" or r.p(0) == "e") and (isdigit(r.p(1)) or (r.p(1) == "-" or r.p(1) == "+") and isdigit(r.p(2))):
+                    s += r.getn(2)
                     s += r.read_digit()
             return self.token(TOKEN_NUMBER, s, pos)
         elif c == "i" and r.p(1) == "s" and not isidc(r.p(2)):
@@ -2301,18 +2306,14 @@ class ExprParser:
                     # TODO: funcname E740: Too many arguments for function: %s
                     raise Exception(Err("E740: Too many arguments for function", node.pos))
                 left = node
-            elif not iswhite(c) and token.type == TOKEN_DOT:
+            elif not iswhite(c) and token.type == TOKEN_DOT and isattrc(self.reader.p(0)) and (left.type == NODE_IDENTIFIER or left.type == NODE_CURLYNAME or left.type == NODE_DICT or left.type == NODE_SUBSCRIPT or left.type == NODE_CALL or left.type == NODE_DOT):
                 # SUBSCRIPT or CONCAT
-                c = self.reader.peek()
-                if isnamec1(c):
-                    node = Node(NODE_DOT)
-                    node.pos = token.pos
-                    node.left = left
-                    node.right = self.parse_identifier()
-                else:
-                    # to be CONCAT
-                    self.reader.seek_set(pos)
-                    break
+                node = Node(NODE_DOT)
+                node.pos = token.pos
+                node.left = left
+                node.right = Node(NODE_IDENTIFIER)
+                node.right.pos = self.reader.getpos()
+                node.right.value = self.reader.read_attr()
                 left = node
             else:
                 self.reader.seek_set(pos)
@@ -2401,9 +2402,7 @@ class ExprParser:
                     else:
                         raise Exception(Err(viml_printf("unexpected token: %s", token.value), token.pos))
         elif token.type == TOKEN_POPEN:
-            node = Node(NODE_NESTING)
-            node.pos = token.pos
-            node.left = self.parse_expr1()
+            node = self.parse_expr1()
             token = self.tokenizer.get()
             if token.type != TOKEN_PCLOSE:
                 raise Exception(Err(viml_printf("unexpected token: %s", token.value), token.pos))
@@ -2414,7 +2413,7 @@ class ExprParser:
         elif token.type == TOKEN_IDENTIFIER:
             self.reader.seek_set(pos)
             node = self.parse_identifier()
-        elif token.type == TOKEN_LT and self.reader.peekn(4).lower() == "SID>".lower():
+        elif token.type == TOKEN_LT and viml_equalci(self.reader.peekn(4), "SID>"):
             self.reader.seek_set(pos)
             node = self.parse_identifier()
         elif token.type == TOKEN_IS or token.type == TOKEN_ISCS or token.type == TOKEN_ISNOT or token.type == TOKEN_ISNOTCS:
@@ -2437,7 +2436,7 @@ class ExprParser:
         self.reader.skip_white()
         npos = self.reader.getpos()
         c = self.reader.peek()
-        if c == "<" and self.reader.peekn(5).lower() == "<SID>".lower():
+        if c == "<" and viml_equalci(self.reader.peekn(5), "<SID>"):
             name = self.reader.getn(5)
             viml_add(id, AttributeDict({"curly":0, "value":name}))
         while 1:
@@ -2516,18 +2515,14 @@ class LvalueParser(ExprParser):
                         if token.type != TOKEN_SQCLOSE:
                             raise Exception(Err(viml_printf("unexpected token: %s", token.value), token.pos))
                 left = node
-            elif token.type == TOKEN_DOT:
+            elif not iswhite(c) and token.type == TOKEN_DOT and isattrc(self.reader.p(0)) and (left.type == NODE_IDENTIFIER or left.type == NODE_CURLYNAME or left.type == NODE_DICT or left.type == NODE_SUBSCRIPT or left.type == NODE_CALL or left.type == NODE_DOT):
                 # SUBSCRIPT or CONCAT
-                c = self.reader.peek()
-                if isnamec1(c):
-                    node = Node(NODE_DOT)
-                    node.pos = token.pos
-                    node.left = left
-                    node.right = self.parse_identifier()
-                else:
-                    # to be CONCAT
-                    self.reader.seek_set(pos)
-                    break
+                node = Node(NODE_DOT)
+                node.pos = token.pos
+                node.left = left
+                node.right = Node(NODE_IDENTIFIER)
+                node.right.pos = self.reader.getpos()
+                node.right.value = self.reader.read_attr()
                 left = node
             else:
                 self.reader.seek_set(pos)
@@ -2552,7 +2547,7 @@ class LvalueParser(ExprParser):
         elif token.type == TOKEN_IDENTIFIER:
             self.reader.seek_set(pos)
             node = self.parse_identifier()
-        elif token.type == TOKEN_LT and self.reader.peekn(4).lower() == "SID>".lower():
+        elif token.type == TOKEN_LT and viml_equalci(self.reader.peekn(4), "SID>"):
             self.reader.seek_set(pos)
             node = self.parse_identifier()
         elif token.type == TOKEN_ENV:
@@ -2726,6 +2721,12 @@ class StringReader:
     def read_name(self):
         r = ""
         while isnamec(self.peekn(1)):
+            r += self.getn(1)
+        return r
+
+    def read_attr(self):
+        r = ""
+        while isattrc(self.peekn(1)):
             r += self.getn(1)
         return r
 
@@ -2909,8 +2910,6 @@ class Compiler:
             return self.compile_list(node)
         elif node.type == NODE_DICT:
             return self.compile_dict(node)
-        elif node.type == NODE_NESTING:
-            return self.compile_nesting(node)
         elif node.type == NODE_OPTION:
             return self.compile_option(node)
         elif node.type == NODE_IDENTIFIER:
@@ -3252,9 +3251,6 @@ class Compiler:
             return "(dict)"
         else:
             return viml_printf("(dict %s)", viml_join(value, " "))
-
-    def compile_nesting(self, node):
-        return self.compile(node.left)
 
     def compile_option(self, node):
         return node.value

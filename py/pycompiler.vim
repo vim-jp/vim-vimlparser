@@ -1,6 +1,62 @@
 
 call extend(s:, vimlparser#import())
 
+let s:opprec = {}
+let s:opprec[s:NODE_TERNARY] = 1
+let s:opprec[s:NODE_OR] = 2
+let s:opprec[s:NODE_AND] = 3
+let s:opprec[s:NODE_EQUAL] = 4
+let s:opprec[s:NODE_EQUALCI] = 4
+let s:opprec[s:NODE_EQUALCS] = 4
+let s:opprec[s:NODE_NEQUAL] = 4
+let s:opprec[s:NODE_NEQUALCI] = 4
+let s:opprec[s:NODE_NEQUALCS] = 4
+let s:opprec[s:NODE_GREATER] = 4
+let s:opprec[s:NODE_GREATERCI] = 4
+let s:opprec[s:NODE_GREATERCS] = 4
+let s:opprec[s:NODE_GEQUAL] = 4
+let s:opprec[s:NODE_GEQUALCI] = 4
+let s:opprec[s:NODE_GEQUALCS] = 4
+let s:opprec[s:NODE_SMALLER] = 4
+let s:opprec[s:NODE_SMALLERCI] = 4
+let s:opprec[s:NODE_SMALLERCS] = 4
+let s:opprec[s:NODE_SEQUAL] = 4
+let s:opprec[s:NODE_SEQUALCI] = 4
+let s:opprec[s:NODE_SEQUALCS] = 4
+let s:opprec[s:NODE_MATCH] = 4
+let s:opprec[s:NODE_MATCHCI] = 4
+let s:opprec[s:NODE_MATCHCS] = 4
+let s:opprec[s:NODE_NOMATCH] = 4
+let s:opprec[s:NODE_NOMATCHCI] = 4
+let s:opprec[s:NODE_NOMATCHCS] = 4
+let s:opprec[s:NODE_IS] = 4
+let s:opprec[s:NODE_ISCI] = 4
+let s:opprec[s:NODE_ISCS] = 4
+let s:opprec[s:NODE_ISNOT] = 4
+let s:opprec[s:NODE_ISNOTCI] = 4
+let s:opprec[s:NODE_ISNOTCS] = 4
+let s:opprec[s:NODE_ADD] = 5
+let s:opprec[s:NODE_SUBTRACT] = 5
+let s:opprec[s:NODE_CONCAT] = 5
+let s:opprec[s:NODE_MULTIPLY] = 6
+let s:opprec[s:NODE_DIVIDE] = 6
+let s:opprec[s:NODE_REMAINDER] = 6
+let s:opprec[s:NODE_NOT] = 7
+let s:opprec[s:NODE_MINUS] = 7
+let s:opprec[s:NODE_PLUS] = 7
+let s:opprec[s:NODE_SUBSCRIPT] = 8
+let s:opprec[s:NODE_SLICE] = 8
+let s:opprec[s:NODE_CALL] = 8
+let s:opprec[s:NODE_DOT] = 8
+let s:opprec[s:NODE_NUMBER] = 9
+let s:opprec[s:NODE_STRING] = 9
+let s:opprec[s:NODE_LIST] = 9
+let s:opprec[s:NODE_DICT] = 9
+let s:opprec[s:NODE_OPTION] = 9
+let s:opprec[s:NODE_IDENTIFIER] = 9
+let s:opprec[s:NODE_CURLYNAME] = 9
+let s:opprec[s:NODE_ENV] = 9
+let s:opprec[s:NODE_REG] = 9
 
 let s:PythonCompiler = {}
 
@@ -188,8 +244,6 @@ function s:PythonCompiler.compile(node)
     return self.compile_list(a:node)
   elseif a:node.type == s:NODE_DICT
     return self.compile_dict(a:node)
-  elseif a:node.type == s:NODE_NESTING
-    return self.compile_nesting(a:node)
   elseif a:node.type == s:NODE_OPTION
     return self.compile_option(a:node)
   elseif a:node.type == s:NODE_IDENTIFIER
@@ -435,39 +489,39 @@ function s:PythonCompiler.compile_ternary(node)
 endfunction
 
 function s:PythonCompiler.compile_or(node)
-  return printf('%s or %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, 'or')
 endfunction
 
 function s:PythonCompiler.compile_and(node)
-  return printf('%s and %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, 'and')
 endfunction
 
 function s:PythonCompiler.compile_equal(node)
-  return printf('%s == %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '==')
 endfunction
 
 function s:PythonCompiler.compile_equalci(node)
-  return printf('%s.lower() == %s.lower()', self.compile(a:node.left), self.compile(a:node.right))
+  return printf('viml_equalci(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_equalcs(node)
-  return printf('%s == %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '==')
 endfunction
 
 function s:PythonCompiler.compile_nequal(node)
-  return printf('%s != %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '!=')
 endfunction
 
 function s:PythonCompiler.compile_nequalci(node)
-  return printf('%s.lower() != %s.lower()', self.compile(a:node.left), self.compile(a:node.right))
+  return printf('not viml_equalci(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:PythonCompiler.compile_nequalcs(node)
-  return printf('%s != %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '!=')
 endfunction
 
 function s:PythonCompiler.compile_greater(node)
-  return printf('%s > %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '>')
 endfunction
 
 function s:PythonCompiler.compile_greaterci(node)
@@ -479,7 +533,7 @@ function s:PythonCompiler.compile_greatercs(node)
 endfunction
 
 function s:PythonCompiler.compile_gequal(node)
-  return printf('%s >= %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '>=')
 endfunction
 
 function s:PythonCompiler.compile_gequalci(node)
@@ -491,7 +545,7 @@ function s:PythonCompiler.compile_gequalcs(node)
 endfunction
 
 function s:PythonCompiler.compile_smaller(node)
-  return printf('%s < %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '<')
 endfunction
 
 function s:PythonCompiler.compile_smallerci(node)
@@ -503,7 +557,7 @@ function s:PythonCompiler.compile_smallercs(node)
 endfunction
 
 function s:PythonCompiler.compile_sequal(node)
-  return printf('%s <= %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '<=')
 endfunction
 
 function s:PythonCompiler.compile_sequalci(node)
@@ -539,7 +593,7 @@ function s:PythonCompiler.compile_nomatchcs(node)
 endfunction
 
 function s:PythonCompiler.compile_is(node)
-  return printf('%s is %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, 'is')
 endfunction
 
 function s:PythonCompiler.compile_isci(node)
@@ -551,7 +605,7 @@ function s:PythonCompiler.compile_iscs(node)
 endfunction
 
 function s:PythonCompiler.compile_isnot(node)
-  return printf('%s is not %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, 'is not')
 endfunction
 
 function s:PythonCompiler.compile_isnotci(node)
@@ -563,39 +617,39 @@ function s:PythonCompiler.compile_isnotcs(node)
 endfunction
 
 function s:PythonCompiler.compile_add(node)
-  return printf('%s + %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '+')
 endfunction
 
 function s:PythonCompiler.compile_subtract(node)
-  return printf('%s - %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '-')
 endfunction
 
 function s:PythonCompiler.compile_concat(node)
-  return printf('%s + %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '+')
 endfunction
 
 function s:PythonCompiler.compile_multiply(node)
-  return printf('%s * %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '*')
 endfunction
 
 function s:PythonCompiler.compile_divide(node)
-  return printf('%s // %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '/')
 endfunction
 
 function s:PythonCompiler.compile_remainder(node)
-  return printf('%s %% %s', self.compile(a:node.left), self.compile(a:node.right))
+  return self.compile_op2(a:node, '%')
 endfunction
 
 function s:PythonCompiler.compile_not(node)
-  return printf('not %s', self.compile(a:node.left))
+  return self.compile_op1(a:node, 'not ')
 endfunction
 
 function s:PythonCompiler.compile_plus(node)
-  return printf('+%s', self.compile(a:node.left))
+  return self.compile_op1(a:node, '+')
 endfunction
 
 function s:PythonCompiler.compile_minus(node)
-  return printf('-%s', self.compile(a:node.left))
+  return self.compile_op1(a:node, '-')
 endfunction
 
 function s:PythonCompiler.compile_subscript(node)
@@ -672,10 +726,6 @@ function s:PythonCompiler.compile_dict(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_nesting(node)
-  return '(' . self.compile(a:node.left) . ')'
-endfunction
-
 function s:PythonCompiler.compile_option(node)
   throw 'NotImplemented: option'
 endfunction
@@ -702,6 +752,26 @@ endfunction
 
 function s:PythonCompiler.compile_reg(node)
   throw 'NotImplemented: reg'
+endfunction
+
+function s:PythonCompiler.compile_op1(node, op)
+  let left = self.compile(a:node.left)
+  if s:opprec[a:node.type] > s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  return printf('%s%s', a:op, left)
+endfunction
+
+function s:PythonCompiler.compile_op2(node, op)
+  let left = self.compile(a:node.left)
+  if s:opprec[a:node.type] > s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  let right = self.compile(a:node.right)
+  if s:opprec[a:node.type] > s:opprec[a:node.right.type]
+    let right = '(' . right . ')'
+  endif
+  return printf('%s %s %s', left, a:op, right)
 endfunction
 
 let s:viml_builtin_functions = ['abs', 'acos', 'add', 'and', 'append', 'append', 'argc', 'argidx', 'argv', 'argv', 'asin', 'atan', 'atan2', 'browse', 'browsedir', 'bufexists', 'buflisted', 'bufloaded', 'bufname', 'bufnr', 'bufwinnr', 'byte2line', 'byteidx', 'call', 'ceil', 'changenr', 'char2nr', 'cindent', 'clearmatches', 'col', 'complete', 'complete_add', 'complete_check', 'confirm', 'copy', 'cos', 'cosh', 'count', 'cscope_connection', 'cursor', 'cursor', 'deepcopy', 'delete', 'did_filetype', 'diff_filler', 'diff_hlID', 'empty', 'escape', 'eval', 'eventhandler', 'executable', 'exists', 'extend', 'exp', 'expand', 'feedkeys', 'filereadable', 'filewritable', 'filter', 'finddir', 'findfile', 'float2nr', 'floor', 'fmod', 'fnameescape', 'fnamemodify', 'foldclosed', 'foldclosedend', 'foldlevel', 'foldtext', 'foldtextresult', 'foreground', 'function', 'garbagecollect', 'get', 'get', 'getbufline', 'getbufvar', 'getchar', 'getcharmod', 'getcmdline', 'getcmdpos', 'getcmdtype', 'getcwd', 'getfperm', 'getfsize', 'getfontname', 'getftime', 'getftype', 'getline', 'getline', 'getloclist', 'getmatches', 'getpid', 'getpos', 'getqflist', 'getreg', 'getregtype', 'gettabvar', 'gettabwinvar', 'getwinposx', 'getwinposy', 'getwinvar', 'glob', 'globpath', 'has', 'has_key', 'haslocaldir', 'hasmapto', 'histadd', 'histdel', 'histget', 'histnr', 'hlexists', 'hlID', 'hostname', 'iconv', 'indent', 'index', 'input', 'inputdialog', 'inputlist', 'inputrestore', 'inputsave', 'inputsecret', 'insert', 'invert', 'isdirectory', 'islocked', 'items', 'join', 'keys', 'len', 'libcall', 'libcallnr', 'line', 'line2byte', 'lispindent', 'localtime', 'log', 'log10', 'luaeval', 'map', 'maparg', 'mapcheck', 'match', 'matchadd', 'matcharg', 'matchdelete', 'matchend', 'matchlist', 'matchstr', 'max', 'min', 'mkdir', 'mode', 'mzeval', 'nextnonblank', 'nr2char', 'or', 'pathshorten', 'pow', 'prevnonblank', 'printf', 'pumvisible', 'pyeval', 'py3eval', 'range', 'readfile', 'reltime', 'reltimestr', 'remote_expr', 'remote_foreground', 'remote_peek', 'remote_read', 'remote_send', 'remove', 'remove', 'rename', 'repeat', 'resolve', 'reverse', 'round', 'screencol', 'screenrow', 'search', 'searchdecl', 'searchpair', 'searchpairpos', 'searchpos', 'server2client', 'serverlist', 'setbufvar', 'setcmdpos', 'setline', 'setloclist', 'setmatches', 'setpos', 'setqflist', 'setreg', 'settabvar', 'settabwinvar', 'setwinvar', 'sha256', 'shellescape', 'shiftwidth', 'simplify', 'sin', 'sinh', 'sort', 'soundfold', 'spellbadword', 'spellsuggest', 'split', 'sqrt', 'str2float', 'str2nr', 'strchars', 'strdisplaywidth', 'strftime', 'stridx', 'string', 'strlen', 'strpart', 'strridx', 'strtrans', 'strwidth', 'submatch', 'substitute', 'synID', 'synIDattr', 'synIDtrans', 'synconcealed', 'synstack', 'system', 'tabpagebuflist', 'tabpagenr', 'tabpagewinnr', 'taglist', 'tagfiles', 'tempname', 'tan', 'tanh', 'tolower', 'toupper', 'tr', 'trunc', 'type', 'undofile', 'undotree', 'values', 'virtcol', 'visualmode', 'wildmenumode', 'winbufnr', 'wincol', 'winheight', 'winline', 'winnr', 'winrestcmd', 'winrestview', 'winsaveview', 'winwidth', 'writefile', 'xor']

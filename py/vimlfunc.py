@@ -79,6 +79,9 @@ def viml_call(func, *args):
 def viml_empty(obj):
     return len(obj) == 0
 
+def viml_equalci(a, b):
+    return a.lower() == b.lower()
+
 def viml_eqreg(s, reg):
     return re.search(pat_vim2py[reg], s, re.IGNORECASE)
 
