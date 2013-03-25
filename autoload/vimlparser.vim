@@ -115,7 +115,6 @@ let s:NODE_NUMBER = 80
 let s:NODE_STRING = 81
 let s:NODE_LIST = 82
 let s:NODE_DICT = 83
-let s:NODE_NESTING = 84
 let s:NODE_OPTION = 85
 let s:NODE_IDENTIFIER = 86
 let s:NODE_CURLYNAME = 87
@@ -3053,7 +3052,7 @@ function s:ExprParser.parse_expr8()
         throw s:Err('E740: Too many arguments for function', node.pos)
       endif
       let left = node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_NESTING || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
       " SUBSCRIPT or CONCAT
       let node = s:Node(s:NODE_DOT)
       let node.pos = token.pos
@@ -3163,9 +3162,7 @@ function s:ExprParser.parse_expr9()
       endwhile
     endif
   elseif token.type == s:TOKEN_POPEN
-    let node = s:Node(s:NODE_NESTING)
-    let node.pos = token.pos
-    let node.left = self.parse_expr1()
+    let node = self.parse_expr1()
     let token = self.tokenizer.get()
     if token.type != s:TOKEN_PCLOSE
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
@@ -3296,7 +3293,7 @@ function s:LvalueParser.parse_lv8()
         endif
       endif
       let left = node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_NESTING || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
       " SUBSCRIPT or CONCAT
       let node = s:Node(s:NODE_DOT)
       let node.pos = token.pos
@@ -3771,8 +3768,6 @@ function s:Compiler.compile(node)
     return self.compile_list(a:node)
   elseif a:node.type == s:NODE_DICT
     return self.compile_dict(a:node)
-  elseif a:node.type == s:NODE_NESTING
-    return self.compile_nesting(a:node)
   elseif a:node.type == s:NODE_OPTION
     return self.compile_option(a:node)
   elseif a:node.type == s:NODE_IDENTIFIER
@@ -4208,10 +4203,6 @@ function s:Compiler.compile_dict(node)
   else
     return printf('(dict %s)', join(value, ' '))
   endif
-endfunction
-
-function s:Compiler.compile_nesting(node)
-  return self.compile(a:node.left)
 endfunction
 
 function s:Compiler.compile_option(node)
