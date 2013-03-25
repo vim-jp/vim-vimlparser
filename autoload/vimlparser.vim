@@ -224,6 +224,10 @@ function s:isnamec1(c)
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
+function s:isattrc(c)
+  return a:c =~# '^[0-9A-Za-z_]$'
+endfunction
+
 function s:isargname(s)
   return a:s =~# '^[A-Za-z_][0-9A-Za-z_]*$'
 endfunction
@@ -3049,19 +3053,14 @@ function s:ExprParser.parse_expr8()
         throw s:Err('E740: Too many arguments for function', node.pos)
       endif
       let left = node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_NESTING || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
       " SUBSCRIPT or CONCAT
-      let c = self.reader.peek()
-      if s:isnamec1(c)
-        let node = s:Node(s:NODE_DOT)
-        let node.pos = token.pos
-        let node.left = left
-        let node.right = self.parse_identifier()
-      else
-        " to be CONCAT
-        call self.reader.seek_set(pos)
-        break
-      endif
+      let node = s:Node(s:NODE_DOT)
+      let node.pos = token.pos
+      let node.left = left
+      let node.right = s:Node(s:NODE_IDENTIFIER)
+      let node.right.pos = self.reader.getpos()
+      let node.right.value = self.reader.read_attr()
       let left = node
     else
       call self.reader.seek_set(pos)
@@ -3297,19 +3296,14 @@ function s:LvalueParser.parse_lv8()
         endif
       endif
       let left = node
-    elseif token.type == s:TOKEN_DOT
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_NESTING || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
       " SUBSCRIPT or CONCAT
-      let c = self.reader.peek()
-      if s:isnamec1(c)
-        let node = s:Node(s:NODE_DOT)
-        let node.pos = token.pos
-        let node.left = left
-        let node.right = self.parse_identifier()
-      else
-        " to be CONCAT
-        call self.reader.seek_set(pos)
-        break
-      endif
+      let node = s:Node(s:NODE_DOT)
+      let node.pos = token.pos
+      let node.left = left
+      let node.right = s:Node(s:NODE_IDENTIFIER)
+      let node.right.pos = self.reader.getpos()
+      let node.right.value = self.reader.read_attr()
       let left = node
     else
       call self.reader.seek_set(pos)
@@ -3566,6 +3560,14 @@ endfunction
 function s:StringReader.read_name()
   let r = ''
   while s:isnamec(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function s:StringReader.read_attr()
+  let r = ''
+  while s:isattrc(self.peekn(1))
     let r .= self.getn(1)
   endwhile
   return r
