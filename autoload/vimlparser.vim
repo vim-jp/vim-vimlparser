@@ -3191,13 +3191,6 @@ endfunction
 " SUBSCRIPT or CONCAT
 "   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 "   str  "." expr6         => (concat str expr6)
-" AMBIGUOUS:
-"   foo.bar(a, b)
-"     o => ((dot foo bar) a b)
-"     x => (concat foo (bar a b))
-"   foo.123
-"     x => (dot foo 123)
-"     o => (concat foo 123)
 function s:ExprParser.parse_dot(token, left)
   if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
     return s:NIL
@@ -3205,11 +3198,8 @@ function s:ExprParser.parse_dot(token, left)
   if !s:iswordc(self.reader.p(0))
     return s:NIL
   endif
-  if s:isdigit(self.reader.p(0))
-    return s:NIL
-  endif
   let pos = self.reader.getpos()
-  let attr = self.reader.read_word()
+  let name = self.reader.read_word()
   if s:isnamec(self.reader.p(0))
     " foo.s:bar or foo.bar#baz
     return s:NIL
@@ -3219,7 +3209,7 @@ function s:ExprParser.parse_dot(token, left)
   let node.left = a:left
   let node.right = s:Node(s:NODE_IDENTIFIER)
   let node.right.pos = pos
-  let node.right.value = attr
+  let node.right.value = name
   return node
 endfunction
 

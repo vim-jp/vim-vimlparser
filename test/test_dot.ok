@@ -5,4 +5,5 @@
 (echo (concat "foo" bar))
 (echo ((dot foo bar)))
 (echo (concat foo s:bar))
-(echo (concat foo 123))
+(echo (dot foo 123))
+(echo (dot foo 123abc))
