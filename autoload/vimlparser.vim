@@ -3190,7 +3190,7 @@ endfunction
 
 " SUBSCRIPT or CONCAT
 "   dict "." [0-9A-Za-z_]+ => (subscript dict key)
-"   str  "." expr8         => (concat str expr8)
+"   str  "." expr6         => (concat str expr6)
 " AMBIGUOUS:
 "   foo.bar(a, b)
 "     o => ((dot foo bar) a b)
