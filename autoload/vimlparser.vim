@@ -223,10 +223,6 @@ function s:isnamec1(c)
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
-function s:isattrc(c)
-  return a:c =~# '^[0-9A-Za-z_]$'
-endfunction
-
 function s:isargname(s)
   return a:s =~# '^[A-Za-z_][0-9A-Za-z_]*$'
 endfunction
@@ -3052,14 +3048,12 @@ function s:ExprParser.parse_expr8()
         throw s:Err('E740: Too many arguments for function', node.pos)
       endif
       let left = node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
-      " SUBSCRIPT or CONCAT
-      let node = s:Node(s:NODE_DOT)
-      let node.pos = token.pos
-      let node.left = left
-      let node.right = s:Node(s:NODE_IDENTIFIER)
-      let node.right.pos = self.reader.getpos()
-      let node.right.value = self.reader.read_attr()
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
+      let node = self.parse_dot(token, left)
+      if node is s:NIL
+        call self.reader.seek_set(pos)
+        break
+      endif
       let left = node
     else
       call self.reader.seek_set(pos)
@@ -3194,6 +3188,45 @@ function s:ExprParser.parse_expr9()
   return node
 endfunction
 
+" SUBSCRIPT or CONCAT
+"   dict "." [0-9A-Za-z_]+ => (subscript dict key)
+"   str  "." expr8         => (concat str expr8)
+" AMBIGUOUS:
+"   foo.bar(a, b)
+"     o => ((dot foo bar) a b)
+"     x => (concat foo (bar a b))
+"   foo.123
+"     x => (dot foo 123)
+"     o => (concat foo 123)
+function s:ExprParser.parse_dot(token, left)
+  if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
+    return s:NIL
+  endif
+  if !s:iswordc(self.reader.p(0))
+    return s:NIL
+  endif
+  let pos = self.reader.getpos()
+  let attr = ''
+  if s:isdigit(self.reader.p(0))
+    let attr .= self.reader.read_digit()
+    if !s:iswordc(self.reader.p(0))
+      return s:NIL
+    endif
+  endif
+  let attr .= self.reader.read_word()
+  if s:isnamec(self.reader.p(0))
+    " foo.s:bar or foo.bar#baz
+    return s:NIL
+  endif
+  let node = s:Node(s:NODE_DOT)
+  let node.pos = a:token.pos
+  let node.left = a:left
+  let node.right = s:Node(s:NODE_IDENTIFIER)
+  let node.right.pos = pos
+  let node.right.value = attr
+  return node
+endfunction
+
 function s:ExprParser.parse_identifier()
   let id = []
   call self.reader.skip_white()
@@ -3293,14 +3326,12 @@ function s:LvalueParser.parse_lv8()
         endif
       endif
       let left = node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT && s:isattrc(self.reader.p(0)) && (left.type == s:NODE_IDENTIFIER || left.type == s:NODE_CURLYNAME || left.type == s:NODE_DICT || left.type == s:NODE_SUBSCRIPT || left.type == s:NODE_CALL || left.type == s:NODE_DOT)
-      " SUBSCRIPT or CONCAT
-      let node = s:Node(s:NODE_DOT)
-      let node.pos = token.pos
-      let node.left = left
-      let node.right = s:Node(s:NODE_IDENTIFIER)
-      let node.right.pos = self.reader.getpos()
-      let node.right.value = self.reader.read_attr()
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
+      let node = self.parse_dot(token, left)
+      if node is s:NIL
+        call self.reader.seek_set(pos)
+        break
+      endif
       let left = node
     else
       call self.reader.seek_set(pos)
@@ -3557,14 +3588,6 @@ endfunction
 function s:StringReader.read_name()
   let r = ''
   while s:isnamec(self.peekn(1))
-    let r .= self.getn(1)
-  endwhile
-  return r
-endfunction
-
-function s:StringReader.read_attr()
-  let r = ''
-  while s:isattrc(self.peekn(1))
     let r .= self.getn(1)
   endwhile
   return r
