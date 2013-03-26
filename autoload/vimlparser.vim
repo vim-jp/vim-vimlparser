@@ -8,9 +8,13 @@ function! vimlparser#import()
   return s:
 endfunction
 
-function! vimlparser#test(filename)
+" @brief Read input as VimScript and return stringified AST.
+" @param input Input filename or string of VimScript.
+" @return Stringified AST.
+function! vimlparser#test(input)
   try
-    let r = s:StringReader.new(readfile(a:filename))
+    let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : a:input
+    let r = s:StringReader.new(i)
     let p = s:VimLParser.new()
     let c = s:Compiler.new()
     echo join(c.compile(p.parse(r)), "\n")
@@ -3375,21 +3379,21 @@ function! s:StringReader.new(...)
 endfunction
 
 function! s:StringReader.__init__(lines)
-  let self.lines = a:lines
+  let lines = type(a:lines) == 3 ? a:lines : [a:lines]
   let self.buf = []
   let self.pos = []
   let lnum = 0
-  while lnum < len(a:lines)
+  while lnum < len(lines)
     let col = 0
-    for c in split(a:lines[lnum], '\zs')
+    for c in split(lines[lnum], '\zs')
       call add(self.buf, c)
       call add(self.pos, [lnum + 1, col + 1])
       let col += len(c)
     endfor
-    while lnum + 1 < len(a:lines) && a:lines[lnum + 1] =~# '^\s*\\'
+    while lnum + 1 < len(lines) && lines[lnum + 1] =~# '^\s*\\'
       let skip = 1
       let col = 0
-      for c in split(a:lines[lnum + 1], '\zs')
+      for c in split(lines[lnum + 1], '\zs')
         if skip
           if c == '\'
             let skip = 0
