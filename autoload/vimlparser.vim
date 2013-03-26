@@ -1,11 +1,14 @@
-" VimL parser
+" vim:set ts=8 sts=2 sw=2 tw=0 et:
+"
+" VimL parser - Vim Script Parser
+"
 " License: This file is placed in the public domain.
 
-function vimlparser#import()
+function! vimlparser#import()
   return s:
 endfunction
 
-function vimlparser#test(filename)
+function! vimlparser#test(filename)
   try
     let r = s:StringReader.new(readfile(a:filename))
     let p = s:VimLParser.new()
@@ -187,64 +190,64 @@ let s:TOKEN_DOTDOTDOT = 63
 
 let s:MAX_FUNC_ARGS = 20
 
-function s:isalpha(c)
+function! s:isalpha(c)
   return a:c =~# '^[A-Za-z]$'
 endfunction
 
-function s:isalnum(c)
+function! s:isalnum(c)
   return a:c =~# '^[0-9A-Za-z]$'
 endfunction
 
-function s:isdigit(c)
+function! s:isdigit(c)
   return a:c =~# '^[0-9]$'
 endfunction
 
-function s:isxdigit(c)
+function! s:isxdigit(c)
   return a:c =~# '^[0-9A-Fa-f]$'
 endfunction
 
-function s:iswordc(c)
+function! s:iswordc(c)
   return a:c =~# '^[0-9A-Za-z_]$'
 endfunction
 
-function s:iswordc1(c)
+function! s:iswordc1(c)
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
-function s:iswhite(c)
+function! s:iswhite(c)
   return a:c =~# '^[ \t]$'
 endfunction
 
-function s:isnamec(c)
+function! s:isnamec(c)
   return a:c =~# '^[0-9A-Za-z_:#]$'
 endfunction
 
-function s:isnamec1(c)
+function! s:isnamec1(c)
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
-function s:isargname(s)
+function! s:isargname(s)
   return a:s =~# '^[A-Za-z_][0-9A-Za-z_]*$'
 endfunction
 
-function s:isvarname(s)
+function! s:isvarname(s)
   return a:s =~# '^[vgslabwt]:$\|^\([vgslabwt]:\)\?[A-Za-z_][0-9A-Za-z_]*$'
 endfunction
 
 " FIXME:
-function s:isidc(c)
+function! s:isidc(c)
   return a:c =~# '^[0-9A-Za-z_]$'
 endfunction
 
-function s:isupper(c)
+function! s:isupper(c)
   return a:c =~# '^[A-Z]$'
 endfunction
 
-function s:islower(c)
+function! s:islower(c)
   return a:c =~# '^[a-z]$'
 endfunction
 
-function s:ExArg()
+function! s:ExArg()
   let ea = {}
   let ea.forceit = 0
   let ea.addr_count = 0
@@ -377,35 +380,35 @@ endfunction
 " CURLYNAME .value
 " ENV .value
 " REG .value
-function s:Node(type)
+function! s:Node(type)
   return {'type': a:type}
 endfunction
 
-function s:Err(msg, pos)
+function! s:Err(msg, pos)
   return printf('vimlparser: %s: line %d col %d', a:msg, a:pos.lnum, a:pos.col)
 endfunction
 
 let s:VimLParser = {}
 
-function s:VimLParser.new(...)
+function! s:VimLParser.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:VimLParser.__init__()
+function! s:VimLParser.__init__()
   let self.find_command_cache = {}
 endfunction
 
-function s:VimLParser.push_context(node)
+function! s:VimLParser.push_context(node)
   call insert(self.context, a:node)
 endfunction
 
-function s:VimLParser.pop_context()
+function! s:VimLParser.pop_context()
   call remove(self.context, 0)
 endfunction
 
-function s:VimLParser.find_context(type)
+function! s:VimLParser.find_context(type)
   let i = 0
   for node in self.context
     if node.type == a:type
@@ -416,41 +419,41 @@ function s:VimLParser.find_context(type)
   return -1
 endfunction
 
-function s:VimLParser.add_node(node)
+function! s:VimLParser.add_node(node)
   call add(self.context[0].body, a:node)
 endfunction
 
-function s:VimLParser.check_missing_endfunction(ends, pos)
+function! s:VimLParser.check_missing_endfunction(ends, pos)
   if self.context[0].type == s:NODE_FUNCTION
     throw s:Err(printf('E126: Missing :endfunction:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function s:VimLParser.check_missing_endif(ends, pos)
+function! s:VimLParser.check_missing_endif(ends, pos)
   if self.context[0].type == s:NODE_IF || self.context[0].type == s:NODE_ELSEIF || self.context[0].type == s:NODE_ELSE
     throw s:Err(printf('E171: Missing :endif:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function s:VimLParser.check_missing_endtry(ends, pos)
+function! s:VimLParser.check_missing_endtry(ends, pos)
   if self.context[0].type == s:NODE_TRY || self.context[0].type == s:NODE_CATCH || self.context[0].type == s:NODE_FINALLY
     throw s:Err(printf('E600: Missing :endtry:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function s:VimLParser.check_missing_endwhile(ends, pos)
+function! s:VimLParser.check_missing_endwhile(ends, pos)
   if self.context[0].type == s:NODE_WHILE
     throw s:Err(printf('E170: Missing :endwhile:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function s:VimLParser.check_missing_endfor(ends, pos)
+function! s:VimLParser.check_missing_endfor(ends, pos)
   if self.context[0].type == s:NODE_FOR
     throw s:Err(printf('E170: Missing :endfor:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function s:VimLParser.parse(reader)
+function! s:VimLParser.parse(reader)
   let self.reader = a:reader
   let self.context = []
   let toplevel = s:Node(s:NODE_TOPLEVEL)
@@ -468,7 +471,7 @@ function s:VimLParser.parse(reader)
   return toplevel
 endfunction
 
-function s:VimLParser.parse_one_cmd()
+function! s:VimLParser.parse_one_cmd()
   let self.ea = s:ExArg()
 
   if self.reader.peekn(2) ==# '#!'
@@ -494,7 +497,7 @@ function s:VimLParser.parse_one_cmd()
 endfunction
 
 " FIXME:
-function s:VimLParser.parse_command_modifiers()
+function! s:VimLParser.parse_command_modifiers()
   let modifiers = []
   while 1
     let pos = self.reader.tell()
@@ -572,7 +575,7 @@ function s:VimLParser.parse_command_modifiers()
 endfunction
 
 " FIXME:
-function s:VimLParser.parse_range()
+function! s:VimLParser.parse_range()
   let tokens = []
 
   while 1
@@ -654,7 +657,7 @@ function s:VimLParser.parse_range()
 endfunction
 
 " FIXME:
-function s:VimLParser.parse_pattern(delimiter)
+function! s:VimLParser.parse_pattern(delimiter)
   let pattern = ''
   let endc = ''
   let inbracket = 0
@@ -684,7 +687,7 @@ function s:VimLParser.parse_pattern(delimiter)
   return [pattern, endc]
 endfunction
 
-function s:VimLParser.parse_command()
+function! s:VimLParser.parse_command()
   call self.reader.skip_white_and_colon()
 
   let self.ea.cmdpos = self.reader.getpos()
@@ -764,7 +767,7 @@ function s:VimLParser.parse_command()
   call self[self.ea.cmd.parser]()
 endfunction
 
-function s:VimLParser.find_command()
+function! s:VimLParser.find_command()
   let c = self.reader.peekn(1)
 
   if c ==# 'k'
@@ -818,13 +821,13 @@ function s:VimLParser.find_command()
 endfunction
 
 " TODO:
-function s:VimLParser.parse_hashbang()
+function! s:VimLParser.parse_hashbang()
   call self.reader.getn(-1)
 endfunction
 
 " TODO:
 " ++opt=val
-function s:VimLParser.parse_argopt()
+function! s:VimLParser.parse_argopt()
   while self.reader.p(0) ==# '+' && self.reader.p(1) ==# '+'
     let s = self.reader.peekn(20)
     if s =~# '^++bin\>'
@@ -868,7 +871,7 @@ endfunction
 
 " TODO:
 " +command
-function s:VimLParser.parse_argcmd()
+function! s:VimLParser.parse_argcmd()
   if self.reader.peekn(1) ==# '+'
     call self.reader.getn(1)
     if self.reader.peekn(1) ==# ' '
@@ -879,7 +882,7 @@ function s:VimLParser.parse_argcmd()
   endif
 endfunction
 
-function s:VimLParser.read_cmdarg()
+function! s:VimLParser.read_cmdarg()
   let r = ''
   while 1
     let c = self.reader.peekn(1)
@@ -895,7 +898,7 @@ function s:VimLParser.read_cmdarg()
   return r
 endfunction
 
-function s:VimLParser.parse_comment()
+function! s:VimLParser.parse_comment()
   let npos = self.reader.getpos()
   let c = self.reader.get()
   if c !=# '"'
@@ -907,7 +910,7 @@ function s:VimLParser.parse_comment()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_trail()
+function! s:VimLParser.parse_trail()
   call self.reader.skip_white()
   let c = self.reader.peek()
   if c ==# '<EOF>'
@@ -925,7 +928,7 @@ function s:VimLParser.parse_trail()
 endfunction
 
 " modifier or range only command line
-function s:VimLParser.parse_cmd_modifier_range()
+function! s:VimLParser.parse_cmd_modifier_range()
   let node = s:Node(s:NODE_EXCMD)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -934,7 +937,7 @@ function s:VimLParser.parse_cmd_modifier_range()
 endfunction
 
 " TODO:
-function s:VimLParser.parse_cmd_common()
+function! s:VimLParser.parse_cmd_common()
   if self.ea.cmd.flags =~# '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
   elseif self.ea.cmd.name ==# '!' || self.ea.cmd.name ==# 'global' || self.ea.cmd.name ==# 'vglobal' || self.ea.usefilter
@@ -959,7 +962,7 @@ function s:VimLParser.parse_cmd_common()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.separate_nextcmd()
+function! s:VimLParser.separate_nextcmd()
   if self.ea.cmd.name ==# 'vimgrep' || self.ea.cmd.name ==# 'vimgrepadd' || self.ea.cmd.name ==# 'lvimgrep' || self.ea.cmd.name ==# 'lvimgrepadd'
     call self.skip_vimgrep_pat()
   endif
@@ -1015,7 +1018,7 @@ function s:VimLParser.separate_nextcmd()
 endfunction
 
 " FIXME
-function s:VimLParser.skip_vimgrep_pat()
+function! s:VimLParser.skip_vimgrep_pat()
   if self.reader.peekn(1) ==# ''
     " pass
   elseif s:isidc(self.reader.peekn(1))
@@ -1034,7 +1037,7 @@ function s:VimLParser.skip_vimgrep_pat()
   endif
 endfunction
 
-function s:VimLParser.parse_cmd_append()
+function! s:VimLParser.parse_cmd_append()
   call self.reader.setpos(self.ea.linepos)
   let cmdline = self.reader.readline()
   let lines = [cmdline]
@@ -1057,11 +1060,11 @@ function s:VimLParser.parse_cmd_append()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_insert()
+function! s:VimLParser.parse_cmd_insert()
   return self.parse_cmd_append()
 endfunction
 
-function s:VimLParser.parse_cmd_loadkeymap()
+function! s:VimLParser.parse_cmd_loadkeymap()
   call self.reader.setpos(self.ea.linepos)
   let cmdline = self.reader.readline()
   let lines = [cmdline]
@@ -1079,7 +1082,7 @@ function s:VimLParser.parse_cmd_loadkeymap()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_lua()
+function! s:VimLParser.parse_cmd_lua()
   call self.reader.skip_white()
   if self.reader.peekn(2) ==# '<<'
     call self.reader.getn(2)
@@ -1115,31 +1118,31 @@ function s:VimLParser.parse_cmd_lua()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_mzscheme()
+function! s:VimLParser.parse_cmd_mzscheme()
   return self.parse_cmd_lua()
 endfunction
 
-function s:VimLParser.parse_cmd_perl()
+function! s:VimLParser.parse_cmd_perl()
   return self.parse_cmd_lua()
 endfunction
 
-function s:VimLParser.parse_cmd_python()
+function! s:VimLParser.parse_cmd_python()
   return self.parse_cmd_lua()
 endfunction
 
-function s:VimLParser.parse_cmd_python3()
+function! s:VimLParser.parse_cmd_python3()
   return self.parse_cmd_lua()
 endfunction
 
-function s:VimLParser.parse_cmd_ruby()
+function! s:VimLParser.parse_cmd_ruby()
   return self.parse_cmd_lua()
 endfunction
 
-function s:VimLParser.parse_cmd_tcl()
+function! s:VimLParser.parse_cmd_tcl()
   return self.parse_cmd_lua()
 endfunction
 
-function s:VimLParser.parse_cmd_finish()
+function! s:VimLParser.parse_cmd_finish()
   call self.parse_cmd_common()
   if self.context[0].type == s:NODE_TOPLEVEL
     call self.reader.seek_end(0)
@@ -1147,11 +1150,11 @@ function s:VimLParser.parse_cmd_finish()
 endfunction
 
 " FIXME
-function s:VimLParser.parse_cmd_usercmd()
+function! s:VimLParser.parse_cmd_usercmd()
   return self.parse_cmd_common()
 endfunction
 
-function s:VimLParser.parse_cmd_function()
+function! s:VimLParser.parse_cmd_function()
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
@@ -1254,7 +1257,7 @@ function s:VimLParser.parse_cmd_function()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_endfunction()
+function! s:VimLParser.parse_cmd_endfunction()
   call self.check_missing_endif('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endtry('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endwhile('ENDFUNCTION', self.ea.cmdpos)
@@ -1270,7 +1273,7 @@ function s:VimLParser.parse_cmd_endfunction()
   call self.pop_context()
 endfunction
 
-function s:VimLParser.parse_cmd_delfunction()
+function! s:VimLParser.parse_cmd_delfunction()
   let node = s:Node(s:NODE_DELFUNCTION)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1278,7 +1281,7 @@ function s:VimLParser.parse_cmd_delfunction()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_return()
+function! s:VimLParser.parse_cmd_return()
   if self.find_context(s:NODE_FUNCTION) == -1
     throw s:Err('E133: :return not inside a function', self.ea.cmdpos)
   endif
@@ -1294,7 +1297,7 @@ function s:VimLParser.parse_cmd_return()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_call()
+function! s:VimLParser.parse_cmd_call()
   let node = s:Node(s:NODE_EXCALL)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1310,7 +1313,7 @@ function s:VimLParser.parse_cmd_call()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_let()
+function! s:VimLParser.parse_cmd_let()
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
@@ -1353,7 +1356,7 @@ function s:VimLParser.parse_cmd_let()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_unlet()
+function! s:VimLParser.parse_cmd_unlet()
   let node = s:Node(s:NODE_UNLET)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1361,7 +1364,7 @@ function s:VimLParser.parse_cmd_unlet()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_lockvar()
+function! s:VimLParser.parse_cmd_lockvar()
   let node = s:Node(s:NODE_LOCKVAR)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1375,7 +1378,7 @@ function s:VimLParser.parse_cmd_lockvar()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_unlockvar()
+function! s:VimLParser.parse_cmd_unlockvar()
   let node = s:Node(s:NODE_UNLOCKVAR)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1389,7 +1392,7 @@ function s:VimLParser.parse_cmd_unlockvar()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_if()
+function! s:VimLParser.parse_cmd_if()
   let node = s:Node(s:NODE_IF)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1402,7 +1405,7 @@ function s:VimLParser.parse_cmd_if()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_elseif()
+function! s:VimLParser.parse_cmd_elseif()
   if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF
     throw s:Err('E582: :elseif without :if', self.ea.cmdpos)
   endif
@@ -1418,7 +1421,7 @@ function s:VimLParser.parse_cmd_elseif()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_else()
+function! s:VimLParser.parse_cmd_else()
   if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF
     throw s:Err('E581: :else without :if', self.ea.cmdpos)
   endif
@@ -1433,7 +1436,7 @@ function s:VimLParser.parse_cmd_else()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_endif()
+function! s:VimLParser.parse_cmd_endif()
   if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF && self.context[0].type != s:NODE_ELSE
     throw s:Err('E580: :endif without :if', self.ea.cmdpos)
   endif
@@ -1447,7 +1450,7 @@ function s:VimLParser.parse_cmd_endif()
   call self.pop_context()
 endfunction
 
-function s:VimLParser.parse_cmd_while()
+function! s:VimLParser.parse_cmd_while()
   let node = s:Node(s:NODE_WHILE)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1458,7 +1461,7 @@ function s:VimLParser.parse_cmd_while()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_endwhile()
+function! s:VimLParser.parse_cmd_endwhile()
   if self.context[0].type != s:NODE_WHILE
     throw s:Err('E588: :endwhile without :while', self.ea.cmdpos)
   endif
@@ -1469,7 +1472,7 @@ function s:VimLParser.parse_cmd_endwhile()
   call self.pop_context()
 endfunction
 
-function s:VimLParser.parse_cmd_for()
+function! s:VimLParser.parse_cmd_for()
   let node = s:Node(s:NODE_FOR)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1491,7 +1494,7 @@ function s:VimLParser.parse_cmd_for()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_endfor()
+function! s:VimLParser.parse_cmd_endfor()
   if self.context[0].type != s:NODE_FOR
     throw s:Err('E588: :endfor without :for', self.ea.cmdpos)
   endif
@@ -1502,7 +1505,7 @@ function s:VimLParser.parse_cmd_endfor()
   call self.pop_context()
 endfunction
 
-function s:VimLParser.parse_cmd_continue()
+function! s:VimLParser.parse_cmd_continue()
   if self.find_context(s:NODE_WHILE) == -1 && self.find_context(s:NODE_FOR) == -1
     throw s:Err('E586: :continue without :while or :for', self.ea.cmdpos)
   endif
@@ -1512,7 +1515,7 @@ function s:VimLParser.parse_cmd_continue()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_break()
+function! s:VimLParser.parse_cmd_break()
   if self.find_context(s:NODE_WHILE) == -1 && self.find_context(s:NODE_FOR) == -1
     throw s:Err('E587: :break without :while or :for', self.ea.cmdpos)
   endif
@@ -1522,7 +1525,7 @@ function s:VimLParser.parse_cmd_break()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_try()
+function! s:VimLParser.parse_cmd_try()
   let node = s:Node(s:NODE_TRY)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1534,7 +1537,7 @@ function s:VimLParser.parse_cmd_try()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_catch()
+function! s:VimLParser.parse_cmd_catch()
   if self.context[0].type == s:NODE_FINALLY
     throw s:Err('E604: :catch after :finally', self.ea.cmdpos)
   elseif self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
@@ -1556,7 +1559,7 @@ function s:VimLParser.parse_cmd_catch()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_finally()
+function! s:VimLParser.parse_cmd_finally()
   if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
     throw s:Err('E606: :finally without :try', self.ea.cmdos)
   endif
@@ -1571,7 +1574,7 @@ function s:VimLParser.parse_cmd_finally()
   call self.push_context(node)
 endfunction
 
-function s:VimLParser.parse_cmd_endtry()
+function! s:VimLParser.parse_cmd_endtry()
   if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH && self.context[0].type != s:NODE_FINALLY
     throw s:Err('E602: :endtry without :try', self.ea.cmdpos)
   endif
@@ -1585,7 +1588,7 @@ function s:VimLParser.parse_cmd_endtry()
   call self.pop_context()
 endfunction
 
-function s:VimLParser.parse_cmd_throw()
+function! s:VimLParser.parse_cmd_throw()
   let node = s:Node(s:NODE_THROW)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1593,7 +1596,7 @@ function s:VimLParser.parse_cmd_throw()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_echo()
+function! s:VimLParser.parse_cmd_echo()
   let node = s:Node(s:NODE_ECHO)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1601,7 +1604,7 @@ function s:VimLParser.parse_cmd_echo()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_echon()
+function! s:VimLParser.parse_cmd_echon()
   let node = s:Node(s:NODE_ECHON)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1609,7 +1612,7 @@ function s:VimLParser.parse_cmd_echon()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_echohl()
+function! s:VimLParser.parse_cmd_echohl()
   let node = s:Node(s:NODE_ECHOHL)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1620,7 +1623,7 @@ function s:VimLParser.parse_cmd_echohl()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_echomsg()
+function! s:VimLParser.parse_cmd_echomsg()
   let node = s:Node(s:NODE_ECHOMSG)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1628,7 +1631,7 @@ function s:VimLParser.parse_cmd_echomsg()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_echoerr()
+function! s:VimLParser.parse_cmd_echoerr()
   let node = s:Node(s:NODE_ECHOERR)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1636,7 +1639,7 @@ function s:VimLParser.parse_cmd_echoerr()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_cmd_execute()
+function! s:VimLParser.parse_cmd_execute()
   let node = s:Node(s:NODE_EXECUTE)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1644,11 +1647,11 @@ function s:VimLParser.parse_cmd_execute()
   call self.add_node(node)
 endfunction
 
-function s:VimLParser.parse_expr()
+function! s:VimLParser.parse_expr()
   return s:ExprParser.new(self.reader).parse()
 endfunction
 
-function s:VimLParser.parse_exprlist()
+function! s:VimLParser.parse_exprlist()
   let list = []
   while 1
     call self.reader.skip_white()
@@ -1662,7 +1665,7 @@ function s:VimLParser.parse_exprlist()
   return list
 endfunction
 
-function s:VimLParser.parse_lvalue_func()
+function! s:VimLParser.parse_lvalue_func()
   let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
   if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
@@ -1672,7 +1675,7 @@ function s:VimLParser.parse_lvalue_func()
 endfunction
 
 " FIXME:
-function s:VimLParser.parse_lvalue()
+function! s:VimLParser.parse_lvalue()
   let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
   if node.type == s:NODE_IDENTIFIER
@@ -1686,7 +1689,7 @@ function s:VimLParser.parse_lvalue()
   throw s:Err('Invalid Expression', node.pos)
 endfunction
 
-function s:VimLParser.parse_lvaluelist()
+function! s:VimLParser.parse_lvaluelist()
   let list = []
   let node = self.parse_expr()
   call add(list, node)
@@ -1702,7 +1705,7 @@ function s:VimLParser.parse_lvaluelist()
 endfunction
 
 " FIXME:
-function s:VimLParser.parse_letlhs()
+function! s:VimLParser.parse_letlhs()
   let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
   let tokenizer = s:ExprTokenizer.new(self.reader)
   if tokenizer.peek().type == s:TOKEN_SQOPEN
@@ -1735,7 +1738,7 @@ function s:VimLParser.parse_letlhs()
   return lhs
 endfunction
 
-function s:VimLParser.ends_excmds(c)
+function! s:VimLParser.ends_excmds(c)
   return a:c ==# '' || a:c ==# '|' || a:c ==# '"' || a:c ==# '<EOF>' || a:c ==# '<EOL>'
 endfunction
 
@@ -2261,29 +2264,29 @@ let s:VimLParser.builtin_commands = [
 
 let s:ExprTokenizer = {}
 
-function s:ExprTokenizer.new(...)
+function! s:ExprTokenizer.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:ExprTokenizer.__init__(reader)
+function! s:ExprTokenizer.__init__(reader)
   let self.reader = a:reader
   let self.cache = {}
 endfunction
 
-function s:ExprTokenizer.token(type, value, pos)
+function! s:ExprTokenizer.token(type, value, pos)
   return {'type': a:type, 'value': a:value, 'pos': a:pos}
 endfunction
 
-function s:ExprTokenizer.peek()
+function! s:ExprTokenizer.peek()
   let pos = self.reader.tell()
   let r = self.get()
   call self.reader.seek_set(pos)
   return r
 endfunction
 
-function s:ExprTokenizer.get()
+function! s:ExprTokenizer.get()
   " FIXME: remove dirty hack
   if has_key(self.cache, self.reader.tell())
     let x = self.cache[self.reader.tell()]
@@ -2297,7 +2300,7 @@ function s:ExprTokenizer.get()
   return r
 endfunction
 
-function s:ExprTokenizer.get2()
+function! s:ExprTokenizer.get2()
   let r = self.reader
   let pos = r.getpos()
   let c = r.peek()
@@ -2533,7 +2536,7 @@ function s:ExprTokenizer.get2()
   endif
 endfunction
 
-function s:ExprTokenizer.get_sstring()
+function! s:ExprTokenizer.get_sstring()
   call self.reader.skip_white()
   let c = self.reader.p(0)
   if c !=# "'"
@@ -2561,7 +2564,7 @@ function s:ExprTokenizer.get_sstring()
   return s
 endfunction
 
-function s:ExprTokenizer.get_dstring()
+function! s:ExprTokenizer.get_dstring()
   call self.reader.skip_white()
   let c = self.reader.p(0)
   if c !=# '"'
@@ -2595,23 +2598,23 @@ endfunction
 
 let s:ExprParser = {}
 
-function s:ExprParser.new(...)
+function! s:ExprParser.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:ExprParser.__init__(reader)
+function! s:ExprParser.__init__(reader)
   let self.reader = a:reader
   let self.tokenizer = s:ExprTokenizer.new(a:reader)
 endfunction
 
-function s:ExprParser.parse()
+function! s:ExprParser.parse()
   return self.parse_expr1()
 endfunction
 
 " expr1: expr2 ? expr1 : expr1
-function s:ExprParser.parse_expr1()
+function! s:ExprParser.parse_expr1()
   let left = self.parse_expr2()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
@@ -2633,7 +2636,7 @@ function s:ExprParser.parse_expr1()
 endfunction
 
 " expr2: expr3 || expr3 ..
-function s:ExprParser.parse_expr2()
+function! s:ExprParser.parse_expr2()
   let left = self.parse_expr3()
   while 1
     let pos = self.reader.tell()
@@ -2653,7 +2656,7 @@ function s:ExprParser.parse_expr2()
 endfunction
 
 " expr3: expr4 && expr4
-function s:ExprParser.parse_expr3()
+function! s:ExprParser.parse_expr3()
   let left = self.parse_expr4()
   while 1
     let pos = self.reader.tell()
@@ -2687,7 +2690,7 @@ endfunction
 "
 "        expr5 is expr5
 "        expr5 isnot expr5
-function s:ExprParser.parse_expr4()
+function! s:ExprParser.parse_expr4()
   let left = self.parse_expr5()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
@@ -2880,7 +2883,7 @@ endfunction
 " expr5: expr6 + expr6 ..
 "        expr6 - expr6 ..
 "        expr6 . expr6 ..
-function s:ExprParser.parse_expr5()
+function! s:ExprParser.parse_expr5()
   let left = self.parse_expr6()
   while 1
     let pos = self.reader.tell()
@@ -2914,7 +2917,7 @@ endfunction
 " expr6: expr7 * expr7 ..
 "        expr7 / expr7 ..
 "        expr7 % expr7 ..
-function s:ExprParser.parse_expr6()
+function! s:ExprParser.parse_expr6()
   let left = self.parse_expr7()
   while 1
     let pos = self.reader.tell()
@@ -2948,7 +2951,7 @@ endfunction
 " expr7: ! expr7
 "        - expr7
 "        + expr7
-function s:ExprParser.parse_expr7()
+function! s:ExprParser.parse_expr7()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_NOT
@@ -2974,7 +2977,7 @@ endfunction
 "        expr8[expr1 : expr1]
 "        expr8.name
 "        expr8(expr1, ...)
-function s:ExprParser.parse_expr8()
+function! s:ExprParser.parse_expr8()
   let left = self.parse_expr9()
   while 1
     let pos = self.reader.tell()
@@ -3076,7 +3079,7 @@ endfunction
 "        @r
 "        function(expr1, ...)
 "        func{ti}on(expr1, ...)
-function s:ExprParser.parse_expr9()
+function! s:ExprParser.parse_expr9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_NUMBER
@@ -3191,7 +3194,7 @@ endfunction
 " SUBSCRIPT or CONCAT
 "   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 "   str  "." expr6         => (concat str expr6)
-function s:ExprParser.parse_dot(token, left)
+function! s:ExprParser.parse_dot(token, left)
   if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
     return s:NIL
   endif
@@ -3213,7 +3216,7 @@ function s:ExprParser.parse_dot(token, left)
   return node
 endfunction
 
-function s:ExprParser.parse_identifier()
+function! s:ExprParser.parse_identifier()
   let id = []
   call self.reader.skip_white()
   let npos = self.reader.getpos()
@@ -3262,7 +3265,7 @@ endfunction
 " expr8: expr8[expr1]
 "        expr8[expr1 : expr1]
 "        expr8.name
-function s:LvalueParser.parse_lv8()
+function! s:LvalueParser.parse_lv8()
   let left = self.parse_lv9()
   while 1
     let pos = self.reader.tell()
@@ -3332,7 +3335,7 @@ endfunction
 "        var{ria}ble
 "        $VAR
 "        @r
-function s:LvalueParser.parse_lv9()
+function! s:LvalueParser.parse_lv9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type == s:TOKEN_COPEN
@@ -3365,13 +3368,13 @@ endfunction
 
 let s:StringReader = {}
 
-function s:StringReader.new(...)
+function! s:StringReader.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:StringReader.__init__(lines)
+function! s:StringReader.__init__(lines)
   let self.lines = a:lines
   let self.buf = []
   let self.pos = []
@@ -3408,41 +3411,41 @@ function s:StringReader.__init__(lines)
   let self.i = 0
 endfunction
 
-function s:StringReader.eof()
+function! s:StringReader.eof()
   return self.i >= len(self.buf)
 endfunction
 
-function s:StringReader.tell()
+function! s:StringReader.tell()
   return self.i
 endfunction
 
-function s:StringReader.seek_set(i)
+function! s:StringReader.seek_set(i)
   let self.i = a:i
 endfunction
 
-function s:StringReader.seek_cur(i)
+function! s:StringReader.seek_cur(i)
   let self.i = self.i + a:i
 endfunction
 
-function s:StringReader.seek_end(i)
+function! s:StringReader.seek_end(i)
   let self.i = len(self.buf) + a:i
 endfunction
 
-function s:StringReader.p(i)
+function! s:StringReader.p(i)
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
   return self.buf[self.i + a:i]
 endfunction
 
-function s:StringReader.peek()
+function! s:StringReader.peek()
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
   return self.buf[self.i]
 endfunction
 
-function s:StringReader.get()
+function! s:StringReader.get()
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
@@ -3450,14 +3453,14 @@ function s:StringReader.get()
   return self.buf[self.i - 1]
 endfunction
 
-function s:StringReader.peekn(n)
+function! s:StringReader.peekn(n)
   let pos = self.tell()
   let r = self.getn(a:n)
   call self.seek_set(pos)
   return r
 endfunction
 
-function s:StringReader.getn(n)
+function! s:StringReader.getn(n)
   let r = ''
   let j = 0
   while self.i < len(self.buf) && (a:n < 0 || j < a:n)
@@ -3472,17 +3475,17 @@ function s:StringReader.getn(n)
   return r
 endfunction
 
-function s:StringReader.peekline()
+function! s:StringReader.peekline()
   return self.peekn(-1)
 endfunction
 
-function s:StringReader.readline()
+function! s:StringReader.readline()
   let r = self.getn(-1)
   call self.get()
   return r
 endfunction
 
-function s:StringReader.getstr(begin, end)
+function! s:StringReader.getstr(begin, end)
   let r = ''
   for i in range(a:begin.i, a:end.i - 1)
     if i >= len(self.buf)
@@ -3497,16 +3500,16 @@ function s:StringReader.getstr(begin, end)
   return r
 endfunction
 
-function s:StringReader.getpos()
+function! s:StringReader.getpos()
   let [lnum, col] = self.pos[self.i]
   return {'i': self.i, 'lnum': lnum, 'col': col}
 endfunction
 
-function s:StringReader.setpos(pos)
+function! s:StringReader.setpos(pos)
   let self.i  = a:pos.i
 endfunction
 
-function s:StringReader.read_alpha()
+function! s:StringReader.read_alpha()
   let r = ''
   while s:isalpha(self.peekn(1))
     let r .= self.getn(1)
@@ -3514,7 +3517,7 @@ function s:StringReader.read_alpha()
   return r
 endfunction
 
-function s:StringReader.read_alnum()
+function! s:StringReader.read_alnum()
   let r = ''
   while s:isalnum(self.peekn(1))
     let r .= self.getn(1)
@@ -3522,7 +3525,7 @@ function s:StringReader.read_alnum()
   return r
 endfunction
 
-function s:StringReader.read_digit()
+function! s:StringReader.read_digit()
   let r = ''
   while s:isdigit(self.peekn(1))
     let r .= self.getn(1)
@@ -3530,7 +3533,7 @@ function s:StringReader.read_digit()
   return r
 endfunction
 
-function s:StringReader.read_xdigit()
+function! s:StringReader.read_xdigit()
   let r = ''
   while s:isxdigit(self.peekn(1))
     let r .= self.getn(1)
@@ -3538,7 +3541,7 @@ function s:StringReader.read_xdigit()
   return r
 endfunction
 
-function s:StringReader.read_integer()
+function! s:StringReader.read_integer()
   let r = ''
   let c = self.peekn(1)
   if c == '-' || c == '+'
@@ -3547,7 +3550,7 @@ function s:StringReader.read_integer()
   return r . self.read_digit()
 endfunction
 
-function s:StringReader.read_word()
+function! s:StringReader.read_word()
   let r = ''
   while s:iswordc(self.peekn(1))
     let r .= self.getn(1)
@@ -3555,7 +3558,7 @@ function s:StringReader.read_word()
   return r
 endfunction
 
-function s:StringReader.read_white()
+function! s:StringReader.read_white()
   let r = ''
   while s:iswhite(self.peekn(1))
     let r .= self.getn(1)
@@ -3563,7 +3566,7 @@ function s:StringReader.read_white()
   return r
 endfunction
 
-function s:StringReader.read_nonwhite()
+function! s:StringReader.read_nonwhite()
   let r = ''
   while !s:iswhite(self.peekn(1))
     let r .= self.getn(1)
@@ -3571,7 +3574,7 @@ function s:StringReader.read_nonwhite()
   return r
 endfunction
 
-function s:StringReader.read_name()
+function! s:StringReader.read_name()
   let r = ''
   while s:isnamec(self.peekn(1))
     let r .= self.getn(1)
@@ -3579,13 +3582,13 @@ function s:StringReader.read_name()
   return r
 endfunction
 
-function s:StringReader.skip_white()
+function! s:StringReader.skip_white()
   while s:iswhite(self.peekn(1))
     call self.seek_cur(1)
   endwhile
 endfunction
 
-function s:StringReader.skip_white_and_colon()
+function! s:StringReader.skip_white_and_colon()
   while 1
     let c = self.peekn(1)
     if !s:iswhite(c) && c !=# ':'
@@ -3597,18 +3600,18 @@ endfunction
 
 let s:Compiler = {}
 
-function s:Compiler.new(...)
+function! s:Compiler.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:Compiler.__init__()
+function! s:Compiler.__init__()
   let self.indent = ['']
   let self.lines = []
 endfunction
 
-function s:Compiler.out(...)
+function! s:Compiler.out(...)
   if len(a:000) == 1
     if a:000[0][0] ==# ')'
       let self.lines[-1] .= a:000[0]
@@ -3620,15 +3623,15 @@ function s:Compiler.out(...)
   endif
 endfunction
 
-function s:Compiler.incindent(s)
+function! s:Compiler.incindent(s)
   call insert(self.indent, self.indent[0] . a:s)
 endfunction
 
-function s:Compiler.decindent()
+function! s:Compiler.decindent()
   call remove(self.indent, 0)
 endfunction
 
-function s:Compiler.compile(node)
+function! s:Compiler.compile(node)
   if a:node.type == s:NODE_TOPLEVEL
     return self.compile_toplevel(a:node)
   elseif a:node.type == s:NODE_COMMENT
@@ -3792,26 +3795,26 @@ function s:Compiler.compile(node)
   endif
 endfunction
 
-function s:Compiler.compile_body(body)
+function! s:Compiler.compile_body(body)
   for node in a:body
     call self.compile(node)
   endfor
 endfunction
 
-function s:Compiler.compile_toplevel(node)
+function! s:Compiler.compile_toplevel(node)
   call self.compile_body(a:node.body)
   return self.lines
 endfunction
 
-function s:Compiler.compile_comment(node)
+function! s:Compiler.compile_comment(node)
   call self.out(';%s', a:node.str)
 endfunction
 
-function s:Compiler.compile_excmd(node)
+function! s:Compiler.compile_excmd(node)
   call self.out('(excmd "%s")', escape(a:node.str, '\"'))
 endfunction
 
-function s:Compiler.compile_function(node)
+function! s:Compiler.compile_function(node)
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   if !empty(rlist) && rlist[-1] ==# '...'
@@ -3828,11 +3831,11 @@ function s:Compiler.compile_function(node)
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_delfunction(node)
+function! s:Compiler.compile_delfunction(node)
   call self.out('(delfunction %s)', self.compile(a:node.left))
 endfunction
 
-function s:Compiler.compile_return(node)
+function! s:Compiler.compile_return(node)
   if a:node.left is s:NIL
     call self.out('(return)')
   else
@@ -3840,11 +3843,11 @@ function s:Compiler.compile_return(node)
   endif
 endfunction
 
-function s:Compiler.compile_excall(node)
+function! s:Compiler.compile_excall(node)
   call self.out('(call %s)', self.compile(a:node.left))
 endfunction
 
-function s:Compiler.compile_let(node)
+function! s:Compiler.compile_let(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
@@ -3858,12 +3861,12 @@ function s:Compiler.compile_let(node)
   call self.out('(let %s %s %s)', a:node.op, left, right)
 endfunction
 
-function s:Compiler.compile_unlet(node)
+function! s:Compiler.compile_unlet(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(unlet %s)', join(list, ' '))
 endfunction
 
-function s:Compiler.compile_lockvar(node)
+function! s:Compiler.compile_lockvar(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   if a:node.depth is s:NIL
     call self.out('(lockvar %s)', join(list, ' '))
@@ -3872,7 +3875,7 @@ function s:Compiler.compile_lockvar(node)
   endif
 endfunction
 
-function s:Compiler.compile_unlockvar(node)
+function! s:Compiler.compile_unlockvar(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   if a:node.depth is s:NIL
     call self.out('(unlockvar %s)', join(list, ' '))
@@ -3881,7 +3884,7 @@ function s:Compiler.compile_unlockvar(node)
   endif
 endfunction
 
-function s:Compiler.compile_if(node)
+function! s:Compiler.compile_if(node)
   call self.out('(if %s', self.compile(a:node.cond))
   call self.incindent('  ')
   call self.compile_body(a:node.body)
@@ -3903,7 +3906,7 @@ function s:Compiler.compile_if(node)
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_while(node)
+function! s:Compiler.compile_while(node)
   call self.out('(while %s', self.compile(a:node.cond))
   call self.incindent('  ')
   call self.compile_body(a:node.body)
@@ -3911,7 +3914,7 @@ function s:Compiler.compile_while(node)
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_for(node)
+function! s:Compiler.compile_for(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
@@ -3929,15 +3932,15 @@ function s:Compiler.compile_for(node)
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_continue(node)
+function! s:Compiler.compile_continue(node)
   call self.out('(continue)')
 endfunction
 
-function s:Compiler.compile_break(node)
+function! s:Compiler.compile_break(node)
   call self.out('(break)')
 endfunction
 
-function s:Compiler.compile_try(node)
+function! s:Compiler.compile_try(node)
   call self.out('(try')
   call self.incindent('  ')
   call self.compile_body(a:node.body)
@@ -3964,222 +3967,222 @@ function s:Compiler.compile_try(node)
   call self.decindent()
 endfunction
 
-function s:Compiler.compile_throw(node)
+function! s:Compiler.compile_throw(node)
   call self.out('(throw %s)', self.compile(a:node.left))
 endfunction
 
-function s:Compiler.compile_echo(node)
+function! s:Compiler.compile_echo(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echo %s)', join(list, ' '))
 endfunction
 
-function s:Compiler.compile_echon(node)
+function! s:Compiler.compile_echon(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echon %s)', join(list, ' '))
 endfunction
 
-function s:Compiler.compile_echohl(node)
+function! s:Compiler.compile_echohl(node)
   call self.out('(echohl "%s")', escape(a:node.str, '\"'))
 endfunction
 
-function s:Compiler.compile_echomsg(node)
+function! s:Compiler.compile_echomsg(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echomsg %s)', join(list, ' '))
 endfunction
 
-function s:Compiler.compile_echoerr(node)
+function! s:Compiler.compile_echoerr(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echoerr %s)', join(list, ' '))
 endfunction
 
-function s:Compiler.compile_execute(node)
+function! s:Compiler.compile_execute(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(execute %s)', join(list, ' '))
 endfunction
 
-function s:Compiler.compile_ternary(node)
+function! s:Compiler.compile_ternary(node)
   return printf('(?: %s %s %s)', self.compile(a:node.cond), self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_or(node)
+function! s:Compiler.compile_or(node)
   return printf('(|| %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_and(node)
+function! s:Compiler.compile_and(node)
   return printf('(&& %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_equal(node)
+function! s:Compiler.compile_equal(node)
   return printf('(== %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_equalci(node)
+function! s:Compiler.compile_equalci(node)
   return printf('(==? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_equalcs(node)
+function! s:Compiler.compile_equalcs(node)
   return printf('(==# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_nequal(node)
+function! s:Compiler.compile_nequal(node)
   return printf('(!= %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_nequalci(node)
+function! s:Compiler.compile_nequalci(node)
   return printf('(!=? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_nequalcs(node)
+function! s:Compiler.compile_nequalcs(node)
   return printf('(!=# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_greater(node)
+function! s:Compiler.compile_greater(node)
   return printf('(> %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_greaterci(node)
+function! s:Compiler.compile_greaterci(node)
   return printf('(>? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_greatercs(node)
+function! s:Compiler.compile_greatercs(node)
   return printf('(># %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_gequal(node)
+function! s:Compiler.compile_gequal(node)
   return printf('(>= %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_gequalci(node)
+function! s:Compiler.compile_gequalci(node)
   return printf('(>=? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_gequalcs(node)
+function! s:Compiler.compile_gequalcs(node)
   return printf('(>=# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_smaller(node)
+function! s:Compiler.compile_smaller(node)
   return printf('(< %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_smallerci(node)
+function! s:Compiler.compile_smallerci(node)
   return printf('(<? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_smallercs(node)
+function! s:Compiler.compile_smallercs(node)
   return printf('(<# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_sequal(node)
+function! s:Compiler.compile_sequal(node)
   return printf('(<= %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_sequalci(node)
+function! s:Compiler.compile_sequalci(node)
   return printf('(<=? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_sequalcs(node)
+function! s:Compiler.compile_sequalcs(node)
   return printf('(<=# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_match(node)
+function! s:Compiler.compile_match(node)
   return printf('(=~ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_matchci(node)
+function! s:Compiler.compile_matchci(node)
   return printf('(=~? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_matchcs(node)
+function! s:Compiler.compile_matchcs(node)
   return printf('(=~# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_nomatch(node)
+function! s:Compiler.compile_nomatch(node)
   return printf('(!~ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_nomatchci(node)
+function! s:Compiler.compile_nomatchci(node)
   return printf('(!~? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_nomatchcs(node)
+function! s:Compiler.compile_nomatchcs(node)
   return printf('(!~# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_is(node)
+function! s:Compiler.compile_is(node)
   return printf('(is %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_isci(node)
+function! s:Compiler.compile_isci(node)
   return printf('(is? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_iscs(node)
+function! s:Compiler.compile_iscs(node)
   return printf('(is# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_isnot(node)
+function! s:Compiler.compile_isnot(node)
   return printf('(isnot %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_isnotci(node)
+function! s:Compiler.compile_isnotci(node)
   return printf('(isnot? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_isnotcs(node)
+function! s:Compiler.compile_isnotcs(node)
   return printf('(isnot# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_add(node)
+function! s:Compiler.compile_add(node)
   return printf('(+ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_subtract(node)
+function! s:Compiler.compile_subtract(node)
   return printf('(- %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_concat(node)
+function! s:Compiler.compile_concat(node)
   return printf('(concat %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_multiply(node)
+function! s:Compiler.compile_multiply(node)
   return printf('(* %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_divide(node)
+function! s:Compiler.compile_divide(node)
   return printf('(/ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_remainder(node)
+function! s:Compiler.compile_remainder(node)
   return printf('(%% %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_not(node)
+function! s:Compiler.compile_not(node)
   return printf('(! %s)', self.compile(a:node.left))
 endfunction
 
-function s:Compiler.compile_plus(node)
+function! s:Compiler.compile_plus(node)
   return printf('(+ %s)', self.compile(a:node.left))
 endfunction
 
-function s:Compiler.compile_minus(node)
+function! s:Compiler.compile_minus(node)
   return printf('(- %s)', self.compile(a:node.left))
 endfunction
 
-function s:Compiler.compile_subscript(node)
+function! s:Compiler.compile_subscript(node)
   return printf('(subscript %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_slice(node)
+function! s:Compiler.compile_slice(node)
   let r0 = a:node.rlist[0] is s:NIL ? 'nil' : self.compile(a:node.rlist[0])
   let r1 = a:node.rlist[1] is s:NIL ? 'nil' : self.compile(a:node.rlist[1])
   return printf('(slice %s %s %s)', self.compile(a:node.left), r0, r1)
 endfunction
 
-function s:Compiler.compile_dot(node)
+function! s:Compiler.compile_dot(node)
   return printf('(dot %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:Compiler.compile_call(node)
+function! s:Compiler.compile_call(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   if empty(rlist)
     return printf('(%s)', self.compile(a:node.left))
@@ -4188,15 +4191,15 @@ function s:Compiler.compile_call(node)
   endif
 endfunction
 
-function s:Compiler.compile_number(node)
+function! s:Compiler.compile_number(node)
   return a:node.value
 endfunction
 
-function s:Compiler.compile_string(node)
+function! s:Compiler.compile_string(node)
   return a:node.value
 endfunction
 
-function s:Compiler.compile_list(node)
+function! s:Compiler.compile_list(node)
   let value = map(a:node.value, 'self.compile(v:val)')
   if empty(value)
     return '(list)'
@@ -4205,7 +4208,7 @@ function s:Compiler.compile_list(node)
   endif
 endfunction
 
-function s:Compiler.compile_dict(node)
+function! s:Compiler.compile_dict(node)
   let value = map(a:node.value, '"(" . self.compile(v:val[0]) . " " . self.compile(v:val[1]) . ")"')
   if empty(value)
     return '(dict)'
@@ -4214,15 +4217,15 @@ function s:Compiler.compile_dict(node)
   endif
 endfunction
 
-function s:Compiler.compile_option(node)
+function! s:Compiler.compile_option(node)
   return a:node.value
 endfunction
 
-function s:Compiler.compile_identifier(node)
+function! s:Compiler.compile_identifier(node)
   return a:node.value
 endfunction
 
-function s:Compiler.compile_curlyname(node)
+function! s:Compiler.compile_curlyname(node)
   let name = ''
   for x in a:node.value
     if x.curly
@@ -4234,11 +4237,11 @@ function s:Compiler.compile_curlyname(node)
   return name
 endfunction
 
-function s:Compiler.compile_env(node)
+function! s:Compiler.compile_env(node)
   return a:node.value
 endfunction
 
-function s:Compiler.compile_reg(node)
+function! s:Compiler.compile_reg(node)
   return a:node.value
 endfunction
 
