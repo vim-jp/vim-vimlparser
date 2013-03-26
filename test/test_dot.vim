@@ -6,4 +6,3 @@ echo "foo".bar
 echo foo.bar()
 echo foo.s:bar
 echo foo.123
-echo foo.123abc

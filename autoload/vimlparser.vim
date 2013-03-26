@@ -3205,15 +3205,11 @@ function s:ExprParser.parse_dot(token, left)
   if !s:iswordc(self.reader.p(0))
     return s:NIL
   endif
-  let pos = self.reader.getpos()
-  let attr = ''
   if s:isdigit(self.reader.p(0))
-    let attr .= self.reader.read_digit()
-    if !s:iswordc(self.reader.p(0))
-      return s:NIL
-    endif
+    return s:NIL
   endif
-  let attr .= self.reader.read_word()
+  let pos = self.reader.getpos()
+  let attr = self.reader.read_word()
   if s:isnamec(self.reader.p(0))
     " foo.s:bar or foo.bar#baz
     return s:NIL
