@@ -3,6 +3,7 @@
 
 import sys
 import re
+import inspect
 
 def main():
     r = StringReader(viml_readfile(sys.argv[1]))
@@ -154,6 +155,21 @@ def viml_has_key(obj, key):
 
 def viml_stridx(a, b):
     return a.find(b)
+
+def viml_type(obj):
+    if isinstance(obj, int):
+        return 0
+    elif isinstance(obj, str):
+        return 1
+    elif inspect.isfunction(obj):
+        return 2
+    elif isinstance(obj, list):
+        return 3
+    elif isinstance(obj, dict):
+        return 4
+    elif isinstance(obj, float):
+        return 5
+    raise Exception('Unknown Type')
 
 NIL = []
 NODE_TOPLEVEL = 1
@@ -334,9 +350,6 @@ def isnamec(c):
 
 def isnamec1(c):
     return viml_eqregh(c, "^[A-Za-z_]$")
-
-def isattrc(c):
-    return viml_eqregh(c, "^[0-9A-Za-z_]$")
 
 def isargname(s):
     return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$")
@@ -2306,14 +2319,11 @@ class ExprParser:
                     # TODO: funcname E740: Too many arguments for function: %s
                     raise Exception(Err("E740: Too many arguments for function", node.pos))
                 left = node
-            elif not iswhite(c) and token.type == TOKEN_DOT and isattrc(self.reader.p(0)) and (left.type == NODE_IDENTIFIER or left.type == NODE_CURLYNAME or left.type == NODE_DICT or left.type == NODE_SUBSCRIPT or left.type == NODE_CALL or left.type == NODE_DOT):
-                # SUBSCRIPT or CONCAT
-                node = Node(NODE_DOT)
-                node.pos = token.pos
-                node.left = left
-                node.right = Node(NODE_IDENTIFIER)
-                node.right.pos = self.reader.getpos()
-                node.right.value = self.reader.read_attr()
+            elif not iswhite(c) and token.type == TOKEN_DOT:
+                node = self.parse_dot(token, left)
+                if node is NIL:
+                    self.reader.seek_set(pos)
+                    break
                 left = node
             else:
                 self.reader.seek_set(pos)
@@ -2431,6 +2441,27 @@ class ExprParser:
             raise Exception(Err(viml_printf("unexpected token: %s", token.value), token.pos))
         return node
 
+# SUBSCRIPT or CONCAT
+#   dict "." [0-9A-Za-z_]+ => (subscript dict key)
+#   str  "." expr6         => (concat str expr6)
+    def parse_dot(self, token, left):
+        if left.type != NODE_IDENTIFIER and left.type != NODE_CURLYNAME and left.type != NODE_DICT and left.type != NODE_SUBSCRIPT and left.type != NODE_CALL and left.type != NODE_DOT:
+            return NIL
+        if not iswordc(self.reader.p(0)):
+            return NIL
+        pos = self.reader.getpos()
+        name = self.reader.read_word()
+        if isnamec(self.reader.p(0)):
+            # foo.s:bar or foo.bar#baz
+            return NIL
+        node = Node(NODE_DOT)
+        node.pos = token.pos
+        node.left = left
+        node.right = Node(NODE_IDENTIFIER)
+        node.right.pos = pos
+        node.right.value = name
+        return node
+
     def parse_identifier(self):
         id = []
         self.reader.skip_white()
@@ -2515,14 +2546,11 @@ class LvalueParser(ExprParser):
                         if token.type != TOKEN_SQCLOSE:
                             raise Exception(Err(viml_printf("unexpected token: %s", token.value), token.pos))
                 left = node
-            elif not iswhite(c) and token.type == TOKEN_DOT and isattrc(self.reader.p(0)) and (left.type == NODE_IDENTIFIER or left.type == NODE_CURLYNAME or left.type == NODE_DICT or left.type == NODE_SUBSCRIPT or left.type == NODE_CALL or left.type == NODE_DOT):
-                # SUBSCRIPT or CONCAT
-                node = Node(NODE_DOT)
-                node.pos = token.pos
-                node.left = left
-                node.right = Node(NODE_IDENTIFIER)
-                node.right.pos = self.reader.getpos()
-                node.right.value = self.reader.read_attr()
+            elif not iswhite(c) and token.type == TOKEN_DOT:
+                node = self.parse_dot(token, left)
+                if node is NIL:
+                    self.reader.seek_set(pos)
+                    break
                 left = node
             else:
                 self.reader.seek_set(pos)
@@ -2565,7 +2593,7 @@ class LvalueParser(ExprParser):
 
 class StringReader:
     def __init__(self, lines):
-        self.lines = lines
+        lines = lines if viml_type(lines) == 3 else [lines]
         self.buf = []
         self.pos = []
         lnum = 0
@@ -2721,12 +2749,6 @@ class StringReader:
     def read_name(self):
         r = ""
         while isnamec(self.peekn(1)):
-            r += self.getn(1)
-        return r
-
-    def read_attr(self):
-        r = ""
-        while isattrc(self.peekn(1)):
             r += self.getn(1)
         return r
 
