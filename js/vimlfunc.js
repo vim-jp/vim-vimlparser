@@ -191,3 +191,20 @@ function viml_stridx(a, b) {
     return a.indexOf(b);
 }
 
+function viml_type(obj) {
+  if (typeof obj == 'number' && Math.round(obj) == obj) {
+    return 0;
+  } else if (typeof obj == 'string') {
+    return 1;
+  } else if (typeof obj == 'function') {
+    return 2;
+  } else if (obj instanceof Array) {
+    return 3;
+  } else if (obj instanceof Object) {
+    return 4;
+  } else if (typeof obj == 'number') {
+    return 5;
+  }
+  throw 'Unknown Type';
+}
+

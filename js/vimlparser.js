@@ -191,6 +191,23 @@ function viml_stridx(a, b) {
     return a.indexOf(b);
 }
 
+function viml_type(obj) {
+  if (typeof obj == 'number' && Math.round(obj) == obj) {
+    return 0;
+  } else if (typeof obj == 'string') {
+    return 1;
+  } else if (typeof obj == 'function') {
+    return 2;
+  } else if (obj instanceof Array) {
+    return 3;
+  } else if (obj instanceof Object) {
+    return 4;
+  } else if (typeof obj == 'number') {
+    return 5;
+  }
+  throw 'Unknown Type';
+}
+
 var NIL = [];
 var NODE_TOPLEVEL = 1;
 var NODE_COMMENT = 2;
@@ -378,10 +395,6 @@ function isnamec(c) {
 
 function isnamec1(c) {
     return viml_eqregh(c, "^[A-Za-z_]$");
-}
-
-function isattrc(c) {
-    return viml_eqregh(c, "^[0-9A-Za-z_]$");
 }
 
 function isargname(s) {
@@ -2862,14 +2875,12 @@ ExprParser.prototype.parse_expr8 = function() {
             }
             var left = node;
         }
-        else if (!iswhite(c) && token.type == TOKEN_DOT && isattrc(this.reader.p(0)) && (left.type == NODE_IDENTIFIER || left.type == NODE_CURLYNAME || left.type == NODE_DICT || left.type == NODE_SUBSCRIPT || left.type == NODE_CALL || left.type == NODE_DOT)) {
-            // SUBSCRIPT or CONCAT
-            var node = Node(NODE_DOT);
-            node.pos = token.pos;
-            node.left = left;
-            node.right = Node(NODE_IDENTIFIER);
-            node.right.pos = this.reader.getpos();
-            node.right.value = this.reader.read_attr();
+        else if (!iswhite(c) && token.type == TOKEN_DOT) {
+            var node = this.parse_dot(token, left);
+            if (node === NIL) {
+                this.reader.seek_set(pos);
+                break;
+            }
             var left = node;
         }
         else {
@@ -3023,6 +3034,31 @@ ExprParser.prototype.parse_expr9 = function() {
     return node;
 }
 
+// SUBSCRIPT or CONCAT
+//   dict "." [0-9A-Za-z_]+ => (subscript dict key)
+//   str  "." expr6         => (concat str expr6)
+ExprParser.prototype.parse_dot = function(token, left) {
+    if (left.type != NODE_IDENTIFIER && left.type != NODE_CURLYNAME && left.type != NODE_DICT && left.type != NODE_SUBSCRIPT && left.type != NODE_CALL && left.type != NODE_DOT) {
+        return NIL;
+    }
+    if (!iswordc(this.reader.p(0))) {
+        return NIL;
+    }
+    var pos = this.reader.getpos();
+    var name = this.reader.read_word();
+    if (isnamec(this.reader.p(0))) {
+        // foo.s:bar or foo.bar#baz
+        return NIL;
+    }
+    var node = Node(NODE_DOT);
+    node.pos = token.pos;
+    node.left = left;
+    node.right = Node(NODE_IDENTIFIER);
+    node.right.pos = pos;
+    node.right.value = name;
+    return node;
+}
+
 ExprParser.prototype.parse_identifier = function() {
     var id = [];
     this.reader.skip_white();
@@ -3128,14 +3164,12 @@ LvalueParser.prototype.parse_lv8 = function() {
             }
             var left = node;
         }
-        else if (!iswhite(c) && token.type == TOKEN_DOT && isattrc(this.reader.p(0)) && (left.type == NODE_IDENTIFIER || left.type == NODE_CURLYNAME || left.type == NODE_DICT || left.type == NODE_SUBSCRIPT || left.type == NODE_CALL || left.type == NODE_DOT)) {
-            // SUBSCRIPT or CONCAT
-            var node = Node(NODE_DOT);
-            node.pos = token.pos;
-            node.left = left;
-            node.right = Node(NODE_IDENTIFIER);
-            node.right.pos = this.reader.getpos();
-            node.right.value = this.reader.read_attr();
+        else if (!iswhite(c) && token.type == TOKEN_DOT) {
+            var node = this.parse_dot(token, left);
+            if (node === NIL) {
+                this.reader.seek_set(pos);
+                break;
+            }
             var left = node;
         }
         else {
@@ -3190,7 +3224,7 @@ LvalueParser.prototype.parse_lv9 = function() {
 
 function StringReader() { this.__init__.apply(this, arguments); }
 StringReader.prototype.__init__ = function(lines) {
-    this.lines = lines;
+    var lines = viml_type(lines) == 3 ? lines : [lines];
     this.buf = [];
     this.pos = [];
     var lnum = 0;
@@ -3401,14 +3435,6 @@ StringReader.prototype.read_nonwhite = function() {
 StringReader.prototype.read_name = function() {
     var r = "";
     while (isnamec(this.peekn(1))) {
-        r += this.getn(1);
-    }
-    return r;
-}
-
-StringReader.prototype.read_attr = function() {
-    var r = "";
-    while (isattrc(this.peekn(1))) {
         r += this.getn(1);
     }
     return r;
