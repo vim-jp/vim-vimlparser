@@ -1295,7 +1295,7 @@ function! s:VimLParser.parse_cmd_return()
   let node.left = s:NIL
   call self.reader.skip_white()
   let c = self.reader.peek()
-  if !self.ends_excmds(c)
+  if c ==# '"' || !self.ends_excmds(c)
     let node.left = self.parse_expr()
   endif
   call self.add_node(node)
