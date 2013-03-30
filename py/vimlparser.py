@@ -1231,7 +1231,7 @@ class VimLParser:
         node.left = NIL
         self.reader.skip_white()
         c = self.reader.peek()
-        if not self.ends_excmds(c):
+        if c == "\"" or not self.ends_excmds(c):
             node.left = self.parse_expr()
         self.add_node(node)
 

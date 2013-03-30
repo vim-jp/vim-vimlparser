@@ -485,7 +485,16 @@ function s:PythonCompiler.compile_execute(node)
 endfunction
 
 function s:PythonCompiler.compile_ternary(node)
-  return printf('%s if %s else %s', self.compile(a:node.left), self.compile(a:node.cond), self.compile(a:node.right))
+  let cond = self.compile(a:node.cond)
+  if s:opprec[a:node.type] >= s:opprec[a:node.cond.type]
+    let cond = '(' . cond . ')'
+  endif
+  let left = self.compile(a:node.left)
+  if s:opprec[a:node.type] >= s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  let right = self.compile(a:node.right)
+  return printf('%s if %s else %s', left, cond, right)
 endfunction
 
 function s:PythonCompiler.compile_or(node)
