@@ -1522,7 +1522,7 @@ VimLParser.prototype.parse_cmd_return = function() {
     node.left = NIL;
     this.reader.skip_white();
     var c = this.reader.peek();
-    if (!this.ends_excmds(c)) {
+    if (c == "\"" || !this.ends_excmds(c)) {
         node.left = this.parse_expr();
     }
     this.add_node(node);

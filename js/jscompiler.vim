@@ -533,7 +533,13 @@ function s:JavascriptCompiler.compile_execute(node)
 endfunction
 
 function s:JavascriptCompiler.compile_ternary(node)
-  return printf('%s ? %s : %s', self.compile(a:node.cond), self.compile(a:node.left), self.compile(a:node.right))
+  let cond = self.compile(a:node.cond)
+  if s:opprec[a:node.type] >= s:opprec[a:node.cond.type]
+    let cond = '(' . cond . ')'
+  endif
+  let left = self.compile(a:node.left)
+  let right = self.compile(a:node.right)
+  return printf('%s ? %s : %s', cond, left, right)
 endfunction
 
 function s:JavascriptCompiler.compile_or(node)
