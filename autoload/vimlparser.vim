@@ -206,6 +206,10 @@ function! s:isdigit(c)
   return a:c =~# '^[0-9]$'
 endfunction
 
+function! s:isodigit(c)
+  return a:c =~# '^[0-7]$'
+endfunction
+
 function! s:isxdigit(c)
   return a:c =~# '^[0-9A-Fa-f]$'
 endfunction
@@ -3532,6 +3536,14 @@ endfunction
 function! s:StringReader.read_digit()
   let r = ''
   while s:isdigit(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function! s:StringReader.read_odigit()
+  let r = ''
+  while s:isodigit(self.peekn(1))
     let r .= self.getn(1)
   endwhile
   return r
