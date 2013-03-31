@@ -4308,23 +4308,25 @@ function s:RegexpParser.parse_regexp()
       endif
     elseif ntoken ==# '\^'
       " '^' is only magic as the very first character.
-      if prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
+      if self.reg_magic != self.RE_VERY_MAGIC && prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
         let ntoken = '^'
       endif
     elseif ntoken ==# '\$'
       " '$' is only magic as the very last character
       let pos = self.reader.tell()
-      while !self.isend(self.reader.peek())
-        let [t, n] = self.get_token()
-        " XXX: Vim doesn't check \v and \V?
-        if n ==# '\c' || n ==# '\C' || n ==# '\m' || n ==# '\M' || n ==# '\Z'
-          continue
-        endif
-        if n !=# '\|' && n !=# '\&' && n !=# '\n' && n !=# '\)'
-          let ntoken = '$'
-        endif
-        break
-      endwhile
+      if self.reg_magic != self.RE_VERY_MAGIC
+        while !self.isend(self.reader.peek())
+          let [t, n] = self.get_token()
+          " XXX: Vim doesn't check \v and \V?
+          if n ==# '\c' || n ==# '\C' || n ==# '\m' || n ==# '\M' || n ==# '\Z'
+            continue
+          endif
+          if n !=# '\|' && n !=# '\&' && n !=# '\n' && n !=# '\)'
+            let ntoken = '$'
+          endif
+          break
+        endwhile
+      endif
       call self.reader.seek_set(pos)
     elseif ntoken ==# '\?'
       " '?' is literal in '?' command.
