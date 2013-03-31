@@ -4261,3 +4261,680 @@ function! s:Compiler.compile_reg(node)
   return a:node.value
 endfunction
 
+" TODO: under construction
+let s:RegexpParser = {}
+
+let s:RegexpParser.RE_VERY_NOMAGIC = 1
+let s:RegexpParser.RE_NOMAGIC = 2
+let s:RegexpParser.RE_MAGIC = 3
+let s:RegexpParser.RE_VERY_MAGIC = 4
+
+function s:RegexpParser.new(...)
+  let obj = copy(self)
+  call call(obj.__init__, a:000, obj)
+  return obj
+endfunction
+
+function s:RegexpParser.__init__(reader, cmd, delim)
+  let self.reader = a:reader
+  let self.cmd = a:cmd
+  let self.delim = a:delim
+  let self.reg_magic = self.RE_MAGIC
+endfunction
+
+function s:RegexpParser.isend(c)
+  return a:c ==# '<EOF>' || a:c ==# '<EOL>' || a:c ==# self.delim
+endfunction
+
+function s:RegexpParser.parse_regexp()
+  let prevtoken = ''
+  let ntoken = ''
+  let ret = []
+  while !self.isend(self.reader.peek())
+    let prevtoken = ntoken
+    let [token, ntoken] = self.get_token()
+    if ntoken ==# '\m'
+      let self.reg_magic = self.RE_MAGIC
+    elseif ntoken ==# '\M'
+      let self.reg_magic = self.RE_NOMAGIC
+    elseif ntoken ==# '\v'
+      let self.reg_magic = self.RE_VERY_MAGIC
+    elseif ntoken ==# '\V'
+      let self.reg_magic = self.RE_VERY_NOMAGIC
+    elseif ntoken ==# '\*'
+      " '*' is not magic as the very first character.
+      if prevtoken ==# '' || prevtoken ==# '\^' || prevtoken ==# '\&' || prevtoken ==# '\|' || prevtoken ==# '\('
+        let ntoken = '*'
+      endif
+    elseif ntoken ==# '\^'
+      " '^' is only magic as the very first character.
+      if prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
+        let ntoken = '^'
+      endif
+    elseif ntoken ==# '\$'
+      " '$' is only magic as the very last character
+      let pos = self.reader.tell()
+      while !self.isend(self.reader.peek())
+        let [t, n] = self.get_token()
+        " XXX: Vim doesn't check \v and \V?
+        if n ==# '\c' || n ==# '\C' || n ==# '\m' || n ==# '\M' || n ==# '\Z'
+          continue
+        endif
+        if n !=# '\|' && n !=# '\&' && n !=# '\n' && n !=# '\)'
+          let ntoken = '$'
+        endif
+        break
+      endwhile
+      call self.reader.seek_set(pos)
+    elseif ntoken ==# '\?'
+      " '?' is literal in '?' command.
+      if self.cmd ==# '?'
+        let ntoken = '?'
+      endif
+    endif
+    call add(ret, ntoken)
+  endwhile
+  return ret
+endfunction
+
+" @return [actual_token, normalized_token]
+function s:RegexpParser.get_token()
+  if self.reg_magic == self.RE_VERY_MAGIC
+    return self.get_token_very_magic()
+  elseif self.reg_magic == self.RE_MAGIC
+    return self.get_token_magic()
+  elseif self.reg_magic == self.RE_NOMAGIC
+    return self.get_token_nomagic()
+  elseif self.reg_magic == self.RE_VERY_NOMAGIC
+    return self.get_token_very_nomagic()
+  endif
+endfunction
+
+function s:RegexpParser.get_token_very_magic()
+  if self.isend(self.reader.peek())
+    return ['<END>', '<END>']
+  endif
+  let c = self.reader.get()
+  if c ==# '\'
+    return self.get_token_backslash_common()
+  elseif c ==# '*'
+    return ['*', '\*']
+  elseif c ==# '+'
+    return ['+', '\+']
+  elseif c ==# '='
+    return ['=', '\=']
+  elseif c ==# '?'
+    return ['?', '\?']
+  elseif c ==# '{'
+    return self.get_token_brace('{')
+  elseif c ==# '@'
+    return self.get_token_at('@')
+  elseif c ==# '^'
+    return ['^', '\^']
+  elseif c ==# '$'
+    return ['$', '\$']
+  elseif c ==# '.'
+    return ['.', '\.']
+  elseif c ==# '<'
+    return ['<', '\<']
+  elseif c ==# '>'
+    return ['>', '\>']
+  elseif c ==# '%'
+    return self.get_token_percent('%')
+  elseif c ==# '['
+    return self.get_token_sq('[')
+  elseif c ==# '~'
+    return ['~', '\~']
+  elseif c ==# '|'
+    return ['|', '\|']
+  elseif c ==# '&'
+    return ['&', '\&']
+  elseif c ==# '('
+    return ['(', '\(']
+  elseif c ==# ')'
+    return [')', '\)']
+  endif
+  return [c, c]
+endfunction
+
+function s:RegexpParser.get_token_magic()
+  if self.isend(self.reader.peek())
+    return ['<END>', '<END>']
+  endif
+  let c = self.reader.get()
+  if c ==# '\'
+    let pos = self.reader.tell()
+    let c = self.reader.get()
+    if c ==# '+'
+      return ['\+', '\+']
+    elseif c ==# '='
+      return ['\=', '\=']
+    elseif c ==# '?'
+      return ['\?', '\?']
+    elseif c ==# '{'
+      return self.get_token_brace('\{')
+    elseif c ==# '@'
+      return self.get_token_at('\@')
+    elseif c ==# '<'
+      return ['\<', '\<']
+    elseif c ==# '>'
+      return ['\>', '\>']
+    elseif c ==# '%'
+      return self.get_token_percent('\%')
+    elseif c ==# '|'
+      return ['\|', '\|']
+    elseif c ==# '&'
+      return ['\&', '\&']
+    elseif c ==# '('
+      return ['\(', '\(']
+    elseif c ==# ')'
+      return ['\)', '\)']
+    endif
+    call self.reader.seek_set(pos)
+    return self.get_token_backslash_common()
+  elseif c ==# '*'
+    return ['*', '\*']
+  elseif c ==# '^'
+    return ['^', '\^']
+  elseif c ==# '$'
+    return ['$', '\$']
+  elseif c ==# '.'
+    return ['.', '\.']
+  elseif c ==# '['
+    return self.get_token_sq('[')
+  elseif c ==# '~'
+    return ['~', '\~']
+  endif
+  return [c, c]
+endfunction
+
+function s:RegexpParser.get_token_nomagic()
+  if self.isend(self.reader.peek())
+    return ['<END>', '<END>']
+  endif
+  let c = self.reader.get()
+  if c ==# '\'
+    let pos = self.reader.tell()
+    let c = self.reader.get()
+    if c ==# '*'
+      return ['\*', '\*']
+    elseif c ==# '+'
+      return ['\+', '\+']
+    elseif c ==# '='
+      return ['\=', '\=']
+    elseif c ==# '?'
+      return ['\?', '\?']
+    elseif c ==# '{'
+      return self.get_token_brace('\{')
+    elseif c ==# '@'
+      return self.get_token_at('\@')
+    elseif c ==# '.'
+      return ['\.', '\.']
+    elseif c ==# '<'
+      return ['\<', '\<']
+    elseif c ==# '>'
+      return ['\>', '\>']
+    elseif c ==# '%'
+      return self.get_token_percent('\%')
+    elseif c ==# '~'
+      return ['\~', '\^']
+    elseif c ==# '['
+      return self.get_token_sq('\[')
+    elseif c ==# '|'
+      return ['\|', '\|']
+    elseif c ==# '&'
+      return ['\&', '\&']
+    elseif c ==# '('
+      return ['\(', '\(']
+    elseif c ==# ')'
+      return ['\)', '\)']
+    endif
+    call self.reader.seek_set(pos)
+    return self.get_token_backslash_common()
+  elseif c ==# '^'
+    return ['^', '\^']
+  elseif c ==# '$'
+    return ['$', '\$']
+  endif
+  return [c, c]
+endfunction
+
+function s:RegexpParser.get_token_very_nomagic()
+  if self.isend(self.reader.peek())
+    return ['<END>', '<END>']
+  endif
+  let c = self.reader.get()
+  if c ==# '\'
+    let pos = self.reader.tell()
+    let c = self.reader.get()
+    if c ==# '*'
+      return ['\*', '\*']
+    elseif c ==# '+'
+      return ['\+', '\+']
+    elseif c ==# '='
+      return ['\=', '\=']
+    elseif c ==# '?'
+      return ['\?', '\?']
+    elseif c ==# '{'
+      return self.get_token_brace('\{')
+    elseif c ==# '@'
+      return self.get_token_at('\@')
+    elseif c ==# '^'
+      return ['\^', '\^']
+    elseif c ==# '$'
+      return ['\$', '\$']
+    elseif c ==# '<'
+      return ['\<', '\<']
+    elseif c ==# '>'
+      return ['\>', '\>']
+    elseif c ==# '%'
+      return self.get_token_percent('\%')
+    elseif c ==# '~'
+      return ['\~', '\~']
+    elseif c ==# '['
+      return self.get_token_sq('\[')
+    elseif c ==# '|'
+      return ['\|', '\|']
+    elseif c ==# '&'
+      return ['\&', '\&']
+    elseif c ==# '('
+      return ['\(', '\(']
+    elseif c ==# ')'
+      return ['\)', '\)']
+    endif
+    call self.reader.seek_set(pos)
+    return self.get_token_backslash_common()
+  endif
+  return [c, c]
+endfunction
+
+function s:RegexpParser.get_token_backslash_common()
+  let cclass = 'iIkKfFpPsSdDxXoOwWhHaAlLuU'
+  let c = self.reader.get()
+  if c ==# '\'
+    return ['\\', '\\']
+  elseif stridx(cclass, c) != -1
+    return ['\' . c, '\' . c]
+  elseif c == '_'
+    let epos = self.reader.getpos()
+    let c = self.reader.get()
+    if stridx(cclass, c) != -1
+      return ['\_' . c, '\_ . c']
+    elseif c ==# '^'
+      return ['\_^', '\_^']
+    elseif c ==# '$'
+      return ['\_$', '\_$']
+    elseif c ==# '.'
+      return ['\_.', '\_.']
+    elseif c ==# '['
+      return self.get_token_sq('\_[')
+    endif
+    throw s:Err('E63: invalid use of \_', epos)
+  elseif stridx('etrb', c) != -1
+    return ['\' . c, '\' . c]
+  elseif stridx('123456789', c) != -1
+    return ['\' . c, '\' . c]
+  elseif c == 'z'
+    let epos = self.reader.getpos()
+    let c = self.reader.get()
+    if stridx('123456789', c) != -1
+      return ['\z' . c, '\z' . c]
+    elseif c ==# 's'
+      return ['\zs', '\zs']
+    elseif c ==# 'e'
+      return ['\ze', '\ze']
+    elseif c ==# '('
+      return ['\z(', '\z(']
+    endif
+    throw s:Err('E68: Invalid character after \z', epos)
+  elseif stridx('cCmMvVZ', c) != -1
+    return ['\' . c, '\' . c]
+  elseif c == '%'
+    let epos = self.reader.getpos()
+    let c = self.reader.get()
+    if c ==# 'd'
+      let r = self.getdecchrs()
+      if r !=# ''
+        return ['\%d' . r, '\%d' . r]
+      endif
+    elseif c ==# 'o'
+      let r = self.getoctchrs()
+      if r !=# ''
+        return ['\%o' . r, '\%o' . r]
+      endif
+    elseif c ==# 'x'
+      let r = self.gethexchrs(2)
+      if r !=# ''
+        return ['\%x' . r, '\%x' . r]
+      endif
+    elseif c ==# 'u'
+      let r = self.gethexchrs(4)
+      if r !=# ''
+        return ['\%u' . r, '\%u' . r]
+      endif
+    elseif c ==# 'U'
+      let r = self.gethexchrs(8)
+      if r !=# ''
+        return ['\%U' . r, '\%U' . r]
+      endif
+    endif
+    throw s:Err('E678: Invalid character after \%[dxouU]', epos)
+  endif
+  return ['\' . c, c]
+endfunction
+
+" \{}
+function s:RegexpParser.get_token_brace(pre)
+  let r = ''
+  let minus = ''
+  let comma = ''
+  let n = ''
+  let m = ''
+  if self.reader.p(0) ==# '-'
+    let minus = self.reader.get()
+    let r .= minus
+  endif
+  if s:isdigit(self.reader.p(0))
+    let n = self.reader.read_digit()
+    let r .= n
+  endif
+  if self.reader.p(0) ==# ','
+    let comma = self.rader.get()
+    let r .= comma
+  endif
+  if s:isdigit(self.reader.p(0))
+    let m = self.reader.read_digit()
+    let r .= m
+  endif
+  if self.reader.p(0) ==# '\'
+    let r .= self.reader.get()
+  endif
+  if self.reader.p(0) !=# '}'
+    throw s:Err('E554: Syntax error in \{...}', self.reader.getpos())
+  endif
+  call self.reader.get()
+  return [a:pre . r, '\{' . minus . n . comma . m . '}']
+endfunction
+
+" \[]
+function s:RegexpParser.get_token_sq(pre)
+  let start = self.reader.tell()
+  let r = ''
+  " Complement of range
+  if self.reader.p(0) ==# '^'
+    let r .= self.reader.get()
+  endif
+  " At the start ']' and '-' mean the literal character.
+  if self.reader.p(0) ==# ']' || self.reader.p(0) ==# '-'
+    let r .= self.reader.get()
+  endif
+  while 1
+    let startc = 0
+    let c = self.reader.p(0)
+    if self.isend(c)
+      " If there is no matching ']', we assume the '[' is a normal character.
+      call self.reader.seek_set(start)
+      return [a:pre, '[']
+    elseif c ==# ']'
+      call self.reader.seek_cur(1)
+      return [a:pre . r . ']', '\[' . r . ']']
+    elseif c ==# '['
+      let e = self.get_token_sq_char_class()
+      if e ==# ''
+        let e = self.get_token_sq_equi_class()
+        if e ==# ''
+          let e = self.get_token_sq_coll_element()
+          if e ==# ''
+            let [e, startc] = self.get_token_sq_c()
+          endif
+        endif
+      endif
+      let r .= e
+    else
+      let [e, startc] = self.get_token_sq_c()
+      let r .= e
+    endif
+    if startc != 0 && self.reader.p(0) ==# '-' && !self.isend(self.reader.p(1)) && !(self.reader.p(1) ==# '\' && self.reader.p(2) ==# 'n')
+      call self.reader.seek_cur(1)
+      let r .= '-'
+      let c = self.reader.p(0)
+      if c ==# '['
+        let e = self.get_token_sq_coll_element()
+        if e !=# ''
+          let endc = char2nr(e[2])
+        else
+          let [e, endc] = self.get_token_sq_c()
+        endif
+        let r .= e
+      else
+        let [e, endc] = self.get_token_sq_c()
+        let r .= e
+      endif
+      if startc > endc || endc > startc + 256
+        throw s:Err('E16: Invalid range', self.reader.getpos())
+      endif
+    endif
+  endwhile
+endfunction
+
+" [c]
+function s:RegexpParser.get_token_sq_c()
+  let c = self.reader.p(0)
+  if c ==# '\'
+    call self.reader.seek_cur(1)
+    let c = self.reader.p(0)
+    if c ==# 'n'
+      call self.reader.seek_cur(1)
+      return ['\n', 0]
+    elseif c ==# 'r'
+      call self.reader.seek_cur(1)
+      return ['\r', char2nr("\r")]
+    elseif c ==# 't'
+      call self.reader.seek_cur(1)
+      return ['\t', char2nr("\t")]
+    elseif c ==# 'e'
+      call self.reader.seek_cur(1)
+      return ['\e', char2nr("\e")]
+    elseif c ==# 'b'
+      call self.reader.seek_cur(1)
+      return ['\b', char2nr("\b")]
+    elseif stridx(']^-\', c) != -1
+      call self.reader.seek_cur(1)
+      return ['\' . c, char2nr(c)]
+    elseif stridx('doxuU', c) != -1
+      let [c, n] = self.get_token_sq_coll_char()
+      return [c, n]
+    else
+      return ['\', char2nr('\')]
+    endif
+  elseif c ==# '-'
+    call self.reader.seek_cur(1)
+    return ['-', char2nr('-')]
+  else
+    call self.reader.seek_cur(1)
+    return [c, char2nr(c)]
+  endif
+endfunction
+
+" [\d123]
+function s:RegexpParser.get_token_sq_coll_char()
+  let pos = self.reader.tell()
+  let c = self.reader.get()
+  if c ==# 'd'
+    let r = self.getdecchrs()
+    let n = str2nr(r, 10)
+  elseif c ==# 'o'
+    let r = self.getoctchrs()
+    let n = str2nr(r, 8)
+  elseif c ==# 'x'
+    let r = self.gethexchrs(2)
+    let n = str2nr(r, 16)
+  elseif c ==# 'u'
+    let r = self.gethexchrs(4)
+    let n = str2nr(r, 16)
+  elseif c ==# 'U'
+    let r = self.gethexchrs(8)
+    let n = str2nr(r, 16)
+  else
+    let r = ''
+  endif
+  if r ==# ''
+    call self.reader.seek_set(pos)
+    return '\'
+  endif
+  return ['\' . c . r, n]
+endfunction
+
+" [[.a.]]
+function s:RegexpParser.get_token_sq_coll_element()
+  if self.reader.p(0) ==# '[' && self.reader.p(1) ==# '.' && !self.isend(self.reader.p(2)) && self.reader.p(3) ==# '.' && self.reader.p(4) ==# ']'
+    return self.reader.getn(5)
+  endif
+  return ''
+endfunction
+
+" [[=a=]]
+function s:RegexpParser.get_token_sq_equi_class()
+  if self.reader.p(0) ==# '[' && self.reader.p(1) ==# '=' && !self.isend(self.reader.p(2)) && self.reader.p(3) ==# '=' && self.reader.p(4) ==# ']'
+    return self.reader.getn(5)
+  endif
+  return ''
+endfunction
+
+" [[:alpha:]]
+function s:RegexpParser.get_token_sq_char_class()
+  let class_names = ["alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower", "print", "punct", "space", "upper", "xdigit", "tab", "return", "backspace", "escape"]
+  let pos = self.reader.tell()
+  if self.reader.p(0) ==# '[' && self.reader.p(1) ==# ':'
+    call self.reader.seek_cur(2)
+    let r = self.reader.read_alpha()
+    if self.reader.p(0) ==# ':' && self.reader.p(1) ==# ']'
+      call self.reader.seek_cur(2)
+      for name in class_names
+        if r ==# name
+          return '[:' . name . ':]'
+        endif
+      endfor
+    endif
+  endif
+  call self.reader.seek_set(pos)
+  return ''
+endfunction
+
+" \@...
+function s:RegexpParser.get_token_at(pre)
+  let epos = self.reader.getpos()
+  let c = self.reader.get()
+  if c ==# '>'
+    return [a:pre . '>', '\@>']
+  elseif c ==# '='
+    return [a:pre . '=', '\@=']
+  elseif c ==# '!'
+    return [a:pre . '!', '\@!']
+  elseif c ==# '<'
+    let c = self.reader.get()
+    if c ==# '='
+      return [a:pre . '<=', '\@<=']
+    elseif c ==# '!'
+      return [a:pre . '<!', '\@<!']
+    endif
+  endif
+  throw s:Err('E64: @ follows nothing', epos)
+endfunction
+
+" \%...
+function s:RegexpParser.get_token_percent(pre)
+  let c = self.reader.get()
+  if c ==# '^'
+    return [a:pre . '^', '\%^']
+  elseif c ==# '$'
+    return [a:pre . '$', '\%$']
+  elseif c ==# 'V'
+    return [a:pre . 'V', '\%V']
+  elseif c ==# '#'
+    return [a:pre . '#', '\%#']
+  elseif c ==# '['
+    return self.get_token_percent_sq(a:pre . '[')
+  elseif c ==# '('
+    return [a:pre . '(', '\%(']
+  else
+    return self.get_token_mlcv(a:pre)
+  endif
+endfunction
+
+" \%[]
+function s:RegexpParser.get_token_percent_sq(pre)
+  let r = ''
+  while 1
+    let c = self.reader.peek()
+    if self.isend(c)
+      throw s:Err('E69: Missing ] after \%[', self.reader.getpos())
+    elseif c ==# ']'
+      if r ==# ''
+        throw s:Err('E70: Empty \%[', self.reader.getpos())
+      endif
+      call self.reader.seek_cur(1)
+      break
+    endif
+    call self.reader.seek_cur(1)
+    let r .= c
+  endwhile
+  return [a:pre . r . ']', '\%[' . r . ']']
+endfunction
+
+" \%'m \%l \%c \%v
+function s:RegexpParser.get_token_mlvc(pre)
+  let r = ''
+  let cmp = ''
+  if self.reader.p(0) ==# '<' || self.reader.p(0) ==# '>'
+    let cmp = self.reader.get()
+    let r .= cmp
+  endif
+  if self.reader.p(0) ==# "'"
+    let r .= self.reader.get()
+    let c = self.reader.p(0)
+    if self.isend(c)
+      " FIXME: Should be error?  Vim allow this.
+      let c = ''
+    else
+      let c = self.reader.get()
+    endif
+    return [a:pre . r . c, '\%' . cmp . "'" . c]
+  elseif s:isdigit(self.reader.p(0))
+    let d = self.reader.read_digit()
+    let r .= d
+    let c = self.reader.p(0)
+    if c ==# 'l'
+      call self.reader.get()
+      return [a:pre . r . 'l', '\%' . cmp . d . 'l']
+    elseif c ==# 'c'
+      call self.reader.get()
+      return [a:pre . r . 'c', '\%' . cmp . d . 'c']
+    elseif c ==# 'v'
+      call self.reader.get()
+      return [a:pre . r . 'v', '\%' . cmp . d . 'v']
+    endif
+  endif
+  throw s:Err('E71: Invalid character after %', self.reader.getpos())
+endfunction
+
+function s:RegexpParser.getdecchrs()
+  return self.reader.read_digit()
+endfunction
+
+function s:RegexpParser.getoctchrs()
+  return self.reader.read_odigit()
+endfunction
+
+function s:RegexpParser.gethexchrs(n)
+  let r = ''
+  for i in range(a:n)
+    let c = self.reader.peek()
+    if !s:isxdigit(c)
+      break
+    endif
+    let r .= self.reader.get()
+  endfor
+  return r
+endfunction
+
