@@ -65,7 +65,8 @@ var pat_vim2js = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
-  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
+  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "^[0-7]$" : "^[0-7]$",
 }
 
 function viml_add(lst, item) {
@@ -74,6 +75,10 @@ function viml_add(lst, item) {
 
 function viml_call(func, args) {
     return func.apply(null, args);
+}
+
+function viml_char2nr(c) {
+  return c.charCodeAt(0);
 }
 
 function viml_empty(obj) {
@@ -160,7 +165,7 @@ function viml_range(start) {
 
 function viml_readfile(path) {
     // FIXME: newline?
-    return fs.readFileSync(path, 'utf-8').split(/\n/);
+    return fs.readFileSync(path, 'utf-8').split(/\r\n|\r|\n/);
 }
 
 function viml_remove(lst, idx) {
@@ -373,6 +378,10 @@ function isdigit(c) {
     return viml_eqregh(c, "^[0-9]$");
 }
 
+function isodigit(c) {
+    return viml_eqregh(c, "^[0-7]$");
+}
+
 function isxdigit(c) {
     return viml_eqregh(c, "^[0-9A-Fa-f]$");
 }
@@ -402,7 +411,7 @@ function isargname(s) {
 }
 
 function isvarname(s) {
-    return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$");
+    return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$");
 }
 
 // FIXME:
@@ -2860,6 +2869,11 @@ ExprParser.prototype.parse_expr8 = function() {
                     viml_add(node.rlist, this.parse_expr1());
                     var token = this.tokenizer.get();
                     if (token.type == TOKEN_COMMA) {
+                        // TODO: Vim allows foo(a, b, ).  Lint should warn it.
+                        if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
+                            this.tokenizer.get();
+                            break;
+                        }
                     }
                     else if (token.type == TOKEN_PCLOSE) {
                         break;
@@ -3386,6 +3400,14 @@ StringReader.prototype.read_alnum = function() {
 StringReader.prototype.read_digit = function() {
     var r = "";
     while (isdigit(this.peekn(1))) {
+        r += this.getn(1);
+    }
+    return r;
+}
+
+StringReader.prototype.read_odigit = function() {
+    var r = "";
+    while (isodigit(this.peekn(1))) {
         r += this.getn(1);
     }
     return r;
@@ -4195,6 +4217,825 @@ Compiler.prototype.compile_env = function(node) {
 
 Compiler.prototype.compile_reg = function(node) {
     return node.value;
+}
+
+// TODO: under construction
+function RegexpParser() { this.__init__.apply(this, arguments); }
+RegexpParser.prototype.RE_VERY_NOMAGIC = 1;
+RegexpParser.prototype.RE_NOMAGIC = 2;
+RegexpParser.prototype.RE_MAGIC = 3;
+RegexpParser.prototype.RE_VERY_MAGIC = 4;
+RegexpParser.prototype.__init__ = function(reader, cmd, delim) {
+    this.reader = reader;
+    this.cmd = cmd;
+    this.delim = delim;
+    this.reg_magic = this.RE_MAGIC;
+}
+
+RegexpParser.prototype.isend = function(c) {
+    return c == "<EOF>" || c == "<EOL>" || c == this.delim;
+}
+
+RegexpParser.prototype.parse_regexp = function() {
+    var prevtoken = "";
+    var ntoken = "";
+    var ret = [];
+    while (!this.isend(this.reader.peek())) {
+        var prevtoken = ntoken;
+        var __tmp = this.get_token();
+        var token = __tmp[0];
+        var ntoken = __tmp[1];
+        if (ntoken == "\\m") {
+            this.reg_magic = this.RE_MAGIC;
+        }
+        else if (ntoken == "\\M") {
+            this.reg_magic = this.RE_NOMAGIC;
+        }
+        else if (ntoken == "\\v") {
+            this.reg_magic = this.RE_VERY_MAGIC;
+        }
+        else if (ntoken == "\\V") {
+            this.reg_magic = this.RE_VERY_NOMAGIC;
+        }
+        else if (ntoken == "\\*") {
+            // '*' is not magic as the very first character.
+            if (prevtoken == "" || prevtoken == "\\^" || prevtoken == "\\&" || prevtoken == "\\|" || prevtoken == "\\(") {
+                var ntoken = "*";
+            }
+        }
+        else if (ntoken == "\\^") {
+            // '^' is only magic as the very first character.
+            if (this.reg_magic != this.RE_VERY_MAGIC && prevtoken != "" && prevtoken != "\\&" && prevtoken != "\\|" && prevtoken != "\\n" && prevtoken != "\\(" && prevtoken != "\\%(") {
+                var ntoken = "^";
+            }
+        }
+        else if (ntoken == "\\$") {
+            // '$' is only magic as the very last character
+            var pos = this.reader.tell();
+            if (this.reg_magic != this.RE_VERY_MAGIC) {
+                while (!this.isend(this.reader.peek())) {
+                    var __tmp = this.get_token();
+                    var t = __tmp[0];
+                    var n = __tmp[1];
+                    // XXX: Vim doesn't check \v and \V?
+                    if (n == "\\c" || n == "\\C" || n == "\\m" || n == "\\M" || n == "\\Z") {
+                        continue;
+                    }
+                    if (n != "\\|" && n != "\\&" && n != "\\n" && n != "\\)") {
+                        var ntoken = "$";
+                    }
+                    break;
+                }
+            }
+            this.reader.seek_set(pos);
+        }
+        else if (ntoken == "\\?") {
+            // '?' is literal in '?' command.
+            if (this.cmd == "?") {
+                var ntoken = "?";
+            }
+        }
+        viml_add(ret, ntoken);
+    }
+    return ret;
+}
+
+// @return [actual_token, normalized_token]
+RegexpParser.prototype.get_token = function() {
+    if (this.reg_magic == this.RE_VERY_MAGIC) {
+        return this.get_token_very_magic();
+    }
+    else if (this.reg_magic == this.RE_MAGIC) {
+        return this.get_token_magic();
+    }
+    else if (this.reg_magic == this.RE_NOMAGIC) {
+        return this.get_token_nomagic();
+    }
+    else if (this.reg_magic == this.RE_VERY_NOMAGIC) {
+        return this.get_token_very_nomagic();
+    }
+}
+
+RegexpParser.prototype.get_token_very_magic = function() {
+    if (this.isend(this.reader.peek())) {
+        return ["<END>", "<END>"];
+    }
+    var c = this.reader.get();
+    if (c == "\\") {
+        return this.get_token_backslash_common();
+    }
+    else if (c == "*") {
+        return ["*", "\\*"];
+    }
+    else if (c == "+") {
+        return ["+", "\\+"];
+    }
+    else if (c == "=") {
+        return ["=", "\\="];
+    }
+    else if (c == "?") {
+        return ["?", "\\?"];
+    }
+    else if (c == "{") {
+        return this.get_token_brace("{");
+    }
+    else if (c == "@") {
+        return this.get_token_at("@");
+    }
+    else if (c == "^") {
+        return ["^", "\\^"];
+    }
+    else if (c == "$") {
+        return ["$", "\\$"];
+    }
+    else if (c == ".") {
+        return [".", "\\."];
+    }
+    else if (c == "<") {
+        return ["<", "\\<"];
+    }
+    else if (c == ">") {
+        return [">", "\\>"];
+    }
+    else if (c == "%") {
+        return this.get_token_percent("%");
+    }
+    else if (c == "[") {
+        return this.get_token_sq("[");
+    }
+    else if (c == "~") {
+        return ["~", "\\~"];
+    }
+    else if (c == "|") {
+        return ["|", "\\|"];
+    }
+    else if (c == "&") {
+        return ["&", "\\&"];
+    }
+    else if (c == "(") {
+        return ["(", "\\("];
+    }
+    else if (c == ")") {
+        return [")", "\\)"];
+    }
+    return [c, c];
+}
+
+RegexpParser.prototype.get_token_magic = function() {
+    if (this.isend(this.reader.peek())) {
+        return ["<END>", "<END>"];
+    }
+    var c = this.reader.get();
+    if (c == "\\") {
+        var pos = this.reader.tell();
+        var c = this.reader.get();
+        if (c == "+") {
+            return ["\\+", "\\+"];
+        }
+        else if (c == "=") {
+            return ["\\=", "\\="];
+        }
+        else if (c == "?") {
+            return ["\\?", "\\?"];
+        }
+        else if (c == "{") {
+            return this.get_token_brace("\\{");
+        }
+        else if (c == "@") {
+            return this.get_token_at("\\@");
+        }
+        else if (c == "<") {
+            return ["\\<", "\\<"];
+        }
+        else if (c == ">") {
+            return ["\\>", "\\>"];
+        }
+        else if (c == "%") {
+            return this.get_token_percent("\\%");
+        }
+        else if (c == "|") {
+            return ["\\|", "\\|"];
+        }
+        else if (c == "&") {
+            return ["\\&", "\\&"];
+        }
+        else if (c == "(") {
+            return ["\\(", "\\("];
+        }
+        else if (c == ")") {
+            return ["\\)", "\\)"];
+        }
+        this.reader.seek_set(pos);
+        return this.get_token_backslash_common();
+    }
+    else if (c == "*") {
+        return ["*", "\\*"];
+    }
+    else if (c == "^") {
+        return ["^", "\\^"];
+    }
+    else if (c == "$") {
+        return ["$", "\\$"];
+    }
+    else if (c == ".") {
+        return [".", "\\."];
+    }
+    else if (c == "[") {
+        return this.get_token_sq("[");
+    }
+    else if (c == "~") {
+        return ["~", "\\~"];
+    }
+    return [c, c];
+}
+
+RegexpParser.prototype.get_token_nomagic = function() {
+    if (this.isend(this.reader.peek())) {
+        return ["<END>", "<END>"];
+    }
+    var c = this.reader.get();
+    if (c == "\\") {
+        var pos = this.reader.tell();
+        var c = this.reader.get();
+        if (c == "*") {
+            return ["\\*", "\\*"];
+        }
+        else if (c == "+") {
+            return ["\\+", "\\+"];
+        }
+        else if (c == "=") {
+            return ["\\=", "\\="];
+        }
+        else if (c == "?") {
+            return ["\\?", "\\?"];
+        }
+        else if (c == "{") {
+            return this.get_token_brace("\\{");
+        }
+        else if (c == "@") {
+            return this.get_token_at("\\@");
+        }
+        else if (c == ".") {
+            return ["\\.", "\\."];
+        }
+        else if (c == "<") {
+            return ["\\<", "\\<"];
+        }
+        else if (c == ">") {
+            return ["\\>", "\\>"];
+        }
+        else if (c == "%") {
+            return this.get_token_percent("\\%");
+        }
+        else if (c == "~") {
+            return ["\\~", "\\^"];
+        }
+        else if (c == "[") {
+            return this.get_token_sq("\\[");
+        }
+        else if (c == "|") {
+            return ["\\|", "\\|"];
+        }
+        else if (c == "&") {
+            return ["\\&", "\\&"];
+        }
+        else if (c == "(") {
+            return ["\\(", "\\("];
+        }
+        else if (c == ")") {
+            return ["\\)", "\\)"];
+        }
+        this.reader.seek_set(pos);
+        return this.get_token_backslash_common();
+    }
+    else if (c == "^") {
+        return ["^", "\\^"];
+    }
+    else if (c == "$") {
+        return ["$", "\\$"];
+    }
+    return [c, c];
+}
+
+RegexpParser.prototype.get_token_very_nomagic = function() {
+    if (this.isend(this.reader.peek())) {
+        return ["<END>", "<END>"];
+    }
+    var c = this.reader.get();
+    if (c == "\\") {
+        var pos = this.reader.tell();
+        var c = this.reader.get();
+        if (c == "*") {
+            return ["\\*", "\\*"];
+        }
+        else if (c == "+") {
+            return ["\\+", "\\+"];
+        }
+        else if (c == "=") {
+            return ["\\=", "\\="];
+        }
+        else if (c == "?") {
+            return ["\\?", "\\?"];
+        }
+        else if (c == "{") {
+            return this.get_token_brace("\\{");
+        }
+        else if (c == "@") {
+            return this.get_token_at("\\@");
+        }
+        else if (c == "^") {
+            return ["\\^", "\\^"];
+        }
+        else if (c == "$") {
+            return ["\\$", "\\$"];
+        }
+        else if (c == "<") {
+            return ["\\<", "\\<"];
+        }
+        else if (c == ">") {
+            return ["\\>", "\\>"];
+        }
+        else if (c == "%") {
+            return this.get_token_percent("\\%");
+        }
+        else if (c == "~") {
+            return ["\\~", "\\~"];
+        }
+        else if (c == "[") {
+            return this.get_token_sq("\\[");
+        }
+        else if (c == "|") {
+            return ["\\|", "\\|"];
+        }
+        else if (c == "&") {
+            return ["\\&", "\\&"];
+        }
+        else if (c == "(") {
+            return ["\\(", "\\("];
+        }
+        else if (c == ")") {
+            return ["\\)", "\\)"];
+        }
+        this.reader.seek_set(pos);
+        return this.get_token_backslash_common();
+    }
+    return [c, c];
+}
+
+RegexpParser.prototype.get_token_backslash_common = function() {
+    var cclass = "iIkKfFpPsSdDxXoOwWhHaAlLuU";
+    var c = this.reader.get();
+    if (c == "\\") {
+        return ["\\\\", "\\\\"];
+    }
+    else if (viml_stridx(cclass, c) != -1) {
+        return ["\\" + c, "\\" + c];
+    }
+    else if (c == "_") {
+        var epos = this.reader.getpos();
+        var c = this.reader.get();
+        if (viml_stridx(cclass, c) != -1) {
+            return ["\\_" + c, "\\_ . c"];
+        }
+        else if (c == "^") {
+            return ["\\_^", "\\_^"];
+        }
+        else if (c == "$") {
+            return ["\\_$", "\\_$"];
+        }
+        else if (c == ".") {
+            return ["\\_.", "\\_."];
+        }
+        else if (c == "[") {
+            return this.get_token_sq("\\_[");
+        }
+        throw Err("E63: invalid use of \\_", epos);
+    }
+    else if (viml_stridx("etrb", c) != -1) {
+        return ["\\" + c, "\\" + c];
+    }
+    else if (viml_stridx("123456789", c) != -1) {
+        return ["\\" + c, "\\" + c];
+    }
+    else if (c == "z") {
+        var epos = this.reader.getpos();
+        var c = this.reader.get();
+        if (viml_stridx("123456789", c) != -1) {
+            return ["\\z" + c, "\\z" + c];
+        }
+        else if (c == "s") {
+            return ["\\zs", "\\zs"];
+        }
+        else if (c == "e") {
+            return ["\\ze", "\\ze"];
+        }
+        else if (c == "(") {
+            return ["\\z(", "\\z("];
+        }
+        throw Err("E68: Invalid character after \\z", epos);
+    }
+    else if (viml_stridx("cCmMvVZ", c) != -1) {
+        return ["\\" + c, "\\" + c];
+    }
+    else if (c == "%") {
+        var epos = this.reader.getpos();
+        var c = this.reader.get();
+        if (c == "d") {
+            var r = this.getdecchrs();
+            if (r != "") {
+                return ["\\%d" + r, "\\%d" + r];
+            }
+        }
+        else if (c == "o") {
+            var r = this.getoctchrs();
+            if (r != "") {
+                return ["\\%o" + r, "\\%o" + r];
+            }
+        }
+        else if (c == "x") {
+            var r = this.gethexchrs(2);
+            if (r != "") {
+                return ["\\%x" + r, "\\%x" + r];
+            }
+        }
+        else if (c == "u") {
+            var r = this.gethexchrs(4);
+            if (r != "") {
+                return ["\\%u" + r, "\\%u" + r];
+            }
+        }
+        else if (c == "U") {
+            var r = this.gethexchrs(8);
+            if (r != "") {
+                return ["\\%U" + r, "\\%U" + r];
+            }
+        }
+        throw Err("E678: Invalid character after \\%[dxouU]", epos);
+    }
+    return ["\\" + c, c];
+}
+
+// \{}
+RegexpParser.prototype.get_token_brace = function(pre) {
+    var r = "";
+    var minus = "";
+    var comma = "";
+    var n = "";
+    var m = "";
+    if (this.reader.p(0) == "-") {
+        var minus = this.reader.get();
+        r += minus;
+    }
+    if (isdigit(this.reader.p(0))) {
+        var n = this.reader.read_digit();
+        r += n;
+    }
+    if (this.reader.p(0) == ",") {
+        var comma = this.rader.get();
+        r += comma;
+    }
+    if (isdigit(this.reader.p(0))) {
+        var m = this.reader.read_digit();
+        r += m;
+    }
+    if (this.reader.p(0) == "\\") {
+        r += this.reader.get();
+    }
+    if (this.reader.p(0) != "}") {
+        throw Err("E554: Syntax error in \\{...}", this.reader.getpos());
+    }
+    this.reader.get();
+    return [pre + r, "\\{" + minus + n + comma + m + "}"];
+}
+
+// \[]
+RegexpParser.prototype.get_token_sq = function(pre) {
+    var start = this.reader.tell();
+    var r = "";
+    // Complement of range
+    if (this.reader.p(0) == "^") {
+        r += this.reader.get();
+    }
+    // At the start ']' and '-' mean the literal character.
+    if (this.reader.p(0) == "]" || this.reader.p(0) == "-") {
+        r += this.reader.get();
+    }
+    while (1) {
+        var startc = 0;
+        var c = this.reader.p(0);
+        if (this.isend(c)) {
+            // If there is no matching ']', we assume the '[' is a normal character.
+            this.reader.seek_set(start);
+            return [pre, "["];
+        }
+        else if (c == "]") {
+            this.reader.seek_cur(1);
+            return [pre + r + "]", "\\[" + r + "]"];
+        }
+        else if (c == "[") {
+            var e = this.get_token_sq_char_class();
+            if (e == "") {
+                var e = this.get_token_sq_equi_class();
+                if (e == "") {
+                    var e = this.get_token_sq_coll_element();
+                    if (e == "") {
+                        var __tmp = this.get_token_sq_c();
+                        var e = __tmp[0];
+                        var startc = __tmp[1];
+                    }
+                }
+            }
+            r += e;
+        }
+        else {
+            var __tmp = this.get_token_sq_c();
+            var e = __tmp[0];
+            var startc = __tmp[1];
+            r += e;
+        }
+        if (startc != 0 && this.reader.p(0) == "-" && !this.isend(this.reader.p(1)) && !(this.reader.p(1) == "\\" && this.reader.p(2) == "n")) {
+            this.reader.seek_cur(1);
+            r += "-";
+            var c = this.reader.p(0);
+            if (c == "[") {
+                var e = this.get_token_sq_coll_element();
+                if (e != "") {
+                    var endc = viml_char2nr(e[2]);
+                }
+                else {
+                    var __tmp = this.get_token_sq_c();
+                    var e = __tmp[0];
+                    var endc = __tmp[1];
+                }
+                r += e;
+            }
+            else {
+                var __tmp = this.get_token_sq_c();
+                var e = __tmp[0];
+                var endc = __tmp[1];
+                r += e;
+            }
+            if (startc > endc || endc > startc + 256) {
+                throw Err("E16: Invalid range", this.reader.getpos());
+            }
+        }
+    }
+}
+
+// [c]
+RegexpParser.prototype.get_token_sq_c = function() {
+    var c = this.reader.p(0);
+    if (c == "\\") {
+        this.reader.seek_cur(1);
+        var c = this.reader.p(0);
+        if (c == "n") {
+            this.reader.seek_cur(1);
+            return ["\\n", 0];
+        }
+        else if (c == "r") {
+            this.reader.seek_cur(1);
+            return ["\\r", viml_char2nr("\r")];
+        }
+        else if (c == "t") {
+            this.reader.seek_cur(1);
+            return ["\\t", viml_char2nr("\t")];
+        }
+        else if (c == "e") {
+            this.reader.seek_cur(1);
+            return ["\\e", viml_char2nr("\e")];
+        }
+        else if (c == "b") {
+            this.reader.seek_cur(1);
+            return ["\\b", viml_char2nr("\b")];
+        }
+        else if (viml_stridx("]^-\\", c) != -1) {
+            this.reader.seek_cur(1);
+            return ["\\" + c, viml_char2nr(c)];
+        }
+        else if (viml_stridx("doxuU", c) != -1) {
+            var __tmp = this.get_token_sq_coll_char();
+            var c = __tmp[0];
+            var n = __tmp[1];
+            return [c, n];
+        }
+        else {
+            return ["\\", viml_char2nr("\\")];
+        }
+    }
+    else if (c == "-") {
+        this.reader.seek_cur(1);
+        return ["-", viml_char2nr("-")];
+    }
+    else {
+        this.reader.seek_cur(1);
+        return [c, viml_char2nr(c)];
+    }
+}
+
+// [\d123]
+RegexpParser.prototype.get_token_sq_coll_char = function() {
+    var pos = this.reader.tell();
+    var c = this.reader.get();
+    if (c == "d") {
+        var r = this.getdecchrs();
+        var n = viml_str2nr(r, 10);
+    }
+    else if (c == "o") {
+        var r = this.getoctchrs();
+        var n = viml_str2nr(r, 8);
+    }
+    else if (c == "x") {
+        var r = this.gethexchrs(2);
+        var n = viml_str2nr(r, 16);
+    }
+    else if (c == "u") {
+        var r = this.gethexchrs(4);
+        var n = viml_str2nr(r, 16);
+    }
+    else if (c == "U") {
+        var r = this.gethexchrs(8);
+        var n = viml_str2nr(r, 16);
+    }
+    else {
+        var r = "";
+    }
+    if (r == "") {
+        this.reader.seek_set(pos);
+        return "\\";
+    }
+    return ["\\" + c + r, n];
+}
+
+// [[.a.]]
+RegexpParser.prototype.get_token_sq_coll_element = function() {
+    if (this.reader.p(0) == "[" && this.reader.p(1) == "." && !this.isend(this.reader.p(2)) && this.reader.p(3) == "." && this.reader.p(4) == "]") {
+        return this.reader.getn(5);
+    }
+    return "";
+}
+
+// [[=a=]]
+RegexpParser.prototype.get_token_sq_equi_class = function() {
+    if (this.reader.p(0) == "[" && this.reader.p(1) == "=" && !this.isend(this.reader.p(2)) && this.reader.p(3) == "=" && this.reader.p(4) == "]") {
+        return this.reader.getn(5);
+    }
+    return "";
+}
+
+// [[:alpha:]]
+RegexpParser.prototype.get_token_sq_char_class = function() {
+    var class_names = ["alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower", "print", "punct", "space", "upper", "xdigit", "tab", "return", "backspace", "escape"];
+    var pos = this.reader.tell();
+    if (this.reader.p(0) == "[" && this.reader.p(1) == ":") {
+        this.reader.seek_cur(2);
+        var r = this.reader.read_alpha();
+        if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
+            this.reader.seek_cur(2);
+            var __c12 = class_names;
+            for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
+                var name = __c12[__i12];
+                if (r == name) {
+                    return "[:" + name + ":]";
+                }
+            }
+        }
+    }
+    this.reader.seek_set(pos);
+    return "";
+}
+
+// \@...
+RegexpParser.prototype.get_token_at = function(pre) {
+    var epos = this.reader.getpos();
+    var c = this.reader.get();
+    if (c == ">") {
+        return [pre + ">", "\\@>"];
+    }
+    else if (c == "=") {
+        return [pre + "=", "\\@="];
+    }
+    else if (c == "!") {
+        return [pre + "!", "\\@!"];
+    }
+    else if (c == "<") {
+        var c = this.reader.get();
+        if (c == "=") {
+            return [pre + "<=", "\\@<="];
+        }
+        else if (c == "!") {
+            return [pre + "<!", "\\@<!"];
+        }
+    }
+    throw Err("E64: @ follows nothing", epos);
+}
+
+// \%...
+RegexpParser.prototype.get_token_percent = function(pre) {
+    var c = this.reader.get();
+    if (c == "^") {
+        return [pre + "^", "\\%^"];
+    }
+    else if (c == "$") {
+        return [pre + "$", "\\%$"];
+    }
+    else if (c == "V") {
+        return [pre + "V", "\\%V"];
+    }
+    else if (c == "#") {
+        return [pre + "#", "\\%#"];
+    }
+    else if (c == "[") {
+        return this.get_token_percent_sq(pre + "[");
+    }
+    else if (c == "(") {
+        return [pre + "(", "\\%("];
+    }
+    else {
+        return this.get_token_mlcv(pre);
+    }
+}
+
+// \%[]
+RegexpParser.prototype.get_token_percent_sq = function(pre) {
+    var r = "";
+    while (1) {
+        var c = this.reader.peek();
+        if (this.isend(c)) {
+            throw Err("E69: Missing ] after \\%[", this.reader.getpos());
+        }
+        else if (c == "]") {
+            if (r == "") {
+                throw Err("E70: Empty \\%[", this.reader.getpos());
+            }
+            this.reader.seek_cur(1);
+            break;
+        }
+        this.reader.seek_cur(1);
+        r += c;
+    }
+    return [pre + r + "]", "\\%[" + r + "]"];
+}
+
+// \%'m \%l \%c \%v
+RegexpParser.prototype.get_token_mlvc = function(pre) {
+    var r = "";
+    var cmp = "";
+    if (this.reader.p(0) == "<" || this.reader.p(0) == ">") {
+        var cmp = this.reader.get();
+        r += cmp;
+    }
+    if (this.reader.p(0) == "'") {
+        r += this.reader.get();
+        var c = this.reader.p(0);
+        if (this.isend(c)) {
+            // FIXME: Should be error?  Vim allow this.
+            var c = "";
+        }
+        else {
+            var c = this.reader.get();
+        }
+        return [pre + r + c, "\\%" + cmp + "'" + c];
+    }
+    else if (isdigit(this.reader.p(0))) {
+        var d = this.reader.read_digit();
+        r += d;
+        var c = this.reader.p(0);
+        if (c == "l") {
+            this.reader.get();
+            return [pre + r + "l", "\\%" + cmp + d + "l"];
+        }
+        else if (c == "c") {
+            this.reader.get();
+            return [pre + r + "c", "\\%" + cmp + d + "c"];
+        }
+        else if (c == "v") {
+            this.reader.get();
+            return [pre + r + "v", "\\%" + cmp + d + "v"];
+        }
+    }
+    throw Err("E71: Invalid character after %", this.reader.getpos());
+}
+
+RegexpParser.prototype.getdecchrs = function() {
+    return this.reader.read_digit();
+}
+
+RegexpParser.prototype.getoctchrs = function() {
+    return this.reader.read_odigit();
+}
+
+RegexpParser.prototype.gethexchrs = function(n) {
+    var r = "";
+    var __c13 = viml_range(n);
+    for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
+        var i = __c13[__i13];
+        var c = this.reader.peek();
+        if (!isxdigit(c)) {
+            break;
+        }
+        r += this.reader.get();
+    }
+    return r;
 }
 
 

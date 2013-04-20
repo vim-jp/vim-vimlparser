@@ -290,7 +290,7 @@ function s:JavascriptCompiler.compile_function(node)
     unlet rlist[-1]
     let va = 1
   endif
-  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let [_0, klass, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
     if name == 'new'
       return
@@ -344,10 +344,10 @@ function s:JavascriptCompiler.compile_let(node)
       call self.out('function LvalueParser() { ExprParser.apply(this, arguments); this.__init__.apply(this, arguments); }')
       call self.out('LvalueParser.prototype = Object.create(ExprParser.prototype);')
       return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
       call self.out('function %s() { this.__init__.apply(this, arguments); }', left)
       return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let [_0, klass, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
       call self.out('%s.prototype.%s %s %s;', klass, name, op, right)
       return

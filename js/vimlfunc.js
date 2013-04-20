@@ -65,7 +65,8 @@ var pat_vim2js = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
-  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
+  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "^[0-7]$" : "^[0-7]$",
 }
 
 function viml_add(lst, item) {
@@ -74,6 +75,10 @@ function viml_add(lst, item) {
 
 function viml_call(func, args) {
     return func.apply(null, args);
+}
+
+function viml_char2nr(c) {
+  return c.charCodeAt(0);
 }
 
 function viml_empty(obj) {
@@ -160,7 +165,7 @@ function viml_range(start) {
 
 function viml_readfile(path) {
     // FIXME: newline?
-    return fs.readFileSync(path, 'utf-8').split(/\n/);
+    return fs.readFileSync(path, 'utf-8').split(/\r\n|\r|\n/);
 }
 
 function viml_remove(lst, idx) {
