@@ -68,7 +68,8 @@ pat_vim2py = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
-  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
+  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "^[0-7]$" : "^[0-7]$",
 }
 
 def viml_add(lst, item):
@@ -76,6 +77,9 @@ def viml_add(lst, item):
 
 def viml_call(func, *args):
     func(*args)
+
+def viml_char2nr(c):
+    return ord(c)
 
 def viml_empty(obj):
     return len(obj) == 0

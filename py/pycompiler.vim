@@ -291,7 +291,7 @@ function s:PythonCompiler.compile_function(node)
   if !empty(rlist) && rlist[-1] == '...'
     let rlist[-1] = '*a000'
   endif
-  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let left = matchstr(left, '\.\zs.*')
     if left == 'new'
       return
@@ -339,10 +339,10 @@ function s:PythonCompiler.compile_let(node)
     if left == 'LvalueParser'
       call self.out('class LvalueParser(ExprParser):')
       return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)$'
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
       call self.out('class %s:', left)
       return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\)\.'
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let left = matchstr(left, '\.\zs.*')
       call self.incindent('    ')
       call self.out('%s %s %s', left, op, right)

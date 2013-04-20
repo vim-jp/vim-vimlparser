@@ -68,7 +68,8 @@ pat_vim2py = {
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
-  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_]*$",
+  "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "^[0-7]$" : "^[0-7]$",
 }
 
 def viml_add(lst, item):
@@ -76,6 +77,9 @@ def viml_add(lst, item):
 
 def viml_call(func, *args):
     func(*args)
+
+def viml_char2nr(c):
+    return ord(c)
 
 def viml_empty(obj):
     return len(obj) == 0
@@ -333,6 +337,9 @@ def isalnum(c):
 def isdigit(c):
     return viml_eqregh(c, "^[0-9]$")
 
+def isodigit(c):
+    return viml_eqregh(c, "^[0-7]$")
+
 def isxdigit(c):
     return viml_eqregh(c, "^[0-9A-Fa-f]$")
 
@@ -355,7 +362,7 @@ def isargname(s):
     return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$")
 
 def isvarname(s):
-    return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_]*$")
+    return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$")
 
 # FIXME:
 def isidc(c):
@@ -2310,7 +2317,10 @@ class ExprParser:
                         viml_add(node.rlist, self.parse_expr1())
                         token = self.tokenizer.get()
                         if token.type == TOKEN_COMMA:
-                            pass
+                            # TODO: Vim allows foo(a, b, ).  Lint should warn it.
+                            if self.tokenizer.peek().type == TOKEN_PCLOSE:
+                                self.tokenizer.get()
+                                break
                         elif token.type == TOKEN_PCLOSE:
                             break
                         else:
@@ -2712,6 +2722,12 @@ class StringReader:
     def read_digit(self):
         r = ""
         while isdigit(self.peekn(1)):
+            r += self.getn(1)
+        return r
+
+    def read_odigit(self):
+        r = ""
+        while isodigit(self.peekn(1)):
             r += self.getn(1)
         return r
 
@@ -3294,6 +3310,585 @@ class Compiler:
 
     def compile_reg(self, node):
         return node.value
+
+# TODO: under construction
+class RegexpParser:
+    RE_VERY_NOMAGIC = 1
+    RE_NOMAGIC = 2
+    RE_MAGIC = 3
+    RE_VERY_MAGIC = 4
+    def __init__(self, reader, cmd, delim):
+        self.reader = reader
+        self.cmd = cmd
+        self.delim = delim
+        self.reg_magic = self.RE_MAGIC
+
+    def isend(self, c):
+        return c == "<EOF>" or c == "<EOL>" or c == self.delim
+
+    def parse_regexp(self):
+        prevtoken = ""
+        ntoken = ""
+        ret = []
+        while not self.isend(self.reader.peek()):
+            prevtoken = ntoken
+            token, ntoken = self.get_token()
+            if ntoken == "\\m":
+                self.reg_magic = self.RE_MAGIC
+            elif ntoken == "\\M":
+                self.reg_magic = self.RE_NOMAGIC
+            elif ntoken == "\\v":
+                self.reg_magic = self.RE_VERY_MAGIC
+            elif ntoken == "\\V":
+                self.reg_magic = self.RE_VERY_NOMAGIC
+            elif ntoken == "\\*":
+                # '*' is not magic as the very first character.
+                if prevtoken == "" or prevtoken == "\\^" or prevtoken == "\\&" or prevtoken == "\\|" or prevtoken == "\\(":
+                    ntoken = "*"
+            elif ntoken == "\\^":
+                # '^' is only magic as the very first character.
+                if self.reg_magic != self.RE_VERY_MAGIC and prevtoken != "" and prevtoken != "\\&" and prevtoken != "\\|" and prevtoken != "\\n" and prevtoken != "\\(" and prevtoken != "\\%(":
+                    ntoken = "^"
+            elif ntoken == "\\$":
+                # '$' is only magic as the very last character
+                pos = self.reader.tell()
+                if self.reg_magic != self.RE_VERY_MAGIC:
+                    while not self.isend(self.reader.peek()):
+                        t, n = self.get_token()
+                        # XXX: Vim doesn't check \v and \V?
+                        if n == "\\c" or n == "\\C" or n == "\\m" or n == "\\M" or n == "\\Z":
+                            continue
+                        if n != "\\|" and n != "\\&" and n != "\\n" and n != "\\)":
+                            ntoken = "$"
+                        break
+                self.reader.seek_set(pos)
+            elif ntoken == "\\?":
+                # '?' is literal in '?' command.
+                if self.cmd == "?":
+                    ntoken = "?"
+            viml_add(ret, ntoken)
+        return ret
+
+# @return [actual_token, normalized_token]
+    def get_token(self):
+        if self.reg_magic == self.RE_VERY_MAGIC:
+            return self.get_token_very_magic()
+        elif self.reg_magic == self.RE_MAGIC:
+            return self.get_token_magic()
+        elif self.reg_magic == self.RE_NOMAGIC:
+            return self.get_token_nomagic()
+        elif self.reg_magic == self.RE_VERY_NOMAGIC:
+            return self.get_token_very_nomagic()
+
+    def get_token_very_magic(self):
+        if self.isend(self.reader.peek()):
+            return ["<END>", "<END>"]
+        c = self.reader.get()
+        if c == "\\":
+            return self.get_token_backslash_common()
+        elif c == "*":
+            return ["*", "\\*"]
+        elif c == "+":
+            return ["+", "\\+"]
+        elif c == "=":
+            return ["=", "\\="]
+        elif c == "?":
+            return ["?", "\\?"]
+        elif c == "{":
+            return self.get_token_brace("{")
+        elif c == "@":
+            return self.get_token_at("@")
+        elif c == "^":
+            return ["^", "\\^"]
+        elif c == "$":
+            return ["$", "\\$"]
+        elif c == ".":
+            return [".", "\\."]
+        elif c == "<":
+            return ["<", "\\<"]
+        elif c == ">":
+            return [">", "\\>"]
+        elif c == "%":
+            return self.get_token_percent("%")
+        elif c == "[":
+            return self.get_token_sq("[")
+        elif c == "~":
+            return ["~", "\\~"]
+        elif c == "|":
+            return ["|", "\\|"]
+        elif c == "&":
+            return ["&", "\\&"]
+        elif c == "(":
+            return ["(", "\\("]
+        elif c == ")":
+            return [")", "\\)"]
+        return [c, c]
+
+    def get_token_magic(self):
+        if self.isend(self.reader.peek()):
+            return ["<END>", "<END>"]
+        c = self.reader.get()
+        if c == "\\":
+            pos = self.reader.tell()
+            c = self.reader.get()
+            if c == "+":
+                return ["\\+", "\\+"]
+            elif c == "=":
+                return ["\\=", "\\="]
+            elif c == "?":
+                return ["\\?", "\\?"]
+            elif c == "{":
+                return self.get_token_brace("\\{")
+            elif c == "@":
+                return self.get_token_at("\\@")
+            elif c == "<":
+                return ["\\<", "\\<"]
+            elif c == ">":
+                return ["\\>", "\\>"]
+            elif c == "%":
+                return self.get_token_percent("\\%")
+            elif c == "|":
+                return ["\\|", "\\|"]
+            elif c == "&":
+                return ["\\&", "\\&"]
+            elif c == "(":
+                return ["\\(", "\\("]
+            elif c == ")":
+                return ["\\)", "\\)"]
+            self.reader.seek_set(pos)
+            return self.get_token_backslash_common()
+        elif c == "*":
+            return ["*", "\\*"]
+        elif c == "^":
+            return ["^", "\\^"]
+        elif c == "$":
+            return ["$", "\\$"]
+        elif c == ".":
+            return [".", "\\."]
+        elif c == "[":
+            return self.get_token_sq("[")
+        elif c == "~":
+            return ["~", "\\~"]
+        return [c, c]
+
+    def get_token_nomagic(self):
+        if self.isend(self.reader.peek()):
+            return ["<END>", "<END>"]
+        c = self.reader.get()
+        if c == "\\":
+            pos = self.reader.tell()
+            c = self.reader.get()
+            if c == "*":
+                return ["\\*", "\\*"]
+            elif c == "+":
+                return ["\\+", "\\+"]
+            elif c == "=":
+                return ["\\=", "\\="]
+            elif c == "?":
+                return ["\\?", "\\?"]
+            elif c == "{":
+                return self.get_token_brace("\\{")
+            elif c == "@":
+                return self.get_token_at("\\@")
+            elif c == ".":
+                return ["\\.", "\\."]
+            elif c == "<":
+                return ["\\<", "\\<"]
+            elif c == ">":
+                return ["\\>", "\\>"]
+            elif c == "%":
+                return self.get_token_percent("\\%")
+            elif c == "~":
+                return ["\\~", "\\^"]
+            elif c == "[":
+                return self.get_token_sq("\\[")
+            elif c == "|":
+                return ["\\|", "\\|"]
+            elif c == "&":
+                return ["\\&", "\\&"]
+            elif c == "(":
+                return ["\\(", "\\("]
+            elif c == ")":
+                return ["\\)", "\\)"]
+            self.reader.seek_set(pos)
+            return self.get_token_backslash_common()
+        elif c == "^":
+            return ["^", "\\^"]
+        elif c == "$":
+            return ["$", "\\$"]
+        return [c, c]
+
+    def get_token_very_nomagic(self):
+        if self.isend(self.reader.peek()):
+            return ["<END>", "<END>"]
+        c = self.reader.get()
+        if c == "\\":
+            pos = self.reader.tell()
+            c = self.reader.get()
+            if c == "*":
+                return ["\\*", "\\*"]
+            elif c == "+":
+                return ["\\+", "\\+"]
+            elif c == "=":
+                return ["\\=", "\\="]
+            elif c == "?":
+                return ["\\?", "\\?"]
+            elif c == "{":
+                return self.get_token_brace("\\{")
+            elif c == "@":
+                return self.get_token_at("\\@")
+            elif c == "^":
+                return ["\\^", "\\^"]
+            elif c == "$":
+                return ["\\$", "\\$"]
+            elif c == "<":
+                return ["\\<", "\\<"]
+            elif c == ">":
+                return ["\\>", "\\>"]
+            elif c == "%":
+                return self.get_token_percent("\\%")
+            elif c == "~":
+                return ["\\~", "\\~"]
+            elif c == "[":
+                return self.get_token_sq("\\[")
+            elif c == "|":
+                return ["\\|", "\\|"]
+            elif c == "&":
+                return ["\\&", "\\&"]
+            elif c == "(":
+                return ["\\(", "\\("]
+            elif c == ")":
+                return ["\\)", "\\)"]
+            self.reader.seek_set(pos)
+            return self.get_token_backslash_common()
+        return [c, c]
+
+    def get_token_backslash_common(self):
+        cclass = "iIkKfFpPsSdDxXoOwWhHaAlLuU"
+        c = self.reader.get()
+        if c == "\\":
+            return ["\\\\", "\\\\"]
+        elif viml_stridx(cclass, c) != -1:
+            return ["\\" + c, "\\" + c]
+        elif c == "_":
+            epos = self.reader.getpos()
+            c = self.reader.get()
+            if viml_stridx(cclass, c) != -1:
+                return ["\\_" + c, "\\_ . c"]
+            elif c == "^":
+                return ["\\_^", "\\_^"]
+            elif c == "$":
+                return ["\\_$", "\\_$"]
+            elif c == ".":
+                return ["\\_.", "\\_."]
+            elif c == "[":
+                return self.get_token_sq("\\_[")
+            raise Exception(Err("E63: invalid use of \\_", epos))
+        elif viml_stridx("etrb", c) != -1:
+            return ["\\" + c, "\\" + c]
+        elif viml_stridx("123456789", c) != -1:
+            return ["\\" + c, "\\" + c]
+        elif c == "z":
+            epos = self.reader.getpos()
+            c = self.reader.get()
+            if viml_stridx("123456789", c) != -1:
+                return ["\\z" + c, "\\z" + c]
+            elif c == "s":
+                return ["\\zs", "\\zs"]
+            elif c == "e":
+                return ["\\ze", "\\ze"]
+            elif c == "(":
+                return ["\\z(", "\\z("]
+            raise Exception(Err("E68: Invalid character after \\z", epos))
+        elif viml_stridx("cCmMvVZ", c) != -1:
+            return ["\\" + c, "\\" + c]
+        elif c == "%":
+            epos = self.reader.getpos()
+            c = self.reader.get()
+            if c == "d":
+                r = self.getdecchrs()
+                if r != "":
+                    return ["\\%d" + r, "\\%d" + r]
+            elif c == "o":
+                r = self.getoctchrs()
+                if r != "":
+                    return ["\\%o" + r, "\\%o" + r]
+            elif c == "x":
+                r = self.gethexchrs(2)
+                if r != "":
+                    return ["\\%x" + r, "\\%x" + r]
+            elif c == "u":
+                r = self.gethexchrs(4)
+                if r != "":
+                    return ["\\%u" + r, "\\%u" + r]
+            elif c == "U":
+                r = self.gethexchrs(8)
+                if r != "":
+                    return ["\\%U" + r, "\\%U" + r]
+            raise Exception(Err("E678: Invalid character after \\%[dxouU]", epos))
+        return ["\\" + c, c]
+
+# \{}
+    def get_token_brace(self, pre):
+        r = ""
+        minus = ""
+        comma = ""
+        n = ""
+        m = ""
+        if self.reader.p(0) == "-":
+            minus = self.reader.get()
+            r += minus
+        if isdigit(self.reader.p(0)):
+            n = self.reader.read_digit()
+            r += n
+        if self.reader.p(0) == ",":
+            comma = self.rader.get()
+            r += comma
+        if isdigit(self.reader.p(0)):
+            m = self.reader.read_digit()
+            r += m
+        if self.reader.p(0) == "\\":
+            r += self.reader.get()
+        if self.reader.p(0) != "}":
+            raise Exception(Err("E554: Syntax error in \\{...}", self.reader.getpos()))
+        self.reader.get()
+        return [pre + r, "\\{" + minus + n + comma + m + "}"]
+
+# \[]
+    def get_token_sq(self, pre):
+        start = self.reader.tell()
+        r = ""
+        # Complement of range
+        if self.reader.p(0) == "^":
+            r += self.reader.get()
+        # At the start ']' and '-' mean the literal character.
+        if self.reader.p(0) == "]" or self.reader.p(0) == "-":
+            r += self.reader.get()
+        while 1:
+            startc = 0
+            c = self.reader.p(0)
+            if self.isend(c):
+                # If there is no matching ']', we assume the '[' is a normal character.
+                self.reader.seek_set(start)
+                return [pre, "["]
+            elif c == "]":
+                self.reader.seek_cur(1)
+                return [pre + r + "]", "\\[" + r + "]"]
+            elif c == "[":
+                e = self.get_token_sq_char_class()
+                if e == "":
+                    e = self.get_token_sq_equi_class()
+                    if e == "":
+                        e = self.get_token_sq_coll_element()
+                        if e == "":
+                            e, startc = self.get_token_sq_c()
+                r += e
+            else:
+                e, startc = self.get_token_sq_c()
+                r += e
+            if startc != 0 and self.reader.p(0) == "-" and not self.isend(self.reader.p(1)) and not (self.reader.p(1) == "\\" and self.reader.p(2) == "n"):
+                self.reader.seek_cur(1)
+                r += "-"
+                c = self.reader.p(0)
+                if c == "[":
+                    e = self.get_token_sq_coll_element()
+                    if e != "":
+                        endc = viml_char2nr(e[2])
+                    else:
+                        e, endc = self.get_token_sq_c()
+                    r += e
+                else:
+                    e, endc = self.get_token_sq_c()
+                    r += e
+                if startc > endc or endc > startc + 256:
+                    raise Exception(Err("E16: Invalid range", self.reader.getpos()))
+
+# [c]
+    def get_token_sq_c(self):
+        c = self.reader.p(0)
+        if c == "\\":
+            self.reader.seek_cur(1)
+            c = self.reader.p(0)
+            if c == "n":
+                self.reader.seek_cur(1)
+                return ["\\n", 0]
+            elif c == "r":
+                self.reader.seek_cur(1)
+                return ["\\r", viml_char2nr("\r")]
+            elif c == "t":
+                self.reader.seek_cur(1)
+                return ["\\t", viml_char2nr("\t")]
+            elif c == "e":
+                self.reader.seek_cur(1)
+                return ["\\e", viml_char2nr("\e")]
+            elif c == "b":
+                self.reader.seek_cur(1)
+                return ["\\b", viml_char2nr("\b")]
+            elif viml_stridx("]^-\\", c) != -1:
+                self.reader.seek_cur(1)
+                return ["\\" + c, viml_char2nr(c)]
+            elif viml_stridx("doxuU", c) != -1:
+                c, n = self.get_token_sq_coll_char()
+                return [c, n]
+            else:
+                return ["\\", viml_char2nr("\\")]
+        elif c == "-":
+            self.reader.seek_cur(1)
+            return ["-", viml_char2nr("-")]
+        else:
+            self.reader.seek_cur(1)
+            return [c, viml_char2nr(c)]
+
+# [\d123]
+    def get_token_sq_coll_char(self):
+        pos = self.reader.tell()
+        c = self.reader.get()
+        if c == "d":
+            r = self.getdecchrs()
+            n = viml_str2nr(r, 10)
+        elif c == "o":
+            r = self.getoctchrs()
+            n = viml_str2nr(r, 8)
+        elif c == "x":
+            r = self.gethexchrs(2)
+            n = viml_str2nr(r, 16)
+        elif c == "u":
+            r = self.gethexchrs(4)
+            n = viml_str2nr(r, 16)
+        elif c == "U":
+            r = self.gethexchrs(8)
+            n = viml_str2nr(r, 16)
+        else:
+            r = ""
+        if r == "":
+            self.reader.seek_set(pos)
+            return "\\"
+        return ["\\" + c + r, n]
+
+# [[.a.]]
+    def get_token_sq_coll_element(self):
+        if self.reader.p(0) == "[" and self.reader.p(1) == "." and not self.isend(self.reader.p(2)) and self.reader.p(3) == "." and self.reader.p(4) == "]":
+            return self.reader.getn(5)
+        return ""
+
+# [[=a=]]
+    def get_token_sq_equi_class(self):
+        if self.reader.p(0) == "[" and self.reader.p(1) == "=" and not self.isend(self.reader.p(2)) and self.reader.p(3) == "=" and self.reader.p(4) == "]":
+            return self.reader.getn(5)
+        return ""
+
+# [[:alpha:]]
+    def get_token_sq_char_class(self):
+        class_names = ["alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower", "print", "punct", "space", "upper", "xdigit", "tab", "return", "backspace", "escape"]
+        pos = self.reader.tell()
+        if self.reader.p(0) == "[" and self.reader.p(1) == ":":
+            self.reader.seek_cur(2)
+            r = self.reader.read_alpha()
+            if self.reader.p(0) == ":" and self.reader.p(1) == "]":
+                self.reader.seek_cur(2)
+                for name in class_names:
+                    if r == name:
+                        return "[:" + name + ":]"
+        self.reader.seek_set(pos)
+        return ""
+
+# \@...
+    def get_token_at(self, pre):
+        epos = self.reader.getpos()
+        c = self.reader.get()
+        if c == ">":
+            return [pre + ">", "\\@>"]
+        elif c == "=":
+            return [pre + "=", "\\@="]
+        elif c == "!":
+            return [pre + "!", "\\@!"]
+        elif c == "<":
+            c = self.reader.get()
+            if c == "=":
+                return [pre + "<=", "\\@<="]
+            elif c == "!":
+                return [pre + "<!", "\\@<!"]
+        raise Exception(Err("E64: @ follows nothing", epos))
+
+# \%...
+    def get_token_percent(self, pre):
+        c = self.reader.get()
+        if c == "^":
+            return [pre + "^", "\\%^"]
+        elif c == "$":
+            return [pre + "$", "\\%$"]
+        elif c == "V":
+            return [pre + "V", "\\%V"]
+        elif c == "#":
+            return [pre + "#", "\\%#"]
+        elif c == "[":
+            return self.get_token_percent_sq(pre + "[")
+        elif c == "(":
+            return [pre + "(", "\\%("]
+        else:
+            return self.get_token_mlcv(pre)
+
+# \%[]
+    def get_token_percent_sq(self, pre):
+        r = ""
+        while 1:
+            c = self.reader.peek()
+            if self.isend(c):
+                raise Exception(Err("E69: Missing ] after \\%[", self.reader.getpos()))
+            elif c == "]":
+                if r == "":
+                    raise Exception(Err("E70: Empty \\%[", self.reader.getpos()))
+                self.reader.seek_cur(1)
+                break
+            self.reader.seek_cur(1)
+            r += c
+        return [pre + r + "]", "\\%[" + r + "]"]
+
+# \%'m \%l \%c \%v
+    def get_token_mlvc(self, pre):
+        r = ""
+        cmp = ""
+        if self.reader.p(0) == "<" or self.reader.p(0) == ">":
+            cmp = self.reader.get()
+            r += cmp
+        if self.reader.p(0) == "'":
+            r += self.reader.get()
+            c = self.reader.p(0)
+            if self.isend(c):
+                # FIXME: Should be error?  Vim allow this.
+                c = ""
+            else:
+                c = self.reader.get()
+            return [pre + r + c, "\\%" + cmp + "'" + c]
+        elif isdigit(self.reader.p(0)):
+            d = self.reader.read_digit()
+            r += d
+            c = self.reader.p(0)
+            if c == "l":
+                self.reader.get()
+                return [pre + r + "l", "\\%" + cmp + d + "l"]
+            elif c == "c":
+                self.reader.get()
+                return [pre + r + "c", "\\%" + cmp + d + "c"]
+            elif c == "v":
+                self.reader.get()
+                return [pre + r + "v", "\\%" + cmp + d + "v"]
+        raise Exception(Err("E71: Invalid character after %", self.reader.getpos()))
+
+    def getdecchrs(self):
+        return self.reader.read_digit()
+
+    def getoctchrs(self):
+        return self.reader.read_odigit()
+
+    def gethexchrs(self, n):
+        r = ""
+        for i in viml_range(n):
+            c = self.reader.peek()
+            if not isxdigit(c):
+                break
+            r += self.reader.get()
+        return r
 
 
 main()
