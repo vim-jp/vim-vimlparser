@@ -3047,7 +3047,7 @@ function! s:ExprParser.parse_expr8()
           call add(node.rlist, self.parse_expr1())
           let token = self.tokenizer.get()
           if token.type == s:TOKEN_COMMA
-            " TODO: Vim allows foo(a, b, ).  Lint should be warn it.
+            " TODO: Vim allows foo(a, b, ).  Lint should warn it.
             if self.tokenizer.peek().type == s:TOKEN_PCLOSE
               call self.tokenizer.get()
               break
