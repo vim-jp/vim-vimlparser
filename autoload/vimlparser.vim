@@ -239,7 +239,7 @@ function! s:isargname(s)
 endfunction
 
 function! s:isvarname(s)
-  return a:s =~# '^[vgslabwt]:$\|^\([vgslabwt]:\)\?[A-Za-z_][0-9A-Za-z_]*$'
+  return a:s =~# '^[vgslabwt]:$\|^\([vgslabwt]:\)\?[A-Za-z_][0-9A-Za-z_#]*$'
 endfunction
 
 " FIXME:
