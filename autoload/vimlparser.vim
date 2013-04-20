@@ -4274,24 +4274,24 @@ let s:RegexpParser.RE_NOMAGIC = 2
 let s:RegexpParser.RE_MAGIC = 3
 let s:RegexpParser.RE_VERY_MAGIC = 4
 
-function s:RegexpParser.new(...)
+function! s:RegexpParser.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:RegexpParser.__init__(reader, cmd, delim)
+function! s:RegexpParser.__init__(reader, cmd, delim)
   let self.reader = a:reader
   let self.cmd = a:cmd
   let self.delim = a:delim
   let self.reg_magic = self.RE_MAGIC
 endfunction
 
-function s:RegexpParser.isend(c)
+function! s:RegexpParser.isend(c)
   return a:c ==# '<EOF>' || a:c ==# '<EOL>' || a:c ==# self.delim
 endfunction
 
-function s:RegexpParser.parse_regexp()
+function! s:RegexpParser.parse_regexp()
   let prevtoken = ''
   let ntoken = ''
   let ret = []
@@ -4345,7 +4345,7 @@ function s:RegexpParser.parse_regexp()
 endfunction
 
 " @return [actual_token, normalized_token]
-function s:RegexpParser.get_token()
+function! s:RegexpParser.get_token()
   if self.reg_magic == self.RE_VERY_MAGIC
     return self.get_token_very_magic()
   elseif self.reg_magic == self.RE_MAGIC
@@ -4357,7 +4357,7 @@ function s:RegexpParser.get_token()
   endif
 endfunction
 
-function s:RegexpParser.get_token_very_magic()
+function! s:RegexpParser.get_token_very_magic()
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -4404,7 +4404,7 @@ function s:RegexpParser.get_token_very_magic()
   return [c, c]
 endfunction
 
-function s:RegexpParser.get_token_magic()
+function! s:RegexpParser.get_token_magic()
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -4455,7 +4455,7 @@ function s:RegexpParser.get_token_magic()
   return [c, c]
 endfunction
 
-function s:RegexpParser.get_token_nomagic()
+function! s:RegexpParser.get_token_nomagic()
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -4506,7 +4506,7 @@ function s:RegexpParser.get_token_nomagic()
   return [c, c]
 endfunction
 
-function s:RegexpParser.get_token_very_nomagic()
+function! s:RegexpParser.get_token_very_nomagic()
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -4555,7 +4555,7 @@ function s:RegexpParser.get_token_very_nomagic()
   return [c, c]
 endfunction
 
-function s:RegexpParser.get_token_backslash_common()
+function! s:RegexpParser.get_token_backslash_common()
   let cclass = 'iIkKfFpPsSdDxXoOwWhHaAlLuU'
   let c = self.reader.get()
   if c ==# '\'
@@ -4631,7 +4631,7 @@ function s:RegexpParser.get_token_backslash_common()
 endfunction
 
 " \{}
-function s:RegexpParser.get_token_brace(pre)
+function! s:RegexpParser.get_token_brace(pre)
   let r = ''
   let minus = ''
   let comma = ''
@@ -4664,7 +4664,7 @@ function s:RegexpParser.get_token_brace(pre)
 endfunction
 
 " \[]
-function s:RegexpParser.get_token_sq(pre)
+function! s:RegexpParser.get_token_sq(pre)
   let start = self.reader.tell()
   let r = ''
   " Complement of range
@@ -4725,7 +4725,7 @@ function s:RegexpParser.get_token_sq(pre)
 endfunction
 
 " [c]
-function s:RegexpParser.get_token_sq_c()
+function! s:RegexpParser.get_token_sq_c()
   let c = self.reader.p(0)
   if c ==# '\'
     call self.reader.seek_cur(1)
@@ -4764,7 +4764,7 @@ function s:RegexpParser.get_token_sq_c()
 endfunction
 
 " [\d123]
-function s:RegexpParser.get_token_sq_coll_char()
+function! s:RegexpParser.get_token_sq_coll_char()
   let pos = self.reader.tell()
   let c = self.reader.get()
   if c ==# 'd'
@@ -4793,7 +4793,7 @@ function s:RegexpParser.get_token_sq_coll_char()
 endfunction
 
 " [[.a.]]
-function s:RegexpParser.get_token_sq_coll_element()
+function! s:RegexpParser.get_token_sq_coll_element()
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# '.' && !self.isend(self.reader.p(2)) && self.reader.p(3) ==# '.' && self.reader.p(4) ==# ']'
     return self.reader.getn(5)
   endif
@@ -4801,7 +4801,7 @@ function s:RegexpParser.get_token_sq_coll_element()
 endfunction
 
 " [[=a=]]
-function s:RegexpParser.get_token_sq_equi_class()
+function! s:RegexpParser.get_token_sq_equi_class()
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# '=' && !self.isend(self.reader.p(2)) && self.reader.p(3) ==# '=' && self.reader.p(4) ==# ']'
     return self.reader.getn(5)
   endif
@@ -4809,7 +4809,7 @@ function s:RegexpParser.get_token_sq_equi_class()
 endfunction
 
 " [[:alpha:]]
-function s:RegexpParser.get_token_sq_char_class()
+function! s:RegexpParser.get_token_sq_char_class()
   let class_names = ["alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower", "print", "punct", "space", "upper", "xdigit", "tab", "return", "backspace", "escape"]
   let pos = self.reader.tell()
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# ':'
@@ -4829,7 +4829,7 @@ function s:RegexpParser.get_token_sq_char_class()
 endfunction
 
 " \@...
-function s:RegexpParser.get_token_at(pre)
+function! s:RegexpParser.get_token_at(pre)
   let epos = self.reader.getpos()
   let c = self.reader.get()
   if c ==# '>'
@@ -4850,7 +4850,7 @@ function s:RegexpParser.get_token_at(pre)
 endfunction
 
 " \%...
-function s:RegexpParser.get_token_percent(pre)
+function! s:RegexpParser.get_token_percent(pre)
   let c = self.reader.get()
   if c ==# '^'
     return [a:pre . '^', '\%^']
@@ -4870,7 +4870,7 @@ function s:RegexpParser.get_token_percent(pre)
 endfunction
 
 " \%[]
-function s:RegexpParser.get_token_percent_sq(pre)
+function! s:RegexpParser.get_token_percent_sq(pre)
   let r = ''
   while 1
     let c = self.reader.peek()
@@ -4890,7 +4890,7 @@ function s:RegexpParser.get_token_percent_sq(pre)
 endfunction
 
 " \%'m \%l \%c \%v
-function s:RegexpParser.get_token_mlvc(pre)
+function! s:RegexpParser.get_token_mlvc(pre)
   let r = ''
   let cmp = ''
   if self.reader.p(0) ==# '<' || self.reader.p(0) ==# '>'
@@ -4925,15 +4925,15 @@ function s:RegexpParser.get_token_mlvc(pre)
   throw s:Err('E71: Invalid character after %', self.reader.getpos())
 endfunction
 
-function s:RegexpParser.getdecchrs()
+function! s:RegexpParser.getdecchrs()
   return self.reader.read_digit()
 endfunction
 
-function s:RegexpParser.getoctchrs()
+function! s:RegexpParser.getoctchrs()
   return self.reader.read_odigit()
 endfunction
 
-function s:RegexpParser.gethexchrs(n)
+function! s:RegexpParser.gethexchrs(n)
   let r = ''
   for i in range(a:n)
     let c = self.reader.peek()
