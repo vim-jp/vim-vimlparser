@@ -3035,6 +3035,7 @@ function! s:ExprParser.parse_expr8()
         endif
       endif
       let left = node
+      unlet node
     elseif token.type == s:TOKEN_POPEN
       let node = s:Node(s:NODE_CALL)
       let node.pos = token.pos
@@ -3064,6 +3065,7 @@ function! s:ExprParser.parse_expr8()
         throw s:Err('E740: Too many arguments for function', node.pos)
       endif
       let left = node
+      unlet node
     elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
       let node = self.parse_dot(token, left)
       if node is s:NIL
@@ -3071,6 +3073,7 @@ function! s:ExprParser.parse_expr8()
         break
       endif
       let left = node
+      unlet node
     else
       call self.reader.seek_set(pos)
       break
