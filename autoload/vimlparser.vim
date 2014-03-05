@@ -2166,6 +2166,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'sview', 'minlen': 2, 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'swapname', 'minlen': 2, 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'syntax', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'syntime', 'minlen': 5, 'flags': 'NEEDARG|WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'syncbind', 'minlen': 4, 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 't', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'tNext', 'minlen': 2, 'flags': 'RANGE|NOTADR|BANG|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
