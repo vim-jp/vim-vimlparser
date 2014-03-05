@@ -191,6 +191,7 @@ let s:TOKEN_OR = 60
 let s:TOKEN_SEMICOLON = 61
 let s:TOKEN_BACKTICK = 62
 let s:TOKEN_DOTDOTDOT = 63
+let s:TOKEN_SHARP = 64
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -2486,6 +2487,9 @@ function! s:ExprTokenizer.get2()
   elseif c ==# ':'
     call r.seek_cur(1)
     return self.token(s:TOKEN_COLON, ':', pos)
+  elseif c ==# '#'
+    call r.seek_cur(1)
+    return self.token(s:TOKEN_SHARP, '#', pos)
   elseif c ==# '('
     call r.seek_cur(1)
     return self.token(s:TOKEN_POPEN, '(', pos)
@@ -3185,6 +3189,10 @@ function! s:ExprParser.parse_expr9()
     let node.pos = token.pos
     let node.value = token.value
   elseif token.type == s:TOKEN_IDENTIFIER
+    call self.reader.seek_set(pos)
+    let node = self.parse_identifier()
+  elseif 0 && (token.type == s:TOKEN_COLON || token.type == s:TOKEN_SHARP)
+    " XXX: no parse error but invalid expression
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
   elseif token.type == s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
