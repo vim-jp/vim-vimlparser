@@ -535,6 +535,8 @@ function! s:VimLParser.parse_command_modifiers()
       call add(modifiers, {'name': 'keepalt'})
     elseif stridx('keepjumps', k) == 0 && len(k) >= 5 " keepj\%[umps]
       call add(modifiers, {'name': 'keepjumps'})
+    elseif stridx('keeppatterns', k) == 0 && len(k) >= 5 " keepp\%[atterns]
+      call add(modifiers, {'name': 'keeppatterns'})
     elseif stridx('hide', k) == 0 && len(k) >= 3 "hid\%[e]
       if self.ends_excmds(c)
         break
@@ -1945,6 +1947,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'keepalt', 'minlen': 5, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'keepmarks', 'minlen': 3, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'keepjumps', 'minlen': 5, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'keeppatterns', 'minlen': 5, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'lNext', 'minlen': 2, 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lNfile', 'minlen': 3, 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'list', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
