@@ -3228,6 +3228,7 @@ function! s:ExprParser.parse_dot(token, left)
   let pos = self.reader.getpos()
   let name = self.reader.read_word()
   if s:isnamec(self.reader.p(0))
+    " XXX: foo is str => ok, foo is obj => invalid expression
     " foo.s:bar or foo.bar#baz
     return s:NIL
   endif
