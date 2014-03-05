@@ -2082,6 +2082,8 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'py3file', 'minlen': 4, 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'python', 'minlen': 2, 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_python'},
       \ {'name': 'pyfile', 'minlen': 3, 'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'pydo', 'minlen': 3, 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'py3do', 'minlen': 4, 'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'quit', 'minlen': 1, 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'quitall', 'minlen': 5, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'qall', 'minlen': 2, 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
