@@ -4313,6 +4313,14 @@ function! s:RegexpParser.parse_regexp()
   let prevtoken = ''
   let ntoken = ''
   let ret = []
+  if self.reader.peekn(4) ==# '\%#='
+    let epos = self.reader.getpos()
+    let token = self.reader.getn(5)
+    if token !=# '\%#=0' && token !=# '\%#=1' && token !=# '\%#=2'
+      throw s:Err('E864: \%#= can only be followed by 0, 1, or 2', epos)
+    endif
+    call add(ret, token)
+  endif
   while !self.isend(self.reader.peek())
     let prevtoken = ntoken
     let [token, ntoken] = self.get_token()
