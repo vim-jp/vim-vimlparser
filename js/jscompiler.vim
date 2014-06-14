@@ -843,7 +843,7 @@ let s:viml_builtin_functions = ['abs', 'acos', 'add', 'and', 'append', 'append',
 
 function! s:test()
   let vimfile = 'autoload/vimlparser.vim'
-  let pyfile = 'js/vimlparser.js'
+  let jsfile = 'js/vimlparser.js'
   let vimlfunc = 'js/vimlfunc.js'
   let head = readfile(vimlfunc)
   try
@@ -852,7 +852,7 @@ function! s:test()
     let c = s:JavascriptCompiler.new()
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'var NIL = [];') - 1]
-    call writefile(head + lines + ['', 'main()'], pyfile)
+    call writefile(head + lines + ['', 'main()'], jsfile)
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
