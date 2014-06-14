@@ -852,7 +852,19 @@ function! s:test()
     let c = s:JavascriptCompiler.new()
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'var NIL = [];') - 1]
-    call writefile(head + lines + ['', 'main()'], jsfile)
+    let tail = [
+      \   'if (require.main === module) {',
+      \   '  main();',
+      \   '}',
+      \   'else {',
+      \   '  module.exports = {',
+      \   '    VimLParser: VimLParser,',
+      \   '    StringReader: StringReader,',
+      \   '    Compiler: Compiler',
+      \   '  };',
+      \   '}',
+      \ ]
+    call writefile(head + lines + tail, jsfile)
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
