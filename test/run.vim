@@ -18,7 +18,7 @@ function! s:run()
     catch
       call writefile([v:exception], outfile)
     endtry
-    if system(printf('diff %s %s', shellescape(okfile), shellescape(outfile))) == 0
+    if system(printf('diff %s %s', shellescape(okfile), shellescape(outfile))) == ""
       echo printf('%s => ok', fnamemodify(vimfile, ':t'))
     else
       echoerr printf('%s => ng', fnamemodify(vimfile, ':t'))
