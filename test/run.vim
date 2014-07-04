@@ -19,11 +19,14 @@ function! s:run()
       call writefile([v:exception], outfile)
     endtry
     if system(printf('diff %s %s', shellescape(okfile), shellescape(outfile))) == ""
-      echo printf('%s => ok', fnamemodify(vimfile, ':t'))
+      let line = printf('%s => ok', fnamemodify(vimfile, ':t'))
     else
-      echoerr printf('%s => ng', fnamemodify(vimfile, ':t'))
+      let line = printf('%s => ng', fnamemodify(vimfile, ':t'))
     endif
+    call append(line('$'), line)
   endfor
+  syntax enable
+  match Error /^.* => ng$/
 endfunction
 
 call s:run()
