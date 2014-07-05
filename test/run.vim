@@ -19,9 +19,9 @@ function! s:run()
       call writefile([v:exception], outfile)
     endtry
     if system(printf('diff %s %s', shellescape(okfile), shellescape(outfile))) == ""
-      let line = printf('%s => ok', fnamemodify(vimfile, ':t'))
+      let line = printf('%s => ok', fnamemodify(vimfile, ':.'))
     else
-      let line = printf('%s => ng', fnamemodify(vimfile, ':t'))
+      let line = printf('%s => ng', fnamemodify(vimfile, ':.'))
     endif
     call append(line('$'), line)
   endfor
