@@ -797,7 +797,7 @@ function! s:test()
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'NIL = []') - 1]
     let tail = [
-    \   'if __name__ == ''main'':',
+    \   'if __name__ == ''__main__'':',
     \   '    main()',
     \ ]
     call writefile(head + lines + tail, pyfile)
