@@ -796,7 +796,11 @@ function! s:test()
     let c = s:PythonCompiler.new()
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'NIL = []') - 1]
-    call writefile(head + lines + ['', 'main()'], pyfile)
+    let tail = [
+    \   'if __name__ == ''main'':',
+    \   '    main()',
+    \ ]
+    call writefile(head + lines + tail, pyfile)
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
