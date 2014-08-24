@@ -26,6 +26,7 @@ let [a, b; c] .= [1, 2, 3]
 let foo.bar.baz = 123
 let foo[bar()][baz()] = 456
 let foo[bar()].baz = 789
+let foo[1:2] = [3, 4]
 unlet a b c
 lockvar a b c
 lockvar 1 a b c

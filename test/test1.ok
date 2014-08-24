@@ -22,6 +22,7 @@
 (let = (dot (dot foo bar) baz) 123)
 (let = (subscript (subscript foo (bar)) (baz)) 456)
 (let = (dot (subscript foo (bar)) baz) 789)
+(let = (slice foo 1 2) (list 3 4))
 (unlet a b c)
 (lockvar a b c)
 (lockvar 1 a b c)
