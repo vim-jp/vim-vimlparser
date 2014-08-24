@@ -1703,7 +1703,7 @@ function! s:VimLParser.parse_lvalue()
       throw s:Err(printf('E461: Illegal variable name: %s', node.value), node.pos)
     endif
   endif
-  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
+  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_SLICE || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
     return node
   endif
   throw s:Err('Invalid Expression', node.pos)
