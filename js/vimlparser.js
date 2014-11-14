@@ -1938,7 +1938,7 @@ VimLParser.prototype.parse_lvalue = function() {
             throw Err(viml_printf("E461: Illegal variable name: %s", node.value), node.pos);
         }
     }
-    if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME || node.type == NODE_SUBSCRIPT || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
+    if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME || node.type == NODE_SUBSCRIPT || node.type == NODE_SLICE || node.type == NODE_DOT || node.type == NODE_OPTION || node.type == NODE_ENV || node.type == NODE_REG) {
         return node;
     }
     throw Err("Invalid Expression", node.pos);

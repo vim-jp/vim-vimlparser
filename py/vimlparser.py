@@ -1574,7 +1574,7 @@ class VimLParser:
         if node.type == NODE_IDENTIFIER:
             if not isvarname(node.value):
                 raise Exception(Err(viml_printf("E461: Illegal variable name: %s", node.value), node.pos))
-        if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
+        if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME or node.type == NODE_SUBSCRIPT or node.type == NODE_SLICE or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
             return node
         raise Exception(Err("Invalid Expression", node.pos))
 
