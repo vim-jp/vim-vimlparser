@@ -3261,53 +3261,64 @@ function! s:ExprParser.parse_dot(token, left)
 endfunction
 
 function! s:ExprParser.parse_identifier()
-  let id = []
   call self.reader.skip_white()
   let npos = self.reader.getpos()
+  let curly_parts = self.parse_curly_parts()
+  if len(curly_parts) == 1 && curly_parts[0].type == s:NODE_CURLYNAMEPART
+    let node = s:Node(s:NODE_IDENTIFIER)
+    let node.pos = npos
+    let node.value = curly_parts[0].value
+  else
+    let node = s:Node(s:NODE_CURLYNAME)
+    let node.pos = npos
+    let node.value = curly_parts
+  endif
+  return node
+endfunction
+
+function! s:ExprParser.parse_curly_parts()
+  let curly_parts = []
   let c = self.reader.peek()
+  let pos = self.reader.getpos()
   if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
     let name = self.reader.getn(5)
-    let node_1 = s:Node(s:NODE_CURLYNAMEPART)
-    let node_1.pos = self.reader.getpos()
-    let node_1.value = name
-    call add(id, node_1)
+    let node = s:Node(s:NODE_CURLYNAMEPART)
+    " Keep backword compatibility for the curly attribute
+    let node.curly = 0
+    let node.pos = pos
+    let node.value = name
+    call add(curly_parts, node)
   endif
   while 1
+    let pos = self.reader.getpos()
     let c = self.reader.peek()
     if s:isnamec(c)
       let name = self.reader.read_name()
-      let node_2 = s:Node(s:NODE_CURLYNAMEPART)
-      let node_2.pos = self.reader.getpos()
-      let node_2.value = name
-      call add(id, node_2)
+      let node = s:Node(s:NODE_CURLYNAMEPART)
+      " Keep backword compatibility for the curly attribute
+      let node.curly = 0
+      let node.pos = pos
+      let node.value = name
+      call add(curly_parts, node)
     elseif c ==# '{'
       call self.reader.get()
-      let pos_3 = self.reader.getpos()
-      let node = self.parse_expr1()
+      let node = s:Node(s:NODE_CURLYNAMEEXPR)
+      " Keep backword compatibility for the curly attribute
+      let node.curly = 1
+      let node.pos = pos
+      let node.value = self.parse_expr1()
+      call add(curly_parts, node)
       call self.reader.skip_white()
       let c = self.reader.p(0)
       if c !=# '}'
         throw s:Err(printf('unexpected token: %s', c), self.reader.getpos())
       endif
       call self.reader.seek_cur(1)
-      let node_3 = s:Node(s:NODE_CURLYNAMEEXPR)
-      let node_3.pos = pos_3
-      let node_3.value = node
-      call add(id, node_3)
     else
       break
     endif
   endwhile
-  if len(id) == 1 && id[0].type == s:NODE_CURLYNAMEPART
-    let node = s:Node(s:NODE_IDENTIFIER)
-    let node.pos = npos
-    let node.value = id[0].value
-  else
-    let node = s:Node(s:NODE_CURLYNAME)
-    let node.pos = npos
-    let node.value = id
-  endif
-  return node
+  return curly_parts
 endfunction
 
 let s:LvalueParser = copy(s:ExprParser)
