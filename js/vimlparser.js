@@ -302,6 +302,8 @@ var NODE_IDENTIFIER = 86;
 var NODE_CURLYNAME = 87;
 var NODE_ENV = 88;
 var NODE_REG = 89;
+var NODE_CURLYNAMEPART = 90;
+var NODE_CURLYNAMEEXPR = 91;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -561,6 +563,8 @@ function ExArg() {
 // CURLYNAME .value
 // ENV .value
 // REG .value
+// CURLYNAMEPART .value
+// CURLYNAMEEXPR .value
 function Node(type) {
     return {"type":type};
 }
@@ -3101,46 +3105,68 @@ ExprParser.prototype.parse_dot = function(token, left) {
 }
 
 ExprParser.prototype.parse_identifier = function() {
-    var id = [];
     this.reader.skip_white();
     var npos = this.reader.getpos();
+    var curly_parts = this.parse_curly_parts();
+    if (viml_len(curly_parts) == 1 && curly_parts[0].type == NODE_CURLYNAMEPART) {
+        var node = Node(NODE_IDENTIFIER);
+        node.pos = npos;
+        node.value = curly_parts[0].value;
+    }
+    else {
+        var node = Node(NODE_CURLYNAME);
+        node.pos = npos;
+        node.value = curly_parts;
+    }
+    return node;
+}
+
+ExprParser.prototype.parse_curly_parts = function() {
+    var curly_parts = [];
     var c = this.reader.peek();
+    var pos = this.reader.getpos();
     if (c == "<" && viml_equalci(this.reader.peekn(5), "<SID>")) {
         var name = this.reader.getn(5);
-        viml_add(id, {"curly":0, "value":name});
+        var node = Node(NODE_CURLYNAMEPART);
+        node.curly = 0;
+        // Keep backword compatibility for the curly attribute
+        node.pos = pos;
+        node.value = name;
+        viml_add(curly_parts, node);
     }
     while (1) {
         var c = this.reader.peek();
         if (isnamec(c)) {
+            var pos = this.reader.getpos();
             var name = this.reader.read_name();
-            viml_add(id, {"curly":0, "value":name});
+            var node = Node(NODE_CURLYNAMEPART);
+            node.curly = 0;
+            // Keep backword compatibility for the curly attribute
+            node.pos = pos;
+            node.value = name;
+            viml_add(curly_parts, node);
         }
         else if (c == "{") {
             this.reader.get();
-            var node = this.parse_expr1();
+            var pos = this.reader.getpos();
+            var node = Node(NODE_CURLYNAMEEXPR);
+            node.curly = 1;
+            // Keep backword compatibility for the curly attribute
+            node.pos = pos;
+            node.value = this.parse_expr1();
+            viml_add(curly_parts, node);
             this.reader.skip_white();
             var c = this.reader.p(0);
             if (c != "}") {
                 throw Err(viml_printf("unexpected token: %s", c), this.reader.getpos());
             }
             this.reader.seek_cur(1);
-            viml_add(id, {"curly":1, "value":node});
         }
         else {
             break;
         }
     }
-    if (viml_len(id) == 1 && id[0].curly == 0) {
-        var node = Node(NODE_IDENTIFIER);
-        node.pos = npos;
-        node.value = id[0].value;
-    }
-    else {
-        var node = Node(NODE_CURLYNAME);
-        node.pos = npos;
-        node.value = id;
-    }
-    return node;
+    return curly_parts;
 }
 
 function LvalueParser() { ExprParser.apply(this, arguments); this.__init__.apply(this, arguments); }
@@ -3772,6 +3798,12 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_REG) {
         return this.compile_reg(node);
     }
+    else if (node.type == NODE_CURLYNAMEPART) {
+        return this.compile_curlynamepart(node);
+    }
+    else if (node.type == NODE_CURLYNAMEEXPR) {
+        return this.compile_curlynameexpr(node);
+    }
     else {
         throw viml_printf("Compiler: unknown node: %s", viml_string(node));
     }
@@ -4224,18 +4256,7 @@ Compiler.prototype.compile_identifier = function(node) {
 }
 
 Compiler.prototype.compile_curlyname = function(node) {
-    var name = "";
-    var __c11 = node.value;
-    for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
-        var x = __c11[__i11];
-        if (x.curly) {
-            name += "{" + this.compile(x.value) + "}";
-        }
-        else {
-            name += x.value;
-        }
-    }
-    return name;
+    return viml_join(node.value.map((function(vval) { return this.compile(vval); }).bind(this)), "");
 }
 
 Compiler.prototype.compile_env = function(node) {
@@ -4244,6 +4265,14 @@ Compiler.prototype.compile_env = function(node) {
 
 Compiler.prototype.compile_reg = function(node) {
     return node.value;
+}
+
+Compiler.prototype.compile_curlynamepart = function(node) {
+    return node.value;
+}
+
+Compiler.prototype.compile_curlynameexpr = function(node) {
+    return "{" + this.compile(node.value) + "}";
 }
 
 // TODO: under construction
@@ -4926,9 +4955,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c12 = class_names;
-            for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
-                var name = __c12[__i12];
+            var __c11 = class_names;
+            for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
+                var name = __c11[__i11];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5061,9 +5090,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c13 = viml_range(n);
-    for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
-        var i = __c13[__i13];
+    var __c12 = viml_range(n);
+    for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
+        var i = __c12[__i12];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;
