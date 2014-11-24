@@ -13,7 +13,7 @@ def main():
         print(line)
 
 class AttributeDict(dict):
-    __getattribute__ = dict.__getitem__
+    __getattr__ = dict.__getitem__
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
 
