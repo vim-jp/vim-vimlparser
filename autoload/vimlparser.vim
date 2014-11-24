@@ -127,6 +127,7 @@ let s:NODE_IDENTIFIER = 86
 let s:NODE_CURLYNAME = 87
 let s:NODE_ENV = 88
 let s:NODE_REG = 89
+let s:NODE_CURLYNAMEPART = 90
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -3263,13 +3264,21 @@ function! s:ExprParser.parse_identifier()
   let c = self.reader.peek()
   if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
     let name = self.reader.getn(5)
-    call add(id, {'curly': 0, 'value': name})
+    let node_1 = s:Node(s:NODE_CURLYNAMEPART)
+    let node_1.curly = 0
+    let node_1.pos = npos
+    let node_1.value = name
+    call add(id, node_1)
   endif
   while 1
     let c = self.reader.peek()
     if s:isnamec(c)
       let name = self.reader.read_name()
-      call add(id, {'curly': 0, 'value': name})
+      let node_2 = s:Node(s:NODE_CURLYNAMEPART)
+      let node_2.curly = 0
+      let node_2.pos = npos
+      let node_2.value = name
+      call add(id, node_2)
     elseif c ==# '{'
       call self.reader.get()
       let node = self.parse_expr1()
@@ -3279,7 +3288,11 @@ function! s:ExprParser.parse_identifier()
         throw s:Err(printf('unexpected token: %s', c), self.reader.getpos())
       endif
       call self.reader.seek_cur(1)
-      call add(id, {'curly': 1, 'value': node})
+      let node_3 = s:Node(s:NODE_CURLYNAMEPART)
+      let node_3.curly = 1
+      let node_3.pos = npos
+      let node_3.value = id[0].value
+      call add(id, node_3)
     else
       break
     endif
