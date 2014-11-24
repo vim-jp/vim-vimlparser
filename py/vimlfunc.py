@@ -12,6 +12,9 @@ def main():
     for line in c.compile(p.parse(r)):
         print(line)
 
+class VimLParserException(Exception):
+    pass
+
 class AttributeDict(dict):
     __getattr__ = dict.__getitem__
     __setattr__ = dict.__setitem__
@@ -146,7 +149,7 @@ def viml_remove(lst, idx):
 def viml_split(s, sep):
     if sep == "\\zs":
         return s
-    raise Exception("NotImplemented")
+    raise VimLParserException("NotImplemented")
 
 def viml_str2nr(s, base=10):
     return int(s, base)
@@ -173,5 +176,5 @@ def viml_type(obj):
         return 4
     elif isinstance(obj, float):
         return 5
-    raise Exception('Unknown Type')
+    raise VimLParserException('Unknown Type')
 

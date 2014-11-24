@@ -453,7 +453,7 @@ function s:PythonCompiler.compile_try(node)
 endfunction
 
 function s:PythonCompiler.compile_throw(node)
-  call self.out('raise Exception(%s)', self.compile(a:node.left))
+  call self.out('raise VimLParserException(%s)', self.compile(a:node.left))
 endfunction
 
 function s:PythonCompiler.compile_echo(node)
@@ -477,7 +477,7 @@ endfunction
 
 function s:PythonCompiler.compile_echoerr(node)
   let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('raise Exception([%s]))', join(list, ', '))
+  call self.out('raise VimLParserException([%s]))', join(list, ', '))
 endfunction
 
 function s:PythonCompiler.compile_execute(node)
