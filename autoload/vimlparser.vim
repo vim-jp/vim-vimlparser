@@ -3283,28 +3283,26 @@ function! s:ExprParser.parse_curly_parts()
   if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
     let name = self.reader.getn(5)
     let node = s:Node(s:NODE_CURLYNAMEPART)
-    " Keep backword compatibility for the curly attribute
-    let node.curly = 0
+    let node.curly = 0 " Keep backword compatibility for the curly attribute
     let node.pos = pos
     let node.value = name
     call add(curly_parts, node)
   endif
   while 1
-    let pos = self.reader.getpos()
     let c = self.reader.peek()
     if s:isnamec(c)
+      let pos = self.reader.getpos()
       let name = self.reader.read_name()
       let node = s:Node(s:NODE_CURLYNAMEPART)
-      " Keep backword compatibility for the curly attribute
-      let node.curly = 0
+      let node.curly = 0 " Keep backword compatibility for the curly attribute
       let node.pos = pos
       let node.value = name
       call add(curly_parts, node)
     elseif c ==# '{'
       call self.reader.get()
+      let pos = self.reader.getpos()
       let node = s:Node(s:NODE_CURLYNAMEEXPR)
-      " Keep backword compatibility for the curly attribute
-      let node.curly = 1
+      let node.curly = 1 " Keep backword compatibility for the curly attribute
       let node.pos = pos
       let node.value = self.parse_expr1()
       call add(curly_parts, node)
