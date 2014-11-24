@@ -128,6 +128,7 @@ let s:NODE_CURLYNAME = 87
 let s:NODE_ENV = 88
 let s:NODE_REG = 89
 let s:NODE_CURLYNAMEPART = 90
+let s:NODE_CURLYNAMEEXPR = 91
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -390,6 +391,8 @@ endfunction
 " CURLYNAME .value
 " ENV .value
 " REG .value
+" CURLYNAMEPART .value
+" CURLYNAMEEXPR .value
 function! s:Node(type)
   return {'type': a:type}
 endfunction
@@ -3265,8 +3268,7 @@ function! s:ExprParser.parse_identifier()
   if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
     let name = self.reader.getn(5)
     let node_1 = s:Node(s:NODE_CURLYNAMEPART)
-    let node_1.curly = 0
-    let node_1.pos = npos
+    let node_1.pos = self.reader.getpos()
     let node_1.value = name
     call add(id, node_1)
   endif
@@ -3275,12 +3277,12 @@ function! s:ExprParser.parse_identifier()
     if s:isnamec(c)
       let name = self.reader.read_name()
       let node_2 = s:Node(s:NODE_CURLYNAMEPART)
-      let node_2.curly = 0
-      let node_2.pos = npos
+      let node_2.pos = self.reader.getpos()
       let node_2.value = name
       call add(id, node_2)
     elseif c ==# '{'
       call self.reader.get()
+      let pos_3 = self.reader.getpos()
       let node = self.parse_expr1()
       call self.reader.skip_white()
       let c = self.reader.p(0)
@@ -3288,16 +3290,15 @@ function! s:ExprParser.parse_identifier()
         throw s:Err(printf('unexpected token: %s', c), self.reader.getpos())
       endif
       call self.reader.seek_cur(1)
-      let node_3 = s:Node(s:NODE_CURLYNAMEPART)
-      let node_3.curly = 1
-      let node_3.pos = npos
-      let node_3.value = id[0].value
+      let node_3 = s:Node(s:NODE_CURLYNAMEEXPR)
+      let node_3.pos = pos_3
+      let node_3.value = node
       call add(id, node_3)
     else
       break
     endif
   endwhile
-  if len(id) == 1 && id[0].curly == 0
+  if len(id) == 1 && id[0].type == s:NODE_CURLYNAMEPART
     let node = s:Node(s:NODE_IDENTIFIER)
     let node.pos = npos
     let node.value = id[0].value
@@ -3851,6 +3852,10 @@ function! s:Compiler.compile(node)
     return self.compile_env(a:node)
   elseif a:node.type == s:NODE_REG
     return self.compile_reg(a:node)
+  elseif a:node.type == s:NODE_CURLYNAMEPART
+    return self.compile_curlynamepart(a:node)
+  elseif a:node.type == s:NODE_CURLYNAMEEXPR
+    return self.compile_curlynameexpr(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -4287,15 +4292,7 @@ function! s:Compiler.compile_identifier(node)
 endfunction
 
 function! s:Compiler.compile_curlyname(node)
-  let name = ''
-  for x in a:node.value
-    if x.curly
-      let name .= '{' . self.compile(x.value) . '}'
-    else
-      let name .= x.value
-    endif
-  endfor
-  return name
+  return join(map(a:node.value, 'self.compile(v:val)'), '')
 endfunction
 
 function! s:Compiler.compile_env(node)
@@ -4304,6 +4301,14 @@ endfunction
 
 function! s:Compiler.compile_reg(node)
   return a:node.value
+endfunction
+
+function! s:Compiler.compile_curlynamepart(node)
+  return a:node.value
+endfunction
+
+function! s:Compiler.compile_curlynameexpr(node)
+  return '{' . self.compile(a:node.value) . '}'
 endfunction
 
 " TODO: under construction
