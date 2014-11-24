@@ -127,6 +127,8 @@ let s:NODE_IDENTIFIER = 86
 let s:NODE_CURLYNAME = 87
 let s:NODE_ENV = 88
 let s:NODE_REG = 89
+let s:NODE_CURLYNAMEPART = 90
+let s:NODE_CURLYNAMEEXPR = 91
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -389,6 +391,8 @@ endfunction
 " CURLYNAME .value
 " ENV .value
 " REG .value
+" CURLYNAMEPART .value
+" CURLYNAMEEXPR .value
 function! s:Node(type)
   return {'type': a:type}
 endfunction
@@ -3257,43 +3261,62 @@ function! s:ExprParser.parse_dot(token, left)
 endfunction
 
 function! s:ExprParser.parse_identifier()
-  let id = []
   call self.reader.skip_white()
   let npos = self.reader.getpos()
+  let curly_parts = self.parse_curly_parts()
+  if len(curly_parts) == 1 && curly_parts[0].type == s:NODE_CURLYNAMEPART
+    let node = s:Node(s:NODE_IDENTIFIER)
+    let node.pos = npos
+    let node.value = curly_parts[0].value
+  else
+    let node = s:Node(s:NODE_CURLYNAME)
+    let node.pos = npos
+    let node.value = curly_parts
+  endif
+  return node
+endfunction
+
+function! s:ExprParser.parse_curly_parts()
+  let curly_parts = []
   let c = self.reader.peek()
+  let pos = self.reader.getpos()
   if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
     let name = self.reader.getn(5)
-    call add(id, {'curly': 0, 'value': name})
+    let node = s:Node(s:NODE_CURLYNAMEPART)
+    let node.curly = 0 " Keep backword compatibility for the curly attribute
+    let node.pos = pos
+    let node.value = name
+    call add(curly_parts, node)
   endif
   while 1
     let c = self.reader.peek()
     if s:isnamec(c)
+      let pos = self.reader.getpos()
       let name = self.reader.read_name()
-      call add(id, {'curly': 0, 'value': name})
+      let node = s:Node(s:NODE_CURLYNAMEPART)
+      let node.curly = 0 " Keep backword compatibility for the curly attribute
+      let node.pos = pos
+      let node.value = name
+      call add(curly_parts, node)
     elseif c ==# '{'
       call self.reader.get()
-      let node = self.parse_expr1()
+      let pos = self.reader.getpos()
+      let node = s:Node(s:NODE_CURLYNAMEEXPR)
+      let node.curly = 1 " Keep backword compatibility for the curly attribute
+      let node.pos = pos
+      let node.value = self.parse_expr1()
+      call add(curly_parts, node)
       call self.reader.skip_white()
       let c = self.reader.p(0)
       if c !=# '}'
         throw s:Err(printf('unexpected token: %s', c), self.reader.getpos())
       endif
       call self.reader.seek_cur(1)
-      call add(id, {'curly': 1, 'value': node})
     else
       break
     endif
   endwhile
-  if len(id) == 1 && id[0].curly == 0
-    let node = s:Node(s:NODE_IDENTIFIER)
-    let node.pos = npos
-    let node.value = id[0].value
-  else
-    let node = s:Node(s:NODE_CURLYNAME)
-    let node.pos = npos
-    let node.value = id
-  endif
-  return node
+  return curly_parts
 endfunction
 
 let s:LvalueParser = copy(s:ExprParser)
@@ -3838,6 +3861,10 @@ function! s:Compiler.compile(node)
     return self.compile_env(a:node)
   elseif a:node.type == s:NODE_REG
     return self.compile_reg(a:node)
+  elseif a:node.type == s:NODE_CURLYNAMEPART
+    return self.compile_curlynamepart(a:node)
+  elseif a:node.type == s:NODE_CURLYNAMEEXPR
+    return self.compile_curlynameexpr(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -4274,15 +4301,7 @@ function! s:Compiler.compile_identifier(node)
 endfunction
 
 function! s:Compiler.compile_curlyname(node)
-  let name = ''
-  for x in a:node.value
-    if x.curly
-      let name .= '{' . self.compile(x.value) . '}'
-    else
-      let name .= x.value
-    endif
-  endfor
-  return name
+  return join(map(a:node.value, 'self.compile(v:val)'), '')
 endfunction
 
 function! s:Compiler.compile_env(node)
@@ -4291,6 +4310,14 @@ endfunction
 
 function! s:Compiler.compile_reg(node)
   return a:node.value
+endfunction
+
+function! s:Compiler.compile_curlynamepart(node)
+  return a:node.value
+endfunction
+
+function! s:Compiler.compile_curlynameexpr(node)
+  return '{' . self.compile(a:node.value) . '}'
 endfunction
 
 " TODO: under construction
