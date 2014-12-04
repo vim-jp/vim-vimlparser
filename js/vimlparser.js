@@ -1454,12 +1454,14 @@ VimLParser.prototype.parse_cmd_function = function() {
                 varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
-                // XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
-                if (iswhite(this.reader.p(0))) {
-                    throw Err(viml_printf("unexpected token: %s", this.reader.p(0)), this.reader.getpos());
-                }
+                var pc = this.reader.p(0);
+                var ppos = this.reader.getpos();
                 var token = tokenizer.get();
                 if (token.type == TOKEN_COMMA) {
+                    // XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
+                    if (iswhite(pc)) {
+                        throw Err("E475: Invalid argument: White space is not allowed before comma", ppos);
+                    }
                     // XXX: Vim allows last comma.  F(a, b, ) => OK
                     if (tokenizer.peek().type == TOKEN_PCLOSE) {
                         tokenizer.get();
