@@ -1229,14 +1229,12 @@ function! s:VimLParser.parse_cmd_function()
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
-        let pc = self.reader.p(0)
-        let ppos = self.reader.getpos()
+        " XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
+        if s:iswhite(self.reader.p(0)) && tokenizer.peek().type == s:TOKEN_COMMA
+          throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
+        endif
         let token = tokenizer.get()
         if token.type == s:TOKEN_COMMA
-          " XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
-          if s:iswhite(pc)
-            throw s:Err('E475: Invalid argument: White space is not allowed before comma', ppos)
-          endif
           " XXX: Vim allows last comma.  F(a, b, ) => OK
           if tokenizer.peek().type == s:TOKEN_PCLOSE
             call tokenizer.get()
