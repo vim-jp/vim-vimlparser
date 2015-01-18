@@ -3459,7 +3459,7 @@ function! s:StringReader.__init__(lines)
           endif
         else
           call add(self.buf, c)
-          call add(self.pos, [lnum + 1, col + 1])
+          call add(self.pos, [lnum + 2, col + 1])
         endif
         let col += len(c)
       endfor
