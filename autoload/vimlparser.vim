@@ -992,7 +992,7 @@ function! s:VimLParser.separate_nextcmd()
     let c = self.reader.peek()
     if c ==# '<EOF>' || c ==# '<EOL>'
       break
-    elseif c ==# "\<C-V>"
+    elseif c ==# "\x16" " <C-V>
       call self.reader.get()
       let end = self.reader.getpos()
       let nospend = self.reader.getpos()
