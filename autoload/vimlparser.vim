@@ -1766,6 +1766,29 @@ function! s:VimLParser.ends_excmds(c)
   return a:c ==# '' || a:c ==# '|' || a:c ==# '"' || a:c ==# '<EOF>' || a:c ==# '<EOL>'
 endfunction
 
+" FIXME: validate argument
+function! s:VimLParser.parse_wincmd()
+  let c = self.reader.getn(1)
+  if c ==# ''
+    throw s:Err('E471: Argument required', self.reader.getpos())
+  elseif c ==# 'g' || c ==# "\x07" " <C-G>
+    let c2 = self.reader.getn(1)
+    if c2 ==# '' || s:iswhite(c2)
+      throw s:Err('E474: Invalid Argument', self.reader.getpos())
+    endif
+  endif
+  let end = self.reader.getpos()
+  call self.reader.skip_white()
+  if !self.ends_excmds(self.reader.peek())
+    throw s:Err('E474: Invalid Argument', self.reader.getpos())
+  endif
+  let node = s:Node(s:NODE_EXCMD)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.str = self.reader.getstr(self.ea.linepos, end)
+  call self.add_node(node)
+endfunction
+
 let s:VimLParser.builtin_commands = [
       \ {'name': 'append', 'minlen': 1, 'flags': 'BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_append'},
       \ {'name': 'abbreviate', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -2256,7 +2279,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'wall', 'minlen': 2, 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'while', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_while'},
       \ {'name': 'winsize', 'minlen': 2, 'flags': 'EXTRA|NEEDARG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'wincmd', 'minlen': 4, 'flags': 'NEEDARG|WORD1|RANGE|NOTADR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'wincmd', 'minlen': 4, 'flags': 'NEEDARG|WORD1|RANGE|NOTADR', 'parser': 'parse_wincmd'},
       \ {'name': 'winpos', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'wnext', 'minlen': 2, 'flags': 'RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'wprevious', 'minlen': 2, 'flags': 'RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
