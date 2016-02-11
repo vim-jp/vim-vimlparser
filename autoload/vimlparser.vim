@@ -11,11 +11,16 @@ endfunction
 " @brief Read input as VimScript and return stringified AST.
 " @param input Input filename or string of VimScript.
 " @return Stringified AST.
-function! vimlparser#test(input)
+function! vimlparser#test(input, ...)
   try
+    if a:0 > 0
+      let l:neovim = a:1
+    else
+      let l:neovim = 0
+    endif
     let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : a:input
     let r = s:StringReader.new(i)
-    let p = s:VimLParser.new()
+    let p = s:VimLParser.new(l:neovim)
     let c = s:Compiler.new()
     echo join(c.compile(p.parse(r)), "\n")
   catch
@@ -409,7 +414,13 @@ function! s:VimLParser.new(...)
   return obj
 endfunction
 
-function! s:VimLParser.__init__()
+function! s:VimLParser.__init__(...)
+  if a:0 > 0
+    let self.neovim = a:1
+  else
+    let self.neovim = 0
+  endif
+
   let self.find_command_cache = {}
 endfunction
 
@@ -823,6 +834,24 @@ function! s:VimLParser.find_command()
     endif
   endfor
 
+  if self.neovim  
+    for x in self.neovim_additional_commands
+      if stridx(x.name, name) == 0 && len(name) >= x.minlen
+        unlet cmd
+        let cmd = x
+        break
+      endif
+    endfor
+
+    for x in self.neovim_removed_commands
+      if stridx(x.name, name) == 0 && len(name) >= x.minlen
+        unlet cmd
+        let cmd = s:NIL
+        break
+      endif
+    endfor
+  endif
+  
   " FIXME: user defined command
   if (cmd is s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
     let name .= self.reader.read_alnum()
@@ -1788,6 +1817,18 @@ function! s:VimLParser.parse_wincmd()
   let node.str = self.reader.getstr(self.ea.linepos, end)
   call self.add_node(node)
 endfunction
+
+let s:VimLParser.neovim_additional_commands = [
+      \ {'name': 'tnoremap', 'minlen': 8, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'}]
+
+let s:VimLParser.neovim_removed_commands = [
+      \ {"name":"Print", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"fixdel", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"helpfind", "minlen":5, "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"},
+      \ {"name":"open", "minlen":1, "flags":"RANGE|BANG|EXTRA", "parser":"parse_cmd_common"},
+      \ {"name":"shell", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"tearoff", "minlen":2, "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"gvim", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}]
 
 let s:VimLParser.builtin_commands = [
       \ {'name': 'append', 'minlen': 1, 'flags': 'BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_append'},
