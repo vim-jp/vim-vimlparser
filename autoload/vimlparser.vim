@@ -415,8 +415,8 @@ function! s:VimLParser.new(...)
 endfunction
 
 function! s:VimLParser.__init__(...)
-  if a:0 > 0
-    let self.neovim = a:1
+  if len(a:000) > 0
+    let self.neovim = a:000[0]
   else
     let self.neovim = 0
   endif
