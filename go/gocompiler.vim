@@ -300,7 +300,7 @@ function s:GoCompiler.compile_toplevel(node)
 endfunction
 
 function s:GoCompiler.compile_comment(node)
-  call self.out('#%s', a:node.str)
+  call self.out('//%s', a:node.str)
 endfunction
 
 function s:GoCompiler.compile_excmd(node)
