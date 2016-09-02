@@ -26,3 +26,30 @@ type ExArg struct {
 	argopt       map[string]interface{}
 	argcmd       map[string]interface{}
 }
+
+type node struct {
+	type_ int
+	pos   *pos
+	left  *node
+	right *node
+	cond  *node
+	rest  *node
+	list  []*node
+	rlist []*node
+	body  []*node
+	op    string
+	str   string
+	depth int
+	value *value
+}
+
+type pos struct {
+	lnum int
+	col  int
+}
+
+type value interface{}
+
+func Node(type_ int) *node {
+	return &node{type_: type_}
+}

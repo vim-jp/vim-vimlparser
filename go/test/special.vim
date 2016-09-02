@@ -21,3 +21,13 @@ let self.hoge = 1
 let self.ea.range = 1
 let z = self.ea.range
 let xs = range(10)
+
+function! s:Node()
+  " skip Node definition
+endfunction
+
+call s:Node()
+
+let type = 1
+let t = type
+let at = a:type

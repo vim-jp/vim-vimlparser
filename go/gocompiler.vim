@@ -313,7 +313,7 @@ function s:GoCompiler.compile_function(node)
   if !empty(rlist) && rlist[-1] == '...'
     let rlist[-1] = '*a000'
   endif
-  if left =~ '^\(ExArg\)$'
+  if left =~ '^\(ExArg\|Node\)$'
     return
   elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let [_0, struct, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
@@ -771,7 +771,8 @@ function s:GoCompiler.compile_identifier(node)
     let name = 'vval'
   elseif name =~ '^[sa]:'
     let name = name[2:]
-  elseif name == 'range' " keywords
+  endif
+  if name =~ 'range\|type' " keywords
     let name .= '_'
   endif
   return name
