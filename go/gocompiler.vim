@@ -400,7 +400,7 @@ function s:GoCompiler.compile_let(node)
 endfunction
 
 function s:GoCompiler.compile_unlet(node)
-  throw 'NotImplemented: unlet'
+  echom 'NotImplemented: unlet'
 endfunction
 
 function s:GoCompiler.compile_lockvar(node)
@@ -474,7 +474,8 @@ function s:GoCompiler.compile_break(node)
 endfunction
 
 function s:GoCompiler.compile_try(node)
-  throw 'NotImplemented: try'
+  " throw 'NotImplemented: try'
+  echom 'NotImplemented: try'
 endfunction
 
 function s:GoCompiler.compile_throw(node)
@@ -498,7 +499,8 @@ function s:GoCompiler.compile_echomsg(node)
 endfunction
 
 function s:GoCompiler.compile_echoerr(node)
-  throw 'NotImplemented: echoerr'
+  " throw 'NotImplemented: echoerr'
+  echom 'NotImplemented: echoerr'
 endfunction
 
 function s:GoCompiler.compile_execute(node)
@@ -506,7 +508,7 @@ function s:GoCompiler.compile_execute(node)
 endfunction
 
 function s:GoCompiler.compile_ternary(node)
-  throw 'NotImplemented: ternary'
+  return printf('viml_ternary(%s, %s, %s)', self.compile(a:node.cond), self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:GoCompiler.compile_or(node)
