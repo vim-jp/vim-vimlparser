@@ -14,7 +14,7 @@ let s:gocompiler = g:ImportGoCompiler()
 let s:sdir = expand('<sfile>:p:h')
 
 function! s:run() abort
-  echo s:sdir
+  :1,$delete
   for vimfile in glob(s:sdir . '/test/*.vim', 0, 1)
     let okfile = fnamemodify(vimfile, ':r') . '.go'
     let outfile = fnamemodify(vimfile, ':r') . '.out'
@@ -47,3 +47,6 @@ function! s:append(line) abort
 endfunction
 
 call s:run()
+
+command! Run call s:run()
+nnoremap <buffer> <Space><Space> :<C-u>Run<CR>
