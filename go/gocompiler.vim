@@ -413,22 +413,23 @@ function s:GoCompiler.compile_unlockvar(node)
 endfunction
 
 function s:GoCompiler.compile_if(node)
-  call self.out('if %s:', self.compile(a:node.cond))
+  call self.out('if %s {', self.compile(a:node.cond))
   call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
   for node in a:node.elseif
-    call self.out('elif %s:', self.compile(node.cond))
+    call self.out('} else if %s {', self.compile(node.cond))
     call self.incindent("\t")
     call self.compile_body(node.body)
     call self.decindent()
   endfor
   if a:node.else isnot s:NIL
-    call self.out('else:')
+    call self.out('} else {')
     call self.incindent("\t")
     call self.compile_body(a:node.else.body)
     call self.decindent()
   endif
+  call self.out('}')
 endfunction
 
 function s:GoCompiler.compile_while(node)
