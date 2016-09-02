@@ -433,10 +433,11 @@ function s:GoCompiler.compile_if(node)
 endfunction
 
 function s:GoCompiler.compile_while(node)
-  call self.out('while %s:', self.compile(a:node.cond))
+  call self.out('for %s {', self.compile(a:node.cond))
   call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
+  call self.out('}')
 endfunction
 
 function s:GoCompiler.compile_for(node)
