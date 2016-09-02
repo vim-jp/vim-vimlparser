@@ -1,3 +1,6 @@
+function! ImportGoCompiler()
+  return s:
+endfunction
 
 call extend(s:, vimlparser#import())
 
@@ -820,4 +823,4 @@ function! s:numtoname(num)
   return a:num
 endfunction
 
-call s:test()
+" call s:test()
