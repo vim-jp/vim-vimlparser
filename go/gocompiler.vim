@@ -475,33 +475,11 @@ function s:GoCompiler.compile_break(node)
 endfunction
 
 function s:GoCompiler.compile_try(node)
-  call self.out('try:')
-  call self.incindent("\t")
-  call self.compile_body(a:node.body)
-  call self.decindent()
-  for node in a:node.catch
-    if node.pattern isnot s:NIL
-      call self.out('except:')
-      call self.incindent("\t")
-      call self.compile_body(node.body)
-      call self.decindent()
-    else
-      call self.out('except:')
-      call self.incindent("\t")
-      call self.compile_body(node.body)
-      call self.decindent()
-    endif
-  endfor
-  if a:node.finally isnot s:NIL
-    call self.out('finally:')
-    call self.incindent("\t")
-    call self.compile_body(a:node.finally.body)
-    call self.decindent()
-  endif
+  throw 'NotImplemented: try'
 endfunction
 
 function s:GoCompiler.compile_throw(node)
-  call self.out('raise VimLParserException(%s)', self.compile(a:node.left))
+  call self.out('panic(%s)', self.compile(a:node.left))
 endfunction
 
 function s:GoCompiler.compile_echo(node)
