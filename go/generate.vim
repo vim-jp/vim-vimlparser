@@ -5,7 +5,7 @@ call extend(s:, g:ImportGoCompiler())
 function! s:generate()
   let vimfile = 'autoload/vimlparser.vim'
   let gofile = 'go/vimlparser.go'
-  let vimlfunc = 'go/vimlfunc.go'
+  let vimlfunc = 'go/vimlfunc/vimlfunc.go'
   let head = readfile(vimlfunc)
   try
     let r = s:StringReader.new(readfile(vimfile))

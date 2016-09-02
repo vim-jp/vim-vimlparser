@@ -1,1 +1,3 @@
+package vim
+
 // vimlfunc.go
