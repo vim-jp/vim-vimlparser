@@ -621,7 +621,7 @@ function s:GoCompiler.compile_nomatchcs(node)
 endfunction
 
 function s:GoCompiler.compile_is(node)
-  return self.compile_op2(a:node, 'is')
+  return self.compile_op2(a:node, '==')
 endfunction
 
 function s:GoCompiler.compile_isci(node)
@@ -633,7 +633,7 @@ function s:GoCompiler.compile_iscs(node)
 endfunction
 
 function s:GoCompiler.compile_isnot(node)
-  return self.compile_op2(a:node, 'is not')
+  return self.compile_op2(a:node, '!=')
 endfunction
 
 function s:GoCompiler.compile_isnotci(node)
@@ -669,7 +669,7 @@ function s:GoCompiler.compile_remainder(node)
 endfunction
 
 function s:GoCompiler.compile_not(node)
-  return self.compile_op1(a:node, 'not ')
+  return self.compile_op1(a:node, '!')
 endfunction
 
 function s:GoCompiler.compile_plus(node)
@@ -683,11 +683,7 @@ endfunction
 function s:GoCompiler.compile_subscript(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
-  if left == 'self'
-    return printf('getattr(%s, %s)', left, right)
-  else
     return printf('%s[%s]', left, right)
-  endif
 endfunction
 
 function s:GoCompiler.compile_slice(node)
