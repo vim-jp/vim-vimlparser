@@ -58,20 +58,20 @@ let s:opprec[s:NODE_CURLYNAME] = 9
 let s:opprec[s:NODE_ENV] = 9
 let s:opprec[s:NODE_REG] = 9
 
-let s:PythonCompiler = {}
+let s:GoCompiler = {}
 
-function s:PythonCompiler.new(...)
+function s:GoCompiler.new(...)
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function s:PythonCompiler.__init__()
+function s:GoCompiler.__init__()
   let self.indent = ['']
   let self.lines = []
 endfunction
 
-function s:PythonCompiler.out(...)
+function s:GoCompiler.out(...)
   if len(a:000) == 1
     if a:000[0] =~ '^)\+$'
       let self.lines[-1] .= a:000[0]
@@ -83,19 +83,19 @@ function s:PythonCompiler.out(...)
   endif
 endfunction
 
-function s:PythonCompiler.emptyline()
+function s:GoCompiler.emptyline()
   call add(self.lines, '')
 endfunction
 
-function s:PythonCompiler.incindent(s)
+function s:GoCompiler.incindent(s)
   call insert(self.indent, self.indent[0] . a:s)
 endfunction
 
-function s:PythonCompiler.decindent()
+function s:GoCompiler.decindent()
   call remove(self.indent, 0)
 endfunction
 
-function s:PythonCompiler.compile(node)
+function s:GoCompiler.compile(node)
   if a:node.type == s:NODE_TOPLEVEL
     return self.compile_toplevel(a:node)
   elseif a:node.type == s:NODE_COMMENT
@@ -259,7 +259,7 @@ function s:PythonCompiler.compile(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_body(body)
+function s:GoCompiler.compile_body(body)
   let empty = 1
   for node in a:body
     call self.compile(node)
@@ -272,20 +272,20 @@ function s:PythonCompiler.compile_body(body)
   endif
 endfunction
 
-function s:PythonCompiler.compile_toplevel(node)
+function s:GoCompiler.compile_toplevel(node)
   call self.compile_body(a:node.body)
   return self.lines
 endfunction
 
-function s:PythonCompiler.compile_comment(node)
+function s:GoCompiler.compile_comment(node)
   call self.out('#%s', a:node.str)
 endfunction
 
-function s:PythonCompiler.compile_excmd(node)
+function s:GoCompiler.compile_excmd(node)
   throw 'NotImplemented: excmd'
 endfunction
 
-function s:PythonCompiler.compile_function(node)
+function s:GoCompiler.compile_function(node)
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   if !empty(rlist) && rlist[-1] == '...'
@@ -312,11 +312,11 @@ function s:PythonCompiler.compile_function(node)
   call self.emptyline()
 endfunction
 
-function s:PythonCompiler.compile_delfunction(node)
+function s:GoCompiler.compile_delfunction(node)
   throw 'NotImplemented: delfunction'
 endfunction
 
-function s:PythonCompiler.compile_return(node)
+function s:GoCompiler.compile_return(node)
   if a:node.left is s:NIL
     call self.out('return')
   else
@@ -324,11 +324,11 @@ function s:PythonCompiler.compile_return(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_excall(node)
+function s:GoCompiler.compile_excall(node)
   call self.out('%s', self.compile(a:node.left))
 endfunction
 
-function s:PythonCompiler.compile_let(node)
+function s:GoCompiler.compile_let(node)
   let op = a:node.op
   if op == '.='
     let op = '+='
@@ -361,20 +361,20 @@ function s:PythonCompiler.compile_let(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_unlet(node)
+function s:GoCompiler.compile_unlet(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('del %s', join(list, ', '))
 endfunction
 
-function s:PythonCompiler.compile_lockvar(node)
+function s:GoCompiler.compile_lockvar(node)
   throw 'NotImplemented: lockvar'
 endfunction
 
-function s:PythonCompiler.compile_unlockvar(node)
+function s:GoCompiler.compile_unlockvar(node)
   throw 'NotImplemented: unlockvar'
 endfunction
 
-function s:PythonCompiler.compile_if(node)
+function s:GoCompiler.compile_if(node)
   call self.out('if %s:', self.compile(a:node.cond))
   call self.incindent('    ')
   call self.compile_body(a:node.body)
@@ -393,14 +393,14 @@ function s:PythonCompiler.compile_if(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_while(node)
+function s:GoCompiler.compile_while(node)
   call self.out('while %s:', self.compile(a:node.cond))
   call self.incindent('    ')
   call self.compile_body(a:node.body)
   call self.decindent()
 endfunction
 
-function s:PythonCompiler.compile_for(node)
+function s:GoCompiler.compile_for(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
@@ -418,15 +418,15 @@ function s:PythonCompiler.compile_for(node)
   call self.decindent()
 endfunction
 
-function s:PythonCompiler.compile_continue(node)
+function s:GoCompiler.compile_continue(node)
   call self.out('continue')
 endfunction
 
-function s:PythonCompiler.compile_break(node)
+function s:GoCompiler.compile_break(node)
   call self.out('break')
 endfunction
 
-function s:PythonCompiler.compile_try(node)
+function s:GoCompiler.compile_try(node)
   call self.out('try:')
   call self.incindent('    ')
   call self.compile_body(a:node.body)
@@ -452,39 +452,39 @@ function s:PythonCompiler.compile_try(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_throw(node)
+function s:GoCompiler.compile_throw(node)
   call self.out('raise VimLParserException(%s)', self.compile(a:node.left))
 endfunction
 
-function s:PythonCompiler.compile_echo(node)
+function s:GoCompiler.compile_echo(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('print(%s)', join(list, ', '))
 endfunction
 
-function s:PythonCompiler.compile_echon(node)
+function s:GoCompiler.compile_echon(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('print(%s)', join(list, ', '))
 endfunction
 
-function s:PythonCompiler.compile_echohl(node)
+function s:GoCompiler.compile_echohl(node)
   throw 'NotImplemented: echohl'
 endfunction
 
-function s:PythonCompiler.compile_echomsg(node)
+function s:GoCompiler.compile_echomsg(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('print(%s)', join(list, ', '))
 endfunction
 
-function s:PythonCompiler.compile_echoerr(node)
+function s:GoCompiler.compile_echoerr(node)
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('raise VimLParserException([%s]))', join(list, ', '))
 endfunction
 
-function s:PythonCompiler.compile_execute(node)
+function s:GoCompiler.compile_execute(node)
   throw 'NotImplemented: execute'
 endfunction
 
-function s:PythonCompiler.compile_ternary(node)
+function s:GoCompiler.compile_ternary(node)
   let cond = self.compile(a:node.cond)
   if s:opprec[a:node.type] >= s:opprec[a:node.cond.type]
     let cond = '(' . cond . ')'
@@ -497,171 +497,171 @@ function s:PythonCompiler.compile_ternary(node)
   return printf('%s if %s else %s', left, cond, right)
 endfunction
 
-function s:PythonCompiler.compile_or(node)
+function s:GoCompiler.compile_or(node)
   return self.compile_op2(a:node, 'or')
 endfunction
 
-function s:PythonCompiler.compile_and(node)
+function s:GoCompiler.compile_and(node)
   return self.compile_op2(a:node, 'and')
 endfunction
 
-function s:PythonCompiler.compile_equal(node)
+function s:GoCompiler.compile_equal(node)
   return self.compile_op2(a:node, '==')
 endfunction
 
-function s:PythonCompiler.compile_equalci(node)
+function s:GoCompiler.compile_equalci(node)
   return printf('viml_equalci(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_equalcs(node)
+function s:GoCompiler.compile_equalcs(node)
   return self.compile_op2(a:node, '==')
 endfunction
 
-function s:PythonCompiler.compile_nequal(node)
+function s:GoCompiler.compile_nequal(node)
   return self.compile_op2(a:node, '!=')
 endfunction
 
-function s:PythonCompiler.compile_nequalci(node)
+function s:GoCompiler.compile_nequalci(node)
   return printf('not viml_equalci(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_nequalcs(node)
+function s:GoCompiler.compile_nequalcs(node)
   return self.compile_op2(a:node, '!=')
 endfunction
 
-function s:PythonCompiler.compile_greater(node)
+function s:GoCompiler.compile_greater(node)
   return self.compile_op2(a:node, '>')
 endfunction
 
-function s:PythonCompiler.compile_greaterci(node)
+function s:GoCompiler.compile_greaterci(node)
   throw 'NotImplemented: >?'
 endfunction
 
-function s:PythonCompiler.compile_greatercs(node)
+function s:GoCompiler.compile_greatercs(node)
   throw 'NotImplemented: >#'
 endfunction
 
-function s:PythonCompiler.compile_gequal(node)
+function s:GoCompiler.compile_gequal(node)
   return self.compile_op2(a:node, '>=')
 endfunction
 
-function s:PythonCompiler.compile_gequalci(node)
+function s:GoCompiler.compile_gequalci(node)
   throw 'NotImplemented: >=?'
 endfunction
 
-function s:PythonCompiler.compile_gequalcs(node)
+function s:GoCompiler.compile_gequalcs(node)
   throw 'NotImplemented: >=#'
 endfunction
 
-function s:PythonCompiler.compile_smaller(node)
+function s:GoCompiler.compile_smaller(node)
   return self.compile_op2(a:node, '<')
 endfunction
 
-function s:PythonCompiler.compile_smallerci(node)
+function s:GoCompiler.compile_smallerci(node)
   throw 'NotImplemented: <?'
 endfunction
 
-function s:PythonCompiler.compile_smallercs(node)
+function s:GoCompiler.compile_smallercs(node)
   throw 'NotImplemented: <#'
 endfunction
 
-function s:PythonCompiler.compile_sequal(node)
+function s:GoCompiler.compile_sequal(node)
   return self.compile_op2(a:node, '<=')
 endfunction
 
-function s:PythonCompiler.compile_sequalci(node)
+function s:GoCompiler.compile_sequalci(node)
   throw 'NotImplemented: <=?'
 endfunction
 
-function s:PythonCompiler.compile_sequalcs(node)
+function s:GoCompiler.compile_sequalcs(node)
   throw 'NotImplemented: <=#'
 endfunction
 
-function s:PythonCompiler.compile_match(node)
+function s:GoCompiler.compile_match(node)
   return printf('viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_matchci(node)
+function s:GoCompiler.compile_matchci(node)
   return printf('viml_eqregq(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_matchcs(node)
+function s:GoCompiler.compile_matchcs(node)
   return printf('viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_nomatch(node)
+function s:GoCompiler.compile_nomatch(node)
   return printf('not viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_nomatchci(node)
+function s:GoCompiler.compile_nomatchci(node)
   return printf('not viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_nomatchcs(node)
+function s:GoCompiler.compile_nomatchcs(node)
   return printf('not viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function s:PythonCompiler.compile_is(node)
+function s:GoCompiler.compile_is(node)
   return self.compile_op2(a:node, 'is')
 endfunction
 
-function s:PythonCompiler.compile_isci(node)
+function s:GoCompiler.compile_isci(node)
   throw 'NotImplemented: is?'
 endfunction
 
-function s:PythonCompiler.compile_iscs(node)
+function s:GoCompiler.compile_iscs(node)
   throw 'NotImplemented: is#'
 endfunction
 
-function s:PythonCompiler.compile_isnot(node)
+function s:GoCompiler.compile_isnot(node)
   return self.compile_op2(a:node, 'is not')
 endfunction
 
-function s:PythonCompiler.compile_isnotci(node)
+function s:GoCompiler.compile_isnotci(node)
   throw 'NotImplemented: isnot?'
 endfunction
 
-function s:PythonCompiler.compile_isnotcs(node)
+function s:GoCompiler.compile_isnotcs(node)
   throw 'NotImplemented: isnot#'
 endfunction
 
-function s:PythonCompiler.compile_add(node)
+function s:GoCompiler.compile_add(node)
   return self.compile_op2(a:node, '+')
 endfunction
 
-function s:PythonCompiler.compile_subtract(node)
+function s:GoCompiler.compile_subtract(node)
   return self.compile_op2(a:node, '-')
 endfunction
 
-function s:PythonCompiler.compile_concat(node)
+function s:GoCompiler.compile_concat(node)
   return self.compile_op2(a:node, '+')
 endfunction
 
-function s:PythonCompiler.compile_multiply(node)
+function s:GoCompiler.compile_multiply(node)
   return self.compile_op2(a:node, '*')
 endfunction
 
-function s:PythonCompiler.compile_divide(node)
+function s:GoCompiler.compile_divide(node)
   return self.compile_op2(a:node, '/')
 endfunction
 
-function s:PythonCompiler.compile_remainder(node)
+function s:GoCompiler.compile_remainder(node)
   return self.compile_op2(a:node, '%')
 endfunction
 
-function s:PythonCompiler.compile_not(node)
+function s:GoCompiler.compile_not(node)
   return self.compile_op1(a:node, 'not ')
 endfunction
 
-function s:PythonCompiler.compile_plus(node)
+function s:GoCompiler.compile_plus(node)
   return self.compile_op1(a:node, '+')
 endfunction
 
-function s:PythonCompiler.compile_minus(node)
+function s:GoCompiler.compile_minus(node)
   return self.compile_op1(a:node, '-')
 endfunction
 
-function s:PythonCompiler.compile_subscript(node)
+function s:GoCompiler.compile_subscript(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
   if left == 'self'
@@ -671,11 +671,11 @@ function s:PythonCompiler.compile_subscript(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_slice(node)
+function s:GoCompiler.compile_slice(node)
   throw 'NotImplemented: slice'
 endfunction
 
-function s:PythonCompiler.compile_dot(node)
+function s:GoCompiler.compile_dot(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
   if right =~ '^\(else\|finally\)$'
@@ -684,7 +684,7 @@ function s:PythonCompiler.compile_dot(node)
   return printf('%s.%s', left, right)
 endfunction
 
-function s:PythonCompiler.compile_call(node)
+function s:GoCompiler.compile_call(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let left = self.compile(a:node.left)
   if left == 'map'
@@ -704,11 +704,11 @@ function s:PythonCompiler.compile_call(node)
   return printf('%s(%s)', left, join(rlist, ', '))
 endfunction
 
-function s:PythonCompiler.compile_number(node)
+function s:GoCompiler.compile_number(node)
   return a:node.value
 endfunction
 
-function s:PythonCompiler.compile_string(node)
+function s:GoCompiler.compile_string(node)
   if a:node.value[0] == "'"
     let s = substitute(a:node.value[1:-2], "''", "'", 'g')
     return '"' . escape(s, '\"') . '"'
@@ -717,7 +717,7 @@ function s:PythonCompiler.compile_string(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_list(node)
+function s:GoCompiler.compile_list(node)
   let value = map(a:node.value, 'self.compile(v:val)')
   if empty(value)
     return '[]'
@@ -726,7 +726,7 @@ function s:PythonCompiler.compile_list(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_dict(node)
+function s:GoCompiler.compile_dict(node)
   let value = map(a:node.value, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
   if empty(value)
     return 'AttributeDict({})'
@@ -735,11 +735,11 @@ function s:PythonCompiler.compile_dict(node)
   endif
 endfunction
 
-function s:PythonCompiler.compile_option(node)
+function s:GoCompiler.compile_option(node)
   throw 'NotImplemented: option'
 endfunction
 
-function s:PythonCompiler.compile_identifier(node)
+function s:GoCompiler.compile_identifier(node)
   let name = a:node.value
   if name == 'a:000'
     let name = 'a000'
@@ -751,19 +751,19 @@ function s:PythonCompiler.compile_identifier(node)
   return name
 endfunction
 
-function s:PythonCompiler.compile_curlyname(node)
+function s:GoCompiler.compile_curlyname(node)
   throw 'NotImplemented: curlyname'
 endfunction
 
-function s:PythonCompiler.compile_env(node)
+function s:GoCompiler.compile_env(node)
   throw 'NotImplemented: env'
 endfunction
 
-function s:PythonCompiler.compile_reg(node)
+function s:GoCompiler.compile_reg(node)
   throw 'NotImplemented: reg'
 endfunction
 
-function s:PythonCompiler.compile_op1(node, op)
+function s:GoCompiler.compile_op1(node, op)
   let left = self.compile(a:node.left)
   if s:opprec[a:node.type] > s:opprec[a:node.left.type]
     let left = '(' . left . ')'
@@ -771,7 +771,7 @@ function s:PythonCompiler.compile_op1(node, op)
   return printf('%s%s', a:op, left)
 endfunction
 
-function s:PythonCompiler.compile_op2(node, op)
+function s:GoCompiler.compile_op2(node, op)
   let left = self.compile(a:node.left)
   if s:opprec[a:node.type] > s:opprec[a:node.left.type]
     let left = '(' . left . ')'
@@ -793,7 +793,7 @@ function! s:test()
   try
     let r = s:StringReader.new(readfile(vimfile))
     let p = s:VimLParser.new()
-    let c = s:PythonCompiler.new()
+    let c = s:GoCompiler.new()
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'NIL = []') - 1]
     let tail = [
