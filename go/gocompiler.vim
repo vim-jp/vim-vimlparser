@@ -726,6 +726,10 @@ function s:GoCompiler.compile_number(node)
 endfunction
 
 function s:GoCompiler.compile_string(node)
+  if a:node.value == '"\<C-V>"'
+    " XXX: workaround
+    return '`\<C-V>`'
+  endif
   if a:node.value[0] == "'"
     let s = substitute(a:node.value[1:-2], "''", "'", 'g')
     return '"' . escape(s, '\"') . '"'
