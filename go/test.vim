@@ -5,15 +5,12 @@ setlocal bufhidden=wipe
 setlocal buftype=nofile
 setlocal filetype=diff
 
-source ./go/gocompiler.vim
-
 let s:vimlparser = vimlparser#import()
-
-let s:gocompiler = g:ImportGoCompiler()
 
 let s:sdir = expand('<sfile>:p:h')
 
 function! s:run() abort
+  source ./go/gocompiler.vim
   :1,$delete
   for vimfile in glob(s:sdir . '/test/*.vim', 0, 1)
     let okfile = fnamemodify(vimfile, ':r') . '.go'
@@ -21,7 +18,7 @@ function! s:run() abort
     let src = readfile(vimfile)
     let r = s:vimlparser.StringReader.new(src)
     let p = s:vimlparser.VimLParser.new()
-    let c = s:gocompiler.GoCompiler.new()
+    let c = g:ImportGoCompiler().GoCompiler.new()
     try
       let out = c.compile(p.parse(r))
       call writefile(out, outfile)
