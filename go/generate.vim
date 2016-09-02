@@ -19,4 +19,18 @@ function! s:generate()
   endtry
 endfunction
 
+function! s:numtoname(num)
+  let sig = printf("function('%s')", a:num)
+  for k in keys(s:)
+    if type(s:[k]) == type({})
+      for name in keys(s:[k])
+        if type(s:[k][name]) == type(function('tr')) && string(s:[k][name]) == sig
+          return printf('%s.%s', k, name)
+        endif
+      endfor
+    endif
+  endfor
+  return a:num
+endfunction
+
 call s:generate()
