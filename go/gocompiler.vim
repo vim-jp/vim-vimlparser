@@ -314,17 +314,15 @@ function s:GoCompiler.compile_function(node)
     let rlist[-1] = '*a000'
   endif
   if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
-    let left = matchstr(left, '\.\zs.*')
-    if left == 'new'
+    let [_0, struct, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
+    if name == 'new'
       return
     endif
-    call insert(rlist, 'self')
-    call self.incindent("\t")
-    call self.out('func %s(%s):', left, join(rlist, ', '))
+    call self.out('func (self *%s) %s(%s) {', struct, name, join(rlist, ', '))
     call self.incindent("\t")
     call self.compile_body(a:node.body)
     call self.decindent()
-    call self.decindent()
+    call self.out('}')
   else
     call self.out('func %s(%s) {', left, join(rlist, ', '))
     call self.incindent("\t")
@@ -365,13 +363,23 @@ function s:GoCompiler.compile_let(node)
       call self.out('class LvalueParser(ExprParser):')
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
-      call self.out('class %s:', left)
+      call self.out('type %s struct {', left)
+      call self.incindent("\t")
+      " TODO: field
+      call self.decindent()
+      call self.out('}')
+      call self.emptyline()
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let left = matchstr(left, '\.\zs.*')
-      call self.incindent("\t")
-      call self.out('%s %s %s', left, op, right)
-      call self.decindent()
+      " throw 'CaonnotImplement: Class.var'
+      " echom left
+      " =>
+      "   builtin_commands
+      "   RE_VERY_NOMAGIC
+      "   RE_NOMAGIC
+      "   RE_MAGIC
+      "   RE_VERY_MAGIC
       return
     endif
     if self.isinscope(left)
