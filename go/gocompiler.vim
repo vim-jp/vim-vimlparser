@@ -541,7 +541,7 @@ function s:GoCompiler.compile_nequal(node)
 endfunction
 
 function s:GoCompiler.compile_nequalci(node)
-  return printf('not viml_equalci(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  return printf('!viml_equalci(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:GoCompiler.compile_nequalcs(node)
@@ -609,15 +609,15 @@ function s:GoCompiler.compile_matchcs(node)
 endfunction
 
 function s:GoCompiler.compile_nomatch(node)
-  return printf('not viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  return printf('!viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:GoCompiler.compile_nomatchci(node)
-  return printf('not viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), self.compile(a:node.right))
+  return printf('!viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:GoCompiler.compile_nomatchcs(node)
-  return printf('not viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  return printf('!viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function s:GoCompiler.compile_is(node)
@@ -683,7 +683,7 @@ endfunction
 function s:GoCompiler.compile_subscript(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
-    return printf('%s[%s]', left, right)
+  return printf('%s[%s]', left, right)
 endfunction
 
 function s:GoCompiler.compile_slice(node)
@@ -703,10 +703,7 @@ function s:GoCompiler.compile_call(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let left = self.compile(a:node.left)
   if left == 'map'
-    let r = s:StringReader.new([eval(rlist[1])])
-    let p = s:ExprParser.new(r)
-    let n = p.parse()
-    return printf('[%s for vval in %s]', self.compile(n), rlist[0])
+    " throw 'NotImplemented: map()'
   elseif left == 'call' && rlist[0][0] =~ '[''"]'
     return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
   elseif left =~ 'ExArg'
