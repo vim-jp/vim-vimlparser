@@ -443,19 +443,27 @@ endfunction
 function s:GoCompiler.compile_for(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
+    let right = self.compile(a:node.right)
+    call self.out('for _, %s := range %s {', left, right)
+    call self.inscope()
+    call self.addscope(left)
   else
     let list = map(a:node.list, 'self.compile(v:val)')
+    let right = self.compile(a:node.right)
     if a:node.rest isnot s:NIL
-      let rest = self.compile(a:node.rest)
-      call add(list, '*' . rest)
+      throw 'NotImplemented: for [x,y;z] in ss'
     endif
-    let left = join(list, ', ')
+    let [k, v; _] = list
+    call self.out('for %s, %s := range %s {', k, v, right)
+    call self.inscope()
+    call self.addscope(k)
+    call self.addscope(v)
   endif
-  let right = self.compile(a:node.right)
-  call self.out('for %s in %s:', left, right)
   call self.incindent("\t")
   call self.compile_body(a:node.body)
+  call self.descope()
   call self.decindent()
+  call self.out('}')
 endfunction
 
 function s:GoCompiler.compile_continue(node)
