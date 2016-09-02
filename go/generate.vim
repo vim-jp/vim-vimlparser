@@ -12,7 +12,7 @@ function! s:generate()
     let p = s:VimLParser.new()
     let c = s:GoCompiler.new()
     let lines = c.compile(p.parse(r))
-    unlet lines[0 : index(lines, 'var NIL = []') - 1]
+    unlet lines[0 : index(lines, 'var NIL = []interface{}{}') - 1]
     call writefile(head + lines, gofile)
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
