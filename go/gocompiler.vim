@@ -300,15 +300,15 @@ function s:GoCompiler.compile_function(node)
       return
     endif
     call insert(rlist, 'self')
-    call self.incindent('    ')
+    call self.incindent("\t")
     call self.out('def %s(%s):', left, join(rlist, ', '))
-    call self.incindent('    ')
+    call self.incindent("\t")
     call self.compile_body(a:node.body)
     call self.decindent()
     call self.decindent()
   else
     call self.out('def %s(%s):', left, join(rlist, ', '))
-    call self.incindent('    ')
+    call self.incindent("\t")
     call self.compile_body(a:node.body)
     call self.decindent()
   endif
@@ -347,7 +347,7 @@ function s:GoCompiler.compile_let(node)
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let left = matchstr(left, '\.\zs.*')
-      call self.incindent('    ')
+      call self.incindent("\t")
       call self.out('%s %s %s', left, op, right)
       call self.decindent()
       return
@@ -379,18 +379,18 @@ endfunction
 
 function s:GoCompiler.compile_if(node)
   call self.out('if %s:', self.compile(a:node.cond))
-  call self.incindent('    ')
+  call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
   for node in a:node.elseif
     call self.out('elif %s:', self.compile(node.cond))
-    call self.incindent('    ')
+    call self.incindent("\t")
     call self.compile_body(node.body)
     call self.decindent()
   endfor
   if a:node.else isnot s:NIL
     call self.out('else:')
-    call self.incindent('    ')
+    call self.incindent("\t")
     call self.compile_body(a:node.else.body)
     call self.decindent()
   endif
@@ -398,7 +398,7 @@ endfunction
 
 function s:GoCompiler.compile_while(node)
   call self.out('while %s:', self.compile(a:node.cond))
-  call self.incindent('    ')
+  call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
 endfunction
@@ -416,7 +416,7 @@ function s:GoCompiler.compile_for(node)
   endif
   let right = self.compile(a:node.right)
   call self.out('for %s in %s:', left, right)
-  call self.incindent('    ')
+  call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
 endfunction
@@ -431,25 +431,25 @@ endfunction
 
 function s:GoCompiler.compile_try(node)
   call self.out('try:')
-  call self.incindent('    ')
+  call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
   for node in a:node.catch
     if node.pattern isnot s:NIL
       call self.out('except:')
-      call self.incindent('    ')
+      call self.incindent("\t")
       call self.compile_body(node.body)
       call self.decindent()
     else
       call self.out('except:')
-      call self.incindent('    ')
+      call self.incindent("\t")
       call self.compile_body(node.body)
       call self.decindent()
     endif
   endfor
   if a:node.finally isnot s:NIL
     call self.out('finally:')
-    call self.incindent('    ')
+    call self.incindent("\t")
     call self.compile_body(a:node.finally.body)
     call self.decindent()
   endif
