@@ -400,8 +400,7 @@ function s:GoCompiler.compile_let(node)
 endfunction
 
 function s:GoCompiler.compile_unlet(node)
-  let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('del %s', join(list, ', '))
+  throw 'NotImplemented: unlet'
 endfunction
 
 function s:GoCompiler.compile_lockvar(node)
@@ -483,13 +482,11 @@ function s:GoCompiler.compile_throw(node)
 endfunction
 
 function s:GoCompiler.compile_echo(node)
-  let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('print(%s)', join(list, ', '))
+  throw 'NotImplemented: echo'
 endfunction
 
 function s:GoCompiler.compile_echon(node)
-  let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('print(%s)', join(list, ', '))
+  throw 'NotImplemented: echon'
 endfunction
 
 function s:GoCompiler.compile_echohl(node)
@@ -497,13 +494,11 @@ function s:GoCompiler.compile_echohl(node)
 endfunction
 
 function s:GoCompiler.compile_echomsg(node)
-  let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('print(%s)', join(list, ', '))
+  throw 'NotImplemented: echomsg'
 endfunction
 
 function s:GoCompiler.compile_echoerr(node)
-  let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('raise VimLParserException([%s]))', join(list, ', '))
+  throw 'NotImplemented: echoerr'
 endfunction
 
 function s:GoCompiler.compile_execute(node)
@@ -511,16 +506,7 @@ function s:GoCompiler.compile_execute(node)
 endfunction
 
 function s:GoCompiler.compile_ternary(node)
-  let cond = self.compile(a:node.cond)
-  if s:opprec[a:node.type] >= s:opprec[a:node.cond.type]
-    let cond = '(' . cond . ')'
-  endif
-  let left = self.compile(a:node.left)
-  if s:opprec[a:node.type] >= s:opprec[a:node.left.type]
-    let left = '(' . left . ')'
-  endif
-  let right = self.compile(a:node.right)
-  return printf('%s if %s else %s', left, cond, right)
+  throw 'NotImplemented: ternary'
 endfunction
 
 function s:GoCompiler.compile_or(node)
