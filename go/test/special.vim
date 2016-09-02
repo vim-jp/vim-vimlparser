@@ -19,6 +19,7 @@ endfunction
 
 let self.hoge = 1
 let self.ea.range = 1
+let xxx.x = 1
 let z = self.ea.range
 let xs = range(10)
 

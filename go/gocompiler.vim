@@ -383,7 +383,7 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left =~ '^self\.'
+    elseif left =~ '\.'
       call self.out('%s %s %s', left, op, right)
       return
     endif
