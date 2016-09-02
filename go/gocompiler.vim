@@ -270,9 +270,6 @@ function s:GoCompiler.compile_body(body)
       let empty = 0
     endif
   endfor
-  if empty
-    call self.out('pass')
-  endif
 endfunction
 
 function s:GoCompiler.compile_toplevel(node)
@@ -301,16 +298,17 @@ function s:GoCompiler.compile_function(node)
     endif
     call insert(rlist, 'self')
     call self.incindent("\t")
-    call self.out('def %s(%s):', left, join(rlist, ', '))
+    call self.out('func %s(%s):', left, join(rlist, ', '))
     call self.incindent("\t")
     call self.compile_body(a:node.body)
     call self.decindent()
     call self.decindent()
   else
-    call self.out('def %s(%s):', left, join(rlist, ', '))
+    call self.out('func %s(%s) {', left, join(rlist, ', '))
     call self.incindent("\t")
     call self.compile_body(a:node.body)
     call self.decindent()
+    call self.out('}')
   endif
   call self.emptyline()
 endfunction
