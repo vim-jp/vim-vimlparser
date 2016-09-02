@@ -517,11 +517,11 @@ function s:GoCompiler.compile_ternary(node)
 endfunction
 
 function s:GoCompiler.compile_or(node)
-  return self.compile_op2(a:node, 'or')
+  return self.compile_op2(a:node, '||')
 endfunction
 
 function s:GoCompiler.compile_and(node)
-  return self.compile_op2(a:node, 'and')
+  return self.compile_op2(a:node, '&&')
 endfunction
 
 function s:GoCompiler.compile_equal(node)
