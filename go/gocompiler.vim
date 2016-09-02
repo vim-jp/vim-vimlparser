@@ -743,9 +743,9 @@ endfunction
 function s:GoCompiler.compile_dict(node)
   let value = map(a:node.value, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
   if empty(value)
-    return 'AttributeDict({})'
+    return 'map[string]interface{}{}'
   else
-    return printf('AttributeDict({%s})', join(value, ', '))
+    return printf('map[string]interface{}{%s}', join(value, ', '))
   endif
 endfunction
 
