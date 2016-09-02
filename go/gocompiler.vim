@@ -362,7 +362,11 @@ function s:GoCompiler.compile_let(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
     if left == 'LvalueParser'
-      call self.out('class LvalueParser(ExprParser):')
+      call self.out('type LvalueParser struct {')
+      call self.incindent("\t")
+      call self.out('*ExprParser')
+      call self.decindent()
+      call self.out('}')
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
       call self.out('type %s struct {', left)
