@@ -72,6 +72,7 @@ endfunction
 function s:GoCompiler.__init__()
   let self.indent = ['']
   let self.lines = []
+  let self.scopes = [{}]
 endfunction
 
 function s:GoCompiler.out(...)
@@ -96,6 +97,27 @@ endfunction
 
 function s:GoCompiler.decindent()
   call remove(self.indent, 0)
+endfunction
+
+function s:GoCompiler.inscope()
+  call insert(self.scopes, {})
+endfunction
+
+function s:GoCompiler.descope()
+  call remove(self.scopes, 0)
+endfunction
+
+function s:GoCompiler.addscope(varid)
+  let self.scopes[0][a:varid] = 1
+endfunction
+
+function s:GoCompiler.isinscope(varid)
+  for scope in self.scopes
+    if has_key(scope, a:varid)
+      return 1
+    endif
+  endfor
+  return 0
 endfunction
 
 function s:GoCompiler.compile(node)
@@ -306,7 +328,9 @@ function s:GoCompiler.compile_function(node)
   else
     call self.out('func %s(%s) {', left, join(rlist, ', '))
     call self.incindent("\t")
+    call self.inscope()
     call self.compile_body(a:node.body)
+    call self.descope()
     call self.decindent()
     call self.out('}')
   endif
@@ -350,8 +374,13 @@ function s:GoCompiler.compile_let(node)
       call self.decindent()
       return
     endif
-    call self.out('%s %s %s', left, op, right)
-  else
+    if self.isinscope(left)
+      call self.out('%s %s %s', left, op, right)
+    else
+      call self.out('var %s %s %s', left, op, right)
+      call self.addscope(left)
+    endif
+  else " let [x,y] = ...
     let list = map(a:node.list, 'self.compile(v:val)')
     if a:node.rest isnot s:NIL
       let rest = self.compile(a:node.rest)
