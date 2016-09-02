@@ -8,11 +8,13 @@ function! s:generate()
   let vimlfunc = 'go/vimlfunc/vimlfunc.go'
   let head = readfile(vimlfunc)
   try
-    let r = s:StringReader.new(readfile(vimfile))
+    let lines = readfile(vimfile)
+    unlet lines[0:index(lines, 'let s:NIL = []') - 1]
+    unlet lines[index(lines, 'let s:Compiler = {}'):-1]
+    let r = s:StringReader.new(lines)
     let p = s:VimLParser.new()
     let c = s:GoCompiler.new()
     let lines = c.compile(p.parse(r))
-    unlet lines[0 : index(lines, 'var NIL = []interface{}{}') - 1]
     call writefile(head + lines, gofile)
   catch
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
