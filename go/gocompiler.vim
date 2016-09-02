@@ -734,9 +734,9 @@ endfunction
 function s:GoCompiler.compile_list(node)
   let value = map(a:node.value, 'self.compile(v:val)')
   if empty(value)
-    return '[]'
+    return '[]interface{}{}'
   else
-    return printf('[%s]', join(value, ', '))
+    return printf('[]interface{}{%s}', join(value, ', '))
   endif
 endfunction
 
