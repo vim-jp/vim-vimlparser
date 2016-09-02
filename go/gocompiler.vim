@@ -313,7 +313,9 @@ function s:GoCompiler.compile_function(node)
   if !empty(rlist) && rlist[-1] == '...'
     let rlist[-1] = '*a000'
   endif
-  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
+  if left =~ '^\(ExArg\)$'
+    return
+  elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let [_0, struct, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
     if name == 'new'
       return
@@ -380,6 +382,9 @@ function s:GoCompiler.compile_let(node)
       "   RE_NOMAGIC
       "   RE_MAGIC
       "   RE_VERY_MAGIC
+      return
+    elseif left =~ '^self\.'
+      call self.out('%s %s %s', left, op, right)
       return
     endif
     if self.isinscope(left)
@@ -708,12 +713,17 @@ function s:GoCompiler.compile_call(node)
     return printf('[%s for vval in %s]', self.compile(n), rlist[0])
   elseif left == 'call' && rlist[0][0] =~ '[''"]'
     return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
+  elseif left =~ 'ExArg'
+    return printf('&%s{}', left)
   endif
   if left =~ '\.new$'
     let left = matchstr(left, '.*\ze\.new$')
   endif
   if index(s:viml_builtin_functions, left) != -1
     let left = printf('viml_%s', left)
+  endif
+  if left == 'range_'
+    let left = 'viml_range'
   endif
   return printf('%s(%s)', left, join(rlist, ', '))
 endfunction
@@ -761,6 +771,8 @@ function s:GoCompiler.compile_identifier(node)
     let name = 'vval'
   elseif name =~ '^[sa]:'
     let name = name[2:]
+  elseif name == 'range' " keywords
+    let name .= '_'
   endif
   return name
 endfunction

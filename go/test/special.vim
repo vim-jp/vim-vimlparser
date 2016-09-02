@@ -10,3 +10,14 @@ endfunction
 function! s:VimLParser.__init__()
   let x = 1
 endfunction
+
+let y = s:ExArg()
+
+function! s:ExArg()
+  " skip ExArg definition
+endfunction
+
+let self.hoge = 1
+let self.ea.range = 1
+let z = self.ea.range
+let xs = range(10)
