@@ -768,7 +768,7 @@ function s:GoCompiler.compile_call(node)
     return printf('&%s{}', left)
   endif
   if left =~ '\.new$'
-    let left = matchstr(left, '.*\ze\.new$')
+    let left = 'New' . matchstr(left, '.*\ze\.new$')
   endif
   if index(s:viml_builtin_functions, left) != -1
     let left = printf('viml_%s', left)

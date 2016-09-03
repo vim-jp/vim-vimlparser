@@ -79,6 +79,12 @@ type VimLParser struct {
 	ea                 *ExArg
 }
 
+func NewVimLParser() *VimLParser {
+	obj := &VimLParser{}
+	obj.__init__()
+	return obj
+}
+
 type ExprToken struct {
 	type_ int
 	value string
@@ -90,6 +96,12 @@ type ExprTokenizer struct {
 	cache  map[int]*ExprToken
 }
 
+func NewExprTokenizer(reader *StringReader) *ExprTokenizer {
+	obj := &ExprTokenizer{}
+	obj.__init__(reader)
+	return obj
+}
+
 func (self *ExprTokenizer) token(type_ int, value string, pos pos) *ExprToken {
 	return &ExprToken{}
 }
@@ -99,14 +111,32 @@ type ExprParser struct {
 	tokenizer *ExprTokenizer
 }
 
+func NewExprParser(reader *StringReader) *ExprParser {
+	obj := &ExprParser{}
+	obj.__init__(reader)
+	return obj
+}
+
 type LvalueParser struct {
 	*ExprParser
+}
+
+func NewLvalueParser(reader *StringReader) *LvalueParser {
+	obj := &LvalueParser{}
+	obj.__init__(reader)
+	return obj
 }
 
 type StringReader struct {
 	i   int
 	pos [][2]int
 	buf []string
+}
+
+func NewStringReader(lines []string) *StringReader {
+	obj := &StringReader{}
+	obj.__init__(lines)
+	return obj
 }
 
 func (self *StringReader) getpos() *pos {

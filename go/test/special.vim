@@ -62,3 +62,9 @@ let self.find_command_cache = {}
 let self.cache = {}
 let self.buf = []
 let self.pos = []
+
+let p = s:VimLParser.new()
+let et = s:ExprTokenizer.new(r)
+let ep = s:ExprParser.new(r)
+let lp = s:LvalueParser.new(r)
+let r = s:StringReader.new(lines)
