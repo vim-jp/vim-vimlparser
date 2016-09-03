@@ -412,7 +412,7 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left == 'self.ea.forceit' && op == '='
+    elseif left =~ 'self.ea.\(forceit\|usefilter\)' && op == '='
       let r = 'true'
       if right == '0'
         let r = 'false'

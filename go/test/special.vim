@@ -55,3 +55,5 @@ endfunction
 
 let self.ea.forceit = 1
 let self.ea.forceit = 0
+let self.ea.usefilter = 1
+let self.ea.usefilter = 0

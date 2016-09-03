@@ -9,7 +9,7 @@ type ExArg struct {
 	do_ecmd_cmd  string
 	do_ecmd_lnum int
 	append       int
-	usefilter    int
+	usefilter    bool
 	amount       int
 	regname      int
 	force_bin    int

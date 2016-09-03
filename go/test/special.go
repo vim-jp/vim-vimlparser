@@ -26,3 +26,5 @@ func (self *LvalueParser) pos2() {
 
 self.ea.forceit = true
 self.ea.forceit = false
+self.ea.usefilter = true
+self.ea.usefilter = false
