@@ -353,6 +353,9 @@ function s:GoCompiler.compile_function(node)
     call self.out('func (self *%s) %s(%s) %s{', struct, name, join(args, ', '), out)
     call self.incindent("\t")
     call self.inscope()
+    for r in rlist
+      call self.addscope(r)
+    endfor
     call self.compile_body(a:node.body)
     call self.descope()
     call self.decindent()
@@ -361,6 +364,9 @@ function s:GoCompiler.compile_function(node)
     call self.out('func %s(%s) %s{', left, join(args, ', '), out)
     call self.incindent("\t")
     call self.inscope()
+    for r in rlist
+      call self.addscope(r)
+    endfor
     call self.compile_body(a:node.body)
     call self.descope()
     call self.decindent()

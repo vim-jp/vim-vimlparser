@@ -5,3 +5,11 @@ func Funcname() {
 	x = 1
 }
 
+func Funcname(z) {
+	z = z
+}
+
+func (self *VimLParser) hoge(a) {
+	a = a
+}
+
