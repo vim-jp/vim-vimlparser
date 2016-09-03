@@ -321,9 +321,17 @@ function s:GoCompiler.compile_function(node)
   if !empty(typedef)
     let args = []
     let types_in = get(typedef, 'in', [])
-    for i in range(len(rlist))
-      let args = add(args, rlist[i] . ' ' . types_in[i])
-    endfor
+    try
+      for i in range(len(rlist))
+        let args = add(args, rlist[i] . ' ' . types_in[i])
+      endfor
+    catch
+      echomsg v:exception
+      echomsg left
+      echomsg rlist
+      echomsg types_in
+      echomsg i
+    endtry
     let types_out = get(typedef, 'out', [])
     let out = join(types_out, ', ')
     if len(types_out) > 1

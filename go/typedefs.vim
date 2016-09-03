@@ -9,7 +9,7 @@ let s:typedefs = {
 \   },
 \ }
 
-let s:vimlfunc = {
+call extend(s:typedefs.func, {
 \   'isalpha': { 'in': ['string'], 'out': ['bool'] },
 \   'isalnum': { 'in': ['string'], 'out': ['bool'] },
 \   'isdigit': { 'in': ['string'], 'out': ['bool'] },
@@ -25,9 +25,9 @@ let s:vimlfunc = {
 \   'isidc': { 'in': ['string'], 'out': ['bool'] },
 \   'isupper': { 'in': ['string'], 'out': ['bool'] },
 \   'islower': { 'in': ['string'], 'out': ['bool'] },
-\ }
+\ })
 
-let s:VimLParser = {
+call extend(s:typedefs.func, {
 \   'VimLParser.push_context': {
 \     'in': ['*node'],
 \     'out': [],
@@ -93,9 +93,9 @@ let s:VimLParser = {
 \     'in': ['string'],
 \     'out': ['bool'],
 \   },
-\ }
+\ })
 
-let s:ExprTokenizer = {
+call extend(s:typedefs.func, {
 \   'ExprTokenizer.__init__': {
 \     'in': ['*StringReader'],
 \     'out': [],
@@ -108,9 +108,9 @@ let s:ExprTokenizer = {
 \   'ExprTokenizer.get': { 'in': [], 'out': ['*ExprToken'] },
 \   'ExprTokenizer.get2': { 'in': [], 'out': ['*ExprToken'] },
 \   'ExprTokenizer.get_string': { 'in': [], 'out': ['string'] },
-\ }
+\ })
 
-let s:ExprParser = {
+call extend(s:typedefs.func, {
 \   'ExprParser.__init__': {
 \     'in': ['*StringReader'],
 \     'out': [],
@@ -125,19 +125,17 @@ let s:ExprParser = {
 \   'ExprParser.parse7': { 'in': [], 'out': ['*node'] },
 \   'ExprParser.parse8': { 'in': [], 'out': ['*node'] },
 \   'ExprParser.parse9': { 'in': [], 'out': ['*node'] },
-\   'ExprParser.parse_dot': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse_dot': { 'in': ['*ExprToken', '*node'], 'out': ['*node'] },
 \   'ExprParser.parse_identifier': { 'in': [], 'out': ['*node'] },
 \   'ExprParser.parse_curly_parts': { 'in': [], 'out': ['[]*node'] },
-\ }
+\ })
 
-let s:LvalueParser = {
+call extend(s:typedefs.func, {
 \   'LvalueParser.parse': { 'in': [], 'out': ['*node'] },
 \   'LvalueParser.parse_lv8': { 'in': [], 'out': ['*node'] },
 \   'LvalueParser.parse_lv9': { 'in': [], 'out': ['*node'] },
-\ }
+\ })
 
-call extend(s:typedefs.func, s:vimlfunc)
-call extend(s:typedefs.func, s:VimLParser)
 
 function! ImportTypedefs() abort
   return s:typedefs
