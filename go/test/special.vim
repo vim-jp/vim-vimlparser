@@ -101,3 +101,8 @@ let lp = s:LvalueParser.new(r)
 let r = s:StringReader.new(lines)
 
 let nl = s:NIL
+
+let list = []
+let curly_parts = []
+let cmd = s:NIL
+let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}

@@ -43,3 +43,7 @@ var ep = NewExprParser(r)
 var lp = NewLvalueParser(r)
 var r = NewStringReader(lines)
 var nl = nil
+var list []*node
+var curly_parts []*node
+var cmd *Cmd = nil
+cmd = &Cmd{name: name, flags: "USERCMD", parser: "parse_cmd_usercmd"}

@@ -420,11 +420,27 @@ function s:GoCompiler.compile_let(node)
     elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|lhs.list|(node\.(body|rlist|attr|else_|elseif|catch|finally|pattern|end(function|if|for|try))))$' && op == '='
       " skip initialization
       return
-    elseif left =~ '^\v((node\.(list|depth)))$' && op == '='
+    elseif left =~ '^\v(node\.(list|depth))$' && op == '='
       if right == 'nil' || right == '[]interface{}{}'
         return
       endif
       call self.out('%s %s %s', left, op, right)
+      return
+    elseif left =~ '^\v(list|curly_parts)$' && op == '=' && right == '[]interface{}{}'
+      call self.out('var %s []*node', left)
+      return
+    elseif left == 'cmd' && op == '=' && (right == 'nil' || right =~ '^\Vmap[string]interface{}{')
+      if right == 'nil'
+        call self.out('var cmd *Cmd = nil')
+      else
+        let m = matchstr(right, '^\Vmap[string]interface{}{\zs\(\.\*\)\ze}\$')
+        let rs = []
+        for kv in split(m, ', ')
+          let [k, v] = split(kv, ':')
+          call add(rs, k[1:-2] . ': ' . v)
+        endfor
+        call self.out('cmd = &Cmd{%s}', join(rs, ', '))
+      endif
       return
     elseif left =~ '\.'
       call self.out('%s %s %s', left, op, right)
