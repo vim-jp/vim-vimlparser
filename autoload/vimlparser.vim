@@ -592,6 +592,8 @@ endfunction
 function! s:VimLParser.parse_range()
   let tokens = []
   let m = ''
+  let pattern = ''
+  let endc = ''
 
   while 1
 
@@ -1575,6 +1577,7 @@ function! s:VimLParser.parse_cmd_catch()
   let node.body = []
   let node.ea = self.ea
   let node.pattern = s:NIL
+  let endc = ''
   call self.reader.skip_white()
   if !self.ends_excmds(self.reader.peek())
     let [node.pattern, endc] = self.parse_pattern(self.reader.get())
