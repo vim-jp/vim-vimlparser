@@ -393,20 +393,7 @@ function s:GoCompiler.compile_let(node)
   let right = self.compile(a:node.right)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
-    if left == 'LvalueParser'
-      call self.out('type LvalueParser struct {')
-      call self.incindent("\t")
-      call self.out('*ExprParser')
-      call self.decindent()
-      call self.out('}')
-      return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
-      call self.out('type %s struct {', left)
-      call self.incindent("\t")
-      " TODO: field
-      call self.decindent()
-      call self.out('}')
-      call self.emptyline()
+    if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let left = matchstr(left, '\.\zs.*')
