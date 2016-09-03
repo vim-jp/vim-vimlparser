@@ -482,7 +482,13 @@ function s:GoCompiler.compile_if(node)
 endfunction
 
 function s:GoCompiler.compile_while(node)
-  call self.out('for %s {', self.compile(a:node.cond))
+  let cond = self.compile(a:node.cond)
+  if cond == '1'
+    let cond = ''
+  else
+    let cond .= ' '
+  endif
+  call self.out('for %s{', cond)
   call self.incindent("\t")
   call self.compile_body(a:node.body)
   call self.decindent()
