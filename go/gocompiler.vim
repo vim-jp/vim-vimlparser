@@ -830,6 +830,9 @@ function s:GoCompiler.compile_identifier(node)
   if name =~ 'range\|type' " keywords
     let name .= '_'
   endif
+  if name == 'NIL'
+    let name = 'nil'
+  endif
   return name
 endfunction
 

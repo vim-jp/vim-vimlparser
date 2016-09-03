@@ -20,7 +20,7 @@ type ExArg struct {
 	linepos      *pos
 	cmdpos       *pos
 	argpos       *pos
-	cmd          Cmd
+	cmd          *Cmd
 	modifiers    []interface{}
 	range_       []interface{} // range -> range_
 	argopt       map[string]interface{}
@@ -73,7 +73,7 @@ func Node(type_ int) *node {
 var builtin_commands = []*Cmd{}
 
 type VimLParser struct {
-	find_command_cache map[string]Cmd
+	find_command_cache map[string]*Cmd
 	reader             *StringReader
 	context            []*node
 	ea                 *ExArg

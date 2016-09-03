@@ -55,7 +55,7 @@ call extend(s:typedefs.func, {
 \   },
 \   'VimLParser.find_command': {
 \     'in': [],
-\     'out': ['Cmd'],
+\     'out': ['*Cmd'],
 \   },
 \   'VimLParser.read_cmdarg': {
 \     'in': [],

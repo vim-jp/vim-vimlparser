@@ -30,7 +30,7 @@ function! s:ast() abort
   endif
 
   let lines = readfile(vimfile)
-  unlet lines[0:index(lines, 'let s:NIL = []') - 1]
+  unlet lines[0:index(lines, 'let s:NIL = []')]
   unlet lines[index(lines, 'let s:Compiler = {}'):-1]
   let r = s:StringReader.new(lines)
   let p = s:VimLParser.new()

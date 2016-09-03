@@ -33,3 +33,4 @@ var et = NewExprTokenizer(r)
 var ep = NewExprParser(r)
 var lp = NewLvalueParser(r)
 var r = NewStringReader(lines)
+var nl = nil

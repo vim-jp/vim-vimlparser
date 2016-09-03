@@ -70,3 +70,5 @@ let et = s:ExprTokenizer.new(r)
 let ep = s:ExprParser.new(r)
 let lp = s:LvalueParser.new(r)
 let r = s:StringReader.new(lines)
+
+let nl = s:NIL
