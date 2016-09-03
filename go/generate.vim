@@ -1,4 +1,5 @@
 source ./go/gocompiler.vim
+source ./go/typedefs.vim
 
 call extend(s:, g:ImportGoCompiler())
 
@@ -13,7 +14,7 @@ function! s:generate()
     unlet lines[index(lines, 'let s:Compiler = {}'):-1]
     let r = s:StringReader.new(lines)
     let p = s:VimLParser.new()
-    let c = s:GoCompiler.new()
+    let c = s:GoCompiler.new(g:ImportTypedefs())
     let lines = c.compile(p.parse(r))
     call writefile(head + lines, gofile)
   catch

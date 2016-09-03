@@ -32,3 +32,9 @@ call s:Node()
 let type = 1
 let t = type
 let at = a:type
+
+let lhs = {}
+let lhs = hoge()
+
+for x in self.builtin_commands
+endfor

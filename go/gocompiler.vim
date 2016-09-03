@@ -69,10 +69,11 @@ function s:GoCompiler.new(...)
   return obj
 endfunction
 
-function s:GoCompiler.__init__()
+function s:GoCompiler.__init__(typedefs)
   let self.indent = ['']
   let self.lines = []
   let self.scopes = [{}]
+  let self.typedefs = a:typedefs
 endfunction
 
 function s:GoCompiler.out(...)
@@ -313,6 +314,25 @@ function s:GoCompiler.compile_function(node)
   if !empty(rlist) && rlist[-1] == '...'
     let rlist[-1] = '*a000'
   endif
+  " type annotation
+  let typedef = get(self.typedefs.func, left, {})
+  let args = rlist
+  let out = ''
+  if !empty(typedef)
+    let args = []
+    let types_in = get(typedef, 'in', [])
+    for i in range(len(rlist))
+      let args = add(args, rlist[i] . ' ' . types_in[i])
+    endfor
+    let types_out = get(typedef, 'out', [])
+    let out = join(types_out, ', ')
+    if len(types_out) > 1
+      let out = '(' . out . ')'
+    endif
+    if out != ''
+      let out .= ' '
+    endif
+  endif
   if left =~ '^\(ExArg\|Node\)$'
     return
   elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
@@ -320,13 +340,13 @@ function s:GoCompiler.compile_function(node)
     if name == 'new'
       return
     endif
-    call self.out('func (self *%s) %s(%s) {', struct, name, join(rlist, ', '))
+    call self.out('func (self *%s) %s(%s) %s{', struct, name, join(args, ', '), out)
     call self.incindent("\t")
     call self.compile_body(a:node.body)
     call self.decindent()
     call self.out('}')
   else
-    call self.out('func %s(%s) {', left, join(rlist, ', '))
+    call self.out('func %s(%s) %s{', left, join(args, ', '), out)
     call self.incindent("\t")
     call self.inscope()
     call self.compile_body(a:node.body)
@@ -389,6 +409,9 @@ function s:GoCompiler.compile_let(node)
       return
     elseif left =~ '\.'
       call self.out('%s %s %s', left, op, right)
+      return
+    elseif left == 'lhs' && right =~ '^\Vmap[string]interface{}{'
+      call self.out('var lhs = &lhs{}')
       return
     endif
     if self.isinscope(left)
@@ -700,7 +723,11 @@ function s:GoCompiler.compile_dot(node)
   if right =~ '^\(else\|finally\)$'
     let right = '_' . right
   endif
-  return printf('%s.%s', left, right)
+  let out = printf('%s.%s', left, right)
+  if out == 'self.builtin_commands'
+    return 'builtin_commands'
+  endif
+  return out
 endfunction
 
 function s:GoCompiler.compile_call(node)
@@ -821,7 +848,7 @@ function! s:test()
   try
     let r = s:StringReader.new(readfile(vimfile))
     let p = s:VimLParser.new()
-    let c = s:GoCompiler.new()
+    let c = s:GoCompiler.new({})
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'NIL = []') - 1]
     let tail = [

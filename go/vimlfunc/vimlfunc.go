@@ -20,15 +20,23 @@ type ExArg struct {
 	linepos      []interface{}
 	cmdpos       []interface{}
 	argpos       []interface{}
-	cmd          map[string]interface{}
-	modifiers    []interface{}
-	range_       []interface{} // range -> range_
-	argopt       map[string]interface{}
-	argcmd       map[string]interface{}
+	// cmd          map[string]interface{}
+	cmd       Cmd
+	modifiers []interface{}
+	range_    []interface{} // range -> range_
+	argopt    map[string]interface{}
+	argcmd    map[string]interface{}
+}
+
+type Cmd struct {
+	name   string
+	minlen int
+	flags  string
+	parser string
 }
 
 type node struct {
-	type_ int
+	type_ int // type -> type_
 	pos   *pos
 	left  *node
 	right *node
@@ -43,6 +51,12 @@ type node struct {
 	value *value
 }
 
+type lhs struct {
+	left *node
+	list []*node
+	rest *node
+}
+
 type pos struct {
 	lnum int
 	col  int
@@ -50,6 +64,10 @@ type pos struct {
 
 type value interface{}
 
+// Node returns new node.
 func Node(type_ int) *node {
 	return &node{type_: type_}
 }
+
+// TODO: generate from vimlparser.vim
+var builtin_commands = []*Cmd{}

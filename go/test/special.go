@@ -15,3 +15,7 @@ Node()
 var type_ = 1
 var t = type_
 var at = type_
+var lhs = &lhs{}
+var lhs = hoge()
+for _, x := range builtin_commands {
+}
