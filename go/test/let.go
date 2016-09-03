@@ -16,6 +16,7 @@ func (self *VimLParser) hoge(a) {
 var b, c = d
 b, c = d
 node.pattern, b = hoge
+node.pattern, _ = hoge
 var e = 1
 if f {
 	e = g
