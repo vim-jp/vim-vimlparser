@@ -383,7 +383,12 @@ function s:GoCompiler.compile_return(node)
   if a:node.left is s:NIL
     call self.out('return')
   else
-    call self.out('return %s', self.compile(a:node.left))
+    let r = self.compile(a:node.left)
+    let [_, rs; __] = matchlist(r, '\V\^[]interface{}{\(\.\*\)}\$')
+    if rs != ''
+      let r = rs
+    endif
+    call self.out('return %s', r)
   endif
 endfunction
 
