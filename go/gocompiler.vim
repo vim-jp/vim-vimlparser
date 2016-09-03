@@ -384,9 +384,9 @@ function s:GoCompiler.compile_return(node)
     call self.out('return')
   else
     let r = self.compile(a:node.left)
-    let [_, rs; __] = matchlist(r, '\V\^[]interface{}{\(\.\*\)}\$')
-    if rs != ''
-      let r = rs
+    let ms = matchlist(r, '\V\^[]interface{}{\(\.\*\)}\$')
+    if len(ms) > 1
+      let r = ms[1]
     endif
     call self.out('return %s', r)
   endif
