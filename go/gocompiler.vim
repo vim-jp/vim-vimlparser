@@ -417,7 +417,7 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|(node\.(body|rlist|attr|else_|elseif|catch|finally|pattern|end(function|if|for|try))))$' && op == '='
+    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|lhs.list|(node\.(body|rlist|attr|else_|elseif|catch|finally|pattern|end(function|if|for|try))))$' && op == '='
       " skip initialization
       return
     elseif left =~ '^\v((node\.(list|depth)))$' && op == '='
@@ -480,18 +480,24 @@ endfunction
 function s:GoCompiler.compile_if(node)
   call self.out('if %s {', self.compile(a:node.cond))
   call self.incindent("\t")
+  call self.inscope()
   call self.compile_body(a:node.body)
   call self.decindent()
+  call self.descope()
   for node in a:node.elseif
     call self.out('} else if %s {', self.compile(node.cond))
     call self.incindent("\t")
+    call self.inscope()
     call self.compile_body(node.body)
+    call self.descope()
     call self.decindent()
   endfor
   if a:node.else isnot s:NIL
     call self.out('} else {')
     call self.incindent("\t")
+    call self.inscope()
     call self.compile_body(a:node.else.body)
+    call self.descope()
     call self.decindent()
   endif
   call self.out('}')

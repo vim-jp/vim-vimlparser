@@ -84,6 +84,8 @@ let node.finally = []
 let node.list = []
 let node.depth = s:NIL
 let node.pattern = s:NIL
+
+let lhs.list = []
 " end skip
 
 " do not skip

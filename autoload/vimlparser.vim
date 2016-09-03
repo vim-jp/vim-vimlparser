@@ -592,8 +592,6 @@ endfunction
 function! s:VimLParser.parse_range()
   let tokens = []
   let m = ''
-  let pattern = ''
-  let endc = ''
 
   while 1
 
@@ -1019,8 +1017,8 @@ function! s:VimLParser.separate_nextcmd()
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
           \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc !=# '@'))
-      let has_cpo_bar = 0 " &cpoptions =~ 'b'
-      if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
+      " let has_cpo_bar = 0 " &cpoptions =~ 'b'
+      if (self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
       else
         break
@@ -3139,6 +3137,7 @@ endfunction
 function! s:ExprParser.parse_expr9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
+  let node = s:Node(-1)
   if token.type == s:TOKEN_NUMBER
     let node = s:Node(s:NODE_NUMBER)
     let node.pos = token.pos
@@ -3354,6 +3353,7 @@ function! s:LvalueParser.parse_lv8()
     let token = self.tokenizer.get()
     if !s:iswhite(c) && token.type == s:TOKEN_SQOPEN
       let npos = token.pos
+      let node = s:Node(-1)
       if self.tokenizer.peek().type == s:TOKEN_COLON
         call self.tokenizer.get()
         let node = s:Node(s:NODE_SLICE)
@@ -3419,6 +3419,7 @@ endfunction
 function! s:LvalueParser.parse_lv9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
+  let node = s:Node(-1)
   if token.type == s:TOKEN_COPEN
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()

@@ -16,3 +16,12 @@ endfunction
 let [b, c] = d
 let [b, c] = d
 let [node.pattern, b] = hoge
+
+let e = 1
+if f
+  let e = g
+  let h = 0
+  if i
+    let h = 1
+  endif
+endif

@@ -47,7 +47,7 @@ type node struct {
 	op    string
 	str   string
 	depth int
-	value string
+	value interface{}
 
 	ea   *ExArg
 	attr *FuncAttr
@@ -64,6 +64,7 @@ type node struct {
 	finally *node
 
 	pattern string
+	curly   bool
 }
 
 type FuncAttr struct {
@@ -122,8 +123,8 @@ func NewExprTokenizer(reader *StringReader) *ExprTokenizer {
 	return obj
 }
 
-func (self *ExprTokenizer) token(type_ int, value string, pos pos) *ExprToken {
-	return &ExprToken{}
+func (self *ExprTokenizer) token(type_ int, value string, pos *pos) *ExprToken {
+	return &ExprToken{type_: type_, value: value, pos: pos}
 }
 
 type ExprParser struct {
@@ -259,7 +260,7 @@ func viml_string(obj interface{}) string {
 	panic("NotImplemented")
 }
 
-func viml_has_key(obj interface{}, key string) bool {
+func viml_has_key(obj interface{}, key interface{}) bool {
 	panic("NotImplemented")
 }
 
