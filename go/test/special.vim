@@ -57,3 +57,8 @@ let self.ea.forceit = 1
 let self.ea.forceit = 0
 let self.ea.usefilter = 1
 let self.ea.usefilter = 0
+
+let self.find_command_cache = {}
+let self.cache = {}
+let self.buf = []
+let self.pos = []
