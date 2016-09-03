@@ -345,7 +345,9 @@ function s:GoCompiler.compile_function(node)
     return
   elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let [_0, struct, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
-    if name == 'new' || struct == 'ExprTokenizer' && name == 'token'
+    if name == 'new'
+    \ || (struct == 'ExprTokenizer' && name == 'token')
+    \ || (struct == 'StringReader' && name == 'getpos')
       return
     endif
     call self.out('func (self *%s) %s(%s) %s{', struct, name, join(args, ', '), out)

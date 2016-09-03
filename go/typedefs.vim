@@ -3,7 +3,7 @@
 let s:typedefs = {
 \   'func': {
 \     'Err': {
-\       'in': ['string', 'pos'],
+\       'in': ['string', '*pos'],
 \       'out': ['string'],
 \     },
 \   },
@@ -40,11 +40,11 @@ call extend(s:typedefs.func, {
 \     'in': ['*node'],
 \     'out': [],
 \   },
-\   'VimLParser.check_missing_endfunction': { 'in': ['string', 'pos'], 'out': [] },
-\   'VimLParser.check_missing_endif': { 'in': ['string', 'pos'], 'out': [] },
-\   'VimLParser.check_missing_endtry': { 'in': ['string', 'pos'], 'out': [] },
-\   'VimLParser.check_missing_endwhile': { 'in': ['string', 'pos'], 'out': [] },
-\   'VimLParser.check_missing_endfor': { 'in': ['string', 'pos'], 'out': [] },
+\   'VimLParser.check_missing_endfunction': { 'in': ['string', '*pos'], 'out': [] },
+\   'VimLParser.check_missing_endif': { 'in': ['string', '*pos'], 'out': [] },
+\   'VimLParser.check_missing_endtry': { 'in': ['string', '*pos'], 'out': [] },
+\   'VimLParser.check_missing_endwhile': { 'in': ['string', '*pos'], 'out': [] },
+\   'VimLParser.check_missing_endfor': { 'in': ['string', '*pos'], 'out': [] },
 \   'VimLParser.parse': {
 \     'in': ['*StringReader'],
 \     'out': ['*node'],
@@ -63,7 +63,7 @@ call extend(s:typedefs.func, {
 \   },
 \   'VimLParser.separate_nextcmd': {
 \     'in': [],
-\     'out': ['pos'],
+\     'out': ['*pos'],
 \   },
 \   'VimLParser.parse_expr': {
 \     'in': [],
@@ -101,7 +101,7 @@ call extend(s:typedefs.func, {
 \     'out': [],
 \   },
 \   'ExprTokenizer.token': {
-\     'in': ['int', 'string', 'pos'],
+\     'in': ['int', 'string', '*pos'],
 \     'out': ['*ExprToken'],
 \   },
 \   'ExprTokenizer.peek': { 'in': [], 'out': ['*ExprToken'] },
@@ -136,6 +136,82 @@ call extend(s:typedefs.func, {
 \   'LvalueParser.parse_lv9': { 'in': [], 'out': ['*node'] },
 \ })
 
+call extend(s:typedefs.func, {
+\   'StringReader.__init__': {
+\     'in': ['[]string'],
+\     'out': [],
+\   },
+\   'StringReader.eof': {
+\     'in': [],
+\     'out': ['bool'],
+\   },
+\   'StringReader.tell': {
+\     'in': [],
+\     'out': ['int'],
+\   },
+\   'StringReader.seek_set': {
+\     'in': ['int'],
+\     'out': [],
+\   },
+\   'StringReader.seek_cur': {
+\     'in': ['int'],
+\     'out': [],
+\   },
+\   'StringReader.seek_end': {
+\     'in': ['int'],
+\     'out': [],
+\   },
+\   'StringReader.p': {
+\     'in': ['int'],
+\     'out': ['string'],
+\   },
+\   'StringReader.peek': {
+\     'in': [],
+\     'out': ['string'],
+\   },
+\   'StringReader.get': {
+\     'in': [],
+\     'out': ['string'],
+\   },
+\   'StringReader.peekn': {
+\     'in': ['int'],
+\     'out': ['string'],
+\   },
+\   'StringReader.getn': {
+\     'in': ['int'],
+\     'out': ['string'],
+\   },
+\   'StringReader.peekline': {
+\     'in': [],
+\     'out': ['string'],
+\   },
+\   'StringReader.readline': {
+\     'in': [],
+\     'out': ['string'],
+\   },
+\   'StringReader.getstr': {
+\     'in': ['*pos', '*pos'],
+\     'out': ['string'],
+\   },
+\   'StringReader.getpos': {
+\     'in': [],
+\     'out': ['*pos'],
+\   },
+\   'StringReader.setpos': {
+\     'in': ['*pos'],
+\     'out': [],
+\   },
+\   'StringReader.read_alpha': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_alnum': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_digit': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_odigit': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_xdigit': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_integer': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_word': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_white': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_nowhite': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_name': { 'in': [], 'out': ['string'] },
+\ })
 
 function! ImportTypedefs() abort
   return s:typedefs

@@ -11,6 +11,10 @@ function! s:ExprTokenizer.token()
   " skip ExprTokenizer.token
 endfunction
 
+function! s:StringReader.getpos()
+  " skip StringReader.getpos
+endfunction
+
 function! s:VimLParser.__init__()
   let x = 1
 endfunction

@@ -276,7 +276,7 @@ function! s:ExArg()
   let ea.force_ff = 0
   let ea.force_enc = 0
   let ea.bad_char = 0
-  let ea.linepos = []
+  let ea.linepos = {}
   let ea.cmdpos = []
   let ea.argpos = []
   let ea.cmd = {}

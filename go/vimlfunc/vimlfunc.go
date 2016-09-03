@@ -17,7 +17,7 @@ type ExArg struct {
 	force_ff     int
 	force_enc    int
 	bad_char     int
-	linepos      []interface{}
+	linepos      *pos
 	cmdpos       []interface{}
 	argpos       []interface{}
 	// cmd          map[string]interface{}
@@ -58,6 +58,7 @@ type lhs struct {
 }
 
 type pos struct {
+	i    int
 	lnum int
 	col  int
 }
@@ -80,4 +81,10 @@ type ExprToken struct {
 
 func (self *ExprTokenizer) token(type_ int, value string, pos pos) *ExprToken {
 	return &ExprToken{}
+}
+
+func (self *StringReader) getpos() *pos {
+	var p = self.pos[self.i]
+	var lnum, col = p[0], p[1]
+	return &pos{i: self.i, lnum: lnum, col: col}
 }
