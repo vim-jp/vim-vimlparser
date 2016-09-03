@@ -116,7 +116,9 @@ func (self *StringReader) getpos() *pos {
 	return &pos{i: self.i, lnum: lnum, col: col}
 }
 
-func viml_add(lst []interface{}, item interface{}) []interface{} {
+type vimlList interface{}
+
+func viml_add(lst vimlList, item interface{}) vimlList {
 	panic("NotImplemented")
 	// should use go builtin append() func
 }
@@ -157,7 +159,7 @@ func viml_extend(obj, item interface{}) interface{} {
 	panic("NotImplemented")
 }
 
-func viml_insert(lst []interface{}, item interface{}) {
+func viml_insert(lst vimlList, item interface{}) {
 	panic("NotImplemented")
 }
 
@@ -185,7 +187,7 @@ func viml_readfile(path string) []string {
 	panic("NotImplemented")
 }
 
-func viml_remove(lst []interface{}, idx int) {
+func viml_remove(lst vimlList, idx int) {
 	panic("NotImplemented")
 }
 
