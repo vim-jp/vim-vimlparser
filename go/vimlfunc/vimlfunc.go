@@ -18,14 +18,13 @@ type ExArg struct {
 	force_enc    int
 	bad_char     int
 	linepos      *pos
-	cmdpos       []interface{}
-	argpos       []interface{}
-	// cmd          map[string]interface{}
-	cmd       Cmd
-	modifiers []interface{}
-	range_    []interface{} // range -> range_
-	argopt    map[string]interface{}
-	argcmd    map[string]interface{}
+	cmdpos       *pos
+	argpos       *pos
+	cmd          Cmd
+	modifiers    []interface{}
+	range_       []interface{} // range -> range_
+	argopt       map[string]interface{}
+	argcmd       map[string]interface{}
 }
 
 type Cmd struct {
