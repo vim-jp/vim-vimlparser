@@ -221,6 +221,13 @@ func viml_remove(lst vimlList, idx int) {
 }
 
 func viml_split(s string, sep string) []string {
+	if sep == `\zs` {
+		var ss []string
+		for _, r := range s {
+			ss = append(ss, string(r))
+		}
+		return ss
+	}
 	panic("NotImplemented")
 }
 
