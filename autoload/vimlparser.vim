@@ -514,11 +514,10 @@ function! s:VimLParser.parse_command_modifiers()
   let modifiers = []
   while 1
     let pos = self.reader.tell()
+    let d = ''
     if s:isdigit(self.reader.peekn(1))
       let d = self.reader.read_digit()
       call self.reader.skip_white()
-    else
-      let d = ''
     endif
     let k = self.reader.read_alpha()
     let c = self.reader.peekn(1)
