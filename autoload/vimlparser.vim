@@ -1227,6 +1227,7 @@ function! s:VimLParser.parse_cmd_function()
   else
     let named = {}
     while 1
+      let varnode = s:Node(s:NODE_IDENTIFIER)
       let token = tokenizer.get()
       if token.type == s:TOKEN_IDENTIFIER
         if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
@@ -1235,7 +1236,6 @@ function! s:VimLParser.parse_cmd_function()
           throw s:Err(printf('E853: Duplicate argument name: %s', token.value), token.pos)
         endif
         let named[token.value] = 1
-        let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
@@ -1256,7 +1256,6 @@ function! s:VimLParser.parse_cmd_function()
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
       elseif token.type == s:TOKEN_DOTDOTDOT
-        let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
