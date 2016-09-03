@@ -591,6 +591,7 @@ endfunction
 " FIXME:
 function! s:VimLParser.parse_range()
   let tokens = []
+  let m = ''
 
   while 1
 
