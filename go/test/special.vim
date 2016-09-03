@@ -62,6 +62,8 @@ let self.find_command_cache = {}
 let self.cache = {}
 let self.buf = []
 let self.pos = []
+let self.context = {}
+let toplevel.body = {}
 
 let p = s:VimLParser.new()
 let et = s:ExprTokenizer.new(r)

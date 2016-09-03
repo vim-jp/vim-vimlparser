@@ -412,7 +412,7 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left =~ '^\vself\.(find_command_cache|cache|buf|pos)$' && op == '='
+    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body)$' && op == '='
       " skip initialization
       return
     elseif left =~ 'self\.ea\.\(forceit\|usefilter\)' && op == '='
