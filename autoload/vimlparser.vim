@@ -956,6 +956,7 @@ endfunction
 
 " TODO:
 function! s:VimLParser.parse_cmd_common()
+  let end = self.reader.getpos()
   if self.ea.cmd.flags =~# '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
   elseif self.ea.cmd.name ==# '!' || self.ea.cmd.name ==# 'global' || self.ea.cmd.name ==# 'vglobal' || self.ea.usefilter
@@ -1079,7 +1080,7 @@ function! s:VimLParser.parse_cmd_append()
 endfunction
 
 function! s:VimLParser.parse_cmd_insert()
-  return self.parse_cmd_append()
+  call self.parse_cmd_append()
 endfunction
 
 function! s:VimLParser.parse_cmd_loadkeymap()
@@ -1101,6 +1102,8 @@ function! s:VimLParser.parse_cmd_loadkeymap()
 endfunction
 
 function! s:VimLParser.parse_cmd_lua()
+  let cmdline = ''
+  let lines = []
   call self.reader.skip_white()
   if self.reader.peekn(2) ==# '<<'
     call self.reader.getn(2)
@@ -1137,27 +1140,27 @@ function! s:VimLParser.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_mzscheme()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_perl()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_python()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_python3()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_ruby()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_tcl()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_finish()
@@ -1169,7 +1172,7 @@ endfunction
 
 " FIXME
 function! s:VimLParser.parse_cmd_usercmd()
-  return self.parse_cmd_common()
+  call self.parse_cmd_common()
 endfunction
 
 function! s:VimLParser.parse_cmd_function()
@@ -1179,13 +1182,15 @@ function! s:VimLParser.parse_cmd_function()
   " :function
   if self.ends_excmds(self.reader.peek())
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   " :function /pattern
   if self.reader.peekn(1) ==# '/'
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   let left = self.parse_lvalue_func()
@@ -1201,7 +1206,8 @@ function! s:VimLParser.parse_cmd_function()
   " :function {name}
   if self.reader.peekn(1) !=# '('
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   " :function[!] {name}([arguments]) [range] [abort] [dict]
@@ -1347,7 +1353,8 @@ function! s:VimLParser.parse_cmd_let()
   " :let
   if self.ends_excmds(self.reader.peek())
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   let lhs = self.parse_letlhs()
@@ -1358,7 +1365,8 @@ function! s:VimLParser.parse_cmd_let()
   " :let {var-name} ..
   if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s1 !=# '=')
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   " :let left op right
