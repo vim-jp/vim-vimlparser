@@ -417,10 +417,11 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body)$' && op == '='
+    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|(node\.(body|rlist|attr|endfunction)))$' && op == '='
       " skip initialization
       return
-    elseif left =~ 'self\.ea\.\(forceit\|usefilter\)' && op == '='
+    elseif left =~ '\v(self\.ea\.(forceit|usefilter))|node\.attr\.(range_|abort|dict)' && op == '='
+      " let as boolean
       let r = 'true'
       if right == '0'
         let r = 'false'

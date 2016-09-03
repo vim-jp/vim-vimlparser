@@ -58,12 +58,19 @@ let self.ea.forceit = 0
 let self.ea.usefilter = 1
 let self.ea.usefilter = 0
 
+" skip
 let self.find_command_cache = {}
 let self.cache = {}
 let self.buf = []
 let self.pos = []
 let self.context = {}
 let toplevel.body = {}
+
+let node.body = []
+let node.rlist = []
+let node.attr = {'range': 0, 'abort': 0, 'dict': 0}
+let node.endfunction = s:NIL
+" end skip
 
 let p = s:VimLParser.new()
 let et = s:ExprTokenizer.new(r)

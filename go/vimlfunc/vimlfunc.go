@@ -49,7 +49,15 @@ type node struct {
 	depth int
 	value string
 
-	ea *ExArg
+	ea          *ExArg
+	attr        *FuncAttr
+	endfunction *node
+}
+
+type FuncAttr struct {
+	range_ bool
+	abort  bool
+	dict   bool
 }
 
 type lhs struct {

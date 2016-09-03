@@ -28,6 +28,8 @@ self.ea.forceit = true
 self.ea.forceit = false
 self.ea.usefilter = true
 self.ea.usefilter = false
+// skip
+// end skip
 var p = NewVimLParser()
 var et = NewExprTokenizer(r)
 var ep = NewExprParser(r)
