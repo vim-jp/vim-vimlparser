@@ -42,3 +42,9 @@ let lhs = hoge()
 
 for x in self.builtin_commands
 endfor
+function! s:LvalueParser.pos1() abort
+  let pos = self.reader.tell()
+endfunction
+function! s:LvalueParser.pos2() abort
+  let pos = self.reader.tell()
+endfunction

@@ -342,7 +342,9 @@ function s:GoCompiler.compile_function(node)
     endif
     call self.out('func (self *%s) %s(%s) %s{', struct, name, join(args, ', '), out)
     call self.incindent("\t")
+    call self.inscope()
     call self.compile_body(a:node.body)
+    call self.descope()
     call self.decindent()
     call self.out('}')
   else

@@ -19,3 +19,11 @@ var lhs = &lhs{}
 var lhs = hoge()
 for _, x := range builtin_commands {
 }
+func (self *LvalueParser) pos1() {
+	var pos = self.reader.tell()
+}
+
+func (self *LvalueParser) pos2() {
+	var pos = self.reader.tell()
+}
+
