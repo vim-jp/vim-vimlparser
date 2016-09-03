@@ -95,6 +95,47 @@ let s:VimLParser = {
 \   },
 \ }
 
+let s:ExprTokenizer = {
+\   'ExprTokenizer.__init__': {
+\     'in': ['*StringReader'],
+\     'out': [],
+\   },
+\   'ExprTokenizer.token': {
+\     'in': ['int', 'string', 'pos'],
+\     'out': ['*ExprToken'],
+\   },
+\   'ExprTokenizer.peek': { 'in': [], 'out': ['*ExprToken'] },
+\   'ExprTokenizer.get': { 'in': [], 'out': ['*ExprToken'] },
+\   'ExprTokenizer.get2': { 'in': [], 'out': ['*ExprToken'] },
+\   'ExprTokenizer.get_string': { 'in': [], 'out': ['string'] },
+\ }
+
+let s:ExprParser = {
+\   'ExprParser.__init__': {
+\     'in': ['*StringReader'],
+\     'out': [],
+\   },
+\   'ExprParser.parse': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse1': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse2': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse3': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse4': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse5': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse6': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse7': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse8': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse9': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse_dot': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse_identifier': { 'in': [], 'out': ['*node'] },
+\   'ExprParser.parse_curly_parts': { 'in': [], 'out': ['[]*node'] },
+\ }
+
+let s:LvalueParser = {
+\   'LvalueParser.parse': { 'in': [], 'out': ['*node'] },
+\   'LvalueParser.parse_lv8': { 'in': [], 'out': ['*node'] },
+\   'LvalueParser.parse_lv9': { 'in': [], 'out': ['*node'] },
+\ }
+
 call extend(s:typedefs.func, s:vimlfunc)
 call extend(s:typedefs.func, s:VimLParser)
 

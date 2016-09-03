@@ -7,6 +7,10 @@ function! s:VimLParser.new(...)
   return obj
 endfunction
 
+function! s:ExprTokenizer.token()
+  " skip ExprTokenizer.token
+endfunction
+
 function! s:VimLParser.__init__()
   let x = 1
 endfunction

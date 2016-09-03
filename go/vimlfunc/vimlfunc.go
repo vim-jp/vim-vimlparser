@@ -71,3 +71,13 @@ func Node(type_ int) *node {
 
 // TODO: generate from vimlparser.vim
 var builtin_commands = []*Cmd{}
+
+type ExprToken struct {
+	type_ int
+	value string
+	pos   pos
+}
+
+func (self *ExprTokenizer) token(type_ int, value string, pos pos) *ExprToken {
+	return &ExprToken{}
+}
