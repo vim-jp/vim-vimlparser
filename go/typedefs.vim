@@ -93,6 +93,11 @@ call extend(s:typedefs.func, {
 \     'in': ['string'],
 \     'out': ['bool'],
 \   },
+\
+\   'VimLParser._parse_command': {
+\     'in': ['string'],
+\     'out': [],
+\   },
 \ })
 
 call extend(s:typedefs.func, {
