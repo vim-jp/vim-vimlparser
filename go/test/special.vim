@@ -106,3 +106,8 @@ let list = []
 let curly_parts = []
 let cmd = s:NIL
 let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
+
+" type assertion
+let s = left.value
+let vn = s:isvarname(node.value)
+" end type assertion

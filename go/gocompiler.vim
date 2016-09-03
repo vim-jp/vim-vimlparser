@@ -442,6 +442,9 @@ function s:GoCompiler.compile_let(node)
         call self.out('cmd = &Cmd{%s}', join(rs, ', '))
       endif
       return
+    elseif left == 's' && right == 'left.value'
+      call self.out('var %s %s %s.(string)', left, op, right)
+      return
     elseif left =~ '\.'
       call self.out('%s %s %s', left, op, right)
       return
@@ -789,6 +792,8 @@ function s:GoCompiler.compile_call(node)
     return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
   elseif left =~ 'ExArg'
     return printf('&%s{}', left)
+  elseif left =~ 'isvarname' && len(rlist) == 1 && rlist[0] == 'node.value'
+    return printf('%s(%s.(string))', left, rlist[0])
   endif
   if left =~ '\.new$'
     let left = 'New' . matchstr(left, '.*\ze\.new$')

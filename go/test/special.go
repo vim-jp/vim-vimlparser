@@ -47,3 +47,7 @@ var list []*node
 var curly_parts []*node
 var cmd *Cmd = nil
 cmd = &Cmd{name: name, flags: "USERCMD", parser: "parse_cmd_usercmd"}
+// type assertion
+var s = left.value.(string)
+var vn = isvarname(node.value.(string))
+// end type assertion
