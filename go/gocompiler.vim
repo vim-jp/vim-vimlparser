@@ -428,11 +428,17 @@ function s:GoCompiler.compile_let(node)
   else " let [x,y] = ...
     let list = map(a:node.list, 'self.compile(v:val)')
     if a:node.rest isnot s:NIL
-      let rest = self.compile(a:node.rest)
-      call add(list, '*' . rest)
+      throw 'NotImplemented: let [x,y; z] ='
     endif
+    let var = ''
+    for l in list
+      if !self.isinscope(l)
+        let var = 'var '
+        call self.addscope(l)
+      endif
+    endfor
     let left = join(list, ', ')
-    call self.out('%s %s %s', left, op, right)
+    call self.out('%s%s %s %s', var, left, op, right)
   endif
 endfunction
 

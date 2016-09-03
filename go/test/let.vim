@@ -12,3 +12,6 @@ endfunction
 function! s:VimLParser.hoge(a)
   let a = a:a
 endfunction
+
+let [b, c] = d
+let [b, c] = d

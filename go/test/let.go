@@ -13,3 +13,5 @@ func (self *VimLParser) hoge(a) {
 	a = a
 }
 
+var b, c = d
+b, c = d
