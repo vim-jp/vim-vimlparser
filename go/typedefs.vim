@@ -83,7 +83,7 @@ call extend(s:typedefs.func, {
 \   },
 \   'VimLParser.parse_lvaluelist': {
 \     'in': [],
-\     'out': ['*[]node'],
+\     'out': ['[]*node'],
 \   },
 \   'VimLParser.parse_letlhs': {
 \     'in': [],

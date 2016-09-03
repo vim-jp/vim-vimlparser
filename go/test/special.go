@@ -28,8 +28,15 @@ self.ea.forceit = true
 self.ea.forceit = false
 self.ea.usefilter = true
 self.ea.usefilter = false
+node.attr.range_ = true
+node.attr.abort = true
+node.attr.dict = true
 // skip
 // end skip
+// do not skip
+node.list = self.parse_lvaluelist()
+node.depth = hoge
+// end do not skip
 var p = NewVimLParser()
 var et = NewExprTokenizer(r)
 var ep = NewExprParser(r)

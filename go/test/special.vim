@@ -57,6 +57,9 @@ let self.ea.forceit = 1
 let self.ea.forceit = 0
 let self.ea.usefilter = 1
 let self.ea.usefilter = 0
+let node.attr.range = 1
+let node.attr.abort = 1
+let node.attr.dict = 1
 
 " skip
 let self.find_command_cache = {}
@@ -70,7 +73,15 @@ let node.body = []
 let node.rlist = []
 let node.attr = {'range': 0, 'abort': 0, 'dict': 0}
 let node.endfunction = s:NIL
+
+let node.list = []
+let node.depth = s:NIL
 " end skip
+
+" do not skip
+let node.list = self.parse_lvaluelist()
+let node.depth = hoge
+" end do not skip
 
 let p = s:VimLParser.new()
 let et = s:ExprTokenizer.new(r)

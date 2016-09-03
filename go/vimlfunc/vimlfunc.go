@@ -96,7 +96,7 @@ func NewVimLParser() *VimLParser {
 type ExprToken struct {
 	type_ int
 	value string
-	pos   pos
+	pos   *pos
 }
 
 type ExprTokenizer struct {

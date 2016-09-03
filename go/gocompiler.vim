@@ -420,6 +420,13 @@ function s:GoCompiler.compile_let(node)
     elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|(node\.(body|rlist|attr|endfunction)))$' && op == '='
       " skip initialization
       return
+    elseif left =~ '^\v((node\.(list|depth)))$' && op == '='
+      if right == 'nil' || right == '[]interface{}{}'
+        return
+      endif
+      call self.out('%s %s %s', left, op, right)
+      return
+      " skip initialization
     elseif left =~ '\v(self\.ea\.(forceit|usefilter))|node\.attr\.(range_|abort|dict)' && op == '='
       " let as boolean
       let r = 'true'
