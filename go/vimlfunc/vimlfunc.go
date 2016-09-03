@@ -106,7 +106,7 @@ type LvalueParser struct {
 
 type StringReader struct {
 	i   int
-	pos [][2]int // [lnum, col]
+	pos [][2]int
 	buf []string
 }
 
@@ -114,4 +114,101 @@ func (self *StringReader) getpos() *pos {
 	var p = self.pos[self.i]
 	var lnum, col = p[0], p[1]
 	return &pos{i: self.i, lnum: lnum, col: col}
+}
+
+func viml_add(lst []interface{}, item interface{}) []interface{} {
+	panic("NotImplemented")
+	// should use go builtin append() func
+}
+
+func viml_call(f string, args ...interface{}) interface{} {
+	panic("NotImplemented")
+}
+
+func viml_char2nr(c string) int {
+	panic("NotImplemented")
+}
+
+func viml_empty(obj interface{}) bool {
+	panic("NotImplemented")
+}
+
+func viml_equalci(a, b string) bool {
+	panic("NotImplemented")
+}
+
+func viml_eqreg(s, reg string) bool {
+	panic("NotImplemented")
+}
+
+func viml_eqregh(s, reg string) bool {
+	panic("NotImplemented")
+}
+
+func viml_eqregq(s, reg string) bool {
+	panic("NotImplemented")
+}
+
+func viml_escape(s string, chars []string) bool {
+	panic("NotImplemented")
+}
+
+func viml_extend(obj, item interface{}) interface{} {
+	panic("NotImplemented")
+}
+
+func viml_insert(lst []interface{}, item interface{}) {
+	panic("NotImplemented")
+}
+
+func viml_join(lst []string, sep string) string {
+	panic("NotImplemented")
+}
+
+func viml_keys(obj map[string]interface{}) []string {
+	panic("NotImplemented")
+}
+
+func viml_len(obj interface{}) int {
+	panic("NotImplemented")
+}
+
+func viml_printf(f string, args ...interface{}) string {
+	panic("NotImplemented")
+}
+
+func viml_range(start, end int) []int {
+	panic("NotImplemented")
+}
+
+func viml_readfile(path string) []string {
+	panic("NotImplemented")
+}
+
+func viml_remove(lst []interface{}, idx int) {
+	panic("NotImplemented")
+}
+
+func viml_split(s string, sep string) []string {
+	panic("NotImplemented")
+}
+
+func viml_str2nr(s string, base int) int {
+	panic("NotImplemented")
+}
+
+func viml_string(obj interface{}) string {
+	panic("NotImplemented")
+}
+
+func viml_has_key(obj map[string]interface{}, key string) bool {
+	panic("NotImplemented")
+}
+
+func viml_stridx(a, b string) int {
+	panic("NotImplemented")
+}
+
+func viml_type(obj interface{}) int {
+	panic("NotImplemented")
 }
