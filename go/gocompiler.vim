@@ -442,7 +442,7 @@ function s:GoCompiler.compile_let(node)
     endif
     let var = ''
     for l in list
-      if !self.isinscope(l)
+      if l !~ '\.' && !self.isinscope(l)
         let var = 'var '
         call self.addscope(l)
       endif

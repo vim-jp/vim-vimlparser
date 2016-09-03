@@ -15,3 +15,4 @@ func (self *VimLParser) hoge(a) {
 
 var b, c = d
 b, c = d
+node.pattern, b = hoge

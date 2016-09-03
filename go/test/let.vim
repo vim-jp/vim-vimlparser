@@ -15,3 +15,4 @@ endfunction
 
 let [b, c] = d
 let [b, c] = d
+let [node.pattern, b] = hoge
