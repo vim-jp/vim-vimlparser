@@ -73,7 +73,12 @@ func Node(type_ int) *node {
 // TODO: generate from vimlparser.vim
 var builtin_commands = []*Cmd{}
 
-type VimLParser struct{}
+type VimLParser struct {
+	find_command_cache map[string]Cmd
+	reader             *StringReader
+	context            []*node
+	ea                 *ExArg
+}
 
 type ExprToken struct {
 	type_ int
@@ -81,13 +86,19 @@ type ExprToken struct {
 	pos   pos
 }
 
-type ExprTokenizer struct{}
+type ExprTokenizer struct {
+	reader *StringReader
+	cache  map[int]*ExprToken
+}
 
 func (self *ExprTokenizer) token(type_ int, value string, pos pos) *ExprToken {
 	return &ExprToken{}
 }
 
-type ExprParser struct{}
+type ExprParser struct {
+	reader    *StringReader
+	tokenizer *ExprTokenizer
+}
 
 type LvalueParser struct {
 	*ExprParser
@@ -95,7 +106,8 @@ type LvalueParser struct {
 
 type StringReader struct {
 	i   int
-	pos [][2]int
+	pos [][2]int // [lnum, col]
+	buf []string
 }
 
 func (self *StringReader) getpos() *pos {
