@@ -209,7 +209,7 @@ call extend(s:typedefs.func, {
 \   'StringReader.read_integer': { 'in': [], 'out': ['string'] },
 \   'StringReader.read_word': { 'in': [], 'out': ['string'] },
 \   'StringReader.read_white': { 'in': [], 'out': ['string'] },
-\   'StringReader.read_nowhite': { 'in': [], 'out': ['string'] },
+\   'StringReader.read_nonwhite': { 'in': [], 'out': ['string'] },
 \   'StringReader.read_name': { 'in': [], 'out': ['string'] },
 \ })
 

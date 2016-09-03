@@ -14,9 +14,9 @@ type ExArg struct {
 	regname      int
 	force_bin    int
 	read_edit    int
-	force_ff     int
-	force_enc    int
-	bad_char     int
+	force_ff     string // int
+	force_enc    string // int
+	bad_char     string // int
 	linepos      *pos
 	cmdpos       *pos
 	argpos       *pos
@@ -47,7 +47,9 @@ type node struct {
 	op    string
 	str   string
 	depth int
-	value *value
+	value string
+
+	ea *ExArg
 }
 
 type lhs struct {
@@ -61,8 +63,6 @@ type pos struct {
 	lnum int
 	col  int
 }
-
-type value interface{}
 
 // Node returns new node.
 func Node(type_ int) *node {
@@ -147,7 +147,7 @@ func (self *StringReader) getpos() *pos {
 
 type vimlList interface{}
 
-func viml_add(lst vimlList, item interface{}) vimlList {
+func viml_add(lst vimlList, item interface{}) {
 	panic("NotImplemented")
 	// should use go builtin append() func
 }
@@ -192,7 +192,7 @@ func viml_insert(lst vimlList, item interface{}) {
 	panic("NotImplemented")
 }
 
-func viml_join(lst []string, sep string) string {
+func viml_join(lst vimlList, sep string) string {
 	panic("NotImplemented")
 }
 
@@ -239,7 +239,7 @@ func viml_string(obj interface{}) string {
 	panic("NotImplemented")
 }
 
-func viml_has_key(obj map[string]interface{}, key string) bool {
+func viml_has_key(obj interface{}, key string) bool {
 	panic("NotImplemented")
 }
 
