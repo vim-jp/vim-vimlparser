@@ -73,14 +73,23 @@ let node.body = []
 let node.rlist = []
 let node.attr = {'range': 0, 'abort': 0, 'dict': 0}
 let node.endfunction = s:NIL
+let node.endif = s:NIL
+let node.endfor = s:NIL
+let node.endtry = s:NIL
+let node.else = s:NIL
+let node.elseif = s:NIL
+let node.catch = []
+let node.finally = []
 
 let node.list = []
 let node.depth = s:NIL
+let node.pattern = s:NIL
 " end skip
 
 " do not skip
 let node.list = self.parse_lvaluelist()
 let node.depth = hoge
+let node.pattern = node
 " end do not skip
 
 let p = s:VimLParser.new()

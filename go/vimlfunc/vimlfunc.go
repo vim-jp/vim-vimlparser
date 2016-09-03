@@ -49,9 +49,21 @@ type node struct {
 	depth int
 	value string
 
-	ea          *ExArg
-	attr        *FuncAttr
+	ea   *ExArg
+	attr *FuncAttr
+
 	endfunction *node
+	elseif      []*node
+	else_       *node
+	endif       *node
+	endwhile    *node
+	endfor      *node
+	endtry      *node
+
+	catch   []*node
+	finally *node
+
+	pattern string
 }
 
 type FuncAttr struct {

@@ -417,7 +417,7 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|(node\.(body|rlist|attr|endfunction)))$' && op == '='
+    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|(node\.(body|rlist|attr|else_|elseif|catch|finally|pattern|end(function|if|for|try))))$' && op == '='
       " skip initialization
       return
     elseif left =~ '^\v((node\.(list|depth)))$' && op == '='
@@ -760,9 +760,6 @@ endfunction
 function s:GoCompiler.compile_dot(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
-  if right =~ '^\(else\|finally\)$'
-    let right = '_' . right
-  endif
   let out = printf('%s.%s', left, right)
   if out == 'self.builtin_commands'
     return 'builtin_commands'
@@ -840,7 +837,7 @@ function s:GoCompiler.compile_identifier(node)
   elseif name =~ '^[sa]:'
     let name = name[2:]
   endif
-  if name =~ 'range\|type' " keywords
+  if name =~ '^\(range\|type\|else\)$' " keywords
     let name .= '_'
   endif
   if name == 'NIL'
