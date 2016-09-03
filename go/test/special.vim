@@ -52,3 +52,6 @@ endfunction
 function! s:LvalueParser.pos2() abort
   let pos = self.reader.tell()
 endfunction
+
+let self.ea.forceit = 1
+let self.ea.forceit = 0

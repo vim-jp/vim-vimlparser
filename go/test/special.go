@@ -24,3 +24,5 @@ func (self *LvalueParser) pos2() {
 	var pos = self.reader.tell()
 }
 
+self.ea.forceit = true
+self.ea.forceit = false

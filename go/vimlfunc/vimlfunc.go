@@ -1,7 +1,7 @@
 package vimlparser
 
 type ExArg struct {
-	forceit      int
+	forceit      bool
 	addr_count   int
 	line1        int
 	line2        int
