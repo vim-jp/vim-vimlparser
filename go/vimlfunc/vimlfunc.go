@@ -114,7 +114,7 @@ type ExprToken struct {
 
 type ExprTokenizer struct {
 	reader *StringReader
-	cache  map[int]*ExprToken
+	cache  map[int][]interface{} // (int, *ExprToken)
 }
 
 func NewExprTokenizer(reader *StringReader) *ExprTokenizer {

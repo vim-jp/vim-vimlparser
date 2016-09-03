@@ -384,6 +384,10 @@ function s:GoCompiler.compile_return(node)
     call self.out('return')
   else
     let r = self.compile(a:node.left)
+    if r == 'x[1]'
+      call self.out('return %s.(*ExprToken)', r)
+      return
+    endif
     let ms = matchlist(r, '\V\^[]interface{}{\(\.\*\)}\$')
     if len(ms) > 1
       let r = ms[1]
@@ -792,8 +796,10 @@ function s:GoCompiler.compile_call(node)
     return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
   elseif left =~ 'ExArg'
     return printf('&%s{}', left)
-  elseif left =~ 'isvarname' && len(rlist) == 1 && rlist[0] == 'node.value'
+  elseif left == 'isvarname' && len(rlist) == 1 && rlist[0] == 'node.value'
     return printf('%s(%s.(string))', left, rlist[0])
+  elseif left == 'self.reader.seek_set' && len(rlist) == 1 && rlist[0] == 'x[0]'
+    return printf('%s(%s.(int))', left, rlist[0])
   endif
   if left =~ '\.new$'
     let left = 'New' . matchstr(left, '.*\ze\.new$')

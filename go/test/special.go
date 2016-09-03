@@ -50,4 +50,9 @@ cmd = &Cmd{name: name, flags: "USERCMD", parser: "parse_cmd_usercmd"}
 // type assertion
 var s = left.value.(string)
 var vn = isvarname(node.value.(string))
+func cache() {
+	self.reader.seek_set(x[0].(int))
+	return x[1].(*ExprToken)
+}
+
 // end type assertion

@@ -110,4 +110,8 @@ let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
 " type assertion
 let s = left.value
 let vn = s:isvarname(node.value)
+function! s:cache() abort
+  call self.reader.seek_set(x[0])
+  return x[1]
+endfunction
 " end type assertion
