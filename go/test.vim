@@ -26,7 +26,7 @@ function! s:run() abort
     catch
       call writefile([v:exception], outfile)
     endtry
-    let diff = system(printf('diff %s %s', shellescape(okfile), shellescape(outfile)))
+    let diff = system(printf('diff -u %s %s', shellescape(okfile), shellescape(outfile)))
     if diff == ""
       call s:append(printf('%s => ok', fnamemodify(vimfile, ':.')))
     else

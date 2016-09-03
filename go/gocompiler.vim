@@ -426,15 +426,6 @@ function s:GoCompiler.compile_let(node)
       endif
       call self.out('%s %s %s', left, op, right)
       return
-      " skip initialization
-    elseif left =~ '\v(self\.ea\.(forceit|usefilter))|node\.attr\.(range_|abort|dict)' && op == '='
-      " let as boolean
-      let r = 'true'
-      if right == '0'
-        let r = 'false'
-      endif
-      call self.out('%s %s %s', left, op, r)
-      return
     elseif left =~ '\.'
       call self.out('%s %s %s', left, op, right)
       return
@@ -848,6 +839,10 @@ function s:GoCompiler.compile_identifier(node)
   endif
   if name == 'NIL'
     let name = 'nil'
+  elseif name == 'TRUE'
+    let name = 'true'
+  elseif name == 'FALSE'
+    let name = 'false'
   endif
   return name
 endfunction

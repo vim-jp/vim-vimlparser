@@ -53,13 +53,13 @@ function! s:LvalueParser.pos2() abort
   let pos = self.reader.tell()
 endfunction
 
-let self.ea.forceit = 1
-let self.ea.forceit = 0
-let self.ea.usefilter = 1
-let self.ea.usefilter = 0
-let node.attr.range = 1
-let node.attr.abort = 1
-let node.attr.dict = 1
+let self.ea.forceit = s:TRUE
+let self.ea.forceit = s:FALSE
+let self.ea.usefilter = s:TRUE
+let self.ea.usefilter = s:FALSE
+let node.attr.range = s:TRUE
+let node.attr.abort = s:TRUE
+let node.attr.dict = s:TRUE
 
 " skip
 let self.find_command_cache = {}
