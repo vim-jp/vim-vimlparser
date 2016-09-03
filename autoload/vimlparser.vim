@@ -786,6 +786,7 @@ endfunction
 
 function! s:VimLParser.find_command()
   let c = self.reader.peekn(1)
+  let name = ''
 
   if c ==# 'k'
     call self.reader.getn(1)
