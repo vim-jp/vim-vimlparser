@@ -2556,6 +2556,7 @@ function! s:ExprTokenizer.get2()
     " @<EOL> is treated as @"
     return self.token(s:TOKEN_REG, r.getn(2), pos)
   elseif c ==# '&'
+    let s = ''
     if (r.p(1) ==# 'g' || r.p(1) ==# 'l') && r.p(2) ==# ':'
       let s = r.getn(3) . r.read_word()
     else
@@ -3001,19 +3002,22 @@ function! s:ExprParser.parse_expr7()
     let node = s:Node(s:NODE_NOT)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
+    return node
   elseif token.type == s:TOKEN_MINUS
     let node = s:Node(s:NODE_MINUS)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
+    return node
   elseif token.type == s:TOKEN_PLUS
     let node = s:Node(s:NODE_PLUS)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
+    return node
   else
     call self.reader.seek_set(pos)
     let node = self.parse_expr8()
+    return node
   endif
-  return node
 endfunction
 
 " expr8: expr8[expr1]
@@ -3042,6 +3046,7 @@ function! s:ExprParser.parse_expr8()
         if token.type != s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
+        let left = node
       else
         let right = self.parse_expr1()
         if self.tokenizer.peek().type == s:TOKEN_COLON
@@ -3058,6 +3063,7 @@ function! s:ExprParser.parse_expr8()
           if token.type != s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
+          let left = node
         else
           let node = s:Node(s:NODE_SUBSCRIPT)
           let node.pos = npos
@@ -3067,9 +3073,9 @@ function! s:ExprParser.parse_expr8()
           if token.type != s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
+          let left = node
         endif
       endif
-      let left = node
       unlet node
     elseif token.type == s:TOKEN_POPEN
       let node = s:Node(s:NODE_CALL)
