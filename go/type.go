@@ -182,3 +182,23 @@ func (self *Compiler) __init__() {
 	self.indent = []string{""}
 	self.lines = []string{}
 }
+
+func (self *Compiler) out(f string, args ...interface{}) {
+	if viml_len(args) == 0 {
+		if string(f[0]) == ")" {
+			self.lines[len(self.lines)-1] += f
+		} else {
+			self.lines = append(self.lines, self.indent[0]+f)
+		}
+	} else {
+		self.lines = append(self.lines, self.indent[0]+viml_printf(f, args...))
+	}
+}
+
+func (self *Compiler) incindent(s string) {
+	self.indent = append([]string{self.indent[0] + s}, self.indent...)
+}
+
+func (self *Compiler) decindent() {
+	self.indent = self.indent[1:]
+}

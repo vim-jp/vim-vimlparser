@@ -31,6 +31,18 @@ function! s:Compiler.__init__()
   " skip Compiler.__init__
 endfunction
 
+function! s:Compiler.out()
+  " skip Compiler.out
+endfunction
+
+function! s:Compiler.incindent()
+  " skip
+endfunction
+
+function! s:Compiler.decindent()
+  " skip
+endfunction
+
 let y = s:ExArg()
 
 function! s:ExArg()

@@ -349,7 +349,12 @@ function s:GoCompiler.compile_function(node)
     \ || (struct == 'ExprTokenizer' && name == 'token')
     \ || (struct == 'StringReader' && name == 'getpos')
     \ || (struct == 'VimLParser' && (name =~ '\(push\|pop\)_context'))
-    \ || (struct == 'Compiler' && (name =~ '__init__'))
+    \ || (struct == 'Compiler' && (
+    \        name == '__init__'
+    \     || name == 'out'
+    \     || name == 'incindent'
+    \     || name == 'decindent'
+    \     ))
       return
     endif
     call self.out('func (self *%s) %s(%s) %s{', struct, name, join(args, ', '), out)
