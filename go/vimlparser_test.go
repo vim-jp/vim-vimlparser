@@ -58,3 +58,15 @@ func TestVimLParser_parse_empty(t *testing.T) {
 		NewVimLParser().parse(NewStringReader(in))
 	}
 }
+
+func TestVimLParser_parse(t *testing.T) {
+	defer recovert(t)
+	ins := [][]string{
+		[]string{`" comment`},
+		[]string{`let x = 1`},
+		[]string{`call F(x, y, z)`},
+	}
+	for _, in := range ins {
+		NewVimLParser().parse(NewStringReader(in))
+	}
+}
