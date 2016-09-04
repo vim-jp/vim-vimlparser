@@ -90,9 +90,6 @@ func Node(type_ int) *node {
 	return &node{type_: type_}
 }
 
-// TODO: generate from vimlparser.vim
-var builtin_commands = []*Cmd{}
-
 type VimLParser struct {
 	find_command_cache map[string]*Cmd
 	reader             *StringReader
