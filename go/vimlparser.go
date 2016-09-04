@@ -352,7 +352,7 @@ func (self *VimLParser) find_context(type_ int) int {
 }
 
 func (self *VimLParser) add_node(node *node) {
-	viml_add(self.context[0].body, node)
+	self.context[0].body = append(self.context[0].body, node)
 }
 
 func (self *VimLParser) check_missing_endfunction(ends string, pos *pos) {
@@ -440,82 +440,82 @@ func (self *VimLParser) parse_command_modifiers() {
 		self.reader.skip_white()
 		if viml_stridx("aboveleft", k) == 0 && viml_len(k) >= 3 {
 			// abo\%[veleft]
-			viml_add(modifiers, map[string]interface{}{"name":"aboveleft"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"aboveleft"})
 		} else if viml_stridx("belowright", k) == 0 && viml_len(k) >= 3 {
 			// bel\%[owright]
-			viml_add(modifiers, map[string]interface{}{"name":"belowright"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"belowright"})
 		} else if viml_stridx("browse", k) == 0 && viml_len(k) >= 3 {
 			// bro\%[wse]
-			viml_add(modifiers, map[string]interface{}{"name":"browse"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"browse"})
 		} else if viml_stridx("botright", k) == 0 && viml_len(k) >= 2 {
 			// bo\%[tright]
-			viml_add(modifiers, map[string]interface{}{"name":"botright"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"botright"})
 		} else if viml_stridx("confirm", k) == 0 && viml_len(k) >= 4 {
 			// conf\%[irm]
-			viml_add(modifiers, map[string]interface{}{"name":"confirm"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"confirm"})
 		} else if viml_stridx("keepmarks", k) == 0 && viml_len(k) >= 3 {
 			// kee\%[pmarks]
-			viml_add(modifiers, map[string]interface{}{"name":"keepmarks"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"keepmarks"})
 		} else if viml_stridx("keepalt", k) == 0 && viml_len(k) >= 5 {
 			// keepa\%[lt]
-			viml_add(modifiers, map[string]interface{}{"name":"keepalt"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"keepalt"})
 		} else if viml_stridx("keepjumps", k) == 0 && viml_len(k) >= 5 {
 			// keepj\%[umps]
-			viml_add(modifiers, map[string]interface{}{"name":"keepjumps"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"keepjumps"})
 		} else if viml_stridx("keeppatterns", k) == 0 && viml_len(k) >= 5 {
 			// keepp\%[atterns]
-			viml_add(modifiers, map[string]interface{}{"name":"keeppatterns"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"keeppatterns"})
 		} else if viml_stridx("hide", k) == 0 && viml_len(k) >= 3 {
 			//hid\%[e]
 			if self.ends_excmds(c) {
 				break
 			}
-			viml_add(modifiers, map[string]interface{}{"name":"hide"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"hide"})
 		} else if viml_stridx("lockmarks", k) == 0 && viml_len(k) >= 3 {
 			// loc\%[kmarks]
-			viml_add(modifiers, map[string]interface{}{"name":"lockmarks"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"lockmarks"})
 		} else if viml_stridx("leftabove", k) == 0 && viml_len(k) >= 5 {
 			// lefta\%[bove]
-			viml_add(modifiers, map[string]interface{}{"name":"leftabove"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"leftabove"})
 		} else if viml_stridx("noautocmd", k) == 0 && viml_len(k) >= 3 {
 			// noa\%[utocmd]
-			viml_add(modifiers, map[string]interface{}{"name":"noautocmd"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"noautocmd"})
 		} else if viml_stridx("rightbelow", k) == 0 && viml_len(k) >= 6 {
 			//rightb\%[elow]
-			viml_add(modifiers, map[string]interface{}{"name":"rightbelow"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"rightbelow"})
 		} else if viml_stridx("sandbox", k) == 0 && viml_len(k) >= 3 {
 			// san\%[dbox]
-			viml_add(modifiers, map[string]interface{}{"name":"sandbox"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"sandbox"})
 		} else if viml_stridx("silent", k) == 0 && viml_len(k) >= 3 {
 			// sil\%[ent]
 			if c == "!" {
 				self.reader.get()
-				viml_add(modifiers, map[string]interface{}{"name":"silent", "bang":1})
+				modifiers = append(modifiers, map[string]interface{}{"name":"silent", "bang":1})
 			} else {
-				viml_add(modifiers, map[string]interface{}{"name":"silent", "bang":0})
+				modifiers = append(modifiers, map[string]interface{}{"name":"silent", "bang":0})
 			}
 		} else if k == "tab" {
 			// tab
 			if d != "" {
-				viml_add(modifiers, map[string]interface{}{"name":"tab", "count":viml_str2nr(d, 10)})
+				modifiers = append(modifiers, map[string]interface{}{"name":"tab", "count":viml_str2nr(d, 10)})
 			} else {
-				viml_add(modifiers, map[string]interface{}{"name":"tab"})
+				modifiers = append(modifiers, map[string]interface{}{"name":"tab"})
 			}
 		} else if viml_stridx("topleft", k) == 0 && viml_len(k) >= 2 {
 			// to\%[pleft]
-			viml_add(modifiers, map[string]interface{}{"name":"topleft"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"topleft"})
 		} else if viml_stridx("unsilent", k) == 0 && viml_len(k) >= 3 {
 			// uns\%[ilent]
-			viml_add(modifiers, map[string]interface{}{"name":"unsilent"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"unsilent"})
 		} else if viml_stridx("vertical", k) == 0 && viml_len(k) >= 4 {
 			// vert\%[ical]
-			viml_add(modifiers, map[string]interface{}{"name":"vertical"})
+			modifiers = append(modifiers, map[string]interface{}{"name":"vertical"})
 		} else if viml_stridx("verbose", k) == 0 && viml_len(k) >= 4 {
 			// verb\%[ose]
 			if d != "" {
-				viml_add(modifiers, map[string]interface{}{"name":"verbose", "count":viml_str2nr(d, 10)})
+				modifiers = append(modifiers, map[string]interface{}{"name":"verbose", "count":viml_str2nr(d, 10)})
 			} else {
-				viml_add(modifiers, map[string]interface{}{"name":"verbose", "count":1})
+				modifiers = append(modifiers, map[string]interface{}{"name":"verbose", "count":1})
 			}
 		} else {
 			self.reader.seek_set(pos)
@@ -537,34 +537,34 @@ func (self *VimLParser) parse_range() {
 				break
 			}
 			if c == "." {
-				viml_add(tokens, self.reader.getn(1))
+				tokens = append(tokens, self.reader.getn(1))
 			} else if c == "$" {
-				viml_add(tokens, self.reader.getn(1))
+				tokens = append(tokens, self.reader.getn(1))
 			} else if c == "'" {
 				self.reader.getn(1)
 				m = self.reader.getn(1)
 				if m == "" {
 					break
 				}
-				viml_add(tokens, "'" + m)
+				tokens = append(tokens, "'" + m)
 			} else if c == "/" {
 				self.reader.getn(1)
 				var pattern, _ = self.parse_pattern(c)
-				viml_add(tokens, pattern)
+				tokens = append(tokens, pattern)
 			} else if c == "?" {
 				self.reader.getn(1)
 				var pattern, _ = self.parse_pattern(c)
-				viml_add(tokens, pattern)
+				tokens = append(tokens, pattern)
 			} else if c == "\\" {
 				m = self.reader.p(1)
 				if m == "&" || m == "?" || m == "/" {
 					self.reader.seek_cur(2)
-					viml_add(tokens, "\\" + m)
+					tokens = append(tokens, "\\" + m)
 				} else {
 					panic(Err("E10: \\\\ should be followed by /, ? or &", self.reader.getpos()))
 				}
 			} else if isdigit(c) {
-				viml_add(tokens, self.reader.read_digit())
+				tokens = append(tokens, self.reader.read_digit())
 			}
 			for true {
 				self.reader.skip_white()
@@ -575,23 +575,23 @@ func (self *VimLParser) parse_range() {
 				if n == "" {
 					break
 				}
-				viml_add(tokens, n)
+				tokens = append(tokens, n)
 			}
 			if self.reader.p(0) != "/" && self.reader.p(0) != "?" {
 				break
 			}
 		}
 		if self.reader.peekn(1) == "%" {
-			viml_add(tokens, self.reader.getn(1))
+			tokens = append(tokens, self.reader.getn(1))
 		} else if self.reader.peekn(1) == "*" {
 			// && &cpoptions !~ '\*'
-			viml_add(tokens, self.reader.getn(1))
+			tokens = append(tokens, self.reader.getn(1))
 		}
 		if self.reader.peekn(1) == ";" {
-			viml_add(tokens, self.reader.getn(1))
+			tokens = append(tokens, self.reader.getn(1))
 			continue
 		} else if self.reader.peekn(1) == "," {
-			viml_add(tokens, self.reader.getn(1))
+			tokens = append(tokens, self.reader.getn(1))
 			continue
 		}
 		break
@@ -1062,7 +1062,7 @@ func (self *VimLParser) parse_cmd_append() {
 			break
 		}
 		var line = self.reader.getn(-1)
-		viml_add(lines, line)
+		lines = append(lines, line)
 		if line == m {
 			break
 		}
@@ -1088,7 +1088,7 @@ func (self *VimLParser) parse_cmd_loadkeymap() {
 			break
 		}
 		var line = self.reader.readline()
-		viml_add(lines, line)
+		lines = append(lines, line)
 	}
 	var node = Node(NODE_EXCMD)
 	node.pos = self.ea.cmdpos
@@ -1117,7 +1117,7 @@ func (self *VimLParser) parse_cmd_lua() {
 				break
 			}
 			var line = self.reader.getn(-1)
-			viml_add(lines, line)
+			lines = append(lines, line)
 			if line == m {
 				break
 			}
@@ -1224,7 +1224,7 @@ func (self *VimLParser) parse_cmd_function() {
 				named[token.value] = 1
 				varnode.pos = token.pos
 				varnode.value = token.value
-				viml_add(node.rlist, varnode)
+				node.rlist = append(node.rlist, varnode)
 				// XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
 				if iswhite(self.reader.p(0)) && tokenizer.peek().type_ == TOKEN_COMMA {
 					panic(Err("E475: Invalid argument: White space is not allowed before comma", self.reader.getpos()))
@@ -1244,7 +1244,7 @@ func (self *VimLParser) parse_cmd_function() {
 			} else if token.type_ == TOKEN_DOTDOTDOT {
 				varnode.pos = token.pos
 				varnode.value = token.value
-				viml_add(node.rlist, varnode)
+				node.rlist = append(node.rlist, varnode)
 				token = tokenizer.get()
 				if token.type_ == TOKEN_PCLOSE {
 					break
@@ -1425,7 +1425,7 @@ func (self *VimLParser) parse_cmd_elseif() {
 	node.pos = self.ea.cmdpos
 	node.ea = self.ea
 	node.cond = self.parse_expr()
-	viml_add(self.context[0].elseif, node)
+	self.context[0].elseif = append(self.context[0].elseif, node)
 	self.push_context(node)
 }
 
@@ -1553,7 +1553,7 @@ func (self *VimLParser) parse_cmd_catch() {
 	if !self.ends_excmds(self.reader.peek()) {
 		node.pattern, _ = self.parse_pattern(self.reader.get())
 	}
-	viml_add(self.context[0].catch, node)
+	self.context[0].catch = append(self.context[0].catch, node)
 	self.push_context(node)
 }
 
@@ -1657,7 +1657,7 @@ func (self *VimLParser) parse_exprlist() []*node {
 			break
 		}
 		var node = self.parse_expr()
-		viml_add(list, node)
+		list = append(list, node)
 	}
 	return list
 }
@@ -1689,14 +1689,14 @@ func (self *VimLParser) parse_lvalue() *node {
 func (self *VimLParser) parse_lvaluelist() []*node {
 	var list []*node
 	var node = self.parse_expr()
-	viml_add(list, node)
+	list = append(list, node)
 	for true {
 		self.reader.skip_white()
 		if self.ends_excmds(self.reader.peek()) {
 			break
 		}
 		node = self.parse_lvalue()
-		viml_add(list, node)
+		list = append(list, node)
 	}
 	return list
 }
@@ -1709,7 +1709,7 @@ func (self *VimLParser) parse_letlhs() *lhs {
 		tokenizer.get()
 		for true {
 			var node = self.parse_lvalue()
-			viml_add(lhs.list, node)
+			lhs.list = append(lhs.list, node)
 			var token = tokenizer.get()
 			if token.type_ == TOKEN_SQCLOSE {
 				break
@@ -2497,7 +2497,7 @@ func (self *ExprParser) parse_expr8() *node {
 				self.tokenizer.get()
 			} else {
 				for true {
-					viml_add(node.rlist, self.parse_expr1())
+					node.rlist = append(node.rlist, self.parse_expr1())
 					token = self.tokenizer.get()
 					if token.type_ == TOKEN_COMMA {
 						// XXX: Vim allows foo(a, b, ).  Lint should warn it.
@@ -2572,7 +2572,7 @@ func (self *ExprParser) parse_expr9() *node {
 			self.tokenizer.get()
 		} else {
 			for true {
-				viml_add(node.value, self.parse_expr1())
+				node.value = append(node.value.([]interface{}), self.parse_expr1())
 				token = self.tokenizer.peek()
 				if token.type_ == TOKEN_COMMA {
 					self.tokenizer.get()
@@ -2611,7 +2611,7 @@ func (self *ExprParser) parse_expr9() *node {
 					panic(Err(viml_printf("unexpected token: %s", token.value), token.pos))
 				}
 				var val = self.parse_expr1()
-				viml_add(node.value, []interface{}{key, val})
+				node.value = append(node.value.([]interface{}), []interface{}{key, val})
 				token = self.tokenizer.get()
 				if token.type_ == TOKEN_COMMA {
 					if self.tokenizer.peek().type_ == TOKEN_CCLOSE {
@@ -2716,7 +2716,7 @@ func (self *ExprParser) parse_curly_parts() []*node {
 		// Keep backword compatibility for the curly attribute
 		node.pos = pos
 		node.value = name
-		viml_add(curly_parts, node)
+		curly_parts = append(curly_parts, node)
 	}
 	for true {
 		c = self.reader.peek()
@@ -2728,7 +2728,7 @@ func (self *ExprParser) parse_curly_parts() []*node {
 			// Keep backword compatibility for the curly attribute
 			node.pos = pos
 			node.value = name
-			viml_add(curly_parts, node)
+			curly_parts = append(curly_parts, node)
 		} else if c == "{" {
 			self.reader.get()
 			pos = self.reader.getpos()
@@ -2737,7 +2737,7 @@ func (self *ExprParser) parse_curly_parts() []*node {
 			// Keep backword compatibility for the curly attribute
 			node.pos = pos
 			node.value = self.parse_expr1()
-			viml_add(curly_parts, node)
+			curly_parts = append(curly_parts, node)
 			self.reader.skip_white()
 			c = self.reader.p(0)
 			if c != "}" {
@@ -2864,8 +2864,8 @@ func (self *StringReader) __init__(lines []string) {
 	for lnum < viml_len(lines) {
 		var col = 0
 		for _, c := range viml_split(lines[lnum], "\\zs") {
-			viml_add(self.buf, c)
-			viml_add(self.pos, []interface{}{lnum + 1, col + 1})
+			self.buf = append(self.buf, c)
+			self.pos = append(self.pos, []interface{}{lnum + 1, col + 1})
 			col += viml_len(c)
 		}
 		for lnum + 1 < viml_len(lines) && viml_eqregh(lines[lnum + 1], "^\\s*\\\\") {
@@ -2877,19 +2877,19 @@ func (self *StringReader) __init__(lines []string) {
 						skip = false
 					}
 				} else {
-					viml_add(self.buf, c)
-					viml_add(self.pos, []interface{}{lnum + 2, col + 1})
+					self.buf = append(self.buf, c)
+					self.pos = append(self.pos, []interface{}{lnum + 2, col + 1})
 				}
 				col += viml_len(c)
 			}
 			lnum += 1
 		}
-		viml_add(self.buf, "<EOL>")
-		viml_add(self.pos, []interface{}{lnum + 1, col + 1})
+		self.buf = append(self.buf, "<EOL>")
+		self.pos = append(self.pos, []interface{}{lnum + 1, col + 1})
 		lnum += 1
 	}
 	// for <EOF>
-	viml_add(self.pos, []interface{}{lnum + 1, 0})
+	self.pos = append(self.pos, []interface{}{lnum + 1, 0})
 	self.i = 0
 }
 

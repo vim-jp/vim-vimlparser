@@ -150,7 +150,7 @@ func NewLvalueParser(reader *StringReader) *LvalueParser {
 
 type StringReader struct {
 	i   int
-	pos [][2]int
+	pos [][]interface{} // (lnum, col int)
 	buf []string
 }
 
@@ -162,6 +162,6 @@ func NewStringReader(lines []string) *StringReader {
 
 func (self *StringReader) getpos() *pos {
 	var p = self.pos[self.i]
-	var lnum, col = p[0], p[1]
+	var lnum, col = p[0].(int), p[1].(int)
 	return &pos{i: self.i, lnum: lnum, col: col}
 }

@@ -397,7 +397,17 @@ function s:GoCompiler.compile_return(node)
 endfunction
 
 function s:GoCompiler.compile_excall(node)
-  call self.out('%s', self.compile(a:node.left))
+  let left = self.compile(a:node.left)
+  if left =~ '^append('
+    let [_, list, item; __] = matchlist(left, '^append(\(.\{-}\),\(.*\))$')
+    if list == 'node.value'
+      call self.out('%s = append(%s,%s)', list, list . '.([]interface{})', item)
+    else
+      call self.out('%s = %s', list, left)
+    endif
+    return
+  endif
+  call self.out('%s', left)
 endfunction
 
 function s:GoCompiler.compile_let(node)
@@ -806,7 +816,11 @@ function s:GoCompiler.compile_call(node)
     let left = 'New' . matchstr(left, '.*\ze\.new$')
   endif
   if index(s:viml_builtin_functions, left) != -1
-    let left = printf('viml_%s', left)
+    if left == 'add'
+      let left = 'append'
+    else
+      let left = printf('viml_%s', left)
+    endif
   endif
   if left == 'range_'
     let left = 'viml_range'

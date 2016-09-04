@@ -115,3 +115,5 @@ function! s:cache() abort
   return x[1]
 endfunction
 " end type assertion
+call add(xs, x)
+call add(node.value, [key, val])

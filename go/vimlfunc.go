@@ -2,11 +2,6 @@ package vimlparser
 
 type vimlList interface{}
 
-func viml_add(lst vimlList, item interface{}) {
-	panic("NotImplemented viml_add")
-	// should use go builtin append() func
-}
-
 func viml_call(f string, args ...interface{}) interface{} {
 	panic("NotImplemented viml_call")
 }

@@ -56,3 +56,5 @@ func cache() {
 }
 
 // end type assertion
+xs = append(xs, x)
+node.value = append(node.value.([]interface{}), []interface{}{key, val})
