@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 // copied and little modified(^++) from ./py/vimlfunc.py
@@ -166,7 +167,7 @@ func viml_has_key(obj interface{}, key interface{}) bool {
 }
 
 func viml_stridx(a, b string) int {
-	panic("NotImplemented viml_stridx")
+	return strings.Index(a, b)
 }
 
 func viml_type(obj interface{}) int {
