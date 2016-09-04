@@ -470,6 +470,8 @@ function s:GoCompiler.compile_let(node)
     endif
     if self.isinscope(left)
       call self.out('%s %s %s', left, op, right)
+    elseif left =~ '\[[^]]*\]$'
+      call self.out('%s %s %s', left, op, right)
     else
       call self.out('var %s %s %s', left, op, right)
       call self.addscope(left)

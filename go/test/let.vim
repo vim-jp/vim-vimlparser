@@ -26,3 +26,8 @@ if f
     let h = 1
   endif
 endif
+
+let xs = 1
+if x
+  let xs[0] = 1
+endif
