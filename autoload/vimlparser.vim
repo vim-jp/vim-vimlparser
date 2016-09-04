@@ -3825,51 +3825,51 @@ function! s:Compiler.compile(node)
   if a:node.type == s:NODE_TOPLEVEL
     return self.compile_toplevel(a:node)
   elseif a:node.type == s:NODE_COMMENT
-    return self.compile_comment(a:node)
+    call self.compile_comment(a:node)
   elseif a:node.type == s:NODE_EXCMD
-    return self.compile_excmd(a:node)
+    call self.compile_excmd(a:node)
   elseif a:node.type == s:NODE_FUNCTION
-    return self.compile_function(a:node)
+    call self.compile_function(a:node)
   elseif a:node.type == s:NODE_DELFUNCTION
-    return self.compile_delfunction(a:node)
+    call self.compile_delfunction(a:node)
   elseif a:node.type == s:NODE_RETURN
-    return self.compile_return(a:node)
+    call self.compile_return(a:node)
   elseif a:node.type == s:NODE_EXCALL
-    return self.compile_excall(a:node)
+    call self.compile_excall(a:node)
   elseif a:node.type == s:NODE_LET
-    return self.compile_let(a:node)
+    call self.compile_let(a:node)
   elseif a:node.type == s:NODE_UNLET
-    return self.compile_unlet(a:node)
+    call self.compile_unlet(a:node)
   elseif a:node.type == s:NODE_LOCKVAR
-    return self.compile_lockvar(a:node)
+    call self.compile_lockvar(a:node)
   elseif a:node.type == s:NODE_UNLOCKVAR
-    return self.compile_unlockvar(a:node)
+    call self.compile_unlockvar(a:node)
   elseif a:node.type == s:NODE_IF
-    return self.compile_if(a:node)
+    call self.compile_if(a:node)
   elseif a:node.type == s:NODE_WHILE
-    return self.compile_while(a:node)
+    call self.compile_while(a:node)
   elseif a:node.type == s:NODE_FOR
-    return self.compile_for(a:node)
+    call self.compile_for(a:node)
   elseif a:node.type == s:NODE_CONTINUE
-    return self.compile_continue(a:node)
+    call self.compile_continue(a:node)
   elseif a:node.type == s:NODE_BREAK
-    return self.compile_break(a:node)
+    call self.compile_break(a:node)
   elseif a:node.type == s:NODE_TRY
-    return self.compile_try(a:node)
+    call self.compile_try(a:node)
   elseif a:node.type == s:NODE_THROW
-    return self.compile_throw(a:node)
+    call self.compile_throw(a:node)
   elseif a:node.type == s:NODE_ECHO
-    return self.compile_echo(a:node)
+    call self.compile_echo(a:node)
   elseif a:node.type == s:NODE_ECHON
-    return self.compile_echon(a:node)
+    call self.compile_echon(a:node)
   elseif a:node.type == s:NODE_ECHOHL
-    return self.compile_echohl(a:node)
+    call self.compile_echohl(a:node)
   elseif a:node.type == s:NODE_ECHOMSG
-    return self.compile_echomsg(a:node)
+    call self.compile_echomsg(a:node)
   elseif a:node.type == s:NODE_ECHOERR
-    return self.compile_echoerr(a:node)
+    call self.compile_echoerr(a:node)
   elseif a:node.type == s:NODE_EXECUTE
-    return self.compile_execute(a:node)
+    call self.compile_execute(a:node)
   elseif a:node.type == s:NODE_TERNARY
     return self.compile_ternary(a:node)
   elseif a:node.type == s:NODE_OR
@@ -3987,6 +3987,7 @@ function! s:Compiler.compile(node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
+  return s:NIL
 endfunction
 
 function! s:Compiler.compile_body(body)
