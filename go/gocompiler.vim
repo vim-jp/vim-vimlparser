@@ -436,6 +436,7 @@ function s:GoCompiler.compile_let(node)
     elseif left == 'cmd' && op == '=' && (right == 'nil' || right =~ '^\Vmap[string]interface{}{')
       if right == 'nil'
         call self.out('var cmd *Cmd = nil')
+        call self.addscope(left)
       else
         let m = matchstr(right, '^\Vmap[string]interface{}{\zs\(\.\*\)\ze}\$')
         let rs = []
