@@ -15,6 +15,14 @@ function! s:StringReader.getpos()
   " skip StringReader.getpos
 endfunction
 
+function! s:VimLParser.push_context()
+  " skip VimLParser.push_context
+endfunction
+
+function! s:VimLParser.pop_context()
+  " skip VimLParser.push_context
+endfunction
+
 function! s:VimLParser.__init__()
   let x = 1
 endfunction

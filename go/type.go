@@ -106,6 +106,14 @@ func NewVimLParser() *VimLParser {
 	return obj
 }
 
+func (self *VimLParser) push_context(n *node) {
+	self.context = append([]*node{n}, self.context...)
+}
+
+func (self *VimLParser) pop_context() {
+	self.context = self.context[1:]
+}
+
 type ExprToken struct {
 	type_ int
 	value string

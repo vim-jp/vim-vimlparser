@@ -118,10 +118,6 @@ func viml_extend(obj, item interface{}) interface{} {
 	panic("NotImplemented viml_extend")
 }
 
-func viml_insert(lst vimlList, item interface{}) {
-	panic("NotImplemented viml_insert")
-}
-
 func viml_join(lst vimlList, sep string) string {
 	panic("NotImplemented viml_join")
 }
@@ -144,10 +140,6 @@ func viml_range(start, end int) []int {
 
 func viml_readfile(path string) []string {
 	panic("NotImplemented viml_readfile")
-}
-
-func viml_remove(lst vimlList, idx int) {
-	panic("NotImplemented viml_remove")
 }
 
 func viml_split(s string, sep string) []string {

@@ -332,14 +332,6 @@ func Err(msg string, pos *pos) string {
 func (self *VimLParser) __init__() {
 }
 
-func (self *VimLParser) push_context(node *node) {
-	viml_insert(self.context, node)
-}
-
-func (self *VimLParser) pop_context() {
-	viml_remove(self.context, 0)
-}
-
 func (self *VimLParser) find_context(type_ int) int {
 	var i = 0
 	for _, node := range self.context {

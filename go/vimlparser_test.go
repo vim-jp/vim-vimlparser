@@ -43,3 +43,14 @@ func TestStringReader___init__(t *testing.T) {
 		}
 	}
 }
+
+func TestNewVimLParser(t *testing.T) {
+	defer func() {
+		if r := recover(); r != nil {
+			t.Errorf("Recovered: %v\n%s", r, debug.Stack())
+		}
+	}()
+	r := NewStringReader([]string{})
+	p := NewVimLParser()
+	p.parse(r)
+}
