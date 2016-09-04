@@ -150,7 +150,7 @@ type LvalueParser struct {
 }
 
 func NewLvalueParser(reader *StringReader) *LvalueParser {
-	obj := &LvalueParser{}
+	obj := &LvalueParser{&ExprParser{}}
 	obj.__init__(reader)
 	return obj
 }
