@@ -177,3 +177,8 @@ type Compiler struct {
 	indent []string
 	lines  []string
 }
+
+func (self *Compiler) __init__() {
+	self.indent = []string{""}
+	self.lines = []string{}
+}

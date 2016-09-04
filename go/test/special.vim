@@ -27,6 +27,10 @@ function! s:VimLParser.__init__()
   let x = 1
 endfunction
 
+function! s:Compiler.__init__()
+  " skip Compiler.__init__
+endfunction
+
 let y = s:ExArg()
 
 function! s:ExArg()
