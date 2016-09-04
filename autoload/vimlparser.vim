@@ -4042,6 +4042,7 @@ function! s:Compiler.compile_excall(node)
 endfunction
 
 function! s:Compiler.compile_let(node)
+  let left = ''
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
@@ -4109,6 +4110,7 @@ function! s:Compiler.compile_while(node)
 endfunction
 
 function! s:Compiler.compile_for(node)
+  let left = ''
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
