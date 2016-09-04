@@ -6,12 +6,14 @@ import (
 	"testing"
 )
 
+func recovert(t *testing.T) {
+	if r := recover(); r != nil {
+		t.Errorf("Recovered: %v\n%s", r, debug.Stack())
+	}
+}
+
 func TestNewStringReader(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Recovered: %v\n%s", r, debug.Stack())
-		}
-	}()
+	defer recovert(t)
 	r := NewStringReader([]string{})
 	if !r.eof() {
 		t.Error("NewStringReader should call __init__ func to initialize")
@@ -19,11 +21,7 @@ func TestNewStringReader(t *testing.T) {
 }
 
 func TestStringReader___init__(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Recovered: %v\n%s", r, debug.Stack())
-		}
-	}()
+	defer recovert(t)
 	tests := []struct {
 		in  []string
 		buf string
@@ -45,12 +43,18 @@ func TestStringReader___init__(t *testing.T) {
 }
 
 func TestNewVimLParser(t *testing.T) {
-	defer func() {
-		if r := recover(); r != nil {
-			t.Errorf("Recovered: %v\n%s", r, debug.Stack())
-		}
-	}()
-	r := NewStringReader([]string{})
-	p := NewVimLParser()
-	p.parse(r)
+	defer recovert(t)
+	NewVimLParser().parse(NewStringReader([]string{}))
+}
+
+func TestVimLParser_parse_empty(t *testing.T) {
+	defer recovert(t)
+	ins := [][]string{
+		[]string{},
+		[]string{""},
+		[]string{"", ""},
+	}
+	for _, in := range ins {
+		NewVimLParser().parse(NewStringReader(in))
+	}
 }
