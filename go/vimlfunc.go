@@ -111,7 +111,7 @@ func viml_eqregq(s, reg string) bool {
 	panic("NotImplemented viml_eqregq")
 }
 
-func viml_escape(s string, chars []string) bool {
+func viml_escape(s string, chars string) string {
 	panic("NotImplemented viml_escape")
 }
 
@@ -174,4 +174,12 @@ func viml_stridx(a, b string) int {
 
 func viml_type(obj interface{}) int {
 	panic("NotImplemented viml_type")
+}
+
+func viml_map(xs interface{}, f interface{}) interface{} {
+	panic("NotImplemented viml_map")
+}
+
+func viml_ternary(cond bool, a interface{}, b interface{}) interface{} {
+	panic("NotImplemented viml_ternary")
 }

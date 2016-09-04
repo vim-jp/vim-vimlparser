@@ -172,3 +172,8 @@ func (self *StringReader) getpos() *pos {
 	var lnum, col = p[0].(int), p[1].(int)
 	return &pos{i: self.i, lnum: lnum, col: col}
 }
+
+type Compiler struct {
+	indent []string
+	lines  []string
+}
