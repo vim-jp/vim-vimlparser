@@ -102,6 +102,7 @@ type VimLParser struct {
 
 func NewVimLParser() *VimLParser {
 	obj := &VimLParser{}
+	obj.find_command_cache = make(map[string]*Cmd)
 	obj.__init__()
 	return obj
 }
