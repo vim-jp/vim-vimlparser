@@ -137,3 +137,39 @@ func TestViml_stridx(t *testing.T) {
 		}
 	}
 }
+
+func TestViml_has_key(t *testing.T) {
+	tests := []struct {
+		m    interface{}
+		k    interface{}
+		want bool
+	}{
+		{m: map[string]string{"a": "a"}, k: "a", want: true},
+		{m: map[string]string{"a": "a"}, k: "", want: false},
+		{m: map[string]string{"a": "a"}, k: "b", want: false},
+
+		{m: map[string]int{"a": 1}, k: "a", want: true},
+		{m: map[string]int{"a": 1}, k: "b", want: false},
+
+		{m: map[int]int{1: 1}, k: 1, want: true},
+		{m: map[int]int{1: 1}, k: 2, want: false},
+	}
+
+	for _, tt := range tests {
+		got := viml_has_key(tt.m, tt.k)
+		if got != tt.want {
+			t.Errorf("viml_has_key(%v, %v) = %v, want %v", tt.m, tt.k, got, tt.want)
+		}
+
+		gotFromVIm, err := cli.Call("has_key", tt.m, tt.k)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if tt.want != (gotFromVIm.(float64) == 1) {
+			t.Error("viml_has_key(%v, %v) = %v\n")
+			t.Errorf("viml_has_key(%v, %v) = %v\nVim.has_key(%v, %v) = %v",
+				tt.m, tt.k, got, tt.m, tt.k, gotFromVIm)
+		}
+	}
+}

@@ -163,7 +163,9 @@ func viml_string(obj interface{}) string {
 }
 
 func viml_has_key(obj interface{}, key interface{}) bool {
-	panic("NotImplemented viml_has_key")
+	m := reflect.ValueOf(obj)
+	v := m.MapIndex(reflect.ValueOf(key))
+	return v.Kind() != reflect.Invalid
 }
 
 func viml_stridx(a, b string) int {
