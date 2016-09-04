@@ -1,5 +1,7 @@
 package vimlparser
 
+import "reflect"
+
 type vimlList interface{}
 
 func viml_call(f string, args ...interface{}) interface{} {
@@ -51,10 +53,7 @@ func viml_keys(obj map[string]interface{}) []string {
 }
 
 func viml_len(obj interface{}) int {
-	if xs, ok := obj.([]string); ok {
-		return len(xs)
-	}
-	panic("NotImplemented viml_len")
+	return reflect.ValueOf(obj).Len()
 }
 
 func viml_printf(f string, args ...interface{}) string {
