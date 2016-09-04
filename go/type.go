@@ -125,6 +125,7 @@ type ExprTokenizer struct {
 
 func NewExprTokenizer(reader *StringReader) *ExprTokenizer {
 	obj := &ExprTokenizer{}
+	obj.cache = make(map[int][]interface{})
 	obj.__init__(reader)
 	return obj
 }
