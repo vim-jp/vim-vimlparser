@@ -111,6 +111,21 @@ func TestViml_eqregq(t *testing.T) {
 	}
 }
 
+func TestViml_printf(t *testing.T) {
+	tests := []struct {
+		f    string
+		args []interface{}
+		want string
+	}{
+		{"hoge%s", []interface{}{"foo"}, "hogefoo"},
+	}
+	for _, tt := range tests {
+		if got := viml_printf(tt.f, tt.args...); got != tt.want {
+			t.Errorf("viml_printf(%q, %v) = %v, want %v", tt.f, tt.args, got, tt.want)
+		}
+	}
+}
+
 func TestViml_stridx(t *testing.T) {
 	tests := []struct {
 		heystack string

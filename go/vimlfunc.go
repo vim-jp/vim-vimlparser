@@ -132,7 +132,7 @@ func viml_len(obj interface{}) int {
 }
 
 func viml_printf(f string, args ...interface{}) string {
-	panic("NotImplemented viml_printf")
+	return fmt.Sprintf(f, args...)
 }
 
 func viml_range(start, end int) []int {
