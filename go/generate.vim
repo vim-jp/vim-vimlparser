@@ -38,7 +38,7 @@ function! s:ast() abort
 
   let lines = readfile(vimfile)
   unlet lines[0:index(lines, 'let s:FALSE = 0')]
-  unlet lines[index(lines, 'let s:Compiler = {}'):-1]
+  unlet lines[index(lines, 'let s:RegexpParser = {}'):-2]
   let r = s:StringReader.new(lines)
   let p = s:VimLParser.new()
   let ast = p.parse(r)
