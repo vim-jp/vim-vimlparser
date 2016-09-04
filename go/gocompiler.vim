@@ -790,6 +790,9 @@ endfunction
 function s:GoCompiler.compile_subscript(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
+  if right =~ '^-\d\+'
+    let right = printf('len(%s)%s', left, right)
+  endif
   return printf('%s[%s]', left, right)
 endfunction
 

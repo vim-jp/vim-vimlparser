@@ -176,7 +176,7 @@ func viml_type(obj interface{}) int {
 	panic("NotImplemented viml_type")
 }
 
-func viml_map(xs interface{}, f interface{}) interface{} {
+func viml_map(xs interface{}, f interface{}) []string {
 	panic("NotImplemented viml_map")
 }
 
