@@ -312,7 +312,7 @@ function s:GoCompiler.compile_function(node)
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   if !empty(rlist) && rlist[-1] == '...'
-    let rlist[-1] = '*a000'
+    let rlist[-1] = 'a000'
   endif
   " type annotation
   let typedef = get(self.typedefs.func, left, {})
