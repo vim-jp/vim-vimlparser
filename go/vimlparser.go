@@ -1007,8 +1007,9 @@ func (self *VimLParser) separate_nextcmd() *pos {
 			}
 			self.reader.getn(1)
 		} else if c == "|" || c == "\n" || c == "\"" && !viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") && (self.ea.cmd.name != "@" && self.ea.cmd.name != "*" || self.reader.getpos() != self.ea.argpos) && (self.ea.cmd.name != "redir" || self.reader.getpos().i != self.ea.argpos.i + 1 || pc != "@") {
-			// let has_cpo_bar = 0 " &cpoptions =~ 'b'
-			if !viml_eqregh(self.ea.cmd.flags, "\\<USECTRLV\\>") && pc == "\\" {
+			var has_cpo_bar = false
+			// &cpoptions =~ 'b'
+			if (!has_cpo_bar || !viml_eqregh(self.ea.cmd.flags, "\\<USECTRLV\\>")) && pc == "\\" {
 				self.reader.get()
 			} else {
 				break

@@ -1118,8 +1118,8 @@ function! s:VimLParser.separate_nextcmd()
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
           \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc !=# '@'))
-      " let has_cpo_bar = 0 " &cpoptions =~ 'b'
-      if (self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
+      let has_cpo_bar = s:FALSE " &cpoptions =~ 'b'
+      if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
       else
         break
