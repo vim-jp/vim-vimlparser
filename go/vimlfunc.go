@@ -88,7 +88,7 @@ func viml_empty(obj interface{}) bool {
 }
 
 func viml_equalci(a, b string) bool {
-	panic("NotImplemented viml_equalci")
+	return strings.ToLower(a) == strings.ToLower(b)
 }
 func viml_eqreg(s, reg string) bool {
 	if r, ok := patVim2GoRegq[reg]; ok {
@@ -112,7 +112,15 @@ func viml_eqregq(s, reg string) bool {
 }
 
 func viml_escape(s string, chars string) string {
-	panic("NotImplemented viml_escape")
+	r := ""
+	for _, c := range s {
+		if strings.IndexRune(chars, c) != -1 {
+			r += `\` + string(c)
+		} else {
+			r += string(c)
+		}
+	}
+	return r
 }
 
 func viml_extend(obj, item interface{}) interface{} {
@@ -141,7 +149,11 @@ func viml_printf(f string, args ...interface{}) string {
 }
 
 func viml_range(start, end int) []int {
-	panic("NotImplemented viml_range")
+	var rs []int
+	for i := start; i <= end; i++ {
+		rs = append(rs, i)
+	}
+	return rs
 }
 
 func viml_readfile(path string) []string {

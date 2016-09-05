@@ -1,6 +1,14 @@
 package vimlparser
 
 import (
+	"fmt"
+	"go/build"
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+	"regexp"
+
 	"runtime/debug"
 	"strings"
 	"testing"
@@ -76,4 +84,79 @@ func TestVimLParser_parse(t *testing.T) {
 			t.Errorf("c.compile(p.parse(%v)) = %v, want %v", tt.in, got, tt.want)
 		}
 	}
+}
+
+const basePkg = "github.com/haya14busa/vim-vimlparser/go"
+
+var basePkgReg = regexp.MustCompile("vimlparser$")
+
+func TestVimLParser_parse_compile(t *testing.T) {
+	p, err := build.Default.Import(basePkg, "", build.FindOnly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	testDir := path.Join(filepath.Dir(p.Dir), "test")
+	// t.Error(p, err)
+	vimfiles, err := filepath.Glob(testDir + "/test_*.vim")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, vimfile := range vimfiles {
+		// t.Log(vimfile)
+
+		ext := path.Ext(vimfile)
+		base := vimfile[:len(vimfile)-len(ext)]
+		okfile := base + ".ok"
+
+		in, err := readlines(vimfile)
+		want, err := readlines(okfile)
+		if err != nil {
+			t.Error(err)
+			continue
+		}
+
+		testFiles(t, path.Base(vimfile), in, want)
+	}
+
+}
+
+func testFiles(t *testing.T, file string, in, want []string) {
+	defer func() {
+		if r := recover(); r != nil {
+			err := strings.Trim(fmt.Sprintf("%s", r), "\n")
+			w := strings.Trim(strings.Join(want, "\n"), "\n")
+			if err != w {
+				t.Log("===")
+				t.Log("got :", err)
+				t.Log("want:", w)
+				// t.Log(w)
+				t.Errorf("%v: Recovered: %v\n%s", file, r, debug.Stack())
+				// t.Errorf("%v: Recovered: %v", file, r)
+			}
+		}
+	}()
+
+	r := NewStringReader(in)
+	p := NewVimLParser()
+	c := NewCompiler()
+	got := c.compile(p.parse(r)).([]string)
+
+	if strings.Trim(strings.Join(got, "\n"), "\n") != strings.Trim(strings.Join(want, "\n"), "\n") {
+		t.Errorf("%v: got %v\nwant %v", file, got, want)
+	}
+}
+
+func readlines(path string) ([]string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	b, err := ioutil.ReadAll(f)
+	if err != nil {
+		return nil, err
+	}
+
+	return strings.Split(string(b), "\n"), nil
 }

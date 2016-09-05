@@ -3,6 +3,7 @@ package vimlparser
 import (
 	"log"
 	"os"
+	"reflect"
 	"testing"
 
 	vim "github.com/haya14busa/vim-go-client"
@@ -203,6 +204,37 @@ func TestViml_join(t *testing.T) {
 	for _, tt := range tests {
 		if got := viml_join(tt.lst, tt.sep); got != tt.want {
 			t.Errorf("viml_join(%q, %q) = %v, want %v", tt.lst, tt.sep, got, tt.want)
+		}
+	}
+}
+
+func TestViml_range(t *testing.T) {
+	tests := []struct {
+		start int
+		end   int
+		want  []int
+	}{
+		{0, 3, []int{0, 1, 2, 3}},
+		{0, 0, []int{0}},
+	}
+	for _, tt := range tests {
+		if got := viml_range(tt.start, tt.end); !reflect.DeepEqual(got, tt.want) {
+			t.Errorf("viml_range(%v, %v) = %v, want %v", tt.start, tt.end, got, tt.want)
+		}
+	}
+}
+
+func TestViml_escape(t *testing.T) {
+	tests := []struct {
+		str   string
+		chars string
+		want  string
+	}{
+		{"hoge", "og", `h\o\ge`},
+	}
+	for _, tt := range tests {
+		if got := viml_escape(tt.str, tt.chars); got != tt.want {
+			t.Errorf("viml_escape(%v, %v) = %v, want %v", tt.str, tt.chars, got, tt.want)
 		}
 	}
 }
