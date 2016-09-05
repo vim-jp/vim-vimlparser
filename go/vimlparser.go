@@ -3075,3 +3075,599 @@ func (self *StringReader) skip_white_and_colon() {
 	}
 }
 
+func (self *Compiler) compile(node *node) interface{} {
+	if node.type_ == NODE_TOPLEVEL {
+		return self.compile_toplevel(node)
+	} else if node.type_ == NODE_COMMENT {
+		self.compile_comment(node)
+	} else if node.type_ == NODE_EXCMD {
+		self.compile_excmd(node)
+	} else if node.type_ == NODE_FUNCTION {
+		self.compile_function(node)
+	} else if node.type_ == NODE_DELFUNCTION {
+		self.compile_delfunction(node)
+	} else if node.type_ == NODE_RETURN {
+		self.compile_return(node)
+	} else if node.type_ == NODE_EXCALL {
+		self.compile_excall(node)
+	} else if node.type_ == NODE_LET {
+		self.compile_let(node)
+	} else if node.type_ == NODE_UNLET {
+		self.compile_unlet(node)
+	} else if node.type_ == NODE_LOCKVAR {
+		self.compile_lockvar(node)
+	} else if node.type_ == NODE_UNLOCKVAR {
+		self.compile_unlockvar(node)
+	} else if node.type_ == NODE_IF {
+		self.compile_if(node)
+	} else if node.type_ == NODE_WHILE {
+		self.compile_while(node)
+	} else if node.type_ == NODE_FOR {
+		self.compile_for(node)
+	} else if node.type_ == NODE_CONTINUE {
+		self.compile_continue(node)
+	} else if node.type_ == NODE_BREAK {
+		self.compile_break(node)
+	} else if node.type_ == NODE_TRY {
+		self.compile_try(node)
+	} else if node.type_ == NODE_THROW {
+		self.compile_throw(node)
+	} else if node.type_ == NODE_ECHO {
+		self.compile_echo(node)
+	} else if node.type_ == NODE_ECHON {
+		self.compile_echon(node)
+	} else if node.type_ == NODE_ECHOHL {
+		self.compile_echohl(node)
+	} else if node.type_ == NODE_ECHOMSG {
+		self.compile_echomsg(node)
+	} else if node.type_ == NODE_ECHOERR {
+		self.compile_echoerr(node)
+	} else if node.type_ == NODE_EXECUTE {
+		self.compile_execute(node)
+	} else if node.type_ == NODE_TERNARY {
+		return self.compile_ternary(node)
+	} else if node.type_ == NODE_OR {
+		return self.compile_or(node)
+	} else if node.type_ == NODE_AND {
+		return self.compile_and(node)
+	} else if node.type_ == NODE_EQUAL {
+		return self.compile_equal(node)
+	} else if node.type_ == NODE_EQUALCI {
+		return self.compile_equalci(node)
+	} else if node.type_ == NODE_EQUALCS {
+		return self.compile_equalcs(node)
+	} else if node.type_ == NODE_NEQUAL {
+		return self.compile_nequal(node)
+	} else if node.type_ == NODE_NEQUALCI {
+		return self.compile_nequalci(node)
+	} else if node.type_ == NODE_NEQUALCS {
+		return self.compile_nequalcs(node)
+	} else if node.type_ == NODE_GREATER {
+		return self.compile_greater(node)
+	} else if node.type_ == NODE_GREATERCI {
+		return self.compile_greaterci(node)
+	} else if node.type_ == NODE_GREATERCS {
+		return self.compile_greatercs(node)
+	} else if node.type_ == NODE_GEQUAL {
+		return self.compile_gequal(node)
+	} else if node.type_ == NODE_GEQUALCI {
+		return self.compile_gequalci(node)
+	} else if node.type_ == NODE_GEQUALCS {
+		return self.compile_gequalcs(node)
+	} else if node.type_ == NODE_SMALLER {
+		return self.compile_smaller(node)
+	} else if node.type_ == NODE_SMALLERCI {
+		return self.compile_smallerci(node)
+	} else if node.type_ == NODE_SMALLERCS {
+		return self.compile_smallercs(node)
+	} else if node.type_ == NODE_SEQUAL {
+		return self.compile_sequal(node)
+	} else if node.type_ == NODE_SEQUALCI {
+		return self.compile_sequalci(node)
+	} else if node.type_ == NODE_SEQUALCS {
+		return self.compile_sequalcs(node)
+	} else if node.type_ == NODE_MATCH {
+		return self.compile_match(node)
+	} else if node.type_ == NODE_MATCHCI {
+		return self.compile_matchci(node)
+	} else if node.type_ == NODE_MATCHCS {
+		return self.compile_matchcs(node)
+	} else if node.type_ == NODE_NOMATCH {
+		return self.compile_nomatch(node)
+	} else if node.type_ == NODE_NOMATCHCI {
+		return self.compile_nomatchci(node)
+	} else if node.type_ == NODE_NOMATCHCS {
+		return self.compile_nomatchcs(node)
+	} else if node.type_ == NODE_IS {
+		return self.compile_is(node)
+	} else if node.type_ == NODE_ISCI {
+		return self.compile_isci(node)
+	} else if node.type_ == NODE_ISCS {
+		return self.compile_iscs(node)
+	} else if node.type_ == NODE_ISNOT {
+		return self.compile_isnot(node)
+	} else if node.type_ == NODE_ISNOTCI {
+		return self.compile_isnotci(node)
+	} else if node.type_ == NODE_ISNOTCS {
+		return self.compile_isnotcs(node)
+	} else if node.type_ == NODE_ADD {
+		return self.compile_add(node)
+	} else if node.type_ == NODE_SUBTRACT {
+		return self.compile_subtract(node)
+	} else if node.type_ == NODE_CONCAT {
+		return self.compile_concat(node)
+	} else if node.type_ == NODE_MULTIPLY {
+		return self.compile_multiply(node)
+	} else if node.type_ == NODE_DIVIDE {
+		return self.compile_divide(node)
+	} else if node.type_ == NODE_REMAINDER {
+		return self.compile_remainder(node)
+	} else if node.type_ == NODE_NOT {
+		return self.compile_not(node)
+	} else if node.type_ == NODE_PLUS {
+		return self.compile_plus(node)
+	} else if node.type_ == NODE_MINUS {
+		return self.compile_minus(node)
+	} else if node.type_ == NODE_SUBSCRIPT {
+		return self.compile_subscript(node)
+	} else if node.type_ == NODE_SLICE {
+		return self.compile_slice(node)
+	} else if node.type_ == NODE_DOT {
+		return self.compile_dot(node)
+	} else if node.type_ == NODE_CALL {
+		return self.compile_call(node)
+	} else if node.type_ == NODE_NUMBER {
+		return self.compile_number(node)
+	} else if node.type_ == NODE_STRING {
+		return self.compile_string(node)
+	} else if node.type_ == NODE_LIST {
+		return self.compile_list(node)
+	} else if node.type_ == NODE_DICT {
+		return self.compile_dict(node)
+	} else if node.type_ == NODE_OPTION {
+		return self.compile_option(node)
+	} else if node.type_ == NODE_IDENTIFIER {
+		return self.compile_identifier(node)
+	} else if node.type_ == NODE_CURLYNAME {
+		return self.compile_curlyname(node)
+	} else if node.type_ == NODE_ENV {
+		return self.compile_env(node)
+	} else if node.type_ == NODE_REG {
+		return self.compile_reg(node)
+	} else if node.type_ == NODE_CURLYNAMEPART {
+		return self.compile_curlynamepart(node)
+	} else if node.type_ == NODE_CURLYNAMEEXPR {
+		return self.compile_curlynameexpr(node)
+	} else {
+		panic(viml_printf("Compiler: unknown node: %s", viml_string(node)))
+	}
+	return nil
+}
+
+func (self *Compiler) compile_body(body []*node) {
+	for _, node := range body {
+		self.compile(node)
+	}
+}
+
+func (self *Compiler) compile_toplevel(node *node) []string {
+	self.compile_body(node.body)
+	return self.lines
+}
+
+func (self *Compiler) compile_comment(node *node) {
+	self.out(";%s", node.str)
+}
+
+func (self *Compiler) compile_excmd(node *node) {
+	self.out("(excmd \"%s\")", viml_escape(node.str, "\\\""))
+}
+
+func (self *Compiler) compile_function(node *node) {
+	var left = self.compile(node.left).(string)
+	var rlist = func() []string {;var ss []string;for _, vval := range node.rlist {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	if !viml_empty(rlist) && rlist[len(rlist)-1] == "..." {
+		rlist[len(rlist)-1] = ". ..."
+	}
+	if viml_empty(rlist) {
+		self.out("(function (%s)", left)
+	} else {
+		self.out("(function (%s %s)", left, viml_join(rlist, " "))
+	}
+	self.incindent("  ")
+	self.compile_body(node.body)
+	self.out(")")
+	self.decindent()
+}
+
+func (self *Compiler) compile_delfunction(node *node) {
+	self.out("(delfunction %s)", self.compile(node.left).(string))
+}
+
+func (self *Compiler) compile_return(node *node) {
+	if node.left == nil {
+		self.out("(return)")
+	} else {
+		self.out("(return %s)", self.compile(node.left).(string))
+	}
+}
+
+func (self *Compiler) compile_excall(node *node) {
+	self.out("(call %s)", self.compile(node.left).(string))
+}
+
+func (self *Compiler) compile_let(node *node) {
+	var left = ""
+	if node.left != nil {
+		left = self.compile(node.left).(string)
+	} else {
+		left = viml_join(func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}(), " ")
+		if node.rest != nil {
+			left += " . " + self.compile(node.rest).(string)
+		}
+		left = "(" + left + ")"
+	}
+	var right = self.compile(node.right)
+	self.out("(let %s %s %s)", node.op, left, right)
+}
+
+func (self *Compiler) compile_unlet(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	self.out("(unlet %s)", viml_join(list, " "))
+}
+
+func (self *Compiler) compile_lockvar(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	if node.depth == 0 {
+		self.out("(lockvar %s)", viml_join(list, " "))
+	} else {
+		self.out("(lockvar %s %s)", node.depth, viml_join(list, " "))
+	}
+}
+
+func (self *Compiler) compile_unlockvar(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	if node.depth == 0 {
+		self.out("(unlockvar %s)", viml_join(list, " "))
+	} else {
+		self.out("(unlockvar %s %s)", node.depth, viml_join(list, " "))
+	}
+}
+
+func (self *Compiler) compile_if(node *node) {
+	self.out("(if %s", self.compile(node.cond))
+	self.incindent("  ")
+	self.compile_body(node.body)
+	self.decindent()
+	for _, enode := range node.elseif {
+		self.out(" elseif %s", self.compile(enode.cond))
+		self.incindent("  ")
+		self.compile_body(enode.body)
+		self.decindent()
+	}
+	if node.else_ != nil {
+		self.out(" else")
+		self.incindent("  ")
+		self.compile_body(node.else_.body)
+		self.decindent()
+	}
+	self.incindent("  ")
+	self.out(")")
+	self.decindent()
+}
+
+func (self *Compiler) compile_while(node *node) {
+	self.out("(while %s", self.compile(node.cond))
+	self.incindent("  ")
+	self.compile_body(node.body)
+	self.out(")")
+	self.decindent()
+}
+
+func (self *Compiler) compile_for(node *node) {
+	var left = ""
+	if node.left != nil {
+		left = self.compile(node.left).(string)
+	} else {
+		left = viml_join(func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}(), " ")
+		if node.rest != nil {
+			left += " . " + self.compile(node.rest).(string)
+		}
+		left = "(" + left + ")"
+	}
+	var right = self.compile(node.right)
+	self.out("(for %s %s", left, right)
+	self.incindent("  ")
+	self.compile_body(node.body)
+	self.out(")")
+	self.decindent()
+}
+
+func (self *Compiler) compile_continue(node *node) {
+	self.out("(continue)")
+}
+
+func (self *Compiler) compile_break(node *node) {
+	self.out("(break)")
+}
+
+func (self *Compiler) compile_try(node *node) {
+	self.out("(try")
+	self.incindent("  ")
+	self.compile_body(node.body)
+	for _, cnode := range node.catch {
+		if cnode.pattern != "" {
+			self.decindent()
+			self.out(" catch /%s/", cnode.pattern)
+			self.incindent("  ")
+			self.compile_body(cnode.body)
+		} else {
+			self.decindent()
+			self.out(" catch")
+			self.incindent("  ")
+			self.compile_body(cnode.body)
+		}
+	}
+	if node.finally != nil {
+		self.decindent()
+		self.out(" finally")
+		self.incindent("  ")
+		self.compile_body(node.finally.body)
+	}
+	self.out(")")
+	self.decindent()
+}
+
+func (self *Compiler) compile_throw(node *node) {
+	self.out("(throw %s)", self.compile(node.left).(string))
+}
+
+func (self *Compiler) compile_echo(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	self.out("(echo %s)", viml_join(list, " "))
+}
+
+func (self *Compiler) compile_echon(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	self.out("(echon %s)", viml_join(list, " "))
+}
+
+func (self *Compiler) compile_echohl(node *node) {
+	self.out("(echohl \"%s\")", viml_escape(node.str, "\\\""))
+}
+
+func (self *Compiler) compile_echomsg(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	self.out("(echomsg %s)", viml_join(list, " "))
+}
+
+func (self *Compiler) compile_echoerr(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	self.out("(echoerr %s)", viml_join(list, " "))
+}
+
+func (self *Compiler) compile_execute(node *node) {
+	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	self.out("(execute %s)", viml_join(list, " "))
+}
+
+func (self *Compiler) compile_ternary(node *node) string {
+	return viml_printf("(?: %s %s %s)", self.compile(node.cond), self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_or(node *node) string {
+	return viml_printf("(|| %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_and(node *node) string {
+	return viml_printf("(&& %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_equal(node *node) string {
+	return viml_printf("(== %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_equalci(node *node) string {
+	return viml_printf("(==? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_equalcs(node *node) string {
+	return viml_printf("(==# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_nequal(node *node) string {
+	return viml_printf("(!= %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_nequalci(node *node) string {
+	return viml_printf("(!=? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_nequalcs(node *node) string {
+	return viml_printf("(!=# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_greater(node *node) string {
+	return viml_printf("(> %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_greaterci(node *node) string {
+	return viml_printf("(>? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_greatercs(node *node) string {
+	return viml_printf("(># %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_gequal(node *node) string {
+	return viml_printf("(>= %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_gequalci(node *node) string {
+	return viml_printf("(>=? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_gequalcs(node *node) string {
+	return viml_printf("(>=# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_smaller(node *node) string {
+	return viml_printf("(< %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_smallerci(node *node) string {
+	return viml_printf("(<? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_smallercs(node *node) string {
+	return viml_printf("(<# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_sequal(node *node) string {
+	return viml_printf("(<= %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_sequalci(node *node) string {
+	return viml_printf("(<=? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_sequalcs(node *node) string {
+	return viml_printf("(<=# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_match(node *node) string {
+	return viml_printf("(=~ %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_matchci(node *node) string {
+	return viml_printf("(=~? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_matchcs(node *node) string {
+	return viml_printf("(=~# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_nomatch(node *node) string {
+	return viml_printf("(!~ %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_nomatchci(node *node) string {
+	return viml_printf("(!~? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_nomatchcs(node *node) string {
+	return viml_printf("(!~# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_is(node *node) string {
+	return viml_printf("(is %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_isci(node *node) string {
+	return viml_printf("(is? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_iscs(node *node) string {
+	return viml_printf("(is# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_isnot(node *node) string {
+	return viml_printf("(isnot %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_isnotci(node *node) string {
+	return viml_printf("(isnot? %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_isnotcs(node *node) string {
+	return viml_printf("(isnot# %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_add(node *node) string {
+	return viml_printf("(+ %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_subtract(node *node) string {
+	return viml_printf("(- %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_concat(node *node) string {
+	return viml_printf("(concat %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_multiply(node *node) string {
+	return viml_printf("(* %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_divide(node *node) string {
+	return viml_printf("(/ %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_remainder(node *node) string {
+	return viml_printf("(%% %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_not(node *node) string {
+	return viml_printf("(! %s)", self.compile(node.left).(string))
+}
+
+func (self *Compiler) compile_plus(node *node) string {
+	return viml_printf("(+ %s)", self.compile(node.left).(string))
+}
+
+func (self *Compiler) compile_minus(node *node) string {
+	return viml_printf("(- %s)", self.compile(node.left).(string))
+}
+
+func (self *Compiler) compile_subscript(node *node) string {
+	return viml_printf("(subscript %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_slice(node *node) string {
+	var r0 = viml_ternary(node.rlist[0] == nil, "nil", self.compile(node.rlist[0]))
+	var r1 = viml_ternary(node.rlist[1] == nil, "nil", self.compile(node.rlist[1]))
+	return viml_printf("(slice %s %s %s)", self.compile(node.left).(string), r0, r1)
+}
+
+func (self *Compiler) compile_dot(node *node) string {
+	return viml_printf("(dot %s %s)", self.compile(node.left).(string), self.compile(node.right))
+}
+
+func (self *Compiler) compile_call(node *node) string {
+	var rlist = func() []string {;var ss []string;for _, vval := range node.rlist {;ss = append(ss, self.compile(vval).(string));};return ss;}()
+	if viml_empty(rlist) {
+		return viml_printf("(%s)", self.compile(node.left).(string))
+	} else {
+		return viml_printf("(%s %s)", self.compile(node.left).(string), viml_join(rlist, " "))
+	}
+}
+
+func (self *Compiler) compile_number(node *node) string {
+	return node.value.(string)
+}
+
+func (self *Compiler) compile_string(node *node) string {
+	return node.value.(string)
+}
+
+func (self *Compiler) compile_option(node *node) string {
+	return node.value.(string)
+}
+
+func (self *Compiler) compile_identifier(node *node) string {
+	return node.value.(string)
+}
+
+func (self *Compiler) compile_env(node *node) string {
+	return node.value.(string)
+}
+
+func (self *Compiler) compile_reg(node *node) string {
+	return node.value.(string)
+}
+
+func (self *Compiler) compile_curlynamepart(node *node) string {
+	return node.value.(string)
+}
+
+// TODO: under construction
