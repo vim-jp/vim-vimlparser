@@ -28,6 +28,9 @@ type ExportExArg struct {
 }
 
 func NewExportExArg(ea *ExArg) *ExportExArg {
+	if ea == nil {
+		return nil
+	}
 	return &ExportExArg{
 		Forceit:    ea.forceit,
 		AddrCount:  ea.addr_count,
@@ -64,6 +67,9 @@ type ExportCmd struct {
 }
 
 func NewExportCmd(c *Cmd) *ExportCmd {
+	if c == nil {
+		return nil
+	}
 	return &ExportCmd{
 		Name:   c.name,
 		Minlen: c.minlen,
@@ -79,6 +85,9 @@ type ExportPos struct {
 }
 
 func NewExportPos(p *pos) *ExportPos {
+	if p == nil {
+		return nil
+	}
 	return &ExportPos{
 		I:    p.i,
 		Lnum: p.lnum,
@@ -120,23 +129,26 @@ type ExportNode struct {
 }
 
 func NewExportNode(n *VimNode) *ExportNode {
-	list := make([]*ExportNode, len(n.list))
+	if n == nil {
+		return nil
+	}
+	list := make([]*ExportNode, 0)
 	for _, n := range n.list {
 		list = append(list, NewExportNode(n))
 	}
-	rlist := make([]*ExportNode, len(n.rlist))
+	rlist := make([]*ExportNode, 0)
 	for _, n := range n.rlist {
 		rlist = append(rlist, NewExportNode(n))
 	}
-	body := make([]*ExportNode, len(n.body))
+	body := make([]*ExportNode, 0)
 	for _, n := range n.body {
 		body = append(body, NewExportNode(n))
 	}
-	elseif := make([]*ExportNode, len(n.elseif))
+	elseif := make([]*ExportNode, 0)
 	for _, n := range n.elseif {
 		elseif = append(elseif, NewExportNode(n))
 	}
-	catch := make([]*ExportNode, len(n.catch))
+	catch := make([]*ExportNode, 0)
 	for _, n := range n.catch {
 		catch = append(catch, NewExportNode(n))
 	}
@@ -181,6 +193,9 @@ type ExportFuncAttr struct {
 }
 
 func NewExportFuncAttr(attr *FuncAttr) *ExportFuncAttr {
+	if attr == nil {
+		return nil
+	}
 	return &ExportFuncAttr{
 		Range: attr.range_,
 		Abort: attr.abort,
@@ -192,28 +207,42 @@ func (self *VimLParser) Parse(reader *StringReader) *ExportNode {
 	return NewExportNode(self.parse(reader))
 }
 
+func (self *ExprParser) Parse() *ExportNode {
+	return NewExportNode(self.parse())
+}
+
 func (self *Compiler) Compile(node *ExportNode) []string {
-	return NewCompiler().compile(newInternalNode(node)).([]string)
+	out := NewCompiler().compile(newInternalNode(node))
+	if r, ok := out.([]string); ok {
+		return r
+	}
+	if r, ok := out.(string); ok {
+		return []string{r}
+	}
+	return nil
 }
 
 func newInternalNode(n *ExportNode) *VimNode {
-	list := make([]*VimNode, len(n.List))
+	if n == nil {
+		return nil
+	}
+	list := make([]*VimNode, 0)
 	for _, n := range n.List {
 		list = append(list, newInternalNode(n))
 	}
-	rlist := make([]*VimNode, len(n.Rlist))
+	rlist := make([]*VimNode, 0)
 	for _, n := range n.Rlist {
 		rlist = append(rlist, newInternalNode(n))
 	}
-	body := make([]*VimNode, len(n.Body))
+	body := make([]*VimNode, 0)
 	for _, n := range n.Body {
 		body = append(body, newInternalNode(n))
 	}
-	elseif := make([]*VimNode, len(n.Elseif))
+	elseif := make([]*VimNode, 0)
 	for _, n := range n.Elseif {
 		elseif = append(elseif, newInternalNode(n))
 	}
-	catch := make([]*VimNode, len(n.Catch))
+	catch := make([]*VimNode, 0)
 	for _, n := range n.Catch {
 		catch = append(catch, newInternalNode(n))
 	}
@@ -252,6 +281,9 @@ func newInternalNode(n *ExportNode) *VimNode {
 }
 
 func newInternalPos(p *ExportPos) *pos {
+	if p == nil {
+		return nil
+	}
 	return &pos{
 		i:    p.I,
 		lnum: p.Lnum,
@@ -260,6 +292,9 @@ func newInternalPos(p *ExportPos) *pos {
 }
 
 func newInternalFuncAttr(attr *ExportFuncAttr) *FuncAttr {
+	if attr == nil {
+		return nil
+	}
 	return &FuncAttr{
 		range_: attr.Range,
 		abort:  attr.Abort,
@@ -268,6 +303,9 @@ func newInternalFuncAttr(attr *ExportFuncAttr) *FuncAttr {
 }
 
 func newInternalExArg(ea *ExportExArg) *ExArg {
+	if ea == nil {
+		return nil
+	}
 	return &ExArg{
 		forceit:      ea.Forceit,
 		addr_count:   ea.AddrCount,
@@ -297,6 +335,9 @@ func newInternalExArg(ea *ExportExArg) *ExArg {
 }
 
 func newInternalCmd(c *ExportCmd) *Cmd {
+	if c == nil {
+		return nil
+	}
 	return &Cmd{
 		name:   c.Name,
 		minlen: c.Minlen,

@@ -10,20 +10,38 @@ import (
 )
 
 func Parse(r io.Reader) (node *Node, err error) {
-	if r := recover(); r != nil {
-		node = nil
-		err = fmt.Errorf("go-vimlparser:Parse: %v", r)
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			node = nil
+			err = fmt.Errorf("go-vimlparser:Parse: %v", r)
+		}
+	}()
 	lines := readlines(r)
 	reader := internal.NewStringReader(lines)
 	node = newNode(internal.NewVimLParser().Parse(reader))
 	return
 }
 
+func ParseExpr(r io.Reader) (node *Node, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			node = nil
+			err = fmt.Errorf("go-vimlparser:Parse: %v", r)
+		}
+	}()
+	lines := readlines(r)
+	reader := internal.NewStringReader(lines)
+	p := internal.NewExprParser(reader)
+	node = newNode(p.Parse())
+	return
+}
+
 func Compile(w io.Writer, node *Node) (err error) {
-	if r := recover(); r != nil {
-		err = fmt.Errorf("go-vimlparser:Compile: %v", r)
-	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = fmt.Errorf("go-vimlparser:Compile: %v", r)
+		}
+	}()
 	c := internal.NewCompiler()
 	out := c.Compile(newExportNode(node))
 	_, err = w.Write([]byte(strings.Join(out, "\n")))
