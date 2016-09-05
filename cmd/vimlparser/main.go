@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 
@@ -15,4 +16,5 @@ func main() {
 	if err := vimlparser.Compile(os.Stdout, node); err != nil {
 		log.Fatal(err)
 	}
+	fmt.Printf("\n")
 }
