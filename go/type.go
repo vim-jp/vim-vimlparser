@@ -89,7 +89,10 @@ type pos struct {
 
 // Node returns new VimNode.
 func Node(type_ int) *VimNode {
-	return &VimNode{type_: type_}
+	return &VimNode{
+		type_: type_,
+		attr:  &FuncAttr{},
+	}
 }
 
 type VimLParser struct {

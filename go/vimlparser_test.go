@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 
 	"runtime/debug"
 	"strings"
@@ -88,8 +87,6 @@ func TestVimLParser_parse(t *testing.T) {
 
 const basePkg = "github.com/haya14busa/vim-vimlparser/go"
 
-var basePkgReg = regexp.MustCompile("vimlparser$")
-
 var skipTests = map[string]bool{"test_xxx_colonsharp": true}
 
 func TestVimLParser_parse_compile(t *testing.T) {
@@ -166,4 +163,20 @@ func readlines(path string) ([]string, error) {
 	}
 
 	return strings.Split(string(b), "\n"), nil
+}
+
+func TestVimLParser_VimLParser(t *testing.T) {
+	defer recovert(t)
+	p, err := build.Default.Import(basePkg, "", build.FindOnly)
+	if err != nil {
+		t.Fatal(err)
+	}
+	file := path.Join(filepath.Dir(p.Dir), "autoload", "vimlparser.vim")
+	lines, err := readlines(file)
+	if err != nil {
+		t.Fatal(err)
+	}
+	c := NewCompiler()
+	n := NewVimLParser().parse(NewStringReader(lines))
+	c.compile(n)
 }

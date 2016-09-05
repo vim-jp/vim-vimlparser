@@ -14,6 +14,7 @@ func Parse(r io.Reader) (node *Node, err error) {
 		if r := recover(); r != nil {
 			node = nil
 			err = fmt.Errorf("go-vimlparser:Parse: %v", r)
+			// log.Printf("%s", debug.Stack())
 		}
 	}()
 	lines := readlines(r)
@@ -27,6 +28,7 @@ func ParseExpr(r io.Reader) (node *Node, err error) {
 		if r := recover(); r != nil {
 			node = nil
 			err = fmt.Errorf("go-vimlparser:Parse: %v", r)
+			// log.Printf("%s", debug.Stack())
 		}
 	}()
 	lines := readlines(r)
@@ -40,6 +42,7 @@ func Compile(w io.Writer, node *Node) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			err = fmt.Errorf("go-vimlparser:Compile: %v", r)
+			// log.Printf("%s", debug.Stack())
 		}
 	}()
 	c := internal.NewCompiler()
