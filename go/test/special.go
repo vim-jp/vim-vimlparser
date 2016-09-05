@@ -55,6 +55,16 @@ func cache() {
 	return x[1].(*ExprToken)
 }
 
+F(self.compile(node.left).(string))
+F(self.compile(node.rest).(string))
+func F() {
+	return node.value.(string)
+}
+
 // end type assertion
 xs = append(xs, x)
 node.value = append(node.value.([]interface{}), []interface{}{key, val})
+if cnode.pattern != "" {
+}
+if node.depth != 0 {
+}

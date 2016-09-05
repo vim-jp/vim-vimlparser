@@ -43,6 +43,10 @@ function! s:Compiler.decindent()
   " skip
 endfunction
 
+function! s:Compiler.compile_curlynameexpr()
+  " skip
+endfunction
+
 let y = s:ExArg()
 
 function! s:ExArg()
@@ -138,6 +142,16 @@ function! s:cache() abort
   call self.reader.seek_set(x[0])
   return x[1]
 endfunction
+call F(self.compile(node.left))
+call F(self.compile(node.rest))
+
+function! F()
+  return node.value
+endfunction
 " end type assertion
 call add(xs, x)
 call add(node.value, [key, val])
+if cnode.pattern != s:NIL
+endif
+if node.depth != s:NIL
+endif

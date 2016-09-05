@@ -202,3 +202,7 @@ func (self *Compiler) incindent(s string) {
 func (self *Compiler) decindent() {
 	self.indent = self.indent[1:]
 }
+
+func (self *Compiler) compile_curlynameexpr(n *node) string {
+	return "{" + self.compile(n.value.(*node)).(string) + "}"
+}

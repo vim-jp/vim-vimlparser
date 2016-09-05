@@ -354,6 +354,7 @@ function s:GoCompiler.compile_function(node)
     \     || name == 'out'
     \     || name == 'incindent'
     \     || name == 'decindent'
+    \     || name == 'compile_curlynameexpr'
     \     ))
       return
     endif
@@ -393,6 +394,9 @@ function s:GoCompiler.compile_return(node)
     let r = self.compile(a:node.left)
     if r == 'x[1]'
       call self.out('return %s.(*ExprToken)', r)
+      return
+    elseif r == 'node.value'
+      call self.out('return %s.(string)', r)
       return
     endif
     let ms = matchlist(r, '\V\^[]interface{}{\(\.\*\)}\$')
@@ -823,6 +827,8 @@ function s:GoCompiler.compile_call(node)
     return printf('%s(%s.(string))', left, rlist[0])
   elseif left == 'self.reader.seek_set' && len(rlist) == 1 && rlist[0] == 'x[0]'
     return printf('%s(%s.(int))', left, rlist[0])
+  elseif left == 'self.compile' && len(rlist) == 1 && rlist[0] =~ '\v^node\.(left|rest)$'
+    return printf('%s(%s).(string)', left, rlist[0])
   endif
   if left =~ '\.new$'
     let left = 'New' . matchstr(left, '.*\ze\.new$')
@@ -930,6 +936,13 @@ function s:GoCompiler.compile_op2(node, op)
   if s:opprec[a:node.type] > s:opprec[a:node.right.type]
     let right = '(' . right . ')'
   endif
+
+  if left == 'cnode.pattern' && right == 'nil'
+    let right = '""'
+  elseif left == 'node.depth' && right == 'nil'
+    let right = '0'
+  endif
+
   return printf('%s %s %s', left, a:op, right)
 endfunction
 
