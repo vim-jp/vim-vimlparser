@@ -218,8 +218,8 @@ func (self *Compiler) compile_curlynameexpr(n *VimNode) string {
 func (self *Compiler) compile_list(n *VimNode) string {
 	var value = func() []string {
 		var ss []string
-		for _, vval := range n.value.([]*VimNode) {
-			ss = append(ss, self.compile(vval).(string))
+		for _, vval := range n.value.([]interface{}) {
+			ss = append(ss, self.compile(vval.(*VimNode)).(string))
 		}
 		return ss
 	}()

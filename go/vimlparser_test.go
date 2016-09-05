@@ -99,7 +99,7 @@ func TestVimLParser_parse_compile(t *testing.T) {
 	}
 	testDir := path.Join(filepath.Dir(p.Dir), "test")
 	// t.Error(p, err)
-	vimfiles, err := filepath.Glob(testDir + "/test_*.vim")
+	vimfiles, err := filepath.Glob(testDir + "/test*.vim")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,8 +148,8 @@ func testFiles(t *testing.T, file string, in, want []string) {
 	c := NewCompiler()
 	got := c.compile(p.parse(r)).([]string)
 
-	if strings.Trim(strings.Join(got, "\n"), "\n") != strings.Trim(strings.Join(want, "\n"), "\n") {
-		t.Errorf("%v: got %v\nwant %v", file, got, want)
+	if g, w := strings.Trim(strings.Join(got, "\n"), "\n"), strings.Trim(strings.Join(want, "\n"), "\n"); g != w {
+		t.Errorf("%v: got %v\nwant %v", file, g, w)
 	}
 }
 

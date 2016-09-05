@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -131,7 +132,7 @@ func viml_join(lst vimlList, sep string) string {
 	var ss []string
 	s := reflect.ValueOf(lst)
 	for i := 0; i < s.Len(); i++ {
-		ss = append(ss, fmt.Sprintf("%s", s.Index(i)))
+		ss = append(ss, fmt.Sprintf("%v", s.Index(i)))
 	}
 	return strings.Join(ss, sep)
 }
@@ -172,7 +173,11 @@ func viml_split(s string, sep string) []string {
 }
 
 func viml_str2nr(s string, base int) int {
-	panic("NotImplemented viml_str2nr")
+	r, err := strconv.ParseInt(s, base, 32)
+	if err != nil {
+		panic(fmt.Errorf("viml_str2nr: %v", err))
+	}
+	return int(r)
 }
 
 func viml_string(obj interface{}) string {
