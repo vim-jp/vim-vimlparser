@@ -343,7 +343,7 @@ func (self *VimLParser) find_context(type_ int) int {
 	return -1
 }
 
-func (self *VimLParser) add_node(node *node) {
+func (self *VimLParser) add_node(node *VimNode) {
 	self.context[0].body = append(self.context[0].body, node)
 }
 
@@ -377,7 +377,7 @@ func (self *VimLParser) check_missing_endfor(ends string, pos *pos) {
 	}
 }
 
-func (self *VimLParser) parse(reader *StringReader) *node {
+func (self *VimLParser) parse(reader *StringReader) *VimNode {
 	self.reader = reader
 	var toplevel = Node(NODE_TOPLEVEL)
 	self.push_context(toplevel)
@@ -1636,12 +1636,12 @@ func (self *VimLParser) parse_cmd_execute() {
 	self.add_node(node)
 }
 
-func (self *VimLParser) parse_expr() *node {
+func (self *VimLParser) parse_expr() *VimNode {
 	return NewExprParser(self.reader).parse()
 }
 
-func (self *VimLParser) parse_exprlist() []*node {
-	var list []*node
+func (self *VimLParser) parse_exprlist() []*VimNode {
+	var list []*VimNode
 	for true {
 		self.reader.skip_white()
 		var c = self.reader.peek()
@@ -1654,7 +1654,7 @@ func (self *VimLParser) parse_exprlist() []*node {
 	return list
 }
 
-func (self *VimLParser) parse_lvalue_func() *node {
+func (self *VimLParser) parse_lvalue_func() *VimNode {
 	var p = NewLvalueParser(self.reader)
 	var node = p.parse()
 	if node.type_ == NODE_IDENTIFIER || node.type_ == NODE_CURLYNAME || node.type_ == NODE_SUBSCRIPT || node.type_ == NODE_DOT || node.type_ == NODE_OPTION || node.type_ == NODE_ENV || node.type_ == NODE_REG {
@@ -1664,7 +1664,7 @@ func (self *VimLParser) parse_lvalue_func() *node {
 }
 
 // FIXME:
-func (self *VimLParser) parse_lvalue() *node {
+func (self *VimLParser) parse_lvalue() *VimNode {
 	var p = NewLvalueParser(self.reader)
 	var node = p.parse()
 	if node.type_ == NODE_IDENTIFIER {
@@ -1678,8 +1678,8 @@ func (self *VimLParser) parse_lvalue() *node {
 	panic(Err("Invalid Expression", node.pos))
 }
 
-func (self *VimLParser) parse_lvaluelist() []*node {
-	var list []*node
+func (self *VimLParser) parse_lvaluelist() []*VimNode {
+	var list []*VimNode
 	var node = self.parse_expr()
 	list = append(list, node)
 	for true {
@@ -2060,12 +2060,12 @@ func (self *ExprParser) __init__(reader *StringReader) {
 	self.tokenizer = NewExprTokenizer(reader)
 }
 
-func (self *ExprParser) parse() *node {
+func (self *ExprParser) parse() *VimNode {
 	return self.parse_expr1()
 }
 
 // expr1: expr2 ? expr1 : expr1
-func (self *ExprParser) parse_expr1() *node {
+func (self *ExprParser) parse_expr1() *VimNode {
 	var left = self.parse_expr2()
 	var pos = self.reader.tell()
 	var token = self.tokenizer.get()
@@ -2087,7 +2087,7 @@ func (self *ExprParser) parse_expr1() *node {
 }
 
 // expr2: expr3 || expr3 ..
-func (self *ExprParser) parse_expr2() *node {
+func (self *ExprParser) parse_expr2() *VimNode {
 	var left = self.parse_expr3()
 	for true {
 		var pos = self.reader.tell()
@@ -2107,7 +2107,7 @@ func (self *ExprParser) parse_expr2() *node {
 }
 
 // expr3: expr4 && expr4
-func (self *ExprParser) parse_expr3() *node {
+func (self *ExprParser) parse_expr3() *VimNode {
 	var left = self.parse_expr4()
 	for true {
 		var pos = self.reader.tell()
@@ -2141,7 +2141,7 @@ func (self *ExprParser) parse_expr3() *node {
 //
 //        expr5 is expr5
 //        expr5 isnot expr5
-func (self *ExprParser) parse_expr4() *node {
+func (self *ExprParser) parse_expr4() *VimNode {
 	var left = self.parse_expr5()
 	var pos = self.reader.tell()
 	var token = self.tokenizer.get()
@@ -2334,7 +2334,7 @@ func (self *ExprParser) parse_expr4() *node {
 // expr5: expr6 + expr6 ..
 //        expr6 - expr6 ..
 //        expr6 . expr6 ..
-func (self *ExprParser) parse_expr5() *node {
+func (self *ExprParser) parse_expr5() *VimNode {
 	var left = self.parse_expr6()
 	for true {
 		var pos = self.reader.tell()
@@ -2368,7 +2368,7 @@ func (self *ExprParser) parse_expr5() *node {
 // expr6: expr7 * expr7 ..
 //        expr7 / expr7 ..
 //        expr7 % expr7 ..
-func (self *ExprParser) parse_expr6() *node {
+func (self *ExprParser) parse_expr6() *VimNode {
 	var left = self.parse_expr7()
 	for true {
 		var pos = self.reader.tell()
@@ -2402,7 +2402,7 @@ func (self *ExprParser) parse_expr6() *node {
 // expr7: ! expr7
 //        - expr7
 //        + expr7
-func (self *ExprParser) parse_expr7() *node {
+func (self *ExprParser) parse_expr7() *VimNode {
 	var pos = self.reader.tell()
 	var token = self.tokenizer.get()
 	if token.type_ == TOKEN_NOT {
@@ -2431,7 +2431,7 @@ func (self *ExprParser) parse_expr7() *node {
 //        expr8[expr1 : expr1]
 //        expr8.name
 //        expr8(expr1, ...)
-func (self *ExprParser) parse_expr8() *node {
+func (self *ExprParser) parse_expr8() *VimNode {
 	var left = self.parse_expr9()
 	for true {
 		var pos = self.reader.tell()
@@ -2444,6 +2444,7 @@ func (self *ExprParser) parse_expr8() *node {
 				var node = Node(NODE_SLICE)
 				node.pos = npos
 				node.left = left
+				node.rlist = []*VimNode{nil, nil}
 				token = self.tokenizer.peek()
 				if token.type_ != TOKEN_SQCLOSE {
 					node.rlist[1] = self.parse_expr1()
@@ -2460,6 +2461,7 @@ func (self *ExprParser) parse_expr8() *node {
 					var node = Node(NODE_SLICE)
 					node.pos = npos
 					node.left = left
+					node.rlist = []*VimNode{right, nil}
 					token = self.tokenizer.peek()
 					if token.type_ != TOKEN_SQCLOSE {
 						node.rlist[1] = self.parse_expr1()
@@ -2537,7 +2539,7 @@ func (self *ExprParser) parse_expr8() *node {
 //        @r
 //        function(expr1, ...)
 //        func{ti}on(expr1, ...)
-func (self *ExprParser) parse_expr9() *node {
+func (self *ExprParser) parse_expr9() *VimNode {
 	var pos = self.reader.tell()
 	var token = self.tokenizer.get()
 	var node = Node(-1)
@@ -2657,7 +2659,7 @@ func (self *ExprParser) parse_expr9() *node {
 // SUBSCRIPT or CONCAT
 //   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 //   str  "." expr6         => (concat str expr6)
-func (self *ExprParser) parse_dot(token *ExprToken, left *node) *node {
+func (self *ExprParser) parse_dot(token *ExprToken, left *VimNode) *VimNode {
 	if left.type_ != NODE_IDENTIFIER && left.type_ != NODE_CURLYNAME && left.type_ != NODE_DICT && left.type_ != NODE_SUBSCRIPT && left.type_ != NODE_CALL && left.type_ != NODE_DOT {
 		return nil
 	}
@@ -2680,7 +2682,7 @@ func (self *ExprParser) parse_dot(token *ExprToken, left *node) *node {
 	return node
 }
 
-func (self *ExprParser) parse_identifier() *node {
+func (self *ExprParser) parse_identifier() *VimNode {
 	self.reader.skip_white()
 	var npos = self.reader.getpos()
 	var curly_parts = self.parse_curly_parts()
@@ -2697,8 +2699,8 @@ func (self *ExprParser) parse_identifier() *node {
 	}
 }
 
-func (self *ExprParser) parse_curly_parts() []*node {
-	var curly_parts []*node
+func (self *ExprParser) parse_curly_parts() []*VimNode {
+	var curly_parts []*VimNode
 	var c = self.reader.peek()
 	var pos = self.reader.getpos()
 	if c == "<" && viml_equalci(self.reader.peekn(5), "<SID>") {
@@ -2743,14 +2745,14 @@ func (self *ExprParser) parse_curly_parts() []*node {
 	return curly_parts
 }
 
-func (self *LvalueParser) parse() *node {
+func (self *LvalueParser) parse() *VimNode {
 	return self.parse_lv8()
 }
 
 // expr8: expr8[expr1]
 //        expr8[expr1 : expr1]
 //        expr8.name
-func (self *LvalueParser) parse_lv8() *node {
+func (self *LvalueParser) parse_lv8() *VimNode {
 	var left = self.parse_lv9()
 	for true {
 		var pos = self.reader.tell()
@@ -2764,6 +2766,7 @@ func (self *LvalueParser) parse_lv8() *node {
 				node = Node(NODE_SLICE)
 				node.pos = npos
 				node.left = left
+				node.rlist = []*VimNode{nil, nil}
 				token = self.tokenizer.peek()
 				if token.type_ != TOKEN_SQCLOSE {
 					node.rlist[1] = self.parse_expr1()
@@ -2779,6 +2782,7 @@ func (self *LvalueParser) parse_lv8() *node {
 					node = Node(NODE_SLICE)
 					node.pos = npos
 					node.left = left
+					node.rlist = []*VimNode{right, nil}
 					token = self.tokenizer.peek()
 					if token.type_ != TOKEN_SQCLOSE {
 						node.rlist[1] = self.parse_expr1()
@@ -2819,7 +2823,7 @@ func (self *LvalueParser) parse_lv8() *node {
 //        var{ria}ble
 //        $VAR
 //        @r
-func (self *LvalueParser) parse_lv9() *node {
+func (self *LvalueParser) parse_lv9() *VimNode {
 	var pos = self.reader.tell()
 	var token = self.tokenizer.get()
 	var node = Node(-1)
@@ -3075,7 +3079,7 @@ func (self *StringReader) skip_white_and_colon() {
 	}
 }
 
-func (self *Compiler) compile(node *node) interface{} {
+func (self *Compiler) compile(node *VimNode) interface{} {
 	if node.type_ == NODE_TOPLEVEL {
 		return self.compile_toplevel(node)
 	} else if node.type_ == NODE_COMMENT {
@@ -3244,26 +3248,26 @@ func (self *Compiler) compile(node *node) interface{} {
 	return nil
 }
 
-func (self *Compiler) compile_body(body []*node) {
+func (self *Compiler) compile_body(body []*VimNode) {
 	for _, node := range body {
 		self.compile(node)
 	}
 }
 
-func (self *Compiler) compile_toplevel(node *node) []string {
+func (self *Compiler) compile_toplevel(node *VimNode) []string {
 	self.compile_body(node.body)
 	return self.lines
 }
 
-func (self *Compiler) compile_comment(node *node) {
+func (self *Compiler) compile_comment(node *VimNode) {
 	self.out(";%s", node.str)
 }
 
-func (self *Compiler) compile_excmd(node *node) {
+func (self *Compiler) compile_excmd(node *VimNode) {
 	self.out("(excmd \"%s\")", viml_escape(node.str, "\\\""))
 }
 
-func (self *Compiler) compile_function(node *node) {
+func (self *Compiler) compile_function(node *VimNode) {
 	var left = self.compile(node.left).(string)
 	var rlist = func() []string {;var ss []string;for _, vval := range node.rlist {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	if !viml_empty(rlist) && rlist[len(rlist)-1] == "..." {
@@ -3280,11 +3284,11 @@ func (self *Compiler) compile_function(node *node) {
 	self.decindent()
 }
 
-func (self *Compiler) compile_delfunction(node *node) {
+func (self *Compiler) compile_delfunction(node *VimNode) {
 	self.out("(delfunction %s)", self.compile(node.left).(string))
 }
 
-func (self *Compiler) compile_return(node *node) {
+func (self *Compiler) compile_return(node *VimNode) {
 	if node.left == nil {
 		self.out("(return)")
 	} else {
@@ -3292,11 +3296,11 @@ func (self *Compiler) compile_return(node *node) {
 	}
 }
 
-func (self *Compiler) compile_excall(node *node) {
+func (self *Compiler) compile_excall(node *VimNode) {
 	self.out("(call %s)", self.compile(node.left).(string))
 }
 
-func (self *Compiler) compile_let(node *node) {
+func (self *Compiler) compile_let(node *VimNode) {
 	var left = ""
 	if node.left != nil {
 		left = self.compile(node.left).(string)
@@ -3311,12 +3315,12 @@ func (self *Compiler) compile_let(node *node) {
 	self.out("(let %s %s %s)", node.op, left, right)
 }
 
-func (self *Compiler) compile_unlet(node *node) {
+func (self *Compiler) compile_unlet(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	self.out("(unlet %s)", viml_join(list, " "))
 }
 
-func (self *Compiler) compile_lockvar(node *node) {
+func (self *Compiler) compile_lockvar(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	if node.depth == 0 {
 		self.out("(lockvar %s)", viml_join(list, " "))
@@ -3325,7 +3329,7 @@ func (self *Compiler) compile_lockvar(node *node) {
 	}
 }
 
-func (self *Compiler) compile_unlockvar(node *node) {
+func (self *Compiler) compile_unlockvar(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	if node.depth == 0 {
 		self.out("(unlockvar %s)", viml_join(list, " "))
@@ -3334,7 +3338,7 @@ func (self *Compiler) compile_unlockvar(node *node) {
 	}
 }
 
-func (self *Compiler) compile_if(node *node) {
+func (self *Compiler) compile_if(node *VimNode) {
 	self.out("(if %s", self.compile(node.cond))
 	self.incindent("  ")
 	self.compile_body(node.body)
@@ -3356,7 +3360,7 @@ func (self *Compiler) compile_if(node *node) {
 	self.decindent()
 }
 
-func (self *Compiler) compile_while(node *node) {
+func (self *Compiler) compile_while(node *VimNode) {
 	self.out("(while %s", self.compile(node.cond))
 	self.incindent("  ")
 	self.compile_body(node.body)
@@ -3364,7 +3368,7 @@ func (self *Compiler) compile_while(node *node) {
 	self.decindent()
 }
 
-func (self *Compiler) compile_for(node *node) {
+func (self *Compiler) compile_for(node *VimNode) {
 	var left = ""
 	if node.left != nil {
 		left = self.compile(node.left).(string)
@@ -3383,15 +3387,15 @@ func (self *Compiler) compile_for(node *node) {
 	self.decindent()
 }
 
-func (self *Compiler) compile_continue(node *node) {
+func (self *Compiler) compile_continue(node *VimNode) {
 	self.out("(continue)")
 }
 
-func (self *Compiler) compile_break(node *node) {
+func (self *Compiler) compile_break(node *VimNode) {
 	self.out("(break)")
 }
 
-func (self *Compiler) compile_try(node *node) {
+func (self *Compiler) compile_try(node *VimNode) {
 	self.out("(try")
 	self.incindent("  ")
 	self.compile_body(node.body)
@@ -3418,222 +3422,222 @@ func (self *Compiler) compile_try(node *node) {
 	self.decindent()
 }
 
-func (self *Compiler) compile_throw(node *node) {
+func (self *Compiler) compile_throw(node *VimNode) {
 	self.out("(throw %s)", self.compile(node.left).(string))
 }
 
-func (self *Compiler) compile_echo(node *node) {
+func (self *Compiler) compile_echo(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	self.out("(echo %s)", viml_join(list, " "))
 }
 
-func (self *Compiler) compile_echon(node *node) {
+func (self *Compiler) compile_echon(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	self.out("(echon %s)", viml_join(list, " "))
 }
 
-func (self *Compiler) compile_echohl(node *node) {
+func (self *Compiler) compile_echohl(node *VimNode) {
 	self.out("(echohl \"%s\")", viml_escape(node.str, "\\\""))
 }
 
-func (self *Compiler) compile_echomsg(node *node) {
+func (self *Compiler) compile_echomsg(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	self.out("(echomsg %s)", viml_join(list, " "))
 }
 
-func (self *Compiler) compile_echoerr(node *node) {
+func (self *Compiler) compile_echoerr(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	self.out("(echoerr %s)", viml_join(list, " "))
 }
 
-func (self *Compiler) compile_execute(node *node) {
+func (self *Compiler) compile_execute(node *VimNode) {
 	var list = func() []string {;var ss []string;for _, vval := range node.list {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	self.out("(execute %s)", viml_join(list, " "))
 }
 
-func (self *Compiler) compile_ternary(node *node) string {
+func (self *Compiler) compile_ternary(node *VimNode) string {
 	return viml_printf("(?: %s %s %s)", self.compile(node.cond), self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_or(node *node) string {
+func (self *Compiler) compile_or(node *VimNode) string {
 	return viml_printf("(|| %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_and(node *node) string {
+func (self *Compiler) compile_and(node *VimNode) string {
 	return viml_printf("(&& %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_equal(node *node) string {
+func (self *Compiler) compile_equal(node *VimNode) string {
 	return viml_printf("(== %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_equalci(node *node) string {
+func (self *Compiler) compile_equalci(node *VimNode) string {
 	return viml_printf("(==? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_equalcs(node *node) string {
+func (self *Compiler) compile_equalcs(node *VimNode) string {
 	return viml_printf("(==# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_nequal(node *node) string {
+func (self *Compiler) compile_nequal(node *VimNode) string {
 	return viml_printf("(!= %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_nequalci(node *node) string {
+func (self *Compiler) compile_nequalci(node *VimNode) string {
 	return viml_printf("(!=? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_nequalcs(node *node) string {
+func (self *Compiler) compile_nequalcs(node *VimNode) string {
 	return viml_printf("(!=# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_greater(node *node) string {
+func (self *Compiler) compile_greater(node *VimNode) string {
 	return viml_printf("(> %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_greaterci(node *node) string {
+func (self *Compiler) compile_greaterci(node *VimNode) string {
 	return viml_printf("(>? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_greatercs(node *node) string {
+func (self *Compiler) compile_greatercs(node *VimNode) string {
 	return viml_printf("(># %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_gequal(node *node) string {
+func (self *Compiler) compile_gequal(node *VimNode) string {
 	return viml_printf("(>= %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_gequalci(node *node) string {
+func (self *Compiler) compile_gequalci(node *VimNode) string {
 	return viml_printf("(>=? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_gequalcs(node *node) string {
+func (self *Compiler) compile_gequalcs(node *VimNode) string {
 	return viml_printf("(>=# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_smaller(node *node) string {
+func (self *Compiler) compile_smaller(node *VimNode) string {
 	return viml_printf("(< %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_smallerci(node *node) string {
+func (self *Compiler) compile_smallerci(node *VimNode) string {
 	return viml_printf("(<? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_smallercs(node *node) string {
+func (self *Compiler) compile_smallercs(node *VimNode) string {
 	return viml_printf("(<# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_sequal(node *node) string {
+func (self *Compiler) compile_sequal(node *VimNode) string {
 	return viml_printf("(<= %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_sequalci(node *node) string {
+func (self *Compiler) compile_sequalci(node *VimNode) string {
 	return viml_printf("(<=? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_sequalcs(node *node) string {
+func (self *Compiler) compile_sequalcs(node *VimNode) string {
 	return viml_printf("(<=# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_match(node *node) string {
+func (self *Compiler) compile_match(node *VimNode) string {
 	return viml_printf("(=~ %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_matchci(node *node) string {
+func (self *Compiler) compile_matchci(node *VimNode) string {
 	return viml_printf("(=~? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_matchcs(node *node) string {
+func (self *Compiler) compile_matchcs(node *VimNode) string {
 	return viml_printf("(=~# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_nomatch(node *node) string {
+func (self *Compiler) compile_nomatch(node *VimNode) string {
 	return viml_printf("(!~ %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_nomatchci(node *node) string {
+func (self *Compiler) compile_nomatchci(node *VimNode) string {
 	return viml_printf("(!~? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_nomatchcs(node *node) string {
+func (self *Compiler) compile_nomatchcs(node *VimNode) string {
 	return viml_printf("(!~# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_is(node *node) string {
+func (self *Compiler) compile_is(node *VimNode) string {
 	return viml_printf("(is %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_isci(node *node) string {
+func (self *Compiler) compile_isci(node *VimNode) string {
 	return viml_printf("(is? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_iscs(node *node) string {
+func (self *Compiler) compile_iscs(node *VimNode) string {
 	return viml_printf("(is# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_isnot(node *node) string {
+func (self *Compiler) compile_isnot(node *VimNode) string {
 	return viml_printf("(isnot %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_isnotci(node *node) string {
+func (self *Compiler) compile_isnotci(node *VimNode) string {
 	return viml_printf("(isnot? %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_isnotcs(node *node) string {
+func (self *Compiler) compile_isnotcs(node *VimNode) string {
 	return viml_printf("(isnot# %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_add(node *node) string {
+func (self *Compiler) compile_add(node *VimNode) string {
 	return viml_printf("(+ %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_subtract(node *node) string {
+func (self *Compiler) compile_subtract(node *VimNode) string {
 	return viml_printf("(- %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_concat(node *node) string {
+func (self *Compiler) compile_concat(node *VimNode) string {
 	return viml_printf("(concat %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_multiply(node *node) string {
+func (self *Compiler) compile_multiply(node *VimNode) string {
 	return viml_printf("(* %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_divide(node *node) string {
+func (self *Compiler) compile_divide(node *VimNode) string {
 	return viml_printf("(/ %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_remainder(node *node) string {
+func (self *Compiler) compile_remainder(node *VimNode) string {
 	return viml_printf("(%% %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_not(node *node) string {
+func (self *Compiler) compile_not(node *VimNode) string {
 	return viml_printf("(! %s)", self.compile(node.left).(string))
 }
 
-func (self *Compiler) compile_plus(node *node) string {
+func (self *Compiler) compile_plus(node *VimNode) string {
 	return viml_printf("(+ %s)", self.compile(node.left).(string))
 }
 
-func (self *Compiler) compile_minus(node *node) string {
+func (self *Compiler) compile_minus(node *VimNode) string {
 	return viml_printf("(- %s)", self.compile(node.left).(string))
 }
 
-func (self *Compiler) compile_subscript(node *node) string {
+func (self *Compiler) compile_subscript(node *VimNode) string {
 	return viml_printf("(subscript %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_slice(node *node) string {
-	var r0 = viml_ternary(node.rlist[0] == nil, "nil", self.compile(node.rlist[0]))
-	var r1 = viml_ternary(node.rlist[1] == nil, "nil", self.compile(node.rlist[1]))
+func (self *Compiler) compile_slice(node *VimNode) string {
+	var r0 = func() string { if node.rlist[0] == nil {return "nil"} else {return self.compile(node.rlist[0]).(string)} }()
+	var r1 = func() string { if node.rlist[1] == nil {return "nil"} else {return self.compile(node.rlist[1]).(string)} }()
 	return viml_printf("(slice %s %s %s)", self.compile(node.left).(string), r0, r1)
 }
 
-func (self *Compiler) compile_dot(node *node) string {
+func (self *Compiler) compile_dot(node *VimNode) string {
 	return viml_printf("(dot %s %s)", self.compile(node.left).(string), self.compile(node.right))
 }
 
-func (self *Compiler) compile_call(node *node) string {
+func (self *Compiler) compile_call(node *VimNode) string {
 	var rlist = func() []string {;var ss []string;for _, vval := range node.rlist {;ss = append(ss, self.compile(vval).(string));};return ss;}()
 	if viml_empty(rlist) {
 		return viml_printf("(%s)", self.compile(node.left).(string))
@@ -3642,31 +3646,31 @@ func (self *Compiler) compile_call(node *node) string {
 	}
 }
 
-func (self *Compiler) compile_number(node *node) string {
+func (self *Compiler) compile_number(node *VimNode) string {
 	return node.value.(string)
 }
 
-func (self *Compiler) compile_string(node *node) string {
+func (self *Compiler) compile_string(node *VimNode) string {
 	return node.value.(string)
 }
 
-func (self *Compiler) compile_option(node *node) string {
+func (self *Compiler) compile_option(node *VimNode) string {
 	return node.value.(string)
 }
 
-func (self *Compiler) compile_identifier(node *node) string {
+func (self *Compiler) compile_identifier(node *VimNode) string {
 	return node.value.(string)
 }
 
-func (self *Compiler) compile_env(node *node) string {
+func (self *Compiler) compile_env(node *VimNode) string {
 	return node.value.(string)
 }
 
-func (self *Compiler) compile_reg(node *node) string {
+func (self *Compiler) compile_reg(node *VimNode) string {
 	return node.value.(string)
 }
 
-func (self *Compiler) compile_curlynamepart(node *node) string {
+func (self *Compiler) compile_curlynamepart(node *VimNode) string {
 	return node.value.(string)
 }
 

@@ -171,3 +171,5 @@ endif
 if node.depth != s:NIL
 endif
 let rlist = map(a:node.rlist, 'self.compile(v:val)')
+call F(a:node.rlist[0] is s:NIL ? 'nil' : self.compile(a:node.rlist[0]))
+call F(a:node.rlist[1] is s:NIL ? 'nil' : self.compile(a:node.rlist[1]))

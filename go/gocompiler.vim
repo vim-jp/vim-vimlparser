@@ -638,7 +638,14 @@ function s:GoCompiler.compile_execute(node)
 endfunction
 
 function s:GoCompiler.compile_ternary(node)
-  return printf('viml_ternary(%s, %s, %s)', self.compile(a:node.cond), self.compile(a:node.left), self.compile(a:node.right))
+  let cond = self.compile(a:node.cond)
+  let left = self.compile(a:node.left)
+  let right = self.compile(a:node.right)
+  if cond =~ '^node\.rlist\[\d\]' && left == '"nil"'
+    return printf('func() string { if %s {return %s} else {return %s.(string)} }()', cond, left, right)
+  else
+    return printf('viml_ternary(%s, %s, %s)', cond, left, right)
+  endif
 endfunction
 
 function s:GoCompiler.compile_or(node)

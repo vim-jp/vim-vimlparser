@@ -242,8 +242,9 @@ func (self *Compiler) compile_curlyname(n *VimNode) string {
 
 func (self *Compiler) compile_dict(n *VimNode) string {
 	var value = []string{}
-	for _, nn := range n.value.([][]*VimNode) {
-		value = append(value, "("+self.compile(nn[0]).(string)+" "+self.compile(nn[1]).(string)+")")
+	for _, nn := range n.value.([]interface{}) {
+		kv := nn.([]interface{})
+		value = append(value, "("+self.compile(kv[0].(*VimNode)).(string)+" "+self.compile(kv[1].(*VimNode)).(string)+")")
 	}
 	// var value = viml_map(VimNode.value, "\"(\" . self.compile(v:val[0]) . \" \" . self.compile(v:val[1]) . \")\"")
 	if viml_empty(value) {
