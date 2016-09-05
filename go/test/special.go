@@ -36,6 +36,9 @@ node.attr.dict = true
 // do not skip
 node.list = self.parse_lvaluelist()
 node.depth = hoge
+node.rlist = []*node{nil, nil}
+node.rlist = []*node{right, nil}
+node.rlist = F()
 // end do not skip
 var p = NewVimLParser()
 var et = NewExprTokenizer(r)

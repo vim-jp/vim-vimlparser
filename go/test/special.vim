@@ -132,6 +132,9 @@ let lhs.list = []
 let node.list = self.parse_lvaluelist()
 let node.depth = hoge
 let node.pattern = node
+let node.rlist = [s:NIL, s:NIL]
+let node.rlist = [right, s:NIL]
+let node.rlist = F()
 " end do not skip
 
 let p = s:VimLParser.new()

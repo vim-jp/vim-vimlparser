@@ -445,7 +445,7 @@ function s:GoCompiler.compile_let(node)
       "   RE_MAGIC
       "   RE_VERY_MAGIC
       return
-    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|lhs.list|(node\.(body|rlist|attr|else_|elseif|catch|finally|pattern|end(function|if|for|try))))$' && op == '='
+    elseif left =~ '^\v(self\.(find_command_cache|cache|buf|pos|context)|toplevel.body|lhs.list|(node\.(body|attr|else_|elseif|catch|finally|pattern|end(function|if|for|try))))$' && op == '='
       " skip initialization
       return
     elseif left =~ '^\v(node\.(list|depth))$' && op == '='
@@ -453,6 +453,17 @@ function s:GoCompiler.compile_let(node)
         return
       endif
       call self.out('%s %s %s', left, op, right)
+      return
+    elseif left =~ 'node.rlist' && op == '='
+      if right == '[]interface{}{}'
+        return
+      endif
+      let m = matchstr(right, '\V[]interface{}{\zs\.\*\ze}\$')
+      if m != ''
+        call self.out('%s = []*node{%s}', left, m)
+      else
+        call self.out('%s = %s', left, right)
+      endif
       return
     elseif left =~ '^\v(list|curly_parts)$' && op == '=' && right == '[]interface{}{}'
       call self.out('var %s []*node', left)
