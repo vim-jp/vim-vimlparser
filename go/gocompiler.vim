@@ -460,13 +460,13 @@ function s:GoCompiler.compile_let(node)
       endif
       let m = matchstr(right, '\V[]interface{}{\zs\.\*\ze}\$')
       if m != ''
-        call self.out('%s = []*node{%s}', left, m)
+        call self.out('%s = []*VimNode{%s}', left, m)
       else
         call self.out('%s = %s', left, right)
       endif
       return
     elseif left =~ '^\v(list|curly_parts)$' && op == '=' && right == '[]interface{}{}'
-      call self.out('var %s []*node', left)
+      call self.out('var %s []*VimNode', left)
       return
     elseif left == 'cmd' && op == '=' && (right == 'nil' || right =~ '^\Vmap[string]interface{}{')
       if right == 'nil'

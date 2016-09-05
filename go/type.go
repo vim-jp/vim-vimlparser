@@ -36,16 +36,16 @@ type Cmd struct {
 	parser string
 }
 
-type node struct {
+type VimNode struct {
 	type_ int // type -> type_
 	pos   *pos
-	left  *node
-	right *node
-	cond  *node
-	rest  *node
-	list  []*node
-	rlist []*node
-	body  []*node
+	left  *VimNode
+	right *VimNode
+	cond  *VimNode
+	rest  *VimNode
+	list  []*VimNode
+	rlist []*VimNode
+	body  []*VimNode
 	op    string
 	str   string
 	depth int
@@ -54,16 +54,16 @@ type node struct {
 	ea   *ExArg
 	attr *FuncAttr
 
-	endfunction *node
-	elseif      []*node
-	else_       *node
-	endif       *node
-	endwhile    *node
-	endfor      *node
-	endtry      *node
+	endfunction *VimNode
+	elseif      []*VimNode
+	else_       *VimNode
+	endif       *VimNode
+	endwhile    *VimNode
+	endfor      *VimNode
+	endtry      *VimNode
 
-	catch   []*node
-	finally *node
+	catch   []*VimNode
+	finally *VimNode
 
 	pattern string
 	curly   bool
@@ -76,9 +76,9 @@ type FuncAttr struct {
 }
 
 type lhs struct {
-	left *node
-	list []*node
-	rest *node
+	left *VimNode
+	list []*VimNode
+	rest *VimNode
 }
 
 type pos struct {
@@ -87,15 +87,15 @@ type pos struct {
 	col  int
 }
 
-// Node returns new node.
-func Node(type_ int) *node {
-	return &node{type_: type_}
+// Node returns new VimNode.
+func Node(type_ int) *VimNode {
+	return &VimNode{type_: type_}
 }
 
 type VimLParser struct {
 	find_command_cache map[string]*Cmd
 	reader             *StringReader
-	context            []*node
+	context            []*VimNode
 	ea                 *ExArg
 }
 
@@ -106,8 +106,8 @@ func NewVimLParser() *VimLParser {
 	return obj
 }
 
-func (self *VimLParser) push_context(n *node) {
-	self.context = append([]*node{n}, self.context...)
+func (self *VimLParser) push_context(n *VimNode) {
+	self.context = append([]*VimNode{n}, self.context...)
 }
 
 func (self *VimLParser) pop_context() {
@@ -211,14 +211,14 @@ func (self *Compiler) decindent() {
 	self.indent = self.indent[1:]
 }
 
-func (self *Compiler) compile_curlynameexpr(n *node) string {
-	return "{" + self.compile(n.value.(*node)).(string) + "}"
+func (self *Compiler) compile_curlynameexpr(n *VimNode) string {
+	return "{" + self.compile(n.value.(*VimNode)).(string) + "}"
 }
 
-func (self *Compiler) compile_list(n *node) string {
+func (self *Compiler) compile_list(n *VimNode) string {
 	var value = func() []string {
 		var ss []string
-		for _, vval := range n.value.([]*node) {
+		for _, vval := range n.value.([]*VimNode) {
 			ss = append(ss, self.compile(vval).(string))
 		}
 		return ss
@@ -230,22 +230,22 @@ func (self *Compiler) compile_list(n *node) string {
 	}
 }
 
-func (self *Compiler) compile_curlyname(n *node) string {
+func (self *Compiler) compile_curlyname(n *VimNode) string {
 	return viml_join(func() []string {
 		var ss []string
-		for _, vval := range n.value.([]*node) {
+		for _, vval := range n.value.([]*VimNode) {
 			ss = append(ss, self.compile(vval).(string))
 		}
 		return ss
 	}(), "")
 }
 
-func (self *Compiler) compile_dict(n *node) string {
+func (self *Compiler) compile_dict(n *VimNode) string {
 	var value = []string{}
-	for _, nn := range n.value.([][]*node) {
+	for _, nn := range n.value.([][]*VimNode) {
 		value = append(value, "("+self.compile(nn[0]).(string)+" "+self.compile(nn[1]).(string)+")")
 	}
-	// var value = viml_map(node.value, "\"(\" . self.compile(v:val[0]) . \" \" . self.compile(v:val[1]) . \")\"")
+	// var value = viml_map(VimNode.value, "\"(\" . self.compile(v:val[0]) . \" \" . self.compile(v:val[1]) . \")\"")
 	if viml_empty(value) {
 		return "(dict)"
 	} else {

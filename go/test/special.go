@@ -36,8 +36,8 @@ node.attr.dict = true
 // do not skip
 node.list = self.parse_lvaluelist()
 node.depth = hoge
-node.rlist = []*node{nil, nil}
-node.rlist = []*node{right, nil}
+node.rlist = []*VimNode{nil, nil}
+node.rlist = []*VimNode{right, nil}
 node.rlist = F()
 // end do not skip
 var p = NewVimLParser()
@@ -46,8 +46,8 @@ var ep = NewExprParser(r)
 var lp = NewLvalueParser(r)
 var r = NewStringReader(lines)
 var nl = nil
-var list []*node
-var curly_parts []*node
+var list []*VimNode
+var curly_parts []*VimNode
 var cmd *Cmd = nil
 cmd = &Cmd{name: name, flags: "USERCMD", parser: "parse_cmd_usercmd"}
 // type assertion
