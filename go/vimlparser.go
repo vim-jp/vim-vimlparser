@@ -3326,7 +3326,7 @@ func (self *Compiler) compile_lockvar(node *VimNode) {
 	if node.depth == 0 {
 		self.out("(lockvar %s)", viml_join(list, " "))
 	} else {
-		self.out("(lockvar %s %s)", node.depth, viml_join(list, " "))
+		self.out("(lockvar %d %s)", node.depth, viml_join(list, " "))
 	}
 }
 
@@ -3335,7 +3335,7 @@ func (self *Compiler) compile_unlockvar(node *VimNode) {
 	if node.depth == 0 {
 		self.out("(unlockvar %s)", viml_join(list, " "))
 	} else {
-		self.out("(unlockvar %s %s)", node.depth, viml_join(list, " "))
+		self.out("(unlockvar %d %s)", node.depth, viml_join(list, " "))
 	}
 }
 
