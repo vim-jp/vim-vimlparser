@@ -1,5 +1,7 @@
 package vimlparser
 
+import "strings"
+
 type ExArg struct {
 	forceit      bool
 	addr_count   int
@@ -178,6 +180,12 @@ type Compiler struct {
 	lines  []string
 }
 
+func NewCompiler() *Compiler {
+	obj := &Compiler{}
+	obj.__init__()
+	return obj
+}
+
 func (self *Compiler) __init__() {
 	self.indent = []string{""}
 	self.lines = []string{}
@@ -205,4 +213,42 @@ func (self *Compiler) decindent() {
 
 func (self *Compiler) compile_curlynameexpr(n *node) string {
 	return "{" + self.compile(n.value.(*node)).(string) + "}"
+}
+
+func (self *Compiler) compile_list(n *node) string {
+	var value = func() []string {
+		var ss []string
+		for _, vval := range n.value.([]*node) {
+			ss = append(ss, self.compile(vval).(string))
+		}
+		return ss
+	}()
+	if viml_empty(value) {
+		return "(list)"
+	} else {
+		return viml_printf("(list %s)", viml_join(value, " "))
+	}
+}
+
+func (self *Compiler) compile_curlyname(n *node) string {
+	return viml_join(func() []string {
+		var ss []string
+		for _, vval := range n.value.([]*node) {
+			ss = append(ss, self.compile(vval).(string))
+		}
+		return ss
+	}(), "")
+}
+
+func (self *Compiler) compile_dict(n *node) string {
+	var value = []string{}
+	for _, nn := range n.value.([][]*node) {
+		value = append(value, "("+self.compile(nn[0]).(string)+" "+self.compile(nn[1]).(string)+")")
+	}
+	// var value = viml_map(node.value, "\"(\" . self.compile(v:val[0]) . \" \" . self.compile(v:val[1]) . \")\"")
+	if viml_empty(value) {
+		return "(dict)"
+	} else {
+		return viml_printf("(dict %s)", strings.Join(value, " "))
+	}
 }

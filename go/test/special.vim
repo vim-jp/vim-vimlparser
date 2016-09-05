@@ -47,6 +47,18 @@ function! s:Compiler.compile_curlynameexpr()
   " skip
 endfunction
 
+function! s:Compiler.compile_list()
+  " skip
+endfunction
+
+function! s:Compiler.compile_curlyname()
+  " skip
+endfunction
+
+function! s:Compiler.compile_dict()
+  " skip
+endfunction
+
 let y = s:ExArg()
 
 function! s:ExArg()
@@ -155,3 +167,4 @@ if cnode.pattern != s:NIL
 endif
 if node.depth != s:NIL
 endif
+let rlist = map(a:node.rlist, 'self.compile(v:val)')

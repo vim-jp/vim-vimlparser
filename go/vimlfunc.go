@@ -84,7 +84,7 @@ func viml_char2nr(c string) int {
 }
 
 func viml_empty(obj interface{}) bool {
-	panic("NotImplemented viml_empty")
+	return viml_len(obj) == 0
 }
 
 func viml_equalci(a, b string) bool {
@@ -120,7 +120,12 @@ func viml_extend(obj, item interface{}) interface{} {
 }
 
 func viml_join(lst vimlList, sep string) string {
-	panic("NotImplemented viml_join")
+	var ss []string
+	s := reflect.ValueOf(lst)
+	for i := 0; i < s.Len(); i++ {
+		ss = append(ss, fmt.Sprintf("%s", s.Index(i)))
+	}
+	return strings.Join(ss, sep)
 }
 
 func viml_keys(obj map[string]interface{}) []string {
@@ -174,10 +179,6 @@ func viml_stridx(a, b string) int {
 
 func viml_type(obj interface{}) int {
 	panic("NotImplemented viml_type")
-}
-
-func viml_map(xs interface{}, f interface{}) []string {
-	panic("NotImplemented viml_map")
 }
 
 func viml_ternary(cond bool, a interface{}, b interface{}) interface{} {

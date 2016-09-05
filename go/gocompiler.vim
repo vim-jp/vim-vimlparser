@@ -355,6 +355,9 @@ function s:GoCompiler.compile_function(node)
     \     || name == 'incindent'
     \     || name == 'decindent'
     \     || name == 'compile_curlynameexpr'
+    \     || name == 'compile_list'
+    \     || name == 'compile_curlyname'
+    \     || name == 'compile_dict'
     \     ))
       return
     endif
@@ -817,8 +820,17 @@ endfunction
 function s:GoCompiler.compile_call(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let left = self.compile(a:node.left)
-  if left == 'map'
+  if left == 'map' && len(rlist) == 2 && rlist[1] == '"self.compile(v:val)"'
     " throw 'NotImplemented: map()'
+    return printf(join([
+    \   'func() []string {',
+    \   'var ss []string',
+    \   'for _, vval := range %s {',
+    \   'ss = append(ss, %s.(string))',
+    \   '}',
+    \   'return ss',
+    \   '}()',
+    \ ], ";"), rlist[0], substitute(rlist[1][1:-2], 'v:val', 'vval', 'g'))
   elseif left == 'call' && rlist[0][0] =~ '[''"]'
     return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
   elseif left =~ 'ExArg'

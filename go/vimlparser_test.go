@@ -61,12 +61,19 @@ func TestVimLParser_parse_empty(t *testing.T) {
 
 func TestVimLParser_parse(t *testing.T) {
 	defer recovert(t)
-	ins := [][]string{
-		[]string{`" comment`},
-		[]string{`let x = 1`},
-		[]string{`call F(x, y, z)`},
+	tests := []struct {
+		in   []string
+		want string
+	}{
+		{[]string{`" comment`}, "; comment"},
+		{[]string{`let x = 1`}, "(let = x 1)"},
+		{[]string{`call F(x, y, z)`}, "(call (F x y z))"},
 	}
-	for _, in := range ins {
-		NewVimLParser().parse(NewStringReader(in))
+	for _, tt := range tests {
+		c := NewCompiler()
+		n := NewVimLParser().parse(NewStringReader(tt.in))
+		if got := c.compile(n).([]string); strings.Join(got, "\n") != tt.want {
+			t.Errorf("c.compile(p.parse(%v)) = %v, want %v", tt.in, got, tt.want)
+		}
 	}
 }

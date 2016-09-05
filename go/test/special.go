@@ -68,3 +68,4 @@ if cnode.pattern != "" {
 }
 if node.depth != 0 {
 }
+var rlist = func() []string {;var ss []string;for _, vval := range node.rlist {;ss = append(ss, self.compile(vval).(string));};return ss;}()

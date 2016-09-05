@@ -188,3 +188,21 @@ func TestViml_has_key(t *testing.T) {
 		}
 	}
 }
+
+func TestViml_join(t *testing.T) {
+	tests := []struct {
+		lst  interface{}
+		sep  string
+		want string
+	}{
+		{[]interface{}{"foo", "bar"}, ":", "foo:bar"},
+		{[]interface{}{}, ":", ""},
+		{[]interface{}{}, "", ""},
+		{[]interface{}{"foo", "bar"}, "", "foobar"},
+	}
+	for _, tt := range tests {
+		if got := viml_join(tt.lst, tt.sep); got != tt.want {
+			t.Errorf("viml_join(%q, %q) = %v, want %v", tt.lst, tt.sep, got, tt.want)
+		}
+	}
+}
