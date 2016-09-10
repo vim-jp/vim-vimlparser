@@ -2,6 +2,7 @@ package vimlparser
 
 import internal "github.com/haya14busa/vim-vimlparser/go"
 
+// ExArg represents extra arguments of command.
 type ExArg struct {
 	Forceit    bool
 	AddrCount  int
@@ -61,6 +62,7 @@ func newExArg(ea *internal.ExportExArg) *ExArg {
 	}
 }
 
+// Cmd represents command.
 type Cmd struct {
 	Name   string
 	Minlen int
@@ -80,6 +82,7 @@ func newCmd(c *internal.ExportCmd) *Cmd {
 	}
 }
 
+// Pos represents node position.
 type Pos struct {
 	I    int
 	Lnum int
@@ -97,6 +100,7 @@ func newPos(p *internal.ExportPos) *Pos {
 	}
 }
 
+// Node represents Vim AST node.
 type Node struct {
 	Type  int
 	Pos   *Pos
@@ -188,6 +192,7 @@ func newNode(n *internal.ExportNode) *Node {
 	}
 }
 
+// FuncAttr represents attributes of function.
 type FuncAttr struct {
 	Range bool
 	Abort bool

@@ -9,6 +9,7 @@ import (
 	internal "github.com/haya14busa/vim-vimlparser/go"
 )
 
+// Parse parses Vim script.
 func Parse(r io.Reader) (node *Node, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -23,6 +24,7 @@ func Parse(r io.Reader) (node *Node, err error) {
 	return
 }
 
+// ParseExpr parses Vim expression.
 func ParseExpr(r io.Reader) (node *Node, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -38,6 +40,7 @@ func ParseExpr(r io.Reader) (node *Node, err error) {
 	return
 }
 
+// Compile compiles Vim script AST into S-expression like format.
 func Compile(w io.Writer, node *Node) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
