@@ -51,7 +51,7 @@ func TestStringReader___init__(t *testing.T) {
 
 func TestNewVimLParser(t *testing.T) {
 	defer recovert(t)
-	NewVimLParser().parse(NewStringReader([]string{}))
+	NewVimLParser(false).parse(NewStringReader([]string{}))
 }
 
 func TestVimLParser_parse_empty(t *testing.T) {
@@ -62,7 +62,7 @@ func TestVimLParser_parse_empty(t *testing.T) {
 		[]string{"", ""},
 	}
 	for _, in := range ins {
-		NewVimLParser().parse(NewStringReader(in))
+		NewVimLParser(false).parse(NewStringReader(in))
 	}
 }
 
@@ -78,7 +78,7 @@ func TestVimLParser_parse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		c := NewCompiler()
-		n := NewVimLParser().parse(NewStringReader(tt.in))
+		n := NewVimLParser(false).parse(NewStringReader(tt.in))
 		if got := c.compile(n).([]string); strings.Join(got, "\n") != tt.want {
 			t.Errorf("c.compile(p.parse(%v)) = %v, want %v", tt.in, got, tt.want)
 		}
@@ -87,7 +87,10 @@ func TestVimLParser_parse(t *testing.T) {
 
 const basePkg = "github.com/ynkdir/vim-vimlparser/go"
 
-var skipTests = map[string]bool{"test_xxx_colonsharp": true}
+var skipTests = map[string]bool{
+	"test_xxx_colonsharp": true,
+	"test_wincmd":         true,
+}
 
 func TestVimLParser_parse_compile(t *testing.T) {
 	p, err := build.Default.Import(basePkg, "", build.FindOnly)
@@ -140,8 +143,13 @@ func testFiles(t *testing.T, file string, in, want []string) {
 		}
 	}()
 
+	neovim := false
+	if strings.Contains(file, "test_neo") {
+		neovim = true
+	}
+
 	r := NewStringReader(in)
-	p := NewVimLParser()
+	p := NewVimLParser(neovim)
 	c := NewCompiler()
 	got := c.compile(p.parse(r)).([]string)
 
@@ -177,6 +185,6 @@ func TestVimLParser_VimLParser(t *testing.T) {
 		t.Fatal(err)
 	}
 	c := NewCompiler()
-	n := NewVimLParser().parse(NewStringReader(lines))
+	n := NewVimLParser(false).parse(NewStringReader(lines))
 	c.compile(n)
 }

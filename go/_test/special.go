@@ -1,7 +1,3 @@
-func (self *VimLParser) __init__() {
-	var x = 1
-}
-
 var y = &ExArg{}
 self.hoge = 1
 self.ea.range_ = 1
@@ -15,6 +11,10 @@ var at = type_
 var lhs = &lhs{}
 var lhs = hoge()
 for _, x := range builtin_commands {
+}
+for _, x := range neovim_removed_commands {
+}
+for _, x := range neovim_additional_commands {
 }
 func (self *LvalueParser) pos1() {
 	var pos = self.reader.tell()

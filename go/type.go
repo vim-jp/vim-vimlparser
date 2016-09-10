@@ -100,13 +100,18 @@ type VimLParser struct {
 	reader             *StringReader
 	context            []*VimNode
 	ea                 *ExArg
+	neovim             bool
 }
 
-func NewVimLParser() *VimLParser {
+func NewVimLParser(neovim bool) *VimLParser {
 	obj := &VimLParser{}
 	obj.find_command_cache = make(map[string]*Cmd)
-	obj.__init__()
+	obj.__init__(neovim)
 	return obj
+}
+
+func (self *VimLParser) __init__(neovim bool) {
+	self.neovim = neovim
 }
 
 func (self *VimLParser) push_context(n *VimNode) {

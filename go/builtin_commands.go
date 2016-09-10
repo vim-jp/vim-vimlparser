@@ -1,6 +1,22 @@
 package vimlparser
 
 // " Generated from below script.
+// echo 'var neovim_additional_commands = []*Cmd{'
+// for s:cmd in vimlparser#import().VimLParser.neovim_additional_commands
+//   " echo s:cmd
+//   echo "\t" . printf('{flags: "%s", minlen: %s, name: "%s", parser: "%s" },',
+//   \ s:cmd.flags, s:cmd.minlen, s:cmd.name, s:cmd.parser)
+// endfor
+// echo '}'
+//
+// echo 'var neovim_removed_commands = []*Cmd{'
+// for s:cmd in vimlparser#import().VimLParser.neovim_removed_commands
+//   " echo s:cmd
+//   echo "\t" . printf('{flags: "%s", minlen: %s, name: "%s", parser: "%s" },',
+//   \ s:cmd.flags, s:cmd.minlen, s:cmd.name, s:cmd.parser)
+// endfor
+// echo '}'
+//
 // echo 'var builtin_commands = []*Cmd{'
 // for s:cmd in vimlparser#import().VimLParser.builtin_commands
 //   " echo s:cmd
@@ -8,6 +24,18 @@ package vimlparser
 //   \ s:cmd.flags, s:cmd.minlen, s:cmd.name, s:cmd.parser)
 // endfor
 // echo '}'
+var neovim_additional_commands = []*Cmd{
+	{flags: "EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", minlen: 8, name: "tnoremap", parser: "parse_cmd_common"},
+}
+var neovim_removed_commands = []*Cmd{
+	{flags: "RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", minlen: 1, name: "Print", parser: "parse_cmd_common"},
+	{flags: "TRLBAR|CMDWIN", minlen: 3, name: "fixdel", parser: "parse_cmd_common"},
+	{flags: "EXTRA|NOTRLCOM", minlen: 5, name: "helpfind", parser: "parse_cmd_common"},
+	{flags: "RANGE|BANG|EXTRA", minlen: 1, name: "open", parser: "parse_cmd_common"},
+	{flags: "TRLBAR|CMDWIN", minlen: 2, name: "shell", parser: "parse_cmd_common"},
+	{flags: "NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", minlen: 2, name: "tearoff", parser: "parse_cmd_common"},
+	{flags: "BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", minlen: 2, name: "gvim", parser: "parse_cmd_common"},
+}
 var builtin_commands = []*Cmd{
 	{flags: "BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY", minlen: 1, name: "append", parser: "parse_cmd_append"},
 	{flags: "EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN", minlen: 2, name: "abbreviate", parser: "parse_cmd_common"},
@@ -498,7 +526,7 @@ var builtin_commands = []*Cmd{
 	{flags: "BANG|TRLBAR|CMDWIN", minlen: 2, name: "wall", parser: "parse_cmd_common"},
 	{flags: "EXTRA|NOTRLCOM|SBOXOK|CMDWIN", minlen: 2, name: "while", parser: "parse_cmd_while"},
 	{flags: "EXTRA|NEEDARG|TRLBAR", minlen: 2, name: "winsize", parser: "parse_cmd_common"},
-	{flags: "NEEDARG|WORD1|RANGE|NOTADR", minlen: 4, name: "wincmd", parser: "parse_cmd_common"},
+	{flags: "NEEDARG|WORD1|RANGE|NOTADR", minlen: 4, name: "wincmd", parser: "parse_wincmd"},
 	{flags: "EXTRA|TRLBAR|CMDWIN", minlen: 4, name: "winpos", parser: "parse_cmd_common"},
 	{flags: "RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", minlen: 2, name: "wnext", parser: "parse_cmd_common"},
 	{flags: "RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR", minlen: 2, name: "wprevious", parser: "parse_cmd_common"},

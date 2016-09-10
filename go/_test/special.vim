@@ -24,7 +24,7 @@ function! s:VimLParser.pop_context()
 endfunction
 
 function! s:VimLParser.__init__()
-  let x = 1
+  " skip VimLParser.__init__
 endfunction
 
 function! s:Compiler.__init__()
@@ -85,6 +85,10 @@ let lhs = {}
 let lhs = hoge()
 
 for x in self.builtin_commands
+endfor
+for x in self.neovim_removed_commands
+endfor
+for x in self.neovim_additional_commands
 endfor
 function! s:LvalueParser.pos1() abort
   let pos = self.reader.tell()

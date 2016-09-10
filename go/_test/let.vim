@@ -31,3 +31,33 @@ let xs = 1
 if x
   let xs[0] = 1
 endif
+
+function! F()
+  let cmd = s:NIL
+
+  for x in self.builtin_commands
+    if stridx(x.name, name) == 0 && len(name) >= x.minlen
+      unlet cmd
+      let cmd = x
+      break
+    endif
+  endfor
+
+  if self.neovim
+    for x in self.neovim_additional_commands
+      if stridx(x.name, name) == 0 && len(name) >= x.minlen
+        unlet cmd
+        let cmd = x
+        break
+      endif
+    endfor
+
+    for x in self.neovim_removed_commands
+      if stridx(x.name, name) == 0 && len(name) >= x.minlen
+        unlet cmd
+        let cmd = s:NIL
+        break
+      endif
+    endfor
+  endif
+endfunction

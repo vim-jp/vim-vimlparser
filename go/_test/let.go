@@ -29,3 +29,27 @@ var xs = 1
 if x {
 	xs[0] = 1
 }
+func F() {
+	var cmd *Cmd = nil
+	for _, x := range builtin_commands {
+		if viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen {
+			cmd = x
+			break
+		}
+	}
+	if self.neovim {
+		for _, x := range neovim_additional_commands {
+			if viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen {
+				cmd = x
+				break
+			}
+		}
+		for _, x := range neovim_removed_commands {
+			if viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen {
+				cmd = nil
+				break
+			}
+		}
+	}
+}
+

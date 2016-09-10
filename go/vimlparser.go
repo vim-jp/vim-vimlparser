@@ -329,9 +329,6 @@ func Err(msg string, pos *pos) string {
 	return viml_printf("vimlparser: %s: line %d col %d", msg, pos.lnum, pos.col)
 }
 
-func (self *VimLParser) __init__() {
-}
-
 func (self *VimLParser) find_context(type_ int) int {
 	var i = 0
 	for _, node := range self.context {
@@ -822,6 +819,20 @@ func (self *VimLParser) find_command() *Cmd {
 			break
 		}
 	}
+	if self.neovim {
+		for _, x := range neovim_additional_commands {
+			if viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen {
+				cmd = x
+				break
+			}
+		}
+		for _, x := range neovim_removed_commands {
+			if viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen {
+				cmd = nil
+				break
+			}
+		}
+	}
 	// FIXME: user defined command
 	if (cmd == nil || cmd.name == "Print") && viml_eqregh(name, "^[A-Z]") {
 		name += self.reader.read_alnum()
@@ -872,7 +883,7 @@ func (self *VimLParser) parse_argopt() {
 				self.ea.bad_char = self.reader.getn(1)
 			}
 		} else if viml_eqregh(s, "^++") {
-			panic("VimLParser: E474: Invalid Argument")
+			panic(Err("E474: Invalid Argument", self.reader.getpos()))
 		} else {
 			break
 		}
@@ -989,7 +1000,8 @@ func (self *VimLParser) separate_nextcmd() *pos {
 		var c = self.reader.peek()
 		if c == "<EOF>" || c == "<EOL>" {
 			break
-		} else if c == `\<C-V>` {
+		} else if c == "\x16" {
+			// <C-V>
 			self.reader.get()
 			end = self.reader.getpos()
 			nospend = self.reader.getpos()
@@ -1729,6 +1741,30 @@ func (self *VimLParser) parse_letlhs() *lhs {
 
 func (self *VimLParser) ends_excmds(c string) bool {
 	return c == "" || c == "|" || c == "\"" || c == "<EOF>" || c == "<EOL>"
+}
+
+// FIXME: validate argument
+func (self *VimLParser) parse_wincmd() {
+	var c = self.reader.getn(1)
+	if c == "" {
+		panic(Err("E471: Argument required", self.reader.getpos()))
+	} else if c == "g" || c == "\x07" {
+		// <C-G>
+		var c2 = self.reader.getn(1)
+		if c2 == "" || iswhite(c2) {
+			panic(Err("E474: Invalid Argument", self.reader.getpos()))
+		}
+	}
+	var end = self.reader.getpos()
+	self.reader.skip_white()
+	if !self.ends_excmds(self.reader.peek()) {
+		panic(Err("E474: Invalid Argument", self.reader.getpos()))
+	}
+	var node = Node(NODE_EXCMD)
+	node.pos = self.ea.cmdpos
+	node.ea = self.ea
+	node.str = self.reader.getstr(self.ea.linepos, end)
+	self.add_node(node)
 }
 
 func (self *ExprTokenizer) __init__(reader *StringReader) {

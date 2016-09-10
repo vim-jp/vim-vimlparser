@@ -348,7 +348,7 @@ function s:GoCompiler.compile_function(node)
     if name == 'new'
     \ || (struct == 'ExprTokenizer' && name == 'token')
     \ || (struct == 'StringReader' && name == 'getpos')
-    \ || (struct == 'VimLParser' && (name =~ '\(push\|pop\)_context'))
+    \ || (struct == 'VimLParser' && (name =~ '\(push\|pop\)_context\|__init__'))
     \ || (struct == 'Compiler' && (
     \        name == '__init__'
     \     || name == 'out'
@@ -470,8 +470,12 @@ function s:GoCompiler.compile_let(node)
       return
     elseif left == 'cmd' && op == '=' && (right == 'nil' || right =~ '^\Vmap[string]interface{}{')
       if right == 'nil'
-        call self.out('var cmd *Cmd = nil')
-        call self.addscope(left)
+        if self.isinscope(left)
+          call self.out('cmd = nil')
+        else
+          call self.out('var cmd *Cmd = nil')
+          call self.addscope(left)
+        endif
       else
         let m = matchstr(right, '^\Vmap[string]interface{}{\zs\(\.\*\)\ze}\$')
         let rs = []
@@ -534,8 +538,8 @@ function s:GoCompiler.compile_if(node)
   call self.incindent("\t")
   call self.inscope()
   call self.compile_body(a:node.body)
-  call self.decindent()
   call self.descope()
+  call self.decindent()
   for node in a:node.elseif
     call self.out('} else if %s {', self.compile(node.cond))
     call self.incindent("\t")
@@ -829,8 +833,9 @@ function s:GoCompiler.compile_dot(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
   let out = printf('%s.%s', left, right)
-  if out == 'self.builtin_commands'
-    return 'builtin_commands'
+  let cmds = matchstr(out, 'self\.\zs\(builtin_commands\|neovim_additional_commands\|neovim_removed_commands\)')
+  if cmds != ''
+    return cmds
   endif
   return out
 endfunction
