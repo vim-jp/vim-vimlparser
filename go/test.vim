@@ -13,7 +13,7 @@ function! s:run() abort
   source ./go/gocompiler.vim
   source ./go/typedefs.vim
   :1,$delete
-  for vimfile in glob(s:sdir . '/test/*.vim', 0, 1)
+  for vimfile in glob(s:sdir . '/_test/*.vim', 0, 1)
     let okfile = fnamemodify(vimfile, ':r') . '.go'
     let outfile = fnamemodify(vimfile, ':r') . '.out'
     let src = readfile(vimfile)
