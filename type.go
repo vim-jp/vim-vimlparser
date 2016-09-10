@@ -134,23 +134,23 @@ func newNode(n *internal.ExportNode) *Node {
 	if n == nil {
 		return nil
 	}
-	list := make([]*Node, 0)
+	var list []*Node
 	for _, n := range n.List {
 		list = append(list, newNode(n))
 	}
-	rlist := make([]*Node, 0)
+	var rlist []*Node
 	for _, n := range n.Rlist {
 		rlist = append(rlist, newNode(n))
 	}
-	body := make([]*Node, 0)
+	var body []*Node
 	for _, n := range n.Body {
 		body = append(body, newNode(n))
 	}
-	elseif := make([]*Node, 0)
+	var elseif []*Node
 	for _, n := range n.Elseif {
 		elseif = append(elseif, newNode(n))
 	}
-	catch := make([]*Node, 0)
+	var catch []*Node
 	for _, n := range n.Catch {
 		catch = append(catch, newNode(n))
 	}
@@ -209,23 +209,23 @@ func newExportNode(n *Node) *internal.ExportNode {
 	if n == nil {
 		return nil
 	}
-	list := make([]*internal.ExportNode, 0)
+	var list []*internal.ExportNode
 	for _, n := range n.List {
 		list = append(list, newExportNode(n))
 	}
-	rlist := make([]*internal.ExportNode, 0)
+	var rlist []*internal.ExportNode
 	for _, n := range n.Rlist {
 		rlist = append(rlist, newExportNode(n))
 	}
-	body := make([]*internal.ExportNode, 0)
+	var body []*internal.ExportNode
 	for _, n := range n.Body {
 		body = append(body, newExportNode(n))
 	}
-	elseif := make([]*internal.ExportNode, 0)
+	var elseif []*internal.ExportNode
 	for _, n := range n.Elseif {
 		elseif = append(elseif, newExportNode(n))
 	}
-	catch := make([]*internal.ExportNode, 0)
+	var catch []*internal.ExportNode
 	for _, n := range n.Catch {
 		catch = append(catch, newExportNode(n))
 	}
