@@ -76,14 +76,6 @@ func init() {
 
 type vimlList interface{}
 
-func viml_call(f string, args ...interface{}) interface{} {
-	panic("NotImplemented viml_call")
-}
-
-func viml_char2nr(c string) int {
-	panic("NotImplemented viml_char2nr")
-}
-
 func viml_empty(obj interface{}) bool {
 	return viml_len(obj) == 0
 }
@@ -124,10 +116,6 @@ func viml_escape(s string, chars string) string {
 	return r
 }
 
-func viml_extend(obj, item interface{}) interface{} {
-	panic("NotImplemented viml_extend")
-}
-
 func viml_join(lst vimlList, sep string) string {
 	var ss []string
 	s := reflect.ValueOf(lst)
@@ -135,10 +123,6 @@ func viml_join(lst vimlList, sep string) string {
 		ss = append(ss, fmt.Sprintf("%v", s.Index(i)))
 	}
 	return strings.Join(ss, sep)
-}
-
-func viml_keys(obj map[string]interface{}) []string {
-	panic("NotImplemented viml_keys")
 }
 
 func viml_len(obj interface{}) int {
@@ -155,10 +139,6 @@ func viml_range(start, end int) []int {
 		rs = append(rs, i)
 	}
 	return rs
-}
-
-func viml_readfile(path string) []string {
-	panic("NotImplemented viml_readfile")
 }
 
 func viml_split(s string, sep string) []string {
@@ -192,12 +172,4 @@ func viml_has_key(obj interface{}, key interface{}) bool {
 
 func viml_stridx(a, b string) int {
 	return strings.Index(a, b)
-}
-
-func viml_type(obj interface{}) int {
-	panic("NotImplemented viml_type")
-}
-
-func viml_ternary(cond bool, a interface{}, b interface{}) interface{} {
-	panic("NotImplemented viml_ternary")
 }

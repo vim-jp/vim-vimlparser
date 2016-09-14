@@ -5,10 +5,6 @@ import (
 	"testing"
 )
 
-var vimArgs = []string{"-Nu", "NONE", "-i", "NONE", "-n"}
-
-type testHandler struct{}
-
 func TestViml_len(t *testing.T) {
 	tests := []struct {
 		in   interface{}
