@@ -3313,7 +3313,7 @@ function! s:ExprParser.parse_expr9()
           call add(node.rlist, varnode)
           if token.type == s:TOKEN_COMMA
             " XXX: Vim allows last comma.  {a, b, -> ...} => OK
-            if self.reader.peekn(2) == s:TOKEN_ARROW
+            if self.reader.peekn(2) == '->'
               call self.tokenizer.get()
               break
             endif
