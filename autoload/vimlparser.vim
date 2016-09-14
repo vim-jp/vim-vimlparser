@@ -11,11 +11,16 @@ endfunction
 " @brief Read input as VimScript and return stringified AST.
 " @param input Input filename or string of VimScript.
 " @return Stringified AST.
-function! vimlparser#test(input)
+function! vimlparser#test(input, ...)
   try
+    if a:0 > 0
+      let l:neovim = a:1
+    else
+      let l:neovim = 0
+    endif
     let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : a:input
     let r = s:StringReader.new(i)
-    let p = s:VimLParser.new()
+    let p = s:VimLParser.new(l:neovim)
     let c = s:Compiler.new()
     echo join(c.compile(p.parse(r)), "\n")
   catch
@@ -411,7 +416,13 @@ function! s:VimLParser.new(...)
   return obj
 endfunction
 
-function! s:VimLParser.__init__()
+function! s:VimLParser.__init__(...)
+  if len(a:000) > 0
+    let self.neovim = a:000[0]
+  else
+    let self.neovim = 0
+  endif
+
   let self.find_command_cache = {}
 endfunction
 
@@ -1113,7 +1124,7 @@ function! s:VimLParser.separate_nextcmd()
     let c = self.reader.peek()
     if c ==# '<EOF>' || c ==# '<EOL>'
       break
-    elseif c ==# "\<C-V>"
+    elseif c ==# "\x16" " <C-V>
       call self.reader.get()
       let end = self.reader.getpos()
       let nospend = self.reader.getpos()
@@ -1894,6 +1905,41 @@ function! s:VimLParser.ends_excmds(c)
   return a:c ==# '' || a:c ==# '|' || a:c ==# '"' || a:c ==# '<EOF>' || a:c ==# '<EOL>'
 endfunction
 
+" FIXME: validate argument
+function! s:VimLParser.parse_wincmd()
+  let c = self.reader.getn(1)
+  if c ==# ''
+    throw s:Err('E471: Argument required', self.reader.getpos())
+  elseif c ==# 'g' || c ==# "\x07" " <C-G>
+    let c2 = self.reader.getn(1)
+    if c2 ==# '' || s:iswhite(c2)
+      throw s:Err('E474: Invalid Argument', self.reader.getpos())
+    endif
+  endif
+  let end = self.reader.getpos()
+  call self.reader.skip_white()
+  if !self.ends_excmds(self.reader.peek())
+    throw s:Err('E474: Invalid Argument', self.reader.getpos())
+  endif
+  let node = s:Node(s:NODE_EXCMD)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.str = self.reader.getstr(self.ea.linepos, end)
+  call self.add_node(node)
+endfunction
+
+let s:VimLParser.neovim_additional_commands = [
+      \ {'name': 'tnoremap', 'minlen': 8, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'}]
+
+let s:VimLParser.neovim_removed_commands = [
+      \ {"name":"Print", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"fixdel", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"helpfind", "minlen":5, "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"},
+      \ {"name":"open", "minlen":1, "flags":"RANGE|BANG|EXTRA", "parser":"parse_cmd_common"},
+      \ {"name":"shell", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"tearoff", "minlen":2, "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"},
+      \ {"name":"gvim", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}]
+
 let s:VimLParser.builtin_commands = [
       \ {'name': 'append', 'minlen': 1, 'flags': 'BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_append'},
       \ {'name': 'abbreviate', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -2384,7 +2430,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'wall', 'minlen': 2, 'flags': 'BANG|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'while', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_while'},
       \ {'name': 'winsize', 'minlen': 2, 'flags': 'EXTRA|NEEDARG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'wincmd', 'minlen': 4, 'flags': 'NEEDARG|WORD1|RANGE|NOTADR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'wincmd', 'minlen': 4, 'flags': 'NEEDARG|WORD1|RANGE|NOTADR', 'parser': 'parse_wincmd'},
       \ {'name': 'winpos', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'wnext', 'minlen': 2, 'flags': 'RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'wprevious', 'minlen': 2, 'flags': 'RANGE|NOTADR|BANG|FILE1|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},

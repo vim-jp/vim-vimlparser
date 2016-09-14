@@ -10,7 +10,12 @@ function! s:run()
     let outfile = fnamemodify(vimfile, ':r') . '.out'
     let src = readfile(vimfile)
     let r = s:vimlparser.StringReader.new(src)
-    let p = s:vimlparser.VimLParser.new()
+    if vimfile =~# 'test_neo'
+        let l:neovim = 1
+    else
+        let l:neovim = 0
+    endif
+    let p = s:vimlparser.VimLParser.new(l:neovim)
     let c = s:vimlparser.Compiler.new()
     try
       let out = c.compile(p.parse(r))
