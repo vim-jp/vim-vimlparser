@@ -89,7 +89,6 @@ const basePkg = "github.com/ynkdir/vim-vimlparser/go"
 
 var skipTests = map[string]bool{
 	"test_xxx_colonsharp": true,
-	"test_wincmd":         true,
 }
 
 func TestVimLParser_parse_compile(t *testing.T) {
