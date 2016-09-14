@@ -134,6 +134,7 @@ let s:NODE_ENV = 88
 let s:NODE_REG = 89
 let s:NODE_CURLYNAMEPART = 90
 let s:NODE_CURLYNAMEEXPR = 91
+let s:NODE_LAMBDA = 92
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -199,6 +200,7 @@ let s:TOKEN_SEMICOLON = 61
 let s:TOKEN_BACKTICK = 62
 let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
+let s:TOKEN_ARROW = 65
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -398,6 +400,7 @@ endfunction
 " REG .value
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
+" LAMBDA .rlist .left
 function! s:Node(type)
   return {'type': a:type}
 endfunction
@@ -2542,8 +2545,13 @@ function! s:ExprTokenizer.get2()
     call r.seek_cur(1)
     return self.token(s:TOKEN_PLUS, '+', pos)
   elseif c ==# '-'
-    call r.seek_cur(1)
-    return self.token(s:TOKEN_MINUS, '-', pos)
+    if r.p(1) ==# '>'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_ARROW, '->', pos)
+    else
+      call r.seek_cur(1)
+      return self.token(s:TOKEN_MINUS, '-', pos)
+    endif
   elseif c ==# '.'
     if r.p(1) ==# '.' && r.p(2) ==# '.'
       call r.seek_cur(3)
@@ -3174,6 +3182,7 @@ endfunction
 "        'string'
 "        [expr1, ...]
 "        {expr1: expr1, ...}
+"        {args -> expr1}
 "        &option
 "        (expr1)
 "        variable
@@ -3225,13 +3234,20 @@ function! s:ExprParser.parse_expr9()
       endwhile
     endif
   elseif token.type == s:TOKEN_COPEN
-    let node = s:Node(s:NODE_DICT)
-    let node.pos = token.pos
-    let node.value = []
+    let node = s:Node(-1)
+    let p = token.pos
     let token = self.tokenizer.peek()
     if token.type == s:TOKEN_CCLOSE
+      " dict
       call self.tokenizer.get()
-    else
+      let node = s:Node(s:NODE_DICT)
+      let node.pos = p
+      let node.value = []
+    elseif token.type == s:TOKEN_DQUOTE || token.type == s:TOKEN_SQUOTE
+      " dict
+      let node = s:Node(s:NODE_DICT)
+      let node.pos = p
+      let node.value = []
       while 1
         let key = self.parse_expr1()
         let token = self.tokenizer.get()
@@ -3260,6 +3276,72 @@ function! s:ExprParser.parse_expr9()
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
       endwhile
+    else
+      " lambda ref: s:NODE_FUNCTION
+      let node = s:Node(s:NODE_LAMBDA)
+      let node.pos = p
+      let node.rlist = []
+      let named = {}
+      while 1
+        let token = self.tokenizer.get()
+        if token.type == s:TOKEN_ARROW
+          break
+        elseif token.type == s:TOKEN_IDENTIFIER
+          if !s:isargname(token.value)
+            throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
+          elseif has_key(named, token.value)
+            throw s:Err(printf('E853: Duplicate argument name: %s', token.value), token.pos)
+          endif
+          let named[token.value] = 1
+          let varnode = s:Node(s:NODE_IDENTIFIER)
+          let varnode.pos = token.pos
+          let varnode.value = token.value
+          " XXX: Vim doesn't skip white space before comma.  {a ,b -> ...} => E475
+          if s:iswhite(self.reader.p(0)) && self.tokenizer.peek().type == s:TOKEN_COMMA
+            throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
+          endif
+          let token = self.tokenizer.get()
+          " handle curly_parts
+          if token.type == s:TOKEN_COPEN || token.type == s:TOKEN_CCLOSE
+            if !empty(node.rlist)
+              throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+            endif
+            call self.reader.seek_set(pos)
+            let node = self.parse_identifier()
+            return node
+          endif
+          call add(node.rlist, varnode)
+          if token.type == s:TOKEN_COMMA
+            " XXX: Vim allows last comma.  {a, b, -> ...} => OK
+            if self.reader.peekn(2) == s:TOKEN_ARROW
+              call self.tokenizer.get()
+              break
+            endif
+          elseif token.type == s:TOKEN_ARROW
+            break
+          else
+            throw s:Err(printf('unexpected token: %s, type: %d', token.value, token.type), token.pos)
+          endif
+        elseif token.type == s:TOKEN_DOTDOTDOT
+          let varnode = s:Node(s:NODE_IDENTIFIER)
+          let varnode.pos = token.pos
+          let varnode.value = token.value
+          call add(node.rlist, varnode)
+          let token = self.tokenizer.get()
+          if token.type == s:TOKEN_ARROW
+            break
+          else
+            throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+          endif
+        else
+          throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+        endif
+      endwhile
+      let node.left = self.parse_expr1()
+      let token = self.tokenizer.get()
+      if token.type != s:TOKEN_CCLOSE
+        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      endif
     endif
   elseif token.type == s:TOKEN_POPEN
     let node = self.parse_expr1()
@@ -3929,6 +4011,8 @@ function! s:Compiler.compile(node)
     return self.compile_curlynamepart(a:node)
   elseif a:node.type == s:NODE_CURLYNAMEEXPR
     return self.compile_curlynameexpr(a:node)
+  elseif a:node.type == s:NODE_LAMBDA
+    return self.compile_lambda(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -4382,6 +4466,11 @@ endfunction
 
 function! s:Compiler.compile_curlynameexpr(node)
   return '{' . self.compile(a:node.value) . '}'
+endfunction
+
+function! s:Compiler.compile_lambda(node)
+  let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
 endfunction
 
 " TODO: under construction
