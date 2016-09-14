@@ -796,7 +796,7 @@ function! s:VimLParser.parse_command()
   call self._parse_command(self.ea.cmd.parser)
 endfunction
 
-" let s:parsers = sort(keys(filter(copy(s:VimLParser), 'v:key =~# "^parse_cmd"')))
+" let s:parsers = sort(keys(filter(copy(s:VimLParser), { k -> k =~# '\v^parse_(win)?cmd' })))
 " for s:parser in s:parsers
 "   echo printf("elseif a:parser == '%s'", s:parser)
 "   echo printf("  call self.%s()", s:parser)
@@ -891,6 +891,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_usercmd()
   elseif a:parser == 'parse_cmd_while'
     call self.parse_cmd_while()
+  elseif a:parser == 'parse_wincmd'
+    call self.parse_wincmd()
   endif
 endfunction
 
