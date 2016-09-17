@@ -3234,56 +3234,17 @@ function! s:ExprParser.parse_expr9()
       endwhile
     endif
   elseif token.type == s:TOKEN_COPEN
-    let node = s:Node(-1)
-    let p = token.pos
-    let token = self.tokenizer.peek()
-    if token.type == s:TOKEN_CCLOSE
-      " dict
-      call self.tokenizer.get()
-      let node = s:Node(s:NODE_DICT)
-      let node.pos = p
-      let node.value = []
-    elseif token.type == s:TOKEN_DQUOTE || token.type == s:TOKEN_SQUOTE
-      " dict
-      let node = s:Node(s:NODE_DICT)
-      let node.pos = p
-      let node.value = []
-      while 1
-        let key = self.parse_expr1()
-        let token = self.tokenizer.get()
-        if token.type == s:TOKEN_CCLOSE
-          if !empty(node.value)
-            throw s:Err(printf('unexpected token: %s', token.value), token.pos)
-          endif
-          call self.reader.seek_set(pos)
-          let node = self.parse_identifier()
-          break
-        endif
-        if token.type != s:TOKEN_COLON
-          throw s:Err(printf('unexpected token: %s', token.value), token.pos)
-        endif
-        let val = self.parse_expr1()
-        call add(node.value, [key, val])
-        let token = self.tokenizer.get()
-        if token.type == s:TOKEN_COMMA
-          if self.tokenizer.peek().type == s:TOKEN_CCLOSE
-            call self.tokenizer.get()
-            break
-          endif
-        elseif token.type == s:TOKEN_CCLOSE
-          break
-        else
-          throw s:Err(printf('unexpected token: %s', token.value), token.pos)
-        endif
-      endwhile
-    else
-      " lambda ref: s:NODE_FUNCTION
+    let savepos = self.reader.tell()
+    let nodepos = token.pos
+    let token = self.tokenizer.get()
+    let token2 = self.tokenizer.peek()
+    if token.type == s:TOKEN_ARROW || token2.type == s:TOKEN_ARROW || token2.type == s:TOKEN_COMMA
+      " lambda {token,...} {->...} {token->...}
       let node = s:Node(s:NODE_LAMBDA)
-      let node.pos = p
+      let node.pos = nodepos
       let node.rlist = []
       let named = {}
       while 1
-        let token = self.tokenizer.get()
         if token.type == s:TOKEN_ARROW
           break
         elseif token.type == s:TOKEN_IDENTIFIER
@@ -3301,19 +3262,11 @@ function! s:ExprParser.parse_expr9()
             throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
           endif
           let token = self.tokenizer.get()
-          " handle curly_parts
-          if token.type == s:TOKEN_COPEN || token.type == s:TOKEN_CCLOSE
-            if !empty(node.rlist)
-              throw s:Err(printf('unexpected token: %s', token.value), token.pos)
-            endif
-            call self.reader.seek_set(pos)
-            let node = self.parse_identifier()
-            return node
-          endif
           call add(node.rlist, varnode)
           if token.type == s:TOKEN_COMMA
             " XXX: Vim allows last comma.  {a, b, -> ...} => OK
-            if self.reader.peekn(2) == '->'
+            let token = self.tokenizer.peek()
+            if token.type == s:TOKEN_ARROW
               call self.tokenizer.get()
               break
             endif
@@ -3327,8 +3280,9 @@ function! s:ExprParser.parse_expr9()
           let varnode.pos = token.pos
           let varnode.value = token.value
           call add(node.rlist, varnode)
-          let token = self.tokenizer.get()
+          let token = self.tokenizer.peek()
           if token.type == s:TOKEN_ARROW
+            call self.tokenizer.get()
             break
           else
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
@@ -3336,13 +3290,54 @@ function! s:ExprParser.parse_expr9()
         else
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
+        let token = self.tokenizer.get()
       endwhile
       let node.left = self.parse_expr1()
       let token = self.tokenizer.get()
       if token.type != s:TOKEN_CCLOSE
         throw s:Err(printf('unexpected token: %s', token.value), token.pos)
       endif
+      return node
     endif
+    " dict
+    let node = s:Node(s:NODE_DICT)
+    let node.pos = nodepos
+    let node.value = []
+    call self.reader.seek_set(savepos)
+    let token = self.tokenizer.peek()
+    if token.type == s:TOKEN_CCLOSE
+      call self.tokenizer.get()
+      return node
+    endif
+    while 1
+      let key = self.parse_expr1()
+      let token = self.tokenizer.get()
+      if token.type == s:TOKEN_CCLOSE
+        if !empty(node.value)
+          throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+        endif
+        call self.reader.seek_set(pos)
+        let node = self.parse_identifier()
+        break
+      endif
+      if token.type != s:TOKEN_COLON
+        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      endif
+      let val = self.parse_expr1()
+      call add(node.value, [key, val])
+      let token = self.tokenizer.get()
+      if token.type == s:TOKEN_COMMA
+        if self.tokenizer.peek().type == s:TOKEN_CCLOSE
+          call self.tokenizer.get()
+          break
+        endif
+      elseif token.type == s:TOKEN_CCLOSE
+        break
+      else
+        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      endif
+    endwhile
+    return node
   elseif token.type == s:TOKEN_POPEN
     let node = self.parse_expr1()
     let token = self.tokenizer.get()
