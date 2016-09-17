@@ -3,4 +3,7 @@
 (echo (dict ('1' 1)))
 (echo (dict (1 1)))
 (echo (dict (x 1)))
+(echo (dict ("\<cr>" 1)))
+(echo (dict ("vim" 1)))
+(echo (dict ((+ 1 1) 2)))
 ; XXX: echo {x:1}

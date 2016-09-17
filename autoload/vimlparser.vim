@@ -3237,8 +3237,14 @@ function! s:ExprParser.parse_expr9()
     let savepos = self.reader.tell()
     let nodepos = token.pos
     let token = self.tokenizer.get()
-    let token2 = self.tokenizer.peek()
-    if token.type == s:TOKEN_ARROW || token2.type == s:TOKEN_ARROW || token2.type == s:TOKEN_COMMA
+    let lambda = token.type == s:TOKEN_ARROW
+    if !lambda && !(token.type == s:TOKEN_SQUOTE || token.type == s:TOKEN_DQUOTE)
+      " if the token type is stirng, we cannot peek next token and we can
+      " assume it's not lambda.
+      let token2 = self.tokenizer.peek()
+      let lambda = token2.type == s:TOKEN_ARROW || token2.type == s:TOKEN_COMMA
+    endif
+    if lambda
       " lambda {token,...} {->...} {token->...}
       let node = s:Node(s:NODE_LAMBDA)
       let node.pos = nodepos
