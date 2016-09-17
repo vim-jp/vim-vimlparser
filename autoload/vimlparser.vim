@@ -3244,6 +3244,8 @@ function! s:ExprParser.parse_expr9()
       let token2 = self.tokenizer.peek()
       let lambda = token2.type == s:TOKEN_ARROW || token2.type == s:TOKEN_COMMA
     endif
+    " fallback to dict or {expr} if true
+    let fallback = 0
     if lambda
       " lambda {token,...} {->...} {token->...}
       let node = s:Node(s:NODE_LAMBDA)
@@ -3294,16 +3296,19 @@ function! s:ExprParser.parse_expr9()
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         else
-          throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+          let fallback = 1
+          break
         endif
         let token = self.tokenizer.get()
       endwhile
-      let node.left = self.parse_expr1()
-      let token = self.tokenizer.get()
-      if token.type != s:TOKEN_CCLOSE
-        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      if !fallback
+        let node.left = self.parse_expr1()
+        let token = self.tokenizer.get()
+        if token.type != s:TOKEN_CCLOSE
+          throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+        endif
+        return node
       endif
-      return node
     endif
     " dict
     let node = s:Node(s:NODE_DICT)

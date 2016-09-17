@@ -7,3 +7,5 @@
 (echo (dict ("vim" 1)))
 (echo (dict ((+ 1 1) 2)))
 ; XXX: echo {x:1}
+(echo (dict ('x' (dict))))
+(echo (list (dict)))

@@ -7,3 +7,5 @@ echo {"\<cr>": 1}
 echo {"vim": 1}
 echo {1+1:2}
 " XXX: echo {x:1}
+echo {'x' : {},}
+echo [{},]
