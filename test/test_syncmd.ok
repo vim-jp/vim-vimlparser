@@ -1,0 +1,5 @@
+(if 1
+  (excmd "syntax on "))
+(excmd "syntax")
+(excmd "syntax enable")
+(excmd "syntax list GroupName")
