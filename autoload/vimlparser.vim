@@ -1820,7 +1820,21 @@ endfunction
 
 " FIXME: validate argument
 function! s:VimLParser.parse_cmd_syntax()
-  let end = self.separate_nextcmd()
+  let end = self.reader.getpos()
+  while 1
+    let end = self.reader.getpos()
+    let c = self.reader.peek()
+    if c == "/" || c == "'" || c == "\""
+      call self.reader.getn(1)
+      call self.parse_pattern(c)
+    elseif c == "="
+      call self.reader.getn(1)
+      call self.parse_pattern(" ")
+    elseif self.ends_excmds(c)
+      break
+    endif
+    call self.reader.getn(1)
+  endwhile
   let node = s:Node(s:NODE_EXCMD)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
