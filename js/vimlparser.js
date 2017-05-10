@@ -1860,7 +1860,7 @@ VimLParser.prototype.parse_cmd_catch = function() {
 
 VimLParser.prototype.parse_cmd_finally = function() {
     if (this.context[0].type != NODE_TRY && this.context[0].type != NODE_CATCH) {
-        throw Err("E606: :finally without :try", this.ea.cmdos);
+        throw Err("E606: :finally without :try", this.ea.cmdpos);
     }
     if (this.context[0].type != NODE_TRY) {
         this.pop_context();
