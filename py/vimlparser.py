@@ -1499,7 +1499,7 @@ class VimLParser:
 
     def parse_cmd_finally(self):
         if self.context[0].type != NODE_TRY and self.context[0].type != NODE_CATCH:
-            raise VimLParserException(Err("E606: :finally without :try", self.ea.cmdos))
+            raise VimLParserException(Err("E606: :finally without :try", self.ea.cmdpos))
         if self.context[0].type != NODE_TRY:
             self.pop_context()
         node = Node(NODE_FINALLY)
