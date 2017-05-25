@@ -26,11 +26,15 @@ function! s:run()
     endtry
     if system(printf('diff %s %s', shellescape(okfile), shellescape(outfile))) == ""
       let line = printf('%s => ok', fnamemodify(vimfile, ':.'))
+      call append(line('$'), line)
     else
       let line = printf('%s => ng', fnamemodify(vimfile, ':.'))
+      call append(line('$'), line)
+      for line in readfile(outfile)
+        call append(line('$'), '    ' . line)
+      endfor
       let ng += 1
     endif
-    call append(line('$'), line)
   endfor
   if $CI == 'true'
     call writefile(getline(1, '$'), 'test.log')
