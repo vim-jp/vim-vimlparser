@@ -11,7 +11,6 @@ matrix:
       env: VIM_VERSION=v8.0.0000
     - os: linux
       env: VIM_VERSION=master
-    - os: osx
 
 addons:
   apt:
