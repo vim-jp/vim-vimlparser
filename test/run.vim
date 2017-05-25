@@ -5,6 +5,7 @@ let s:vimlparser = vimlparser#import()
 let s:sdir = expand('<sfile>:p:h')
 
 function! s:run()
+  let ng = 0
   for vimfile in glob(s:sdir . '/test*.vim', 0, 1)
     let okfile = fnamemodify(vimfile, ':r') . '.ok'
     let outfile = fnamemodify(vimfile, ':r') . '.out'
@@ -27,9 +28,17 @@ function! s:run()
       let line = printf('%s => ok', fnamemodify(vimfile, ':.'))
     else
       let line = printf('%s => ng', fnamemodify(vimfile, ':.'))
+      let ng += 1
     endif
     call append(line('$'), line)
   endfor
+  if $CI == 'true'
+    call writefile(getline(1, '$'), 'test.log')
+    if ng == 0
+      quit!
+    endif
+    cquit!
+  endif
   syntax enable
   match Error /^.* => ng$/
 endfunction
