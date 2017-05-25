@@ -1614,7 +1614,7 @@ endfunction
 
 function! s:VimLParser.parse_cmd_finally()
   if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
-    throw s:Err('E606: :finally without :try', self.ea.cmdos)
+    throw s:Err('E606: :finally without :try', self.ea.cmdpos)
   endif
   if self.context[0].type != s:NODE_TRY
     call self.pop_context()
