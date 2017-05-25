@@ -9,6 +9,7 @@ function! s:run()
   for vimfile in glob(s:sdir . '/test*.vim', 0, 1)
     let okfile = fnamemodify(vimfile, ':r') . '.ok'
     let outfile = fnamemodify(vimfile, ':r') . '.out'
+    let skip = filereadable(fnamemodify(vimfile, ':r') . '.skip')
     let src = readfile(vimfile)
     let r = s:vimlparser.StringReader.new(src)
     if vimfile =~# 'test_neo'
@@ -28,12 +29,14 @@ function! s:run()
       let line = printf('%s => ok', fnamemodify(vimfile, ':.'))
       call append(line('$'), line)
     else
-      let line = printf('%s => ng', fnamemodify(vimfile, ':.'))
+      if !skip
+        let ng += 1
+      endif
+      let line = printf('%s => ' . (skip ? 'skip' : 'ng'), fnamemodify(vimfile, ':.'))
       call append(line('$'), line)
       for line in readfile(outfile)
         call append(line('$'), '    ' . line)
       endfor
-      let ng += 1
     endif
   endfor
   if $CI == 'true'
