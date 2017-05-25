@@ -1820,6 +1820,30 @@ function! s:VimLParser.parse_wincmd()
   call self.add_node(node)
 endfunction
 
+" FIXME: validate argument
+function! s:VimLParser.parse_cmd_syntax()
+  let end = self.reader.getpos()
+  while 1
+    let end = self.reader.getpos()
+    let c = self.reader.peek()
+    if c == "/" || c == "'" || c == "\""
+      call self.reader.getn(1)
+      call self.parse_pattern(c)
+    elseif c == "="
+      call self.reader.getn(1)
+      call self.parse_pattern(" ")
+    elseif self.ends_excmds(c)
+      break
+    endif
+    call self.reader.getn(1)
+  endwhile
+  let node = s:Node(s:NODE_EXCMD)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.str = self.reader.getstr(self.ea.linepos, end)
+  call self.add_node(node)
+endfunction
+
 let s:VimLParser.neovim_additional_commands = [
       \ {'name': 'tnoremap', 'minlen': 8, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'}]
 
@@ -2249,7 +2273,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'suspend', 'minlen': 3, 'flags': 'TRLBAR|BANG|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'sview', 'minlen': 2, 'flags': 'BANG|FILE1|RANGE|NOTADR|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'swapname', 'minlen': 2, 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'syntax', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'syntax', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_syntax'},
       \ {'name': 'syntime', 'minlen': 5, 'flags': 'NEEDARG|WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'syncbind', 'minlen': 4, 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 't', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
