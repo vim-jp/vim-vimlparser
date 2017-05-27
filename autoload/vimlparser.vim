@@ -2381,6 +2381,27 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'Print', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'X', 'minlen': 1, 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': '~', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
+      \
+      \ {'flags': 'TRLBAR', 'minlen': 3, 'name': 'cbottom', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM|RANGE|NOTADR|DFLALL', 'minlen': 3, 'name': 'cdo', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM|RANGE|NOTADR|DFLALL', 'minlen': 3, 'name': 'cfdo', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'TRLBAR', 'minlen': 3, 'name': 'chistory', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'TRLBAR|CMDWIN', 'minlen': 3, 'name': 'clearjumps', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM', 'minlen': 4, 'name': 'filter', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|NOTADR|COUNT|TRLBAR', 'minlen': 5, 'name': 'helpclose', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'TRLBAR', 'minlen': 3, 'name': 'lbottom', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM|RANGE|NOTADR|DFLALL', 'minlen': 2, 'name': 'ldo', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|NEEDARG|EXTRA|NOTRLCOM|RANGE|NOTADR|DFLALL', 'minlen': 3, 'name': 'lfdo', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'TRLBAR', 'minlen': 3, 'name': 'lhistory', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|EXTRA|TRLBAR|CMDWIN', 'minlen': 3, 'name': 'llist', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'minlen': 3, 'name': 'noswapfile', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|FILE1|NEEDARG|TRLBAR|SBOXOK|CMDWIN', 'minlen': 2, 'name': 'packadd', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|TRLBAR|SBOXOK|CMDWIN', 'minlen': 5, 'name': 'packloadall', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'TRLBAR|CMDWIN|SBOXOK', 'minlen': 3, 'name': 'smile', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'minlen': 3, 'name': 'pyx', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'minlen': 4, 'name': 'pyxdo', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'minlen': 7, 'name': 'pythonx', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'minlen': 4, 'name': 'pyxfile', 'parser': 'parse_cmd_common'},
       \]
 
 let s:ExprTokenizer = {}
