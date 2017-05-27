@@ -18,7 +18,7 @@ function! vimlparser#test(input, ...)
     else
       let l:neovim = 0
     endif
-    let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : a:input
+    let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : [a:input]
     let r = s:StringReader.new(i)
     let p = s:VimLParser.new(l:neovim)
     let c = s:Compiler.new()
@@ -3637,21 +3637,20 @@ function! s:StringReader.new(...)
 endfunction
 
 function! s:StringReader.__init__(lines)
-  let lines = type(a:lines) == 3 ? a:lines : [a:lines]
   let self.buf = []
   let self.pos = []
   let lnum = 0
-  while lnum < len(lines)
+  while lnum < len(a:lines)
     let col = 0
-    for c in split(lines[lnum], '\zs')
+    for c in split(a:lines[lnum], '\zs')
       call add(self.buf, c)
       call add(self.pos, [lnum + 1, col + 1])
       let col += len(c)
     endfor
-    while lnum + 1 < len(lines) && lines[lnum + 1] =~# '^\s*\\'
+    while lnum + 1 < len(a:lines) && a:lines[lnum + 1] =~# '^\s*\\'
       let skip = 1
       let col = 0
-      for c in split(lines[lnum + 1], '\zs')
+      for c in split(a:lines[lnum + 1], '\zs')
         if skip
           if c == '\'
             let skip = 0
