@@ -2369,6 +2369,10 @@ let s:VimLParser.builtin_commands = [
       \ {'flags': 'BANG|FILE1|NEEDARG|TRLBAR|SBOXOK|CMDWIN', 'minlen': 2, 'name': 'packadd', 'parser': 'parse_cmd_common'},
       \ {'flags': 'BANG|TRLBAR|SBOXOK|CMDWIN', 'minlen': 5, 'name': 'packloadall', 'parser': 'parse_cmd_common'},
       \ {'flags': 'TRLBAR|CMDWIN|SBOXOK', 'minlen': 3, 'name': 'smile', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'minlen': 3, 'name': 'pyx', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'minlen': 4, 'name': 'pyxdo', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'minlen': 7, 'name': 'pythonx', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'minlen': 4, 'name': 'pyxfile', 'parser': 'parse_cmd_common'},
       \]
 
 let s:ExprTokenizer = {}
