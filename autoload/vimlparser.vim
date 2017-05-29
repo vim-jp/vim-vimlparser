@@ -1861,6 +1861,8 @@ let s:VimLParser.neovim_removed_commands = [
       \ {"name":"tearoff", "minlen":2, "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"},
       \ {"name":"gvim", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}]
 
+" To find new builtin_commands, run the below script.
+" $ scripts/update_builtin_commands.sh /path/to/vim/src/ex_cmds.h
 let s:VimLParser.builtin_commands = [
       \ {'name': 'append', 'minlen': 1, 'flags': 'BANG|RANGE|ZEROR|TRLBAR|CMDWIN|MODIFY', 'parser': 'parse_cmd_append'},
       \ {'name': 'abbreviate', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
