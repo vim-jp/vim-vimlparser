@@ -43,6 +43,8 @@ function! s:numtoname(num)
 endfunction
 
 let s:NIL = []
+let s:TRUE = 1
+let s:FALSE = 0
 
 let s:NODE_TOPLEVEL = 1
 let s:NODE_COMMENT = 2
@@ -267,7 +269,7 @@ endfunction
 
 function! s:ExArg()
   let ea = {}
-  let ea.forceit = 0
+  let ea.forceit = s:FALSE
   let ea.addr_count = 0
   let ea.line1 = 0
   let ea.line2 = 0
@@ -275,7 +277,7 @@ function! s:ExArg()
   let ea.do_ecmd_cmd = ''
   let ea.do_ecmd_lnum = 0
   let ea.append = 0
-  let ea.usefilter = 0
+  let ea.usefilter = s:FALSE
   let ea.amount = 0
   let ea.regname = 0
   let ea.force_bin = 0
@@ -526,7 +528,7 @@ endfunction
 " FIXME:
 function! s:VimLParser.parse_command_modifiers()
   let modifiers = []
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     if s:isdigit(self.reader.peekn(1))
       let d = self.reader.read_digit()
@@ -607,9 +609,9 @@ endfunction
 function! s:VimLParser.parse_range()
   let tokens = []
 
-  while 1
+  while s:TRUE
 
-    while 1
+    while s:TRUE
       call self.reader.skip_white()
 
       let c = self.reader.peekn(1)
@@ -648,7 +650,7 @@ function! s:VimLParser.parse_range()
         call add(tokens, self.reader.read_digit())
       endif
 
-      while 1
+      while s:TRUE
         call self.reader.skip_white()
         if self.reader.peekn(1) ==# ''
           break
@@ -690,7 +692,7 @@ function! s:VimLParser.parse_pattern(delimiter)
   let pattern = ''
   let endc = ''
   let inbracket = 0
-  while 1
+  while s:TRUE
     let c = self.reader.getn(1)
     if c ==# ''
       break
@@ -737,9 +739,9 @@ function! s:VimLParser.parse_command()
 
   if self.reader.peekn(1) ==# '!' && self.ea.cmd.name !=# 'substitute' && self.ea.cmd.name !=# 'smagic' && self.ea.cmd.name !=# 'snomagic'
     call self.reader.getn(1)
-    let self.ea.forceit = 1
+    let self.ea.forceit = s:TRUE
   else
-    let self.ea.forceit = 0
+    let self.ea.forceit = s:FALSE
   endif
 
   if self.ea.cmd.flags !~# '\<BANG\>' && self.ea.forceit && self.ea.cmd.flags !~# 'USERCMD'
@@ -766,17 +768,17 @@ function! s:VimLParser.parse_command()
       let self.ea.append = 1
     elseif self.reader.peekn(1) ==# '!' && self.ea.cmd.name ==# 'write'
       call self.reader.getn(1)
-      let self.ea.usefilter = 1
+      let self.ea.usefilter = s:TRUE
     endif
   endif
 
   if self.ea.cmd.name ==# 'read'
     if self.ea.forceit
-      let self.ea.usefilter = 1
-      let self.ea.forceit = 0
+      let self.ea.usefilter = s:TRUE
+      let self.ea.forceit = s:FALSE
     elseif self.reader.peekn(1) ==# '!'
       call self.reader.getn(1)
-      let self.ea.usefilter = 1
+      let self.ea.usefilter = s:TRUE
     endif
   endif
 
@@ -931,7 +933,7 @@ endfunction
 
 function! s:VimLParser.read_cmdarg()
   let r = ''
-  while 1
+  while s:TRUE
     let c = self.reader.peekn(1)
     if c ==# '' || s:iswhite(c)
       break
@@ -988,14 +990,14 @@ function! s:VimLParser.parse_cmd_common()
   if self.ea.cmd.flags =~# '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
   elseif self.ea.cmd.name ==# '!' || self.ea.cmd.name ==# 'global' || self.ea.cmd.name ==# 'vglobal' || self.ea.usefilter
-    while 1
+    while s:TRUE
       let end = self.reader.getpos()
       if self.reader.getn(1) ==# ''
         break
       endif
     endwhile
   else
-    while 1
+    while s:TRUE
       let end = self.reader.getpos()
       if self.reader.getn(1) ==# ''
         break
@@ -1016,7 +1018,7 @@ function! s:VimLParser.separate_nextcmd()
   let pc = ''
   let end = self.reader.getpos()
   let nospend = end
-  while 1
+  while s:TRUE
     let end = self.reader.getpos()
     if !s:iswhite(pc)
       let nospend = end
@@ -1047,7 +1049,7 @@ function! s:VimLParser.separate_nextcmd()
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
           \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc !=# '@'))
-      let has_cpo_bar = 0 " &cpoptions =~ 'b'
+      let has_cpo_bar = s:FALSE " &cpoptions =~ 'b'
       if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
       else
@@ -1089,7 +1091,7 @@ function! s:VimLParser.parse_cmd_append()
   let cmdline = self.reader.readline()
   let lines = [cmdline]
   let m = '.'
-  while 1
+  while s:TRUE
     if self.reader.peek() ==# '<EOF>'
       break
     endif
@@ -1115,7 +1117,7 @@ function! s:VimLParser.parse_cmd_loadkeymap()
   call self.reader.setpos(self.ea.linepos)
   let cmdline = self.reader.readline()
   let lines = [cmdline]
-  while 1
+  while s:TRUE
     if self.reader.peek() ==# '<EOF>'
       break
     endif
@@ -1142,7 +1144,7 @@ function! s:VimLParser.parse_cmd_lua()
     let cmdline = self.reader.getn(-1)
     let lines = [cmdline]
     call self.reader.get()
-    while 1
+    while s:TRUE
       if self.reader.peek() ==# '<EOF>'
         break
       endif
@@ -1248,7 +1250,7 @@ function! s:VimLParser.parse_cmd_function()
     call tokenizer.get()
   else
     let named = {}
-    while 1
+    while s:TRUE
       let token = tokenizer.get()
       if token.type == s:TOKEN_IDENTIFIER
         if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
@@ -1293,20 +1295,20 @@ function! s:VimLParser.parse_cmd_function()
       endif
     endwhile
   endif
-  while 1
+  while s:TRUE
     call self.reader.skip_white()
     let epos = self.reader.getpos()
     let key = self.reader.read_alpha()
     if key ==# ''
       break
     elseif key ==# 'range'
-      let node.attr.range = 1
+      let node.attr.range = s:TRUE
     elseif key ==# 'abort'
-      let node.attr.abort = 1
+      let node.attr.abort = s:TRUE
     elseif key ==# 'dict'
-      let node.attr.dict = 1
+      let node.attr.dict = s:TRUE
     elseif key ==# 'closure'
-      let node.attr.closure = 1
+      let node.attr.closure = s:TRUE
     else
       throw s:Err(printf('unexpected token: %s', key), epos)
     endif
@@ -1711,7 +1713,7 @@ endfunction
 
 function! s:VimLParser.parse_exprlist()
   let list = []
-  while 1
+  while s:TRUE
     call self.reader.skip_white()
     let c = self.reader.peek()
     if c !=# '"' && self.ends_excmds(c)
@@ -1751,7 +1753,7 @@ function! s:VimLParser.parse_lvaluelist()
   let list = []
   let node = self.parse_expr()
   call add(list, node)
-  while 1
+  while s:TRUE
     call self.reader.skip_white()
     if self.ends_excmds(self.reader.peek())
       break
@@ -1769,7 +1771,7 @@ function! s:VimLParser.parse_letlhs()
   if tokenizer.peek().type == s:TOKEN_SQOPEN
     call tokenizer.get()
     let lhs.list = []
-    while 1
+    while s:TRUE
       let node = self.parse_lvalue()
       call add(lhs.list, node)
       let token = tokenizer.get()
@@ -1826,7 +1828,7 @@ endfunction
 " FIXME: validate argument
 function! s:VimLParser.parse_cmd_syntax()
   let end = self.reader.getpos()
-  while 1
+  while s:TRUE
     let end = self.reader.getpos()
     let c = self.reader.peek()
     if c == "/" || c == "'" || c == "\""
@@ -2694,7 +2696,7 @@ function! s:ExprTokenizer.get_sstring()
   endif
   call self.reader.seek_cur(1)
   let s = ''
-  while 1
+  while s:TRUE
     let c = self.reader.p(0)
     if c ==# '<EOF>' || c ==# '<EOL>'
       throw s:Err('unexpected EOL', self.reader.getpos())
@@ -2722,7 +2724,7 @@ function! s:ExprTokenizer.get_dstring()
   endif
   call self.reader.seek_cur(1)
   let s = ''
-  while 1
+  while s:TRUE
     let c = self.reader.p(0)
     if c ==# '<EOF>' || c ==# '<EOL>'
       throw s:Err('unexpectd EOL', self.reader.getpos())
@@ -2788,7 +2790,7 @@ endfunction
 " expr2: expr3 || expr3 ..
 function! s:ExprParser.parse_expr2()
   let left = self.parse_expr3()
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_OROR
@@ -2808,7 +2810,7 @@ endfunction
 " expr3: expr4 && expr4
 function! s:ExprParser.parse_expr3()
   let left = self.parse_expr4()
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_ANDAND
@@ -3035,7 +3037,7 @@ endfunction
 "        expr6 . expr6 ..
 function! s:ExprParser.parse_expr5()
   let left = self.parse_expr6()
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_PLUS
@@ -3069,7 +3071,7 @@ endfunction
 "        expr7 % expr7 ..
 function! s:ExprParser.parse_expr6()
   let left = self.parse_expr7()
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
     if token.type == s:TOKEN_STAR
@@ -3129,7 +3131,7 @@ endfunction
 "        expr8(expr1, ...)
 function! s:ExprParser.parse_expr8()
   let left = self.parse_expr9()
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     let c = self.reader.peek()
     let token = self.tokenizer.get()
@@ -3186,7 +3188,7 @@ function! s:ExprParser.parse_expr8()
       if self.tokenizer.peek().type == s:TOKEN_PCLOSE
         call self.tokenizer.get()
       else
-        while 1
+        while s:TRUE
           call add(node.rlist, self.parse_expr1())
           let token = self.tokenizer.get()
           if token.type == s:TOKEN_COMMA
@@ -3263,7 +3265,7 @@ function! s:ExprParser.parse_expr9()
     if token.type == s:TOKEN_SQCLOSE
       call self.tokenizer.get()
     else
-      while 1
+      while s:TRUE
         call add(node.value, self.parse_expr1())
         let token = self.tokenizer.peek()
         if token.type == s:TOKEN_COMMA
@@ -3292,14 +3294,14 @@ function! s:ExprParser.parse_expr9()
       let lambda = token2.type == s:TOKEN_ARROW || token2.type == s:TOKEN_COMMA
     endif
     " fallback to dict or {expr} if true
-    let fallback = 0
+    let fallback = s:FALSE
     if lambda
       " lambda {token,...} {->...} {token->...}
       let node = s:Node(s:NODE_LAMBDA)
       let node.pos = nodepos
       let node.rlist = []
       let named = {}
-      while 1
+      while s:TRUE
         if token.type == s:TOKEN_ARROW
           break
         elseif token.type == s:TOKEN_IDENTIFIER
@@ -3343,7 +3345,7 @@ function! s:ExprParser.parse_expr9()
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         else
-          let fallback = 1
+          let fallback = s:TRUE
           break
         endif
         let token = self.tokenizer.get()
@@ -3409,7 +3411,7 @@ function! s:ExprParser.parse_expr9()
   elseif token.type == s:TOKEN_IDENTIFIER
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif 0 && (token.type == s:TOKEN_COLON || token.type == s:TOKEN_SHARP)
+  elseif s:FALSE && (token.type == s:TOKEN_COLON || token.type == s:TOKEN_SHARP)
     " XXX: no parse error but invalid expression
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
@@ -3482,18 +3484,18 @@ function! s:ExprParser.parse_curly_parts()
   if c ==# '<' && self.reader.peekn(5) ==? '<SID>'
     let name = self.reader.getn(5)
     let node = s:Node(s:NODE_CURLYNAMEPART)
-    let node.curly = 0 " Keep backword compatibility for the curly attribute
+    let node.curly = s:FALSE " Keep backword compatibility for the curly attribute
     let node.pos = pos
     let node.value = name
     call add(curly_parts, node)
   endif
-  while 1
+  while s:TRUE
     let c = self.reader.peek()
     if s:isnamec(c)
       let pos = self.reader.getpos()
       let name = self.reader.read_name()
       let node = s:Node(s:NODE_CURLYNAMEPART)
-      let node.curly = 0 " Keep backword compatibility for the curly attribute
+      let node.curly = s:FALSE " Keep backword compatibility for the curly attribute
       let node.pos = pos
       let node.value = name
       call add(curly_parts, node)
@@ -3501,7 +3503,7 @@ function! s:ExprParser.parse_curly_parts()
       call self.reader.get()
       let pos = self.reader.getpos()
       let node = s:Node(s:NODE_CURLYNAMEEXPR)
-      let node.curly = 1 " Keep backword compatibility for the curly attribute
+      let node.curly = s:TRUE " Keep backword compatibility for the curly attribute
       let node.pos = pos
       let node.value = self.parse_expr1()
       call add(curly_parts, node)
@@ -3529,7 +3531,7 @@ endfunction
 "        expr8.name
 function! s:LvalueParser.parse_lv8()
   let left = self.parse_lv9()
-  while 1
+  while s:TRUE
     let pos = self.reader.tell()
     let c = self.reader.peek()
     let token = self.tokenizer.get()
@@ -3649,12 +3651,12 @@ function! s:StringReader.__init__(lines)
       let col += len(c)
     endfor
     while lnum + 1 < len(lines) && lines[lnum + 1] =~# '^\s*\\'
-      let skip = 1
+      let skip = s:TRUE
       let col = 0
       for c in split(lines[lnum + 1], '\zs')
         if skip
           if c == '\'
-            let skip = 0
+            let skip = s:FALSE
           endif
         else
           call add(self.buf, c)
@@ -3859,7 +3861,7 @@ function! s:StringReader.skip_white()
 endfunction
 
 function! s:StringReader.skip_white_and_colon()
-  while 1
+  while s:TRUE
     let c = self.peekn(1)
     if !s:iswhite(c) && c !=# ':'
       break
@@ -4943,7 +4945,7 @@ function! s:RegexpParser.get_token_sq(pre)
   if self.reader.p(0) ==# ']' || self.reader.p(0) ==# '-'
     let r .= self.reader.get()
   endif
-  while 1
+  while s:TRUE
     let startc = 0
     let c = self.reader.p(0)
     if self.isend(c)
@@ -5140,7 +5142,7 @@ endfunction
 " \%[]
 function! s:RegexpParser.get_token_percent_sq(pre)
   let r = ''
-  while 1
+  while s:TRUE
     let c = self.reader.peek()
     if self.isend(c)
       throw s:Err('E69: Missing ] after \%[', self.reader.getpos())
