@@ -58,6 +58,42 @@ let s:opprec[s:NODE_CURLYNAME] = 9
 let s:opprec[s:NODE_ENV] = 9
 let s:opprec[s:NODE_REG] = 9
 
+" Reserved Python keywords (dict for faster lookup).
+let s:reserved_keywords = {
+      \ 'False': 1,
+      \ 'None': 1,
+      \ 'True': 1,
+      \ 'and': 1,
+      \ 'as': 1,
+      \ 'assert': 1,
+      \ 'break': 1,
+      \ 'class': 1,
+      \ 'continue': 1,
+      \ 'def': 1,
+      \ 'del': 1,
+      \ 'elif': 1,
+      \ 'else': 1,
+      \ 'except': 1,
+      \ 'finally': 1,
+      \ 'for': 1,
+      \ 'from': 1,
+      \ 'global': 1,
+      \ 'if': 1,
+      \ 'import': 1,
+      \ 'in': 1,
+      \ 'is': 1,
+      \ 'lambda': 1,
+      \ 'nonlocal': 1,
+      \ 'not': 1,
+      \ 'or': 1,
+      \ 'pass': 1,
+      \ 'raise': 1,
+      \ 'return': 1,
+      \ 'try': 1,
+      \ 'while': 1,
+      \ 'with': 1,
+      \ 'yield': 1}
+
 let s:PythonCompiler = {}
 
 function s:PythonCompiler.new(...)
@@ -678,9 +714,6 @@ endfunction
 function s:PythonCompiler.compile_dot(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
-  if right =~ '^\(else\|finally\)$'
-    let right = '_' . right
-  endif
   return printf('%s.%s', left, right)
 endfunction
 
@@ -747,6 +780,9 @@ function s:PythonCompiler.compile_identifier(node)
     let name = 'vval'
   elseif name =~ '^[sa]:'
     let name = name[2:]
+  endif
+  if has_key(s:reserved_keywords, name)
+    let name .= '_'
   endif
   return name
 endfunction
