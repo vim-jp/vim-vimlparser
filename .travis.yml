@@ -27,3 +27,4 @@ script:
   - which -a vim
   - vim --cmd version --cmd quit
   - test/run.sh
+  - make check
