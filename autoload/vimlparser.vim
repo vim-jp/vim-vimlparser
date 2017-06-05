@@ -1853,13 +1853,13 @@ let s:VimLParser.neovim_additional_commands = [
       \ {'name': 'tnoremap', 'minlen': 8, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'}]
 
 let s:VimLParser.neovim_removed_commands = [
-      \ {"name":"Print", "minlen":1, "flags":"RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
-      \ {"name":"fixdel", "minlen":3, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
-      \ {"name":"helpfind", "minlen":5, "flags":"EXTRA|NOTRLCOM", "parser":"parse_cmd_common"},
-      \ {"name":"open", "minlen":1, "flags":"RANGE|BANG|EXTRA", "parser":"parse_cmd_common"},
-      \ {"name":"shell", "minlen":2, "flags":"TRLBAR|CMDWIN", "parser":"parse_cmd_common"},
-      \ {"name":"tearoff", "minlen":2, "flags":"NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN", "parser":"parse_cmd_common"},
-      \ {"name":"gvim", "minlen":2, "flags":"BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN", "parser":"parse_cmd_common"}]
+      \ {'name': 'Print', 'minlen':1, 'flags': 'RANGE|WHOLEFOLD|COUNT|EXFLAGS|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'fixdel', 'minlen':3, 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'helpfind', 'minlen':5, 'flags': 'EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
+      \ {'name': 'open', 'minlen':1, 'flags': 'RANGE|BANG|EXTRA', 'parser': 'parse_cmd_common'},
+      \ {'name': 'shell', 'minlen':2, 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'tearoff', 'minlen':2, 'flags': 'NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
+      \ {'name': 'gvim', 'minlen':2, 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'}]
 
 " To find new builtin_commands, run the below script.
 " $ scripts/update_builtin_commands.sh /path/to/vim/src/ex_cmds.h
