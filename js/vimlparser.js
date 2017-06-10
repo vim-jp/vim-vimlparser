@@ -769,6 +769,10 @@ VimLParser.prototype.parse_command_modifiers = function() {
             // noa\%[utocmd]
             viml_add(modifiers, {"name":"noautocmd"});
         }
+        else if (viml_stridx("noswapfile", k) == 0 && viml_len(k) >= 3) {
+            // :nos\%[wapfile]
+            viml_add(modifiers, {"name":"noswapfile"});
+        }
         else if (viml_stridx("rightbelow", k) == 0 && viml_len(k) >= 6) {
             //rightb\%[elow]
             viml_add(modifiers, {"name":"rightbelow"});
