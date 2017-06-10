@@ -568,6 +568,8 @@ function! s:VimLParser.parse_command_modifiers()
       call add(modifiers, {'name': 'leftabove'})
     elseif stridx('noautocmd', k) == 0 && len(k) >= 3 " noa\%[utocmd]
       call add(modifiers, {'name': 'noautocmd'})
+    elseif stridx('noswapfile', k) == 0 && len(k) >= 3 " :nos\%[wapfile]
+      call add(modifiers, {'name': 'noswapfile'})
     elseif stridx('rightbelow', k) == 0 && len(k) >= 6 "rightb\%[elow]
       call add(modifiers, {'name': 'rightbelow'})
     elseif stridx('sandbox', k) == 0 && len(k) >= 3 " san\%[dbox]
