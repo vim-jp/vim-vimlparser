@@ -662,6 +662,9 @@ class VimLParser:
             elif viml_stridx("noautocmd", k) == 0 and viml_len(k) >= 3:
                 # noa\%[utocmd]
                 viml_add(modifiers, AttributeDict({"name":"noautocmd"}))
+            elif viml_stridx("noswapfile", k) == 0 and viml_len(k) >= 3:
+                # :nos\%[wapfile]
+                viml_add(modifiers, AttributeDict({"name":"noswapfile"}))
             elif viml_stridx("rightbelow", k) == 0 and viml_len(k) >= 6:
                 #rightb\%[elow]
                 viml_add(modifiers, AttributeDict({"name":"rightbelow"}))
