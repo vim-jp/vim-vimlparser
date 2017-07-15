@@ -725,11 +725,11 @@ class VimLParser:
                     viml_add(tokens, "'" + m)
                 elif c == "/":
                     self.reader.getn(1)
-                    pattern, endc = self.parse_pattern(c)
+                    pattern, _ = self.parse_pattern(c)
                     viml_add(tokens, pattern)
                 elif c == "?":
                     self.reader.getn(1)
-                    pattern, endc = self.parse_pattern(c)
+                    pattern, _ = self.parse_pattern(c)
                     viml_add(tokens, pattern)
                 elif c == "\\":
                     m = self.reader.p(1)
@@ -1061,7 +1061,7 @@ class VimLParser:
         else:
             # :vimgrep /pattern/[g][j] fname
             c = self.reader.getn(1)
-            pattern, endc = self.parse_pattern(c)
+            _, endc = self.parse_pattern(c)
             if c != endc:
                 return
             while self.reader.p(0) == "g" or self.reader.p(0) == "j":
@@ -1503,7 +1503,7 @@ class VimLParser:
         node.pattern = NIL
         self.reader.skip_white()
         if not self.ends_excmds(self.reader.peek()):
-            node.pattern, endc = self.parse_pattern(self.reader.get())
+            node.pattern, _ = self.parse_pattern(self.reader.get())
         viml_add(self.context[0].catch, node)
         self.push_context(node)
 
