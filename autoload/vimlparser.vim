@@ -530,11 +530,10 @@ function! s:VimLParser.parse_command_modifiers()
   let modifiers = []
   while s:TRUE
     let pos = self.reader.tell()
+    let d = ''
     if s:isdigit(self.reader.peekn(1))
       let d = self.reader.read_digit()
       call self.reader.skip_white()
-    else
-      let d = ''
     endif
     let k = self.reader.read_alpha()
     let c = self.reader.peekn(1)
@@ -802,6 +801,7 @@ endfunction
 
 function! s:VimLParser.find_command()
   let c = self.reader.peekn(1)
+  let name = ''
 
   if c ==# 'k'
     call self.reader.getn(1)
@@ -989,6 +989,7 @@ endfunction
 
 " TODO:
 function! s:VimLParser.parse_cmd_common()
+  let end = self.reader.getpos()
   if self.ea.cmd.flags =~# '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
   elseif self.ea.cmd.name ==# '!' || self.ea.cmd.name ==# 'global' || self.ea.cmd.name ==# 'vglobal' || self.ea.usefilter
@@ -1134,6 +1135,7 @@ function! s:VimLParser.parse_cmd_loadkeymap()
 endfunction
 
 function! s:VimLParser.parse_cmd_lua()
+  let lines = []
   call self.reader.skip_white()
   if self.reader.peekn(2) ==# '<<'
     call self.reader.getn(2)
@@ -1254,6 +1256,7 @@ function! s:VimLParser.parse_cmd_function()
   else
     let named = {}
     while s:TRUE
+      let varnode = s:Node(s:NODE_IDENTIFIER)
       let token = tokenizer.get()
       if token.type == s:TOKEN_IDENTIFIER
         if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
@@ -1262,7 +1265,6 @@ function! s:VimLParser.parse_cmd_function()
           throw s:Err(printf('E853: Duplicate argument name: %s', token.value), token.pos)
         endif
         let named[token.value] = 1
-        let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
@@ -1283,7 +1285,6 @@ function! s:VimLParser.parse_cmd_function()
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
       elseif token.type == s:TOKEN_DOTDOTDOT
-        let varnode = s:Node(s:NODE_IDENTIFIER)
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
@@ -2672,6 +2673,7 @@ function! s:ExprTokenizer.get2()
     " @<EOL> is treated as @"
     return self.token(s:TOKEN_REG, r.getn(2), pos)
   elseif c ==# '&'
+    let s = ''
     if (r.p(1) ==# 'g' || r.p(1) ==# 'l') && r.p(2) ==# ':'
       let s = r.getn(3) . r.read_word()
     else
@@ -3158,6 +3160,7 @@ function! s:ExprParser.parse_expr8()
         if token.type != s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
+        let left = node
       else
         let right = self.parse_expr1()
         if self.tokenizer.peek().type == s:TOKEN_COLON
@@ -3174,6 +3177,7 @@ function! s:ExprParser.parse_expr8()
           if token.type != s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
+          let left = node
         else
           let node = s:Node(s:NODE_SUBSCRIPT)
           let node.pos = npos
@@ -3183,9 +3187,9 @@ function! s:ExprParser.parse_expr8()
           if token.type != s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
+          let left = node
         endif
       endif
-      let left = node
       unlet node
     elseif token.type == s:TOKEN_POPEN
       let node = s:Node(s:NODE_CALL)
@@ -3250,6 +3254,7 @@ endfunction
 function! s:ExprParser.parse_expr9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
+  let node = s:Node(-1)
   if token.type == s:TOKEN_NUMBER
     let node = s:Node(s:NODE_NUMBER)
     let node.pos = token.pos
@@ -3476,12 +3481,13 @@ function! s:ExprParser.parse_identifier()
     let node = s:Node(s:NODE_IDENTIFIER)
     let node.pos = npos
     let node.value = curly_parts[0].value
+    return node
   else
     let node = s:Node(s:NODE_CURLYNAME)
     let node.pos = npos
     let node.value = curly_parts
-  endif
   return node
+  endif
 endfunction
 
 function! s:ExprParser.parse_curly_parts()
@@ -3544,6 +3550,7 @@ function! s:LvalueParser.parse_lv8()
     let token = self.tokenizer.get()
     if !s:iswhite(c) && token.type == s:TOKEN_SQOPEN
       let npos = token.pos
+      let node = s:Node(-1)
       if self.tokenizer.peek().type == s:TOKEN_COLON
         call self.tokenizer.get()
         let node = s:Node(s:NODE_SLICE)
@@ -3611,6 +3618,7 @@ endfunction
 function! s:LvalueParser.parse_lv9()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
+  let node = s:Node(-1)
   if token.type == s:TOKEN_COPEN
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
@@ -4134,6 +4142,7 @@ function! s:Compiler.compile_excall(node)
 endfunction
 
 function! s:Compiler.compile_let(node)
+  let left = ''
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
@@ -4201,6 +4210,7 @@ function! s:Compiler.compile_while(node)
 endfunction
 
 function! s:Compiler.compile_for(node)
+  let left = ''
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
   else
