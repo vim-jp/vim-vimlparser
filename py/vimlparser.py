@@ -1092,7 +1092,7 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_insert(self):
-        return self.parse_cmd_append()
+        self.parse_cmd_append()
 
     def parse_cmd_loadkeymap(self):
         self.reader.setpos(self.ea.linepos)
@@ -1140,22 +1140,22 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_mzscheme(self):
-        return self.parse_cmd_lua()
+        self.parse_cmd_lua()
 
     def parse_cmd_perl(self):
-        return self.parse_cmd_lua()
+        self.parse_cmd_lua()
 
     def parse_cmd_python(self):
-        return self.parse_cmd_lua()
+        self.parse_cmd_lua()
 
     def parse_cmd_python3(self):
-        return self.parse_cmd_lua()
+        self.parse_cmd_lua()
 
     def parse_cmd_ruby(self):
-        return self.parse_cmd_lua()
+        self.parse_cmd_lua()
 
     def parse_cmd_tcl(self):
-        return self.parse_cmd_lua()
+        self.parse_cmd_lua()
 
     def parse_cmd_finish(self):
         self.parse_cmd_common()
@@ -1164,7 +1164,7 @@ class VimLParser:
 
 # FIXME
     def parse_cmd_usercmd(self):
-        return self.parse_cmd_common()
+        self.parse_cmd_common()
 
     def parse_cmd_function(self):
         pos = self.reader.tell()
@@ -1172,11 +1172,13 @@ class VimLParser:
         # :function
         if self.ends_excmds(self.reader.peek()):
             self.reader.seek_set(pos)
-            return self.parse_cmd_common()
+            self.parse_cmd_common()
+            return
         # :function /pattern
         if self.reader.peekn(1) == "/":
             self.reader.seek_set(pos)
-            return self.parse_cmd_common()
+            self.parse_cmd_common()
+            return
         left = self.parse_lvalue_func()
         self.reader.skip_white()
         if left.type == NODE_IDENTIFIER:
@@ -1187,7 +1189,8 @@ class VimLParser:
         # :function {name}
         if self.reader.peekn(1) != "(":
             self.reader.seek_set(pos)
-            return self.parse_cmd_common()
+            self.parse_cmd_common()
+            return
         # :function[!] {name}([arguments]) [range] [abort] [dict] [closure]
         node = Node(NODE_FUNCTION)
         node.pos = self.ea.cmdpos
@@ -1312,7 +1315,8 @@ class VimLParser:
         # :let
         if self.ends_excmds(self.reader.peek()):
             self.reader.seek_set(pos)
-            return self.parse_cmd_common()
+            self.parse_cmd_common()
+            return
         lhs = self.parse_letlhs()
         self.reader.skip_white()
         s1 = self.reader.peekn(1)
@@ -1320,7 +1324,8 @@ class VimLParser:
         # :let {var-name} ..
         if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "=":
             self.reader.seek_set(pos)
-            return self.parse_cmd_common()
+            self.parse_cmd_common()
+            return
         # :let left op right
         node = Node(NODE_LET)
         node.pos = self.ea.cmdpos
@@ -3005,51 +3010,51 @@ class Compiler:
         if node.type == NODE_TOPLEVEL:
             return self.compile_toplevel(node)
         elif node.type == NODE_COMMENT:
-            return self.compile_comment(node)
+            self.compile_comment(node)
         elif node.type == NODE_EXCMD:
-            return self.compile_excmd(node)
+            self.compile_excmd(node)
         elif node.type == NODE_FUNCTION:
-            return self.compile_function(node)
+            self.compile_function(node)
         elif node.type == NODE_DELFUNCTION:
-            return self.compile_delfunction(node)
+            self.compile_delfunction(node)
         elif node.type == NODE_RETURN:
-            return self.compile_return(node)
+            self.compile_return(node)
         elif node.type == NODE_EXCALL:
-            return self.compile_excall(node)
+            self.compile_excall(node)
         elif node.type == NODE_LET:
-            return self.compile_let(node)
+            self.compile_let(node)
         elif node.type == NODE_UNLET:
-            return self.compile_unlet(node)
+            self.compile_unlet(node)
         elif node.type == NODE_LOCKVAR:
-            return self.compile_lockvar(node)
+            self.compile_lockvar(node)
         elif node.type == NODE_UNLOCKVAR:
-            return self.compile_unlockvar(node)
+            self.compile_unlockvar(node)
         elif node.type == NODE_IF:
-            return self.compile_if(node)
+            self.compile_if(node)
         elif node.type == NODE_WHILE:
-            return self.compile_while(node)
+            self.compile_while(node)
         elif node.type == NODE_FOR:
-            return self.compile_for(node)
+            self.compile_for(node)
         elif node.type == NODE_CONTINUE:
-            return self.compile_continue(node)
+            self.compile_continue(node)
         elif node.type == NODE_BREAK:
-            return self.compile_break(node)
+            self.compile_break(node)
         elif node.type == NODE_TRY:
-            return self.compile_try(node)
+            self.compile_try(node)
         elif node.type == NODE_THROW:
-            return self.compile_throw(node)
+            self.compile_throw(node)
         elif node.type == NODE_ECHO:
-            return self.compile_echo(node)
+            self.compile_echo(node)
         elif node.type == NODE_ECHON:
-            return self.compile_echon(node)
+            self.compile_echon(node)
         elif node.type == NODE_ECHOHL:
-            return self.compile_echohl(node)
+            self.compile_echohl(node)
         elif node.type == NODE_ECHOMSG:
-            return self.compile_echomsg(node)
+            self.compile_echomsg(node)
         elif node.type == NODE_ECHOERR:
-            return self.compile_echoerr(node)
+            self.compile_echoerr(node)
         elif node.type == NODE_EXECUTE:
-            return self.compile_execute(node)
+            self.compile_execute(node)
         elif node.type == NODE_TERNARY:
             return self.compile_ternary(node)
         elif node.type == NODE_OR:
@@ -3168,6 +3173,7 @@ class Compiler:
             return self.compile_lambda(node)
         else:
             raise VimLParserException(viml_printf("Compiler: unknown node: %s", viml_string(node)))
+        return NIL
 
     def compile_body(self, body):
         for node in body:
