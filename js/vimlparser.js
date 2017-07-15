@@ -1464,7 +1464,8 @@ VimLParser.prototype.parse_cmd_function = function() {
     this.reader.skip_white();
     if (left.type == NODE_IDENTIFIER) {
         var s = left.value;
-        if (s[0] != "<" && !isupper(s[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
+        var ss = viml_split(s, "\\zs");
+        if (ss[0] != "<" && !isupper(ss[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
             throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
         }
     }
