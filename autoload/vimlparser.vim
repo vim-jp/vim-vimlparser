@@ -1226,7 +1226,8 @@ function! s:VimLParser.parse_cmd_function()
 
   if left.type == s:NODE_IDENTIFIER
     let s = left.value
-    if s[0] !=# '<' && !s:isupper(s[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
+    let ss = split(s, '\zs')
+    if ss[0] !=# '<' && !s:isupper(ss[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
       throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
     endif
   endif
