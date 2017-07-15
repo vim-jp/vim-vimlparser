@@ -842,7 +842,101 @@ class VimLParser:
             self.reader.skip_white()
         if viml_eqregh(self.ea.cmd.flags, "\\<EDITCMD\\>") and not self.ea.usefilter:
             self.parse_argcmd()
-        getattr(self, self.ea.cmd.parser)()
+        self._parse_command(self.ea.cmd.parser)
+
+    def _parse_command(self, parser):
+        if parser == "parse_cmd_append":
+            self.parse_cmd_append()
+        elif parser == "parse_cmd_break":
+            self.parse_cmd_break()
+        elif parser == "parse_cmd_call":
+            self.parse_cmd_call()
+        elif parser == "parse_cmd_catch":
+            self.parse_cmd_catch()
+        elif parser == "parse_cmd_common":
+            self.parse_cmd_common()
+        elif parser == "parse_cmd_continue":
+            self.parse_cmd_continue()
+        elif parser == "parse_cmd_delfunction":
+            self.parse_cmd_delfunction()
+        elif parser == "parse_cmd_echo":
+            self.parse_cmd_echo()
+        elif parser == "parse_cmd_echoerr":
+            self.parse_cmd_echoerr()
+        elif parser == "parse_cmd_echohl":
+            self.parse_cmd_echohl()
+        elif parser == "parse_cmd_echomsg":
+            self.parse_cmd_echomsg()
+        elif parser == "parse_cmd_echon":
+            self.parse_cmd_echon()
+        elif parser == "parse_cmd_else":
+            self.parse_cmd_else()
+        elif parser == "parse_cmd_elseif":
+            self.parse_cmd_elseif()
+        elif parser == "parse_cmd_endfor":
+            self.parse_cmd_endfor()
+        elif parser == "parse_cmd_endfunction":
+            self.parse_cmd_endfunction()
+        elif parser == "parse_cmd_endif":
+            self.parse_cmd_endif()
+        elif parser == "parse_cmd_endtry":
+            self.parse_cmd_endtry()
+        elif parser == "parse_cmd_endwhile":
+            self.parse_cmd_endwhile()
+        elif parser == "parse_cmd_execute":
+            self.parse_cmd_execute()
+        elif parser == "parse_cmd_finally":
+            self.parse_cmd_finally()
+        elif parser == "parse_cmd_finish":
+            self.parse_cmd_finish()
+        elif parser == "parse_cmd_for":
+            self.parse_cmd_for()
+        elif parser == "parse_cmd_function":
+            self.parse_cmd_function()
+        elif parser == "parse_cmd_if":
+            self.parse_cmd_if()
+        elif parser == "parse_cmd_insert":
+            self.parse_cmd_insert()
+        elif parser == "parse_cmd_let":
+            self.parse_cmd_let()
+        elif parser == "parse_cmd_loadkeymap":
+            self.parse_cmd_loadkeymap()
+        elif parser == "parse_cmd_lockvar":
+            self.parse_cmd_lockvar()
+        elif parser == "parse_cmd_lua":
+            self.parse_cmd_lua()
+        elif parser == "parse_cmd_modifier_range":
+            self.parse_cmd_modifier_range()
+        elif parser == "parse_cmd_mzscheme":
+            self.parse_cmd_mzscheme()
+        elif parser == "parse_cmd_perl":
+            self.parse_cmd_perl()
+        elif parser == "parse_cmd_python":
+            self.parse_cmd_python()
+        elif parser == "parse_cmd_python3":
+            self.parse_cmd_python3()
+        elif parser == "parse_cmd_return":
+            self.parse_cmd_return()
+        elif parser == "parse_cmd_ruby":
+            self.parse_cmd_ruby()
+        elif parser == "parse_cmd_tcl":
+            self.parse_cmd_tcl()
+        elif parser == "parse_cmd_throw":
+            self.parse_cmd_throw()
+        elif parser == "parse_cmd_try":
+            self.parse_cmd_try()
+        elif parser == "parse_cmd_unlet":
+            self.parse_cmd_unlet()
+        elif parser == "parse_cmd_unlockvar":
+            self.parse_cmd_unlockvar()
+        elif parser == "parse_cmd_usercmd":
+            self.parse_cmd_usercmd()
+        elif parser == "parse_cmd_while":
+            self.parse_cmd_while()
+        elif parser == "parse_wincmd":
+            self.parse_wincmd()
+        elif parser == "parse_cmd_syntax":
+            self.parse_cmd_syntax()
 
     def find_command(self):
         c = self.reader.peekn(1)

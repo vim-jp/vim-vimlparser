@@ -1019,7 +1019,148 @@ VimLParser.prototype.parse_command = function() {
     if (viml_eqregh(this.ea.cmd.flags, "\\<EDITCMD\\>") && !this.ea.usefilter) {
         this.parse_argcmd();
     }
-    this[this.ea.cmd.parser]();
+    this._parse_command(this.ea.cmd.parser);
+}
+
+VimLParser.prototype._parse_command = function(parser) {
+    if (parser == "parse_cmd_append") {
+        this.parse_cmd_append();
+    }
+    else if (parser == "parse_cmd_break") {
+        this.parse_cmd_break();
+    }
+    else if (parser == "parse_cmd_call") {
+        this.parse_cmd_call();
+    }
+    else if (parser == "parse_cmd_catch") {
+        this.parse_cmd_catch();
+    }
+    else if (parser == "parse_cmd_common") {
+        this.parse_cmd_common();
+    }
+    else if (parser == "parse_cmd_continue") {
+        this.parse_cmd_continue();
+    }
+    else if (parser == "parse_cmd_delfunction") {
+        this.parse_cmd_delfunction();
+    }
+    else if (parser == "parse_cmd_echo") {
+        this.parse_cmd_echo();
+    }
+    else if (parser == "parse_cmd_echoerr") {
+        this.parse_cmd_echoerr();
+    }
+    else if (parser == "parse_cmd_echohl") {
+        this.parse_cmd_echohl();
+    }
+    else if (parser == "parse_cmd_echomsg") {
+        this.parse_cmd_echomsg();
+    }
+    else if (parser == "parse_cmd_echon") {
+        this.parse_cmd_echon();
+    }
+    else if (parser == "parse_cmd_else") {
+        this.parse_cmd_else();
+    }
+    else if (parser == "parse_cmd_elseif") {
+        this.parse_cmd_elseif();
+    }
+    else if (parser == "parse_cmd_endfor") {
+        this.parse_cmd_endfor();
+    }
+    else if (parser == "parse_cmd_endfunction") {
+        this.parse_cmd_endfunction();
+    }
+    else if (parser == "parse_cmd_endif") {
+        this.parse_cmd_endif();
+    }
+    else if (parser == "parse_cmd_endtry") {
+        this.parse_cmd_endtry();
+    }
+    else if (parser == "parse_cmd_endwhile") {
+        this.parse_cmd_endwhile();
+    }
+    else if (parser == "parse_cmd_execute") {
+        this.parse_cmd_execute();
+    }
+    else if (parser == "parse_cmd_finally") {
+        this.parse_cmd_finally();
+    }
+    else if (parser == "parse_cmd_finish") {
+        this.parse_cmd_finish();
+    }
+    else if (parser == "parse_cmd_for") {
+        this.parse_cmd_for();
+    }
+    else if (parser == "parse_cmd_function") {
+        this.parse_cmd_function();
+    }
+    else if (parser == "parse_cmd_if") {
+        this.parse_cmd_if();
+    }
+    else if (parser == "parse_cmd_insert") {
+        this.parse_cmd_insert();
+    }
+    else if (parser == "parse_cmd_let") {
+        this.parse_cmd_let();
+    }
+    else if (parser == "parse_cmd_loadkeymap") {
+        this.parse_cmd_loadkeymap();
+    }
+    else if (parser == "parse_cmd_lockvar") {
+        this.parse_cmd_lockvar();
+    }
+    else if (parser == "parse_cmd_lua") {
+        this.parse_cmd_lua();
+    }
+    else if (parser == "parse_cmd_modifier_range") {
+        this.parse_cmd_modifier_range();
+    }
+    else if (parser == "parse_cmd_mzscheme") {
+        this.parse_cmd_mzscheme();
+    }
+    else if (parser == "parse_cmd_perl") {
+        this.parse_cmd_perl();
+    }
+    else if (parser == "parse_cmd_python") {
+        this.parse_cmd_python();
+    }
+    else if (parser == "parse_cmd_python3") {
+        this.parse_cmd_python3();
+    }
+    else if (parser == "parse_cmd_return") {
+        this.parse_cmd_return();
+    }
+    else if (parser == "parse_cmd_ruby") {
+        this.parse_cmd_ruby();
+    }
+    else if (parser == "parse_cmd_tcl") {
+        this.parse_cmd_tcl();
+    }
+    else if (parser == "parse_cmd_throw") {
+        this.parse_cmd_throw();
+    }
+    else if (parser == "parse_cmd_try") {
+        this.parse_cmd_try();
+    }
+    else if (parser == "parse_cmd_unlet") {
+        this.parse_cmd_unlet();
+    }
+    else if (parser == "parse_cmd_unlockvar") {
+        this.parse_cmd_unlockvar();
+    }
+    else if (parser == "parse_cmd_usercmd") {
+        this.parse_cmd_usercmd();
+    }
+    else if (parser == "parse_cmd_while") {
+        this.parse_cmd_while();
+    }
+    else if (parser == "parse_wincmd") {
+        this.parse_wincmd();
+    }
+    else if (parser == "parse_cmd_syntax") {
+        this.parse_cmd_syntax();
+    }
 }
 
 VimLParser.prototype.find_command = function() {
