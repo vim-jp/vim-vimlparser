@@ -618,11 +618,10 @@ class VimLParser:
         modifiers = []
         while TRUE:
             pos = self.reader.tell()
+            d = ""
             if isdigit(self.reader.peekn(1)):
                 d = self.reader.read_digit()
                 self.reader.skip_white()
-            else:
-                d = ""
             k = self.reader.read_alpha()
             c = self.reader.peekn(1)
             self.reader.skip_white()
@@ -846,6 +845,7 @@ class VimLParser:
 
     def find_command(self):
         c = self.reader.peekn(1)
+        name = ""
         if c == "k":
             self.reader.getn(1)
             name = "k"
@@ -994,6 +994,7 @@ class VimLParser:
 
 # TODO:
     def parse_cmd_common(self):
+        end = self.reader.getpos()
         if viml_eqregh(self.ea.cmd.flags, "\\<TRLBAR\\>") and not self.ea.usefilter:
             end = self.separate_nextcmd()
         elif self.ea.cmd.name == "!" or self.ea.cmd.name == "global" or self.ea.cmd.name == "vglobal" or self.ea.usefilter:
@@ -1110,6 +1111,7 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_lua(self):
+        lines = []
         self.reader.skip_white()
         if self.reader.peekn(2) == "<<":
             self.reader.getn(2)
@@ -1204,6 +1206,7 @@ class VimLParser:
         else:
             named = AttributeDict({})
             while TRUE:
+                varnode = Node(NODE_IDENTIFIER)
                 token = tokenizer.get()
                 if token.type == TOKEN_IDENTIFIER:
                     if not isargname(token.value) or token.value == "firstline" or token.value == "lastline":
@@ -1211,7 +1214,6 @@ class VimLParser:
                     elif viml_has_key(named, token.value):
                         raise VimLParserException(Err(viml_printf("E853: Duplicate argument name: %s", token.value), token.pos))
                     named[token.value] = 1
-                    varnode = Node(NODE_IDENTIFIER)
                     varnode.pos = token.pos
                     varnode.value = token.value
                     viml_add(node.rlist, varnode)
@@ -1229,7 +1231,6 @@ class VimLParser:
                     else:
                         raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
                 elif token.type == TOKEN_DOTDOTDOT:
-                    varnode = Node(NODE_IDENTIFIER)
                     varnode.pos = token.pos
                     varnode.value = token.value
                     viml_add(node.rlist, varnode)
@@ -1942,6 +1943,7 @@ class ExprTokenizer:
             # @<EOL> is treated as @"
             return self.token(TOKEN_REG, r.getn(2), pos)
         elif c == "&":
+            s = ""
             if (r.p(1) == "g" or r.p(1) == "l") and r.p(2) == ":":
                 s = r.getn(3) + r.read_word()
             else:
@@ -2385,6 +2387,7 @@ class ExprParser:
                     token = self.tokenizer.get()
                     if token.type != TOKEN_SQCLOSE:
                         raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
+                    left = node
                 else:
                     right = self.parse_expr1()
                     if self.tokenizer.peek().type == TOKEN_COLON:
@@ -2399,6 +2402,7 @@ class ExprParser:
                         token = self.tokenizer.get()
                         if token.type != TOKEN_SQCLOSE:
                             raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
+                        left = node
                     else:
                         node = Node(NODE_SUBSCRIPT)
                         node.pos = npos
@@ -2407,7 +2411,7 @@ class ExprParser:
                         token = self.tokenizer.get()
                         if token.type != TOKEN_SQCLOSE:
                             raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
-                left = node
+                        left = node
                 del node
             elif token.type == TOKEN_POPEN:
                 node = Node(NODE_CALL)
@@ -2463,6 +2467,7 @@ class ExprParser:
     def parse_expr9(self):
         pos = self.reader.tell()
         token = self.tokenizer.get()
+        node = Node(-1)
         if token.type == TOKEN_NUMBER:
             node = Node(NODE_NUMBER)
             node.pos = token.pos
@@ -2660,11 +2665,12 @@ class ExprParser:
             node = Node(NODE_IDENTIFIER)
             node.pos = npos
             node.value = curly_parts[0].value
+            return node
         else:
             node = Node(NODE_CURLYNAME)
             node.pos = npos
             node.value = curly_parts
-        return node
+            return node
 
     def parse_curly_parts(self):
         curly_parts = []
@@ -2722,6 +2728,7 @@ class LvalueParser(ExprParser):
             token = self.tokenizer.get()
             if not iswhite(c) and token.type == TOKEN_SQOPEN:
                 npos = token.pos
+                node = Node(-1)
                 if self.tokenizer.peek().type == TOKEN_COLON:
                     self.tokenizer.get()
                     node = Node(NODE_SLICE)
@@ -2778,6 +2785,7 @@ class LvalueParser(ExprParser):
     def parse_lv9(self):
         pos = self.reader.tell()
         token = self.tokenizer.get()
+        node = Node(-1)
         if token.type == TOKEN_COPEN:
             self.reader.seek_set(pos)
             node = self.parse_identifier()
@@ -3210,6 +3218,7 @@ class Compiler:
         self.out("(call %s)", self.compile(node.left))
 
     def compile_let(self, node):
+        left = ""
         if node.left is not NIL:
             left = self.compile(node.left)
         else:
@@ -3265,6 +3274,7 @@ class Compiler:
         self.decindent()
 
     def compile_for(self, node):
+        left = ""
         if node.left is not NIL:
             left = self.compile(node.left)
         else:
