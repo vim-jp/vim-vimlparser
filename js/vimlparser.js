@@ -464,7 +464,7 @@ function ExArg() {
     ea.force_ff = 0;
     ea.force_enc = 0;
     ea.bad_char = 0;
-    ea.linepos = [];
+    ea.linepos = {};
     ea.cmdpos = [];
     ea.argpos = [];
     ea.cmd = {};
