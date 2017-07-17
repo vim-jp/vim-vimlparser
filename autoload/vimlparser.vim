@@ -746,7 +746,7 @@ function! s:VimLParser.parse_command()
     let self.ea.forceit = s:FALSE
   endif
 
-  if self.ea.cmd.flags !~# '\<BANG\>' && self.ea.forceit && self.ea.cmd.flags !~# 'USERCMD'
+  if self.ea.cmd.flags !~# '\<BANG\>' && self.ea.forceit && self.ea.cmd.flags !~# '\<USERCMD\>'
     throw s:Err('E477: No ! allowed', self.ea.cmdpos)
   endif
 

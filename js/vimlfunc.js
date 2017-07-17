@@ -35,6 +35,7 @@ var pat_vim2js = {
   "\\<NOTRLCOM\\>" : "\\bNOTRLCOM\\b",
   "\\<TRLBAR\\>" : "\\bTRLBAR\\b",
   "\\<USECTRLV\\>" : "\\bUSECTRLV\\b",
+  "\\<USERCMD\\>" : "\\bUSERCMD\\b",
   "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>" : "\\b(XFILE|FILES|FILE1)\\b",
   "\\S" : "\\S",
   "\\a" : "[A-Za-z]",

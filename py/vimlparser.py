@@ -31,6 +31,7 @@ pat_vim2py = {
   "\\<NOTRLCOM\\>" : "\\bNOTRLCOM\\b",
   "\\<TRLBAR\\>" : "\\bTRLBAR\\b",
   "\\<USECTRLV\\>" : "\\bUSECTRLV\\b",
+  "\\<USERCMD\\>" : "\\bUSERCMD\\b",
   "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>" : "\\b(XFILE|FILES|FILE1)\\b",
   "\\S" : "\\S",
   "\\a" : "[A-Za-z]",
@@ -805,7 +806,7 @@ class VimLParser:
             self.ea.forceit = TRUE
         else:
             self.ea.forceit = FALSE
-        if not viml_eqregh(self.ea.cmd.flags, "\\<BANG\\>") and self.ea.forceit and not viml_eqregh(self.ea.cmd.flags, "USERCMD"):
+        if not viml_eqregh(self.ea.cmd.flags, "\\<BANG\\>") and self.ea.forceit and not viml_eqregh(self.ea.cmd.flags, "\\<USERCMD\\>"):
             raise VimLParserException(Err("E477: No ! allowed", self.ea.cmdpos))
         if self.ea.cmd.name != "!":
             self.reader.skip_white()
