@@ -19,3 +19,9 @@ check: all
 
 test:
 	test/run.sh
+
+js/test: js/vimlparser.js
+	test/run_command.sh nodejs js/vimlparser.js
+
+py/test: py/vimlparser.py
+	test/run_command.sh python py/vimlparser.py

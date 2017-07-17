@@ -11,8 +11,12 @@ def main():
     r = StringReader(viml_readfile(sys.argv[-1]))
     p = VimLParser(use_neovim)
     c = Compiler()
-    for line in c.compile(p.parse(r)):
-        print(line)
+    try:
+        for line in c.compile(p.parse(r)):
+            print(line)
+    except VimLParserException as e:
+        print(e)
+        sys.exit(1)
 
 class VimLParserException(Exception):
     pass
