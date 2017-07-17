@@ -7,7 +7,7 @@ import inspect
 
 def main():
     use_neovim = sys.argv[1] == '--neovim'
-     
+
     r = StringReader(viml_readfile(sys.argv[-1]))
     p = VimLParser(use_neovim)
     c = Compiler()

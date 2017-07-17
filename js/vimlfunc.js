@@ -20,9 +20,13 @@ function main() {
     var r = new StringReader(viml_readfile(fpath));
     var p = new VimLParser(neovim);
     var c = new Compiler();
-    var lines = c.compile(p.parse(r))
-    for (var i in lines) {
-        process.stdout.write(lines[i] + "\n");
+    try {
+        var lines = c.compile(p.parse(r));
+        for (var i in lines) {
+            process.stdout.write(lines[i] + "\n");
+        }
+    } catch (e) {
+        process.stdout.write(e + '\n');
     }
 }
 
