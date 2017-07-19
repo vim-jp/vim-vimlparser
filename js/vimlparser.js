@@ -3777,72 +3777,95 @@ Compiler.prototype.compile = function(node) {
     }
     else if (node.type == NODE_COMMENT) {
         this.compile_comment(node);
+        return NIL;
     }
     else if (node.type == NODE_EXCMD) {
         this.compile_excmd(node);
+        return NIL;
     }
     else if (node.type == NODE_FUNCTION) {
         this.compile_function(node);
+        return NIL;
     }
     else if (node.type == NODE_DELFUNCTION) {
         this.compile_delfunction(node);
+        return NIL;
     }
     else if (node.type == NODE_RETURN) {
         this.compile_return(node);
+        return NIL;
     }
     else if (node.type == NODE_EXCALL) {
         this.compile_excall(node);
+        return NIL;
     }
     else if (node.type == NODE_LET) {
         this.compile_let(node);
+        return NIL;
     }
     else if (node.type == NODE_UNLET) {
         this.compile_unlet(node);
+        return NIL;
     }
     else if (node.type == NODE_LOCKVAR) {
         this.compile_lockvar(node);
+        return NIL;
     }
     else if (node.type == NODE_UNLOCKVAR) {
         this.compile_unlockvar(node);
+        return NIL;
     }
     else if (node.type == NODE_IF) {
         this.compile_if(node);
+        return NIL;
     }
     else if (node.type == NODE_WHILE) {
         this.compile_while(node);
+        return NIL;
     }
     else if (node.type == NODE_FOR) {
         this.compile_for(node);
+        return NIL;
     }
     else if (node.type == NODE_CONTINUE) {
         this.compile_continue(node);
+        return NIL;
     }
     else if (node.type == NODE_BREAK) {
         this.compile_break(node);
+        return NIL;
     }
     else if (node.type == NODE_TRY) {
         this.compile_try(node);
+        return NIL;
     }
     else if (node.type == NODE_THROW) {
         this.compile_throw(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHO) {
         this.compile_echo(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHON) {
         this.compile_echon(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHOHL) {
         this.compile_echohl(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHOMSG) {
         this.compile_echomsg(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHOERR) {
         this.compile_echoerr(node);
+        return NIL;
     }
     else if (node.type == NODE_EXECUTE) {
         this.compile_execute(node);
+        return NIL;
     }
     else if (node.type == NODE_TERNARY) {
         return this.compile_ternary(node);

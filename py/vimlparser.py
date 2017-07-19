@@ -3011,50 +3011,73 @@ class Compiler:
             return self.compile_toplevel(node)
         elif node.type == NODE_COMMENT:
             self.compile_comment(node)
+            return NIL
         elif node.type == NODE_EXCMD:
             self.compile_excmd(node)
+            return NIL
         elif node.type == NODE_FUNCTION:
             self.compile_function(node)
+            return NIL
         elif node.type == NODE_DELFUNCTION:
             self.compile_delfunction(node)
+            return NIL
         elif node.type == NODE_RETURN:
             self.compile_return(node)
+            return NIL
         elif node.type == NODE_EXCALL:
             self.compile_excall(node)
+            return NIL
         elif node.type == NODE_LET:
             self.compile_let(node)
+            return NIL
         elif node.type == NODE_UNLET:
             self.compile_unlet(node)
+            return NIL
         elif node.type == NODE_LOCKVAR:
             self.compile_lockvar(node)
+            return NIL
         elif node.type == NODE_UNLOCKVAR:
             self.compile_unlockvar(node)
+            return NIL
         elif node.type == NODE_IF:
             self.compile_if(node)
+            return NIL
         elif node.type == NODE_WHILE:
             self.compile_while(node)
+            return NIL
         elif node.type == NODE_FOR:
             self.compile_for(node)
+            return NIL
         elif node.type == NODE_CONTINUE:
             self.compile_continue(node)
+            return NIL
         elif node.type == NODE_BREAK:
             self.compile_break(node)
+            return NIL
         elif node.type == NODE_TRY:
             self.compile_try(node)
+            return NIL
         elif node.type == NODE_THROW:
             self.compile_throw(node)
+            return NIL
         elif node.type == NODE_ECHO:
             self.compile_echo(node)
+            return NIL
         elif node.type == NODE_ECHON:
             self.compile_echon(node)
+            return NIL
         elif node.type == NODE_ECHOHL:
             self.compile_echohl(node)
+            return NIL
         elif node.type == NODE_ECHOMSG:
             self.compile_echomsg(node)
+            return NIL
         elif node.type == NODE_ECHOERR:
             self.compile_echoerr(node)
+            return NIL
         elif node.type == NODE_EXECUTE:
             self.compile_execute(node)
+            return NIL
         elif node.type == NODE_TERNARY:
             return self.compile_ternary(node)
         elif node.type == NODE_OR:
