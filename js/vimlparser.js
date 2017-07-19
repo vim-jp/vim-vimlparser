@@ -1502,7 +1502,7 @@ VimLParser.prototype.parse_cmd_append = function() {
 }
 
 VimLParser.prototype.parse_cmd_insert = function() {
-    return this.parse_cmd_append();
+    this.parse_cmd_append();
 }
 
 VimLParser.prototype.parse_cmd_loadkeymap = function() {
@@ -1562,27 +1562,27 @@ VimLParser.prototype.parse_cmd_lua = function() {
 }
 
 VimLParser.prototype.parse_cmd_mzscheme = function() {
-    return this.parse_cmd_lua();
+    this.parse_cmd_lua();
 }
 
 VimLParser.prototype.parse_cmd_perl = function() {
-    return this.parse_cmd_lua();
+    this.parse_cmd_lua();
 }
 
 VimLParser.prototype.parse_cmd_python = function() {
-    return this.parse_cmd_lua();
+    this.parse_cmd_lua();
 }
 
 VimLParser.prototype.parse_cmd_python3 = function() {
-    return this.parse_cmd_lua();
+    this.parse_cmd_lua();
 }
 
 VimLParser.prototype.parse_cmd_ruby = function() {
-    return this.parse_cmd_lua();
+    this.parse_cmd_lua();
 }
 
 VimLParser.prototype.parse_cmd_tcl = function() {
-    return this.parse_cmd_lua();
+    this.parse_cmd_lua();
 }
 
 VimLParser.prototype.parse_cmd_finish = function() {
@@ -1594,7 +1594,7 @@ VimLParser.prototype.parse_cmd_finish = function() {
 
 // FIXME
 VimLParser.prototype.parse_cmd_usercmd = function() {
-    return this.parse_cmd_common();
+    this.parse_cmd_common();
 }
 
 VimLParser.prototype.parse_cmd_function = function() {
@@ -1603,12 +1603,14 @@ VimLParser.prototype.parse_cmd_function = function() {
     // :function
     if (this.ends_excmds(this.reader.peek())) {
         this.reader.seek_set(pos);
-        return this.parse_cmd_common();
+        this.parse_cmd_common();
+        return;
     }
     // :function /pattern
     if (this.reader.peekn(1) == "/") {
         this.reader.seek_set(pos);
-        return this.parse_cmd_common();
+        this.parse_cmd_common();
+        return;
     }
     var left = this.parse_lvalue_func();
     this.reader.skip_white();
@@ -1622,7 +1624,8 @@ VimLParser.prototype.parse_cmd_function = function() {
     // :function {name}
     if (this.reader.peekn(1) != "(") {
         this.reader.seek_set(pos);
-        return this.parse_cmd_common();
+        this.parse_cmd_common();
+        return;
     }
     // :function[!] {name}([arguments]) [range] [abort] [dict] [closure]
     var node = Node(NODE_FUNCTION);
@@ -1779,7 +1782,8 @@ VimLParser.prototype.parse_cmd_let = function() {
     // :let
     if (this.ends_excmds(this.reader.peek())) {
         this.reader.seek_set(pos);
-        return this.parse_cmd_common();
+        this.parse_cmd_common();
+        return;
     }
     var lhs = this.parse_letlhs();
     this.reader.skip_white();
@@ -1788,7 +1792,8 @@ VimLParser.prototype.parse_cmd_let = function() {
     // :let {var-name} ..
     if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s1 != "=") {
         this.reader.seek_set(pos);
-        return this.parse_cmd_common();
+        this.parse_cmd_common();
+        return;
     }
     // :let left op right
     var node = Node(NODE_LET);
@@ -3922,73 +3927,96 @@ Compiler.prototype.compile = function(node) {
         return this.compile_toplevel(node);
     }
     else if (node.type == NODE_COMMENT) {
-        return this.compile_comment(node);
+        this.compile_comment(node);
+        return NIL;
     }
     else if (node.type == NODE_EXCMD) {
-        return this.compile_excmd(node);
+        this.compile_excmd(node);
+        return NIL;
     }
     else if (node.type == NODE_FUNCTION) {
-        return this.compile_function(node);
+        this.compile_function(node);
+        return NIL;
     }
     else if (node.type == NODE_DELFUNCTION) {
-        return this.compile_delfunction(node);
+        this.compile_delfunction(node);
+        return NIL;
     }
     else if (node.type == NODE_RETURN) {
-        return this.compile_return(node);
+        this.compile_return(node);
+        return NIL;
     }
     else if (node.type == NODE_EXCALL) {
-        return this.compile_excall(node);
+        this.compile_excall(node);
+        return NIL;
     }
     else if (node.type == NODE_LET) {
-        return this.compile_let(node);
+        this.compile_let(node);
+        return NIL;
     }
     else if (node.type == NODE_UNLET) {
-        return this.compile_unlet(node);
+        this.compile_unlet(node);
+        return NIL;
     }
     else if (node.type == NODE_LOCKVAR) {
-        return this.compile_lockvar(node);
+        this.compile_lockvar(node);
+        return NIL;
     }
     else if (node.type == NODE_UNLOCKVAR) {
-        return this.compile_unlockvar(node);
+        this.compile_unlockvar(node);
+        return NIL;
     }
     else if (node.type == NODE_IF) {
-        return this.compile_if(node);
+        this.compile_if(node);
+        return NIL;
     }
     else if (node.type == NODE_WHILE) {
-        return this.compile_while(node);
+        this.compile_while(node);
+        return NIL;
     }
     else if (node.type == NODE_FOR) {
-        return this.compile_for(node);
+        this.compile_for(node);
+        return NIL;
     }
     else if (node.type == NODE_CONTINUE) {
-        return this.compile_continue(node);
+        this.compile_continue(node);
+        return NIL;
     }
     else if (node.type == NODE_BREAK) {
-        return this.compile_break(node);
+        this.compile_break(node);
+        return NIL;
     }
     else if (node.type == NODE_TRY) {
-        return this.compile_try(node);
+        this.compile_try(node);
+        return NIL;
     }
     else if (node.type == NODE_THROW) {
-        return this.compile_throw(node);
+        this.compile_throw(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHO) {
-        return this.compile_echo(node);
+        this.compile_echo(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHON) {
-        return this.compile_echon(node);
+        this.compile_echon(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHOHL) {
-        return this.compile_echohl(node);
+        this.compile_echohl(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHOMSG) {
-        return this.compile_echomsg(node);
+        this.compile_echomsg(node);
+        return NIL;
     }
     else if (node.type == NODE_ECHOERR) {
-        return this.compile_echoerr(node);
+        this.compile_echoerr(node);
+        return NIL;
     }
     else if (node.type == NODE_EXECUTE) {
-        return this.compile_execute(node);
+        this.compile_execute(node);
+        return NIL;
     }
     else if (node.type == NODE_TERNARY) {
         return this.compile_ternary(node);
@@ -4167,6 +4195,7 @@ Compiler.prototype.compile = function(node) {
     else {
         throw viml_printf("Compiler: unknown node: %s", viml_string(node));
     }
+    return NIL;
 }
 
 Compiler.prototype.compile_body = function(body) {

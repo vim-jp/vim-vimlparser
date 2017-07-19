@@ -1211,7 +1211,7 @@ function! s:VimLParser.parse_cmd_append()
 endfunction
 
 function! s:VimLParser.parse_cmd_insert()
-  return self.parse_cmd_append()
+  call self.parse_cmd_append()
 endfunction
 
 function! s:VimLParser.parse_cmd_loadkeymap()
@@ -1270,27 +1270,27 @@ function! s:VimLParser.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_mzscheme()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_perl()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_python()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_python3()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_ruby()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_tcl()
-  return self.parse_cmd_lua()
+  call self.parse_cmd_lua()
 endfunction
 
 function! s:VimLParser.parse_cmd_finish()
@@ -1302,7 +1302,7 @@ endfunction
 
 " FIXME
 function! s:VimLParser.parse_cmd_usercmd()
-  return self.parse_cmd_common()
+  call self.parse_cmd_common()
 endfunction
 
 function! s:VimLParser.parse_cmd_function()
@@ -1312,13 +1312,15 @@ function! s:VimLParser.parse_cmd_function()
   " :function
   if self.ends_excmds(self.reader.peek())
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   " :function /pattern
   if self.reader.peekn(1) ==# '/'
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   let left = self.parse_lvalue_func()
@@ -1335,7 +1337,8 @@ function! s:VimLParser.parse_cmd_function()
   " :function {name}
   if self.reader.peekn(1) !=# '('
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   " :function[!] {name}([arguments]) [range] [abort] [dict] [closure]
@@ -1482,7 +1485,8 @@ function! s:VimLParser.parse_cmd_let()
   " :let
   if self.ends_excmds(self.reader.peek())
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   let lhs = self.parse_letlhs()
@@ -1493,7 +1497,8 @@ function! s:VimLParser.parse_cmd_let()
   " :let {var-name} ..
   if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s1 !=# '=')
     call self.reader.seek_set(pos)
-    return self.parse_cmd_common()
+    call self.parse_cmd_common()
+    return
   endif
 
   " :let left op right
@@ -4021,51 +4026,74 @@ function! s:Compiler.compile(node)
   if a:node.type == s:NODE_TOPLEVEL
     return self.compile_toplevel(a:node)
   elseif a:node.type == s:NODE_COMMENT
-    return self.compile_comment(a:node)
+    call self.compile_comment(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_EXCMD
-    return self.compile_excmd(a:node)
+    call self.compile_excmd(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_FUNCTION
-    return self.compile_function(a:node)
+    call self.compile_function(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_DELFUNCTION
-    return self.compile_delfunction(a:node)
+    call self.compile_delfunction(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_RETURN
-    return self.compile_return(a:node)
+    call self.compile_return(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_EXCALL
-    return self.compile_excall(a:node)
+    call self.compile_excall(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_LET
-    return self.compile_let(a:node)
+    call self.compile_let(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_UNLET
-    return self.compile_unlet(a:node)
+    call self.compile_unlet(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_LOCKVAR
-    return self.compile_lockvar(a:node)
+    call self.compile_lockvar(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_UNLOCKVAR
-    return self.compile_unlockvar(a:node)
+    call self.compile_unlockvar(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_IF
-    return self.compile_if(a:node)
+    call self.compile_if(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_WHILE
-    return self.compile_while(a:node)
+    call self.compile_while(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_FOR
-    return self.compile_for(a:node)
+    call self.compile_for(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_CONTINUE
-    return self.compile_continue(a:node)
+    call self.compile_continue(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_BREAK
-    return self.compile_break(a:node)
+    call self.compile_break(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_TRY
-    return self.compile_try(a:node)
+    call self.compile_try(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_THROW
-    return self.compile_throw(a:node)
+    call self.compile_throw(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_ECHO
-    return self.compile_echo(a:node)
+    call self.compile_echo(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_ECHON
-    return self.compile_echon(a:node)
+    call self.compile_echon(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_ECHOHL
-    return self.compile_echohl(a:node)
+    call self.compile_echohl(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_ECHOMSG
-    return self.compile_echomsg(a:node)
+    call self.compile_echomsg(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_ECHOERR
-    return self.compile_echoerr(a:node)
+    call self.compile_echoerr(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_EXECUTE
-    return self.compile_execute(a:node)
+    call self.compile_execute(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_TERNARY
     return self.compile_ternary(a:node)
   elseif a:node.type == s:NODE_OR
@@ -4185,6 +4213,7 @@ function! s:Compiler.compile(node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
+  return s:NIL
 endfunction
 
 function! s:Compiler.compile_body(body)
