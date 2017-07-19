@@ -3072,22 +3072,25 @@ ExprParser.prototype.parse_expr7 = function() {
         var node = Node(NODE_NOT);
         node.pos = token.pos;
         node.left = this.parse_expr7();
+        return node;
     }
     else if (token.type == TOKEN_MINUS) {
         var node = Node(NODE_MINUS);
         node.pos = token.pos;
         node.left = this.parse_expr7();
+        return node;
     }
     else if (token.type == TOKEN_PLUS) {
         var node = Node(NODE_PLUS);
         node.pos = token.pos;
         node.left = this.parse_expr7();
+        return node;
     }
     else {
         this.reader.seek_set(pos);
         var node = this.parse_expr8();
+        return node;
     }
-    return node;
 }
 
 // expr8: expr8[expr1]
