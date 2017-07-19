@@ -35,6 +35,7 @@ var pat_vim2js = {
   "\\<NOTRLCOM\\>" : "\\bNOTRLCOM\\b",
   "\\<TRLBAR\\>" : "\\bTRLBAR\\b",
   "\\<USECTRLV\\>" : "\\bUSECTRLV\\b",
+  "\\<USERCMD\\>" : "\\bUSERCMD\\b",
   "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>" : "\\b(XFILE|FILES|FILE1)\\b",
   "\\S" : "\\S",
   "\\a" : "[A-Za-z]",
@@ -969,7 +970,7 @@ VimLParser.prototype.parse_command = function() {
     else {
         this.ea.forceit = FALSE;
     }
-    if (!viml_eqregh(this.ea.cmd.flags, "\\<BANG\\>") && this.ea.forceit && !viml_eqregh(this.ea.cmd.flags, "USERCMD")) {
+    if (!viml_eqregh(this.ea.cmd.flags, "\\<BANG\\>") && this.ea.forceit && !viml_eqregh(this.ea.cmd.flags, "\\<USERCMD\\>")) {
         throw Err("E477: No ! allowed", this.ea.cmdpos);
     }
     if (this.ea.cmd.name != "!") {
