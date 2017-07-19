@@ -24,6 +24,3 @@ js/test: js/vimlparser.js
 
 py/test: py/vimlparser.py
 	test/run_command.sh python py/vimlparser.py
-
-clean:
-	-rm $(COMPILED_FILES)
