@@ -709,12 +709,10 @@ VimLParser.prototype.parse_command_modifiers = function() {
     var modifiers = [];
     while (TRUE) {
         var pos = this.reader.tell();
+        var d = "";
         if (isdigit(this.reader.peekn(1))) {
             var d = this.reader.read_digit();
             this.reader.skip_white();
-        }
-        else {
-            var d = "";
         }
         var k = this.reader.read_alpha();
         var c = this.reader.peekn(1);
@@ -1168,6 +1166,7 @@ VimLParser.prototype._parse_command = function(parser) {
 
 VimLParser.prototype.find_command = function() {
     var c = this.reader.peekn(1);
+    var name = "";
     if (c == "k") {
         this.reader.getn(1);
         var name = "k";
@@ -1371,6 +1370,7 @@ VimLParser.prototype.parse_cmd_modifier_range = function() {
 
 // TODO:
 VimLParser.prototype.parse_cmd_common = function() {
+    var end = this.reader.getpos();
     if (viml_eqregh(this.ea.cmd.flags, "\\<TRLBAR\\>") && !this.ea.usefilter) {
         var end = this.separate_nextcmd();
     }
@@ -1524,6 +1524,7 @@ VimLParser.prototype.parse_cmd_loadkeymap = function() {
 }
 
 VimLParser.prototype.parse_cmd_lua = function() {
+    var lines = [];
     this.reader.skip_white();
     if (this.reader.peekn(2) == "<<") {
         this.reader.getn(2);
@@ -1640,6 +1641,7 @@ VimLParser.prototype.parse_cmd_function = function() {
     else {
         var named = {};
         while (TRUE) {
+            var varnode = Node(NODE_IDENTIFIER);
             var token = tokenizer.get();
             if (token.type == TOKEN_IDENTIFIER) {
                 if (!isargname(token.value) || token.value == "firstline" || token.value == "lastline") {
@@ -1649,7 +1651,6 @@ VimLParser.prototype.parse_cmd_function = function() {
                     throw Err(viml_printf("E853: Duplicate argument name: %s", token.value), token.pos);
                 }
                 named[token.value] = 1;
-                var varnode = Node(NODE_IDENTIFIER);
                 varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
@@ -1673,7 +1674,6 @@ VimLParser.prototype.parse_cmd_function = function() {
                 }
             }
             else if (token.type == TOKEN_DOTDOTDOT) {
-                var varnode = Node(NODE_IDENTIFIER);
                 varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
@@ -2577,6 +2577,7 @@ ExprTokenizer.prototype.get2 = function() {
         return this.token(TOKEN_REG, r.getn(2), pos);
     }
     else if (c == "&") {
+        var s = "";
         if ((r.p(1) == "g" || r.p(1) == "l") && r.p(2) == ":") {
             var s = r.getn(3) + r.read_word();
         }
@@ -3110,6 +3111,7 @@ ExprParser.prototype.parse_expr8 = function() {
                 if (token.type != TOKEN_SQCLOSE) {
                     throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                 }
+                var left = node;
             }
             else {
                 var right = this.parse_expr1();
@@ -3127,6 +3129,7 @@ ExprParser.prototype.parse_expr8 = function() {
                     if (token.type != TOKEN_SQCLOSE) {
                         throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
+                    var left = node;
                 }
                 else {
                     var node = Node(NODE_SUBSCRIPT);
@@ -3137,9 +3140,9 @@ ExprParser.prototype.parse_expr8 = function() {
                     if (token.type != TOKEN_SQCLOSE) {
                         throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
                     }
+                    var left = node;
                 }
             }
-            var left = node;
             delete node;
         }
         else if (token.type == TOKEN_POPEN) {
@@ -3210,6 +3213,7 @@ ExprParser.prototype.parse_expr8 = function() {
 ExprParser.prototype.parse_expr9 = function() {
     var pos = this.reader.tell();
     var token = this.tokenizer.get();
+    var node = Node(-1);
     if (token.type == TOKEN_NUMBER) {
         var node = Node(NODE_NUMBER);
         node.pos = token.pos;
@@ -3461,13 +3465,14 @@ ExprParser.prototype.parse_identifier = function() {
         var node = Node(NODE_IDENTIFIER);
         node.pos = npos;
         node.value = curly_parts[0].value;
+        return node;
     }
     else {
         var node = Node(NODE_CURLYNAME);
         node.pos = npos;
         node.value = curly_parts;
+        return node;
     }
-    return node;
 }
 
 ExprParser.prototype.parse_curly_parts = function() {
@@ -3535,6 +3540,7 @@ LvalueParser.prototype.parse_lv8 = function() {
         var token = this.tokenizer.get();
         if (!iswhite(c) && token.type == TOKEN_SQOPEN) {
             var npos = token.pos;
+            var node = Node(-1);
             if (this.tokenizer.peek().type == TOKEN_COLON) {
                 this.tokenizer.get();
                 var node = Node(NODE_SLICE);
@@ -3606,6 +3612,7 @@ LvalueParser.prototype.parse_lv8 = function() {
 LvalueParser.prototype.parse_lv9 = function() {
     var pos = this.reader.tell();
     var token = this.tokenizer.get();
+    var node = Node(-1);
     if (token.type == TOKEN_COPEN) {
         this.reader.seek_set(pos);
         var node = this.parse_identifier();
@@ -4219,6 +4226,7 @@ Compiler.prototype.compile_excall = function(node) {
 }
 
 Compiler.prototype.compile_let = function(node) {
+    var left = "";
     if (node.left !== NIL) {
         var left = this.compile(node.left);
     }
@@ -4291,6 +4299,7 @@ Compiler.prototype.compile_while = function(node) {
 }
 
 Compiler.prototype.compile_for = function(node) {
+    var left = "";
     if (node.left !== NIL) {
         var left = this.compile(node.left);
     }
