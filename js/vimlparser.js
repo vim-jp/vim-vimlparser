@@ -1161,6 +1161,9 @@ VimLParser.prototype._parse_command = function(parser) {
     else if (parser == "parse_cmd_syntax") {
         this.parse_cmd_syntax();
     }
+    else {
+        throw viml_printf("unknown parser: %s", viml_string(parser));
+    }
 }
 
 VimLParser.prototype.find_command = function() {

@@ -937,6 +937,8 @@ class VimLParser:
             self.parse_wincmd()
         elif parser == "parse_cmd_syntax":
             self.parse_cmd_syntax()
+        else:
+            raise VimLParserException(viml_printf("unknown parser: %s", viml_string(parser)))
 
     def find_command(self):
         c = self.reader.peekn(1)

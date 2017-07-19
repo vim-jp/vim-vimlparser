@@ -893,6 +893,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_wincmd()
   elseif a:parser == 'parse_cmd_syntax'
     call self.parse_cmd_syntax()
+  else
+    throw printf('unknown parser: %s', string(a:parser))
   endif
 endfunction
 
