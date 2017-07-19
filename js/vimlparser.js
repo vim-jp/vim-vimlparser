@@ -860,14 +860,14 @@ VimLParser.prototype.parse_range = function() {
                 this.reader.getn(1);
                 var __tmp = this.parse_pattern(c);
                 var pattern = __tmp[0];
-                var endc = __tmp[1];
+                var _ = __tmp[1];
                 viml_add(tokens, pattern);
             }
             else if (c == "?") {
                 this.reader.getn(1);
                 var __tmp = this.parse_pattern(c);
                 var pattern = __tmp[0];
-                var endc = __tmp[1];
+                var _ = __tmp[1];
                 viml_add(tokens, pattern);
             }
             else if (c == "\\") {
@@ -1467,7 +1467,7 @@ VimLParser.prototype.skip_vimgrep_pat = function() {
         // :vimgrep /pattern/[g][j] fname
         var c = this.reader.getn(1);
         var __tmp = this.parse_pattern(c);
-        var pattern = __tmp[0];
+        var _ = __tmp[0];
         var endc = __tmp[1];
         if (c != endc) {
             return;
@@ -2019,7 +2019,7 @@ VimLParser.prototype.parse_cmd_catch = function() {
     if (!this.ends_excmds(this.reader.peek())) {
         var __tmp = this.parse_pattern(this.reader.get());
         node.pattern = __tmp[0];
-        var endc = __tmp[1];
+        var _ = __tmp[1];
     }
     viml_add(this.context[0].catch, node);
     this.push_context(node);

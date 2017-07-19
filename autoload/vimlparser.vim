@@ -633,11 +633,11 @@ function! s:VimLParser.parse_range()
         call add(tokens, "'" . m)
       elseif c ==# '/'
         call self.reader.getn(1)
-        let [pattern, endc] = self.parse_pattern(c)
+        let [pattern, _] = self.parse_pattern(c)
         call add(tokens, pattern)
       elseif c ==# '?'
         call self.reader.getn(1)
-        let [pattern, endc] = self.parse_pattern(c)
+        let [pattern, _] = self.parse_pattern(c)
         call add(tokens, pattern)
       elseif c ==# '\'
         let m = self.reader.p(1)
@@ -1177,7 +1177,7 @@ function! s:VimLParser.skip_vimgrep_pat()
   else
     " :vimgrep /pattern/[g][j] fname
     let c = self.reader.getn(1)
-    let [pattern, endc] = self.parse_pattern(c)
+    let [_, endc] = self.parse_pattern(c)
     if c !=# endc
       return
     endif
@@ -1720,7 +1720,7 @@ function! s:VimLParser.parse_cmd_catch()
   let node.pattern = s:NIL
   call self.reader.skip_white()
   if !self.ends_excmds(self.reader.peek())
-    let [node.pattern, endc] = self.parse_pattern(self.reader.get())
+    let [node.pattern, _] = self.parse_pattern(self.reader.get())
   endif
   call add(self.context[0].catch, node)
   call self.push_context(node)
