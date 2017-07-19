@@ -3589,7 +3589,7 @@ function! s:ExprParser.parse_identifier()
     let node = s:Node(s:NODE_CURLYNAME)
     let node.pos = npos
     let node.value = curly_parts
-  return node
+    return node
   endif
 endfunction
 
