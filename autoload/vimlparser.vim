@@ -3222,19 +3222,22 @@ function! s:ExprParser.parse_expr7()
     let node = s:Node(s:NODE_NOT)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
+    return node
   elseif token.type == s:TOKEN_MINUS
     let node = s:Node(s:NODE_MINUS)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
+    return node
   elseif token.type == s:TOKEN_PLUS
     let node = s:Node(s:NODE_PLUS)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
+    return node
   else
     call self.reader.seek_set(pos)
     let node = self.parse_expr8()
+    return node
   endif
-  return node
 endfunction
 
 " expr8: expr8[expr1]

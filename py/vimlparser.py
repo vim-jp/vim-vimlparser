@@ -2451,18 +2451,21 @@ class ExprParser:
             node = Node(NODE_NOT)
             node.pos = token.pos
             node.left = self.parse_expr7()
+            return node
         elif token.type == TOKEN_MINUS:
             node = Node(NODE_MINUS)
             node.pos = token.pos
             node.left = self.parse_expr7()
+            return node
         elif token.type == TOKEN_PLUS:
             node = Node(NODE_PLUS)
             node.pos = token.pos
             node.left = self.parse_expr7()
+            return node
         else:
             self.reader.seek_set(pos)
             node = self.parse_expr8()
-        return node
+            return node
 
 # expr8: expr8[expr1]
 #        expr8[expr1 : expr1]
