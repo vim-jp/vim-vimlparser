@@ -1,13 +1,12 @@
-VIM_COMPILER:=vim -N --cmd 'set rtp+=.' -c q -u
 COMPILED_FILES:=js/vimlparser.js py/vimlparser.py
 
 all: $(COMPILED_FILES)
 
 js/vimlparser.js: autoload/vimlparser.vim js/jscompiler.vim js/vimlfunc.js
-	$(VIM_COMPILER) js/jscompiler.vim
+	scripts/jscompile.sh $< $@
 
 py/vimlparser.py: autoload/vimlparser.vim py/pycompiler.vim py/vimlfunc.py
-	$(VIM_COMPILER) py/pycompiler.vim
+	scripts/pycompile.sh $< $@
 
 clean_compiled:
 	$(RM) $(COMPILED_FILES)
