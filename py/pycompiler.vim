@@ -872,8 +872,13 @@ function! s:parse_args() abort
 endfunction:
 
 function! s:main() abort
-  let args = s:parse_args()
-  call s:convert(args[0], args[1])
+  try
+    let args = s:parse_args()
+    call s:convert(args[0], args[1])
+  catch
+    call writefile([v:exception], has('win32') ? 'conout$' : '/dev/stderr')
+    cquit
+  endtry
 endfunction
 
 call s:main()
