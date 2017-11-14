@@ -235,7 +235,7 @@ function! s:iswordc1(c)
 endfunction
 
 function! s:iswhite(c)
-  return a:c =~# '^[ \t]$'
+  return a:c =~# '^[ \t]$' || a:c == '<BOL>'
 endfunction
 
 function! s:isnamec(c)
@@ -1065,6 +1065,8 @@ function! s:VimLParser.parse_trail()
   if c ==# '<EOF>'
     " pass
   elseif c ==# '<EOL>'
+    call self.reader.get()
+  elseif c ==# '<BOL>'
     call self.reader.get()
   elseif c ==# '|'
     call self.reader.get()
@@ -3780,10 +3782,11 @@ function! s:StringReader.__init__(lines)
           if c == '\'
             let skip = s:FALSE
           endif
+          call add(self.buf, '<BOL>')
         else
           call add(self.buf, c)
-          call add(self.pos, [lnum + 2, col + 1])
         endif
+        call add(self.pos, [lnum + 2, col + 1])
         let col += len(c)
       endfor
       let lnum += 1

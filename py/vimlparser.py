@@ -367,7 +367,7 @@ def iswordc1(c):
     return viml_eqregh(c, "^[A-Za-z_]$")
 
 def iswhite(c):
-    return viml_eqregh(c, "^[ \\t]$")
+    return viml_eqregh(c, "^[ \\t]$") or c == "<BOL>"
 
 def isnamec(c):
     return viml_eqregh(c, "^[0-9A-Za-z_:#]$")
@@ -1071,6 +1071,8 @@ class VimLParser:
             # pass
             pass
         elif c == "<EOL>":
+            self.reader.get()
+        elif c == "<BOL>":
             self.reader.get()
         elif c == "|":
             self.reader.get()
@@ -2934,9 +2936,10 @@ class StringReader:
                     if skip:
                         if c == "\\":
                             skip = FALSE
+                        viml_add(self.buf, "<BOL>")
                     else:
                         viml_add(self.buf, c)
-                        viml_add(self.pos, [lnum + 2, col + 1])
+                    viml_add(self.pos, [lnum + 2, col + 1])
                     col += viml_len(c)
                 lnum += 1
             viml_add(self.buf, "<EOL>")

@@ -419,7 +419,7 @@ function iswordc1(c) {
 }
 
 function iswhite(c) {
-    return viml_eqregh(c, "^[ \\t]$");
+    return viml_eqregh(c, "^[ \\t]$") || c == "<BOL>";
 }
 
 function isnamec(c) {
@@ -1345,6 +1345,9 @@ VimLParser.prototype.parse_trail = function() {
         // pass
     }
     else if (c == "<EOL>") {
+        this.reader.get();
+    }
+    else if (c == "<BOL>") {
         this.reader.get();
     }
     else if (c == "|") {
@@ -3679,11 +3682,12 @@ StringReader.prototype.__init__ = function(lines) {
                     if (c == "\\") {
                         var skip = FALSE;
                     }
+                    viml_add(this.buf, "<BOL>");
                 }
                 else {
                     viml_add(this.buf, c);
-                    viml_add(this.pos, [lnum + 2, col + 1]);
                 }
+                viml_add(this.pos, [lnum + 2, col + 1]);
                 col += viml_len(c);
             }
             lnum += 1;
