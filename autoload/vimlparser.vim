@@ -2515,6 +2515,11 @@ let s:VimLParser.builtin_commands = [
       \ {'flags': 'RANGE|DFLALL|EXTRA|NEEDARG|CMDWIN', 'minlen': 4, 'name': 'pyxdo', 'parser': 'parse_cmd_common'},
       \ {'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN', 'minlen': 7, 'name': 'pythonx', 'parser': 'parse_cmd_common'},
       \ {'flags': 'RANGE|FILE1|NEEDARG|CMDWIN', 'minlen': 4, 'name': 'pyxfile', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'RANGE|BANG|FILES|CMDWIN', 'minlen': 3, 'name': 'terminal', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'minlen': 3, 'name': 'tmap', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|TRLBAR|CMDWIN', 'minlen': 5, 'name': 'tmapclear', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'minlen': 3, 'name': 'tnoremap', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'minlen': 5, 'name': 'tunmap', 'parser': 'parse_cmd_common'},
       \]
 
 let s:ExprTokenizer = {}
