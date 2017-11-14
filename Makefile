@@ -24,3 +24,8 @@ js/test: js/vimlparser.js
 
 py/test: py/vimlparser.py
 	test/run_command.sh python py/vimlparser.py
+
+vim/test: test/test_source.vim
+	vim -u NONE -N --cmd "let &rtp .= ',' . getcwd()" -S test/test_source.vim
+	diff -u test/test_source.want test/test_source.got
+
