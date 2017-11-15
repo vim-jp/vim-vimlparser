@@ -14,7 +14,7 @@ function! s:run()
     endif
     call add(tokens, c)
   endwhile
-  call writefile(split(json_encode(tokens), "\n"), 'test/test_token.got')
+  call writefile(split(string(tokens), "\n"), 'test/test_token.got')
   qall!
 endfunction
 
