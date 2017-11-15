@@ -16,7 +16,7 @@ matrix:
       - MAKE_TARGET=test
     - env:
       - VIM_VERSION=installed
-      - MAKE_TARGET="clean_compiled check js/test py/test vim/test"
+      - MAKE_TARGET="clean_compiled check js/test py/test vim/test1 vim/test2"
 
 install:
   - |

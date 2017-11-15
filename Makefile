@@ -25,7 +25,11 @@ js/test: js/vimlparser.js
 py/test: py/vimlparser.py
 	test/run_command.sh python py/vimlparser.py
 
-vim/test: test/test_source.vim
+vim/test1: test/test_source.vim
 	vim -u NONE -N --cmd "let &rtp .= ',' . getcwd()" -S test/test_source.vim
 	diff -u test/test_source.want test/test_source.got
+
+vim/test2: test/test_token.vim
+	vim -u NONE -N --cmd "let &rtp .= ',' . getcwd()" -S test/test_token.vim
+	diff -u test/test_token.want test/test_token.got
 
