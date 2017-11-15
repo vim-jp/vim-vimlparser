@@ -151,6 +151,9 @@ function viml_keys(obj) {
 }
 
 function viml_len(obj) {
+    if (typeof obj === 'string') {
+      return unescape(encodeURIComponent(obj))
+    }
     return obj.length;
 }
 
