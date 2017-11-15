@@ -203,6 +203,7 @@ let s:TOKEN_BACKTICK = 62
 let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
+let s:TOKEN_BOL = 66 " Begin Of Line a.k.a. leading backslah
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -2566,6 +2567,9 @@ function! s:ExprTokenizer.get2()
   elseif c ==# '<EOL>'
     call r.seek_cur(1)
     return self.token(s:TOKEN_EOL, c, pos)
+  elseif c ==# '<BOL>'
+    call r.seek_cur(1)
+    return self.token(s:TOKEN_BOL, c, pos)
   elseif s:iswhite(c)
     let s = r.read_white()
     return self.token(s:TOKEN_SPACE, s, pos)
