@@ -24,3 +24,5 @@ js/test: js/vimlparser.js
 
 py/test: py/vimlparser.py
 	test/run_command.sh python py/vimlparser.py
+
+.PHONY: all clean_compiled check test js/test py/test
