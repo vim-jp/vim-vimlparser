@@ -389,6 +389,8 @@ var TOKEN_BACKTICK = 62;
 var TOKEN_DOTDOTDOT = 63;
 var TOKEN_SHARP = 64;
 var TOKEN_ARROW = 65;
+var TOKEN_BOL = 66;
+// Begin Of Line a.k.a. leading backslah
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -2313,6 +2315,10 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "<EOL>") {
         r.seek_cur(1);
         return this.token(TOKEN_EOL, c, pos);
+    }
+    else if (c == "<BOL>") {
+        r.seek_cur(1);
+        return this.token(TOKEN_BOL, c, pos);
     }
     else if (iswhite(c)) {
         var s = r.read_white();
