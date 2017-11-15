@@ -8,6 +8,6 @@
     (if (== c '<EOF>')
       (break))
     (call (add tokens c)))
-  (call (writefile (split (json_encode tokens) "\n") 'test/test_token.got'))
+  (call (writefile (split (string tokens) "\n") 'test/test_token.got'))
   (excmd "qall!"))
 (call (s:run))
