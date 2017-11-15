@@ -2,9 +2,15 @@ let s:vimlparser = vimlparser#import()
 
 function! s:run()
   let src = [
-  \  'function! s:load_on()',
-  \  '  imap <expr> <Tab> neosnippet#expandable_or_jumpable() ?',
-  \  '\ "\<Plug>(neosnippet_expand_or_jump)" : "\<Tab>"',
+  \  'function! s:test1()',
+  \  '  imap <expr> <Tab> dummy#expr() ?',
+  \  '\ "\<Plug>(dummy1)" : "\<Tab>"',
+  \  'endfunction',
+  \  '',
+  \  'function! s:test2()',
+  \  '  imap <expr> <Tab> dummy#expr() ?',
+  \  '  \ "\<Plug>(dummy2)"',
+  \  '  \ : "\<Tab>"',
   \  'endfunction',
   \]
   let r = s:vimlparser.StringReader.new(src)
@@ -19,6 +25,9 @@ endfunction
 
 function! s:extract_body(func, src)
   let pos = a:func.pos
+
+  " FIXME calculating endpos is workaround. Ideally, it should have the end
+  " position of the node.
 
   let endpos = a:func.endfunction.pos
   let endfunc = a:func.endfunction.ea
