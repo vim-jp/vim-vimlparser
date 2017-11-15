@@ -1957,7 +1957,6 @@ function! s:VimLParser.parse_cmd_syntax()
 endfunction
 
 let s:VimLParser.neovim_additional_commands = [
-      \ {'name': 'tnoremap', 'minlen': 8, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'rshada', 'minlen': 3, 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'wshada', 'minlen': 3, 'flags': 'BANG|FILE1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'}]
 
