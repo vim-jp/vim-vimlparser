@@ -3768,13 +3768,17 @@ endfunction
 function! s:StringReader.__init__(lines)
   let self.buf = []
   let self.pos = []
+  let self.offset = []
   let lnum = 0
+  let offset = 0
   while lnum < len(a:lines)
     let col = 0
     for c in split(a:lines[lnum], '\zs')
       call add(self.buf, c)
       call add(self.pos, [lnum + 1, col + 1])
+      call add(self.offset, offset)
       let col += len(c)
+      let offset += len(c)
     endfor
     while lnum + 1 < len(a:lines) && a:lines[lnum + 1] =~# '^\s*\\'
       let skip = s:TRUE
@@ -3787,17 +3791,23 @@ function! s:StringReader.__init__(lines)
         else
           call add(self.buf, c)
           call add(self.pos, [lnum + 2, col + 1])
+          call add(self.offset, offset)
         endif
         let col += len(c)
+        let offset += len(c)
       endfor
       let lnum += 1
+      let offset += 1
     endwhile
     call add(self.buf, '<EOL>')
     call add(self.pos, [lnum + 1, col + 1])
+    call add(self.offset, offset)
     let lnum += 1
+    let offset += 1
   endwhile
   " for <EOF>
   call add(self.pos, [lnum + 1, 0])
+  call add(self.offset, offset)
   let self.i = 0
 endfunction
 
@@ -3892,7 +3902,7 @@ endfunction
 
 function! s:StringReader.getpos()
   let [lnum, col] = self.pos[self.i]
-  return {'i': self.i, 'lnum': lnum, 'col': col}
+  return {'i': self.i, 'lnum': lnum, 'col': col, 'offset': self.offset[self.i]}
 endfunction
 
 function! s:StringReader.setpos(pos)

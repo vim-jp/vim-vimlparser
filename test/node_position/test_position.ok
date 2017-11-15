@@ -1,0 +1,9 @@
+function! F()
+  let x =
+\ 1
+
+  let x = "
+  \1
+	\2 <- tab
+  \3"
+endfunction
