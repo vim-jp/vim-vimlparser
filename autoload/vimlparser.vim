@@ -203,6 +203,7 @@ let s:TOKEN_BACKTICK = 62
 let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
+let s:TOKEN_BOL = 66 " Begin Of Line a.k.a. leading backslah
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -235,7 +236,7 @@ function! s:iswordc1(c)
 endfunction
 
 function! s:iswhite(c)
-  return a:c =~# '^[ \t]$'
+  return a:c =~# '^[ \t]$' || a:c == '<BOL>'
 endfunction
 
 function! s:isnamec(c)
@@ -1065,6 +1066,8 @@ function! s:VimLParser.parse_trail()
   if c ==# '<EOF>'
     " pass
   elseif c ==# '<EOL>'
+    call self.reader.get()
+  elseif c ==# '<BOL>'
     call self.reader.get()
   elseif c ==# '|'
     call self.reader.get()
@@ -2564,6 +2567,9 @@ function! s:ExprTokenizer.get2()
   elseif c ==# '<EOL>'
     call r.seek_cur(1)
     return self.token(s:TOKEN_EOL, c, pos)
+  elseif c ==# '<BOL>'
+    call r.seek_cur(1)
+    return self.token(s:TOKEN_BOL, c, pos)
   elseif s:iswhite(c)
     let s = r.read_white()
     return self.token(s:TOKEN_SPACE, s, pos)
@@ -3780,10 +3786,11 @@ function! s:StringReader.__init__(lines)
           if c == '\'
             let skip = s:FALSE
           endif
+          call add(self.buf, '<BOL>')
         else
           call add(self.buf, c)
-          call add(self.pos, [lnum + 2, col + 1])
         endif
+        call add(self.pos, [lnum + 2, col + 1])
         let col += len(c)
       endfor
       let lnum += 1

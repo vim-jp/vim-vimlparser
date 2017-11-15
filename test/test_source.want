@@ -1,0 +1,10 @@
+function! s:test1()
+  imap <expr> <Tab> dummy#expr() ?
+\ "\<Plug>(dummy1)" : "\<Tab>"
+endfunction
+
+function! s:test2()
+  imap <expr> <Tab> dummy#expr() ?
+  \ "\<Plug>(dummy2)"
+  \ : "\<Tab>"
+endfunction

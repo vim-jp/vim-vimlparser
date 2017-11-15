@@ -1,0 +1,13 @@
+(let = s:vimlparser (vimlparser#import))
+(function (s:run)
+  (let = src (list 'let foo = ' '\ 1'))
+  (let = r ((dot (dot s:vimlparser StringReader) new) src))
+  (let = tokens (list))
+  (while 1
+    (let = c ((dot r get)))
+    (if (== c '<EOF>')
+      (break))
+    (call (add tokens c)))
+  (call (writefile (split (string tokens) "\n") 'test/test_token.got'))
+  (excmd "qall!"))
+(call (s:run))

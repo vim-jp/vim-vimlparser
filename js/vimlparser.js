@@ -389,6 +389,8 @@ var TOKEN_BACKTICK = 62;
 var TOKEN_DOTDOTDOT = 63;
 var TOKEN_SHARP = 64;
 var TOKEN_ARROW = 65;
+var TOKEN_BOL = 66;
+// Begin Of Line a.k.a. leading backslah
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -419,7 +421,7 @@ function iswordc1(c) {
 }
 
 function iswhite(c) {
-    return viml_eqregh(c, "^[ \\t]$");
+    return viml_eqregh(c, "^[ \\t]$") || c == "<BOL>";
 }
 
 function isnamec(c) {
@@ -1345,6 +1347,9 @@ VimLParser.prototype.parse_trail = function() {
         // pass
     }
     else if (c == "<EOL>") {
+        this.reader.get();
+    }
+    else if (c == "<BOL>") {
         this.reader.get();
     }
     else if (c == "|") {
@@ -2310,6 +2315,10 @@ ExprTokenizer.prototype.get2 = function() {
     else if (c == "<EOL>") {
         r.seek_cur(1);
         return this.token(TOKEN_EOL, c, pos);
+    }
+    else if (c == "<BOL>") {
+        r.seek_cur(1);
+        return this.token(TOKEN_BOL, c, pos);
     }
     else if (iswhite(c)) {
         var s = r.read_white();
@@ -3679,11 +3688,12 @@ StringReader.prototype.__init__ = function(lines) {
                     if (c == "\\") {
                         var skip = FALSE;
                     }
+                    viml_add(this.buf, "<BOL>");
                 }
                 else {
                     viml_add(this.buf, c);
-                    viml_add(this.pos, [lnum + 2, col + 1]);
                 }
+                viml_add(this.pos, [lnum + 2, col + 1]);
                 col += viml_len(c);
             }
             lnum += 1;

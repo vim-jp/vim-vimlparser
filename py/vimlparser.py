@@ -344,6 +344,8 @@ TOKEN_BACKTICK = 62
 TOKEN_DOTDOTDOT = 63
 TOKEN_SHARP = 64
 TOKEN_ARROW = 65
+TOKEN_BOL = 66
+# Begin Of Line a.k.a. leading backslah
 MAX_FUNC_ARGS = 20
 def isalpha(c):
     return viml_eqregh(c, "^[A-Za-z]$")
@@ -367,7 +369,7 @@ def iswordc1(c):
     return viml_eqregh(c, "^[A-Za-z_]$")
 
 def iswhite(c):
-    return viml_eqregh(c, "^[ \\t]$")
+    return viml_eqregh(c, "^[ \\t]$") or c == "<BOL>"
 
 def isnamec(c):
     return viml_eqregh(c, "^[0-9A-Za-z_:#]$")
@@ -1071,6 +1073,8 @@ class VimLParser:
             # pass
             pass
         elif c == "<EOL>":
+            self.reader.get()
+        elif c == "<BOL>":
             self.reader.get()
         elif c == "|":
             self.reader.get()
@@ -1846,6 +1850,9 @@ class ExprTokenizer:
         elif c == "<EOL>":
             r.seek_cur(1)
             return self.token(TOKEN_EOL, c, pos)
+        elif c == "<BOL>":
+            r.seek_cur(1)
+            return self.token(TOKEN_BOL, c, pos)
         elif iswhite(c):
             s = r.read_white()
             return self.token(TOKEN_SPACE, s, pos)
@@ -2934,9 +2941,10 @@ class StringReader:
                     if skip:
                         if c == "\\":
                             skip = FALSE
+                        viml_add(self.buf, "<BOL>")
                     else:
                         viml_add(self.buf, c)
-                        viml_add(self.pos, [lnum + 2, col + 1])
+                    viml_add(self.pos, [lnum + 2, col + 1])
                     col += viml_len(c)
                 lnum += 1
             viml_add(self.buf, "<EOL>")
