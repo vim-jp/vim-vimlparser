@@ -3659,7 +3659,9 @@ function StringReader() { this.__init__.apply(this, arguments); }
 StringReader.prototype.__init__ = function(lines) {
     this.buf = [];
     this.pos = [];
+    this.offset = [];
     var lnum = 0;
+    var offset = 0;
     while (lnum < viml_len(lines)) {
         var col = 0;
         var __c7 = viml_split(lines[lnum], "\\zs");
@@ -3667,7 +3669,9 @@ StringReader.prototype.__init__ = function(lines) {
             var c = __c7[__i7];
             viml_add(this.buf, c);
             viml_add(this.pos, [lnum + 1, col + 1]);
+            viml_add(this.offset, offset);
             col += viml_len(c);
+            offset += viml_len(c);
         }
         while (lnum + 1 < viml_len(lines) && viml_eqregh(lines[lnum + 1], "^\\s*\\\\")) {
             var skip = TRUE;
@@ -3683,17 +3687,23 @@ StringReader.prototype.__init__ = function(lines) {
                 else {
                     viml_add(this.buf, c);
                     viml_add(this.pos, [lnum + 2, col + 1]);
+                    viml_add(this.offset, offset);
                 }
                 col += viml_len(c);
+                offset += viml_len(c);
             }
             lnum += 1;
+            offset += 1;
         }
         viml_add(this.buf, "<EOL>");
         viml_add(this.pos, [lnum + 1, col + 1]);
+        viml_add(this.offset, offset);
         lnum += 1;
+        offset += 1;
     }
     // for <EOF>
     viml_add(this.pos, [lnum + 1, 0]);
+    viml_add(this.offset, offset);
     this.i = 0;
 }
 
@@ -3792,7 +3802,7 @@ StringReader.prototype.getpos = function() {
     var __tmp = this.pos[this.i];
     var lnum = __tmp[0];
     var col = __tmp[1];
-    return {"i":this.i, "lnum":lnum, "col":col};
+    return {"i":this.i, "lnum":lnum, "col":col, "offset":this.offset[this.i]};
 }
 
 StringReader.prototype.setpos = function(pos) {
