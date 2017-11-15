@@ -1,4 +1,10 @@
-function! s:load_on()
-  imap <expr> <Tab> neosnippet#expandable_or_jumpable() ?
-\ "\<Plug>(neosnippet_expand_or_jump)" : "\<Tab>"
+function! s:test1()
+  imap <expr> <Tab> dummy#expr() ?
+\ "\<Plug>(dummy1)" : "\<Tab>"
+endfunction
+
+function! s:test2()
+  imap <expr> <Tab> dummy#expr() ?
+  \ "\<Plug>(dummy2)"
+  \ : "\<Tab>"
 endfunction
