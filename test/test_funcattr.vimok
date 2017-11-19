@@ -1,0 +1,4 @@
+function! F() abort
+endfunction
+function! F() abort closure dict range
+endfunction
