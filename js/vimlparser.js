@@ -3662,7 +3662,6 @@ function StringReader() { this.__init__.apply(this, arguments); }
 StringReader.prototype.__init__ = function(lines) {
     this.buf = [];
     this.pos = [];
-    this.offset = [];
     var lnum = 0;
     var offset = 0;
     while (lnum < viml_len(lines)) {
@@ -3671,8 +3670,7 @@ StringReader.prototype.__init__ = function(lines) {
         for (var __i7 = 0; __i7 < __c7.length; ++__i7) {
             var c = __c7[__i7];
             viml_add(this.buf, c);
-            viml_add(this.pos, [lnum + 1, col + 1]);
-            viml_add(this.offset, offset);
+            viml_add(this.pos, [lnum + 1, col + 1, offset]);
             col += viml_len(c);
             offset += viml_len(c);
         }
@@ -3689,8 +3687,7 @@ StringReader.prototype.__init__ = function(lines) {
                 }
                 else {
                     viml_add(this.buf, c);
-                    viml_add(this.pos, [lnum + 2, col + 1]);
-                    viml_add(this.offset, offset);
+                    viml_add(this.pos, [lnum + 2, col + 1, offset]);
                 }
                 col += viml_len(c);
                 offset += viml_len(c);
@@ -3699,14 +3696,12 @@ StringReader.prototype.__init__ = function(lines) {
             offset += 1;
         }
         viml_add(this.buf, "<EOL>");
-        viml_add(this.pos, [lnum + 1, col + 1]);
-        viml_add(this.offset, offset);
+        viml_add(this.pos, [lnum + 1, col + 1, offset]);
         lnum += 1;
         offset += 1;
     }
     // for <EOF>
-    viml_add(this.pos, [lnum + 1, 0]);
-    viml_add(this.offset, offset);
+    viml_add(this.pos, [lnum + 1, 0, offset]);
     this.i = 0;
 }
 
@@ -3805,7 +3800,8 @@ StringReader.prototype.getpos = function() {
     var __tmp = this.pos[this.i];
     var lnum = __tmp[0];
     var col = __tmp[1];
-    return {"i":this.i, "lnum":lnum, "col":col, "offset":this.offset[this.i]};
+    var offset = __tmp[2];
+    return {"i":this.i, "lnum":lnum, "col":col, "offset":offset};
 }
 
 StringReader.prototype.setpos = function(pos) {

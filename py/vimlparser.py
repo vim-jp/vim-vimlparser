@@ -2920,15 +2920,13 @@ class StringReader:
     def __init__(self, lines):
         self.buf = []
         self.pos = []
-        self.offset = []
         lnum = 0
         offset = 0
         while lnum < viml_len(lines):
             col = 0
             for c in viml_split(lines[lnum], "\\zs"):
                 viml_add(self.buf, c)
-                viml_add(self.pos, [lnum + 1, col + 1])
-                viml_add(self.offset, offset)
+                viml_add(self.pos, [lnum + 1, col + 1, offset])
                 col += viml_len(c)
                 offset += viml_len(c)
             while lnum + 1 < viml_len(lines) and viml_eqregh(lines[lnum + 1], "^\\s*\\\\"):
@@ -2940,20 +2938,17 @@ class StringReader:
                             skip = FALSE
                     else:
                         viml_add(self.buf, c)
-                        viml_add(self.pos, [lnum + 2, col + 1])
-                        viml_add(self.offset, offset)
+                        viml_add(self.pos, [lnum + 2, col + 1, offset])
                     col += viml_len(c)
                     offset += viml_len(c)
                 lnum += 1
                 offset += 1
             viml_add(self.buf, "<EOL>")
-            viml_add(self.pos, [lnum + 1, col + 1])
-            viml_add(self.offset, offset)
+            viml_add(self.pos, [lnum + 1, col + 1, offset])
             lnum += 1
             offset += 1
         # for <EOF>
-        viml_add(self.pos, [lnum + 1, 0])
-        viml_add(self.offset, offset)
+        viml_add(self.pos, [lnum + 1, 0, offset])
         self.i = 0
 
     def eof(self):
@@ -3025,8 +3020,8 @@ class StringReader:
         return r
 
     def getpos(self):
-        lnum, col = self.pos[self.i]
-        return AttributeDict({"i":self.i, "lnum":lnum, "col":col, "offset":self.offset[self.i]})
+        lnum, col, offset = self.pos[self.i]
+        return AttributeDict({"i":self.i, "lnum":lnum, "col":col, "offset":offset})
 
     def setpos(self, pos):
         self.i = pos.i
