@@ -22,7 +22,6 @@ function! s:run()
   let toplevel = p.parse(r)
   let func = toplevel.body[0]
   let body = s:extract_body(func, src)
-  echom string(split(body, "\n"))
   call writefile(split(body, "\n"), 'test/node_position/test_position.out')
   qall!
 endfunction
@@ -35,8 +34,7 @@ function! s:extract_body(func, src)
 
   let endpos = a:func.endfunction.pos
   let endfunc = a:func.endfunction.ea
-  let cmdlen = endfunc.argpos.i - endfunc.cmdpos.i
-  let endpos.i += cmdlen
+  let cmdlen = endfunc.argpos.offset - endfunc.cmdpos.offset
   let endpos.offset += cmdlen
 
   return join(a:src, "\n")[pos.offset : endpos.offset]
