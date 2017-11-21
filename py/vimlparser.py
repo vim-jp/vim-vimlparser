@@ -128,6 +128,8 @@ def viml_keys(obj):
     return obj.keys()
 
 def viml_len(obj):
+    if type(obj) is str:
+        return len(obj.encode('utf-8'))
     return len(obj)
 
 def viml_printf(*args):
@@ -2921,12 +2923,14 @@ class StringReader:
         self.buf = []
         self.pos = []
         lnum = 0
+        offset = 0
         while lnum < viml_len(lines):
             col = 0
             for c in viml_split(lines[lnum], "\\zs"):
                 viml_add(self.buf, c)
-                viml_add(self.pos, [lnum + 1, col + 1])
+                viml_add(self.pos, [lnum + 1, col + 1, offset])
                 col += viml_len(c)
+                offset += viml_len(c)
             while lnum + 1 < viml_len(lines) and viml_eqregh(lines[lnum + 1], "^\\s*\\\\"):
                 skip = TRUE
                 col = 0
@@ -2936,14 +2940,17 @@ class StringReader:
                             skip = FALSE
                     else:
                         viml_add(self.buf, c)
-                        viml_add(self.pos, [lnum + 2, col + 1])
+                        viml_add(self.pos, [lnum + 2, col + 1, offset])
                     col += viml_len(c)
+                    offset += viml_len(c)
                 lnum += 1
+                offset += 1
             viml_add(self.buf, "<EOL>")
-            viml_add(self.pos, [lnum + 1, col + 1])
+            viml_add(self.pos, [lnum + 1, col + 1, offset])
             lnum += 1
+            offset += 1
         # for <EOF>
-        viml_add(self.pos, [lnum + 1, 0])
+        viml_add(self.pos, [lnum + 1, 0, offset])
         self.i = 0
 
     def eof(self):
@@ -3015,8 +3022,8 @@ class StringReader:
         return r
 
     def getpos(self):
-        lnum, col = self.pos[self.i]
-        return AttributeDict({"i":self.i, "lnum":lnum, "col":col})
+        lnum, col, offset = self.pos[self.i]
+        return AttributeDict({"i":self.i, "lnum":lnum, "col":col, "offset":offset})
 
     def setpos(self, pos):
         self.i = pos.i

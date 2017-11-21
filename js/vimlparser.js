@@ -151,6 +151,9 @@ function viml_keys(obj) {
 }
 
 function viml_len(obj) {
+    if (typeof obj === 'string') {
+      return encodeURIComponent(obj).replace(/%../g, ' ').length;
+    }
     return obj.length;
 }
 
@@ -3660,14 +3663,16 @@ StringReader.prototype.__init__ = function(lines) {
     this.buf = [];
     this.pos = [];
     var lnum = 0;
+    var offset = 0;
     while (lnum < viml_len(lines)) {
         var col = 0;
         var __c7 = viml_split(lines[lnum], "\\zs");
         for (var __i7 = 0; __i7 < __c7.length; ++__i7) {
             var c = __c7[__i7];
             viml_add(this.buf, c);
-            viml_add(this.pos, [lnum + 1, col + 1]);
+            viml_add(this.pos, [lnum + 1, col + 1, offset]);
             col += viml_len(c);
+            offset += viml_len(c);
         }
         while (lnum + 1 < viml_len(lines) && viml_eqregh(lines[lnum + 1], "^\\s*\\\\")) {
             var skip = TRUE;
@@ -3682,18 +3687,21 @@ StringReader.prototype.__init__ = function(lines) {
                 }
                 else {
                     viml_add(this.buf, c);
-                    viml_add(this.pos, [lnum + 2, col + 1]);
+                    viml_add(this.pos, [lnum + 2, col + 1, offset]);
                 }
                 col += viml_len(c);
+                offset += viml_len(c);
             }
             lnum += 1;
+            offset += 1;
         }
         viml_add(this.buf, "<EOL>");
-        viml_add(this.pos, [lnum + 1, col + 1]);
+        viml_add(this.pos, [lnum + 1, col + 1, offset]);
         lnum += 1;
+        offset += 1;
     }
     // for <EOF>
-    viml_add(this.pos, [lnum + 1, 0]);
+    viml_add(this.pos, [lnum + 1, 0, offset]);
     this.i = 0;
 }
 
@@ -3792,7 +3800,8 @@ StringReader.prototype.getpos = function() {
     var __tmp = this.pos[this.i];
     var lnum = __tmp[0];
     var col = __tmp[1];
-    return {"i":this.i, "lnum":lnum, "col":col};
+    var offset = __tmp[2];
+    return {"i":this.i, "lnum":lnum, "col":col, "offset":offset};
 }
 
 StringReader.prototype.setpos = function(pos) {
