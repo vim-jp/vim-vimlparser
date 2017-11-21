@@ -128,6 +128,8 @@ def viml_keys(obj):
     return obj.keys()
 
 def viml_len(obj):
+    if type(obj) is str:
+        return len(obj.encode('utf-8'))
     return len(obj)
 
 def viml_printf(*args):
