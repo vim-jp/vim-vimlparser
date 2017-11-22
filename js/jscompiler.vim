@@ -894,10 +894,10 @@ function! s:parse_args() abort
     if len(args) != 2
       throw 'invalid argument: ' . string(args)
     endif
-	let v = args
+    let v = args
   endif
   return v
-endfunction:
+endfunction
 
 function! s:main() abort
   try

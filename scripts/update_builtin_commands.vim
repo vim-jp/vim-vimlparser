@@ -80,7 +80,6 @@ function! s:gen(ex_cmds_h) abort
 
   let trie = s:Trie.new()
 
-  let cumname = ''
   for [i, line] in map(copy(lines), {i, l -> [i, l]})
     if line =~# '^EX('
       let name = matchstr(line, '"\zs.*\ze",')
@@ -123,7 +122,7 @@ endfunction
 " -- main
 
 " ex_cmds_h: path to vim/src/ex_cmds.h
-function! g:VimLParserNewCmds(ex_cmds_h) abort
+function! VimLParserNewCmds(ex_cmds_h) abort
   let vimlparser = vimlparser#import()
   let latest = s:gen(a:ex_cmds_h)
   let new_cmds = s:gen_new_builtin(vimlparser#import().VimLParser.builtin_commands, latest)
