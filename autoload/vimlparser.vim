@@ -204,6 +204,63 @@ let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
 
+let s:opprec = {}
+let s:opprec[s:NODE_TERNARY] = 1
+let s:opprec[s:NODE_OR] = 2
+let s:opprec[s:NODE_AND] = 3
+let s:opprec[s:NODE_EQUAL] = 4
+let s:opprec[s:NODE_EQUALCI] = 4
+let s:opprec[s:NODE_EQUALCS] = 4
+let s:opprec[s:NODE_NEQUAL] = 4
+let s:opprec[s:NODE_NEQUALCI] = 4
+let s:opprec[s:NODE_NEQUALCS] = 4
+let s:opprec[s:NODE_GREATER] = 4
+let s:opprec[s:NODE_GREATERCI] = 4
+let s:opprec[s:NODE_GREATERCS] = 4
+let s:opprec[s:NODE_GEQUAL] = 4
+let s:opprec[s:NODE_GEQUALCI] = 4
+let s:opprec[s:NODE_GEQUALCS] = 4
+let s:opprec[s:NODE_SMALLER] = 4
+let s:opprec[s:NODE_SMALLERCI] = 4
+let s:opprec[s:NODE_SMALLERCS] = 4
+let s:opprec[s:NODE_SEQUAL] = 4
+let s:opprec[s:NODE_SEQUALCI] = 4
+let s:opprec[s:NODE_SEQUALCS] = 4
+let s:opprec[s:NODE_MATCH] = 4
+let s:opprec[s:NODE_MATCHCI] = 4
+let s:opprec[s:NODE_MATCHCS] = 4
+let s:opprec[s:NODE_NOMATCH] = 4
+let s:opprec[s:NODE_NOMATCHCI] = 4
+let s:opprec[s:NODE_NOMATCHCS] = 4
+let s:opprec[s:NODE_IS] = 4
+let s:opprec[s:NODE_ISCI] = 4
+let s:opprec[s:NODE_ISCS] = 4
+let s:opprec[s:NODE_ISNOT] = 4
+let s:opprec[s:NODE_ISNOTCI] = 4
+let s:opprec[s:NODE_ISNOTCS] = 4
+let s:opprec[s:NODE_ADD] = 5
+let s:opprec[s:NODE_SUBTRACT] = 5
+let s:opprec[s:NODE_CONCAT] = 5
+let s:opprec[s:NODE_MULTIPLY] = 6
+let s:opprec[s:NODE_DIVIDE] = 6
+let s:opprec[s:NODE_REMAINDER] = 6
+let s:opprec[s:NODE_NOT] = 7
+let s:opprec[s:NODE_MINUS] = 7
+let s:opprec[s:NODE_PLUS] = 7
+let s:opprec[s:NODE_SUBSCRIPT] = 8
+let s:opprec[s:NODE_SLICE] = 8
+let s:opprec[s:NODE_CALL] = 8
+let s:opprec[s:NODE_DOT] = 8
+let s:opprec[s:NODE_NUMBER] = 9
+let s:opprec[s:NODE_STRING] = 9
+let s:opprec[s:NODE_LIST] = 9
+let s:opprec[s:NODE_DICT] = 9
+let s:opprec[s:NODE_OPTION] = 9
+let s:opprec[s:NODE_IDENTIFIER] = 9
+let s:opprec[s:NODE_CURLYNAME] = 9
+let s:opprec[s:NODE_ENV] = 9
+let s:opprec[s:NODE_REG] = 9
+
 let s:MAX_FUNC_ARGS = 20
 
 function! s:isalpha(c)
@@ -5125,171 +5182,177 @@ function! s:Printer.print_execute(node)
 endfunction
 
 function! s:Printer.print_ternary(node)
-  return printf('(%s ? %s : %s)', self.print(a:node.cond), self.print(a:node.left), self.print(a:node.right))
+  let cond = self.print(a:node.cond)
+  if s:opprec[a:node.type] >= s:opprec[a:node.cond.type]
+    let cond = '(' . cond . ')'
+  endif
+  let left = self.print(a:node.left)
+  let right = self.print(a:node.right)
+  return printf('%s ? %s : %s', cond, left, right)
 endfunction
 
 function! s:Printer.print_or(node)
-  return printf('(%s || %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '||')
 endfunction
 
 function! s:Printer.print_and(node)
-  return printf('(%s && %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '&&')
 endfunction
 
 function! s:Printer.print_equal(node)
-  return printf('(%s == %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '==')
 endfunction
 
 function! s:Printer.print_equalci(node)
-  return printf('(%s ==? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '==?')
 endfunction
 
 function! s:Printer.print_equalcs(node)
-  return printf('(%s ==# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '==#')
 endfunction
 
 function! s:Printer.print_nequal(node)
-  return printf('(%s != %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '!=')
 endfunction
 
 function! s:Printer.print_nequalci(node)
-  return printf('(%s !=? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '!=?')
 endfunction
 
 function! s:Printer.print_nequalcs(node)
-  return printf('(%s !=# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '!=#')
 endfunction
 
 function! s:Printer.print_greater(node)
-  return printf('(%s > %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '>')
 endfunction
 
 function! s:Printer.print_greaterci(node)
-  return printf('(%s >? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '>?')
 endfunction
 
 function! s:Printer.print_greatercs(node)
-  return printf('(%s ># %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '>#')
 endfunction
 
 function! s:Printer.print_gequal(node)
-  return printf('(%s >= %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '>=')
 endfunction
 
 function! s:Printer.print_gequalci(node)
-  return printf('(%s >=? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '>=?')
 endfunction
 
 function! s:Printer.print_gequalcs(node)
-  return printf('(%s >=# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '>=#')
 endfunction
 
 function! s:Printer.print_smaller(node)
-  return printf('(%s < %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '<')
 endfunction
 
 function! s:Printer.print_smallerci(node)
-  return printf('(%s <? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '<?')
 endfunction
 
 function! s:Printer.print_smallercs(node)
-  return printf('(%s <# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '<#')
 endfunction
 
 function! s:Printer.print_sequal(node)
-  return printf('(%s <= %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '<=')
 endfunction
 
 function! s:Printer.print_sequalci(node)
-  return printf('(%s <=? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '<=?')
 endfunction
 
 function! s:Printer.print_sequalcs(node)
-  return printf('(%s <=# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '<=#')
 endfunction
 
 function! s:Printer.print_match(node)
-  return printf('(%s =~ %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '=~')
 endfunction
 
 function! s:Printer.print_matchci(node)
-  return printf('(%s =~? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '=~?')
 endfunction
 
 function! s:Printer.print_matchcs(node)
-  return printf('(%s =~# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '=~#')
 endfunction
 
 function! s:Printer.print_nomatch(node)
-  return printf('(%s !~ %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '!~')
 endfunction
 
 function! s:Printer.print_nomatchci(node)
-  return printf('(%s !~? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '!~?')
 endfunction
 
 function! s:Printer.print_nomatchcs(node)
-  return printf('(%s !~# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '!~#')
 endfunction
 
 function! s:Printer.print_is(node)
-  return printf('(%s is %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, 'is')
 endfunction
 
 function! s:Printer.print_isci(node)
-  return printf('(%s is? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, 'is?')
 endfunction
 
 function! s:Printer.print_iscs(node)
-  return printf('(%s is# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, 'is#')
 endfunction
 
 function! s:Printer.print_isnot(node)
-  return printf('(%s isnot %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, 'isnot')
 endfunction
 
 function! s:Printer.print_isnotci(node)
-  return printf('(%s isnot? %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, 'isnot?')
 endfunction
 
 function! s:Printer.print_isnotcs(node)
-  return printf('(%s isnot# %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, 'isnot#')
 endfunction
 
 function! s:Printer.print_add(node)
-  return printf('(%s + %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '+')
 endfunction
 
 function! s:Printer.print_subtract(node)
-  return printf('(%s - %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '-')
 endfunction
 
 function! s:Printer.print_concat(node)
-  return printf('(%s . %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '.')
 endfunction
 
 function! s:Printer.print_multiply(node)
-  return printf('(%s * %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '*')
 endfunction
 
 function! s:Printer.print_divide(node)
-  return printf('(%s / %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '/')
 endfunction
 
 function! s:Printer.print_remainder(node)
-  return printf('(%s %% %s)', self.print(a:node.left), self.print(a:node.right))
+  return self.print_op2(a:node, '%')
 endfunction
 
 function! s:Printer.print_not(node)
-  return printf('(!(%s))', self.print(a:node.left))
+  return self.print_op1(a:node, '!')
 endfunction
 
 function! s:Printer.print_plus(node)
-  return printf('(+(%s))', self.print(a:node.left))
+  return self.print_op1(a:node, '+')
 endfunction
 
 function! s:Printer.print_minus(node)
-  return printf('(-(%s))', self.print(a:node.left))
+  return self.print_op1(a:node, '-')
 endfunction
 
 function! s:Printer.print_subscript(node)
@@ -5401,6 +5464,26 @@ function! s:Printer.print_modifiers(node)
     endif
   endfor
   call self.out('%s ', join(modlist, ' '))
+endfunction
+
+function s:Printer.print_op1(node, op)
+  let left = self.print(a:node.left)
+  if s:opprec[a:node.type] > s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  return printf('%s%s', a:op, left)
+endfunction
+
+function s:Printer.print_op2(node, op)
+  let left = self.print(a:node.left)
+  if s:opprec[a:node.type] > s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  let right = self.print(a:node.right)
+  if s:opprec[a:node.type] > s:opprec[a:node.right.type]
+    let right = '(' . right . ')'
+  endif
+  return printf('%s %s %s', left, a:op, right)
 endfunction
 
 " TODO: under construction
