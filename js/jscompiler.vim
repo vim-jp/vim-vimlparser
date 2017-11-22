@@ -352,7 +352,7 @@ function s:JavascriptCompiler.compile_let(node)
       call self.out('%s.prototype.%s %s %s;', klass, name, op, right)
       return
     endif
-    if left =~ '\.' || op != '='
+    if left =~ '\.' || op != '=' || left =~ '^opprec\[\w\+\]$'
       call self.out('%s %s %s;', left, op, right)
     else
       call self.out('var %s %s %s;', left, op, right)
