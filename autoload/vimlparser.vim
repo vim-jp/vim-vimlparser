@@ -4751,7 +4751,7 @@ function! s:Printer.new(...)
 endfunction
 
 function! s:Printer.__init__(...)
-  let opts = a:0 && type(a:1) == 4 ? a:1 : {}
+  let opts = a:0 > 0 && type(a:1) == 4 ? a:1 : {}
   let self.indent_sp = type(get(opts, 'indent_sp', 0)) == 1 ? opts.indent_sp : '  '
   let self.indent = ['']
   let self.lines = []
