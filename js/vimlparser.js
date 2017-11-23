@@ -327,6 +327,7 @@ var NODE_REG = 89;
 var NODE_CURLYNAMEPART = 90;
 var NODE_CURLYNAMEEXPR = 91;
 var NODE_LAMBDA = 92;
+var NODE_PARENEXPR = 93;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -590,6 +591,7 @@ function ExArg() {
 // CURLYNAMEPART .value
 // CURLYNAMEEXPR .value
 // LAMBDA .rlist .left
+// PARENEXPR .value
 function Node(type) {
     return {"type":type};
 }
@@ -1436,7 +1438,7 @@ VimLParser.prototype.separate_nextcmd = function() {
             }
             this.reader.getn(1);
         }
-        else if (c == "|" || c == "\n" || c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && (this.ea.cmd.name != "@" && this.ea.cmd.name != "*" || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@")) {
+        else if (c == "|" || c == "\n" || (c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && ((this.ea.cmd.name != "@" && this.ea.cmd.name != "*") || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@"))) {
             var has_cpo_bar = FALSE;
             // &cpoptions =~ 'b'
             if ((!has_cpo_bar || !viml_eqregh(this.ea.cmd.flags, "\\<USECTRLV\\>")) && pc == "\\") {
@@ -1793,7 +1795,7 @@ VimLParser.prototype.parse_cmd_let = function() {
     var s1 = this.reader.peekn(1);
     var s2 = this.reader.peekn(2);
     // :let {var-name} ..
-    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s1 != "=") {
+    if (this.ends_excmds(s1) || (s2 != "+=" && s2 != "-=" && s2 != ".=" && s1 != "=")) {
         this.reader.seek_set(pos);
         this.parse_cmd_common();
         return;
@@ -2328,7 +2330,7 @@ ExprTokenizer.prototype.get2 = function() {
         if (r.p(0) == "." && isdigit(r.p(1))) {
             s += r.getn(1);
             s += r.read_digit();
-            if ((r.p(0) == "E" || r.p(0) == "e") && (isdigit(r.p(1)) || (r.p(1) == "-" || r.p(1) == "+") && isdigit(r.p(2)))) {
+            if ((r.p(0) == "E" || r.p(0) == "e") && (isdigit(r.p(1)) || ((r.p(1) == "-" || r.p(1) == "+") && isdigit(r.p(2))))) {
                 s += r.getn(2);
                 s += r.read_digit();
             }
@@ -3398,7 +3400,9 @@ ExprParser.prototype.parse_expr9 = function() {
         return node;
     }
     else if (token.type == TOKEN_POPEN) {
-        var node = this.parse_expr1();
+        var node = Node(NODE_PARENEXPR);
+        node.pos = token.pos;
+        node.value = this.parse_expr1();
         var token = this.tokenizer.get();
         if (token.type != TOKEN_PCLOSE) {
             throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
@@ -4204,6 +4208,9 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_LAMBDA) {
         return this.compile_lambda(node);
     }
+    else if (node.type == NODE_PARENEXPR) {
+        return this.compile_parenexpr(node);
+    }
     else {
         throw viml_printf("Compiler: unknown node: %s", viml_string(node));
     }
@@ -4681,6 +4688,10 @@ Compiler.prototype.compile_curlynameexpr = function(node) {
 Compiler.prototype.compile_lambda = function(node) {
     var rlist = node.rlist.map((function(vval) { return this.compile(vval); }).bind(this));
     return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), this.compile(node.left));
+}
+
+Compiler.prototype.compile_parenexpr = function(node) {
+    return this.compile(node.value);
 }
 
 // TODO: under construction
