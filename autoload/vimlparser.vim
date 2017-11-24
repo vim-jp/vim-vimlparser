@@ -1,7 +1,15 @@
+" The main code was moved to autoload/vital/__vimlparser__/VimlParser.vim to
+" make vim-vimlparser.vim vital-module.
+"
+" See https://github.com/vim-jp/vital.vim for vital module.
+
 let s:VimLParser = vital#vimlparser#import('VimlParser')
 
 call extend(s:, s:VimLParser.import())
 
+" To Vim plugin developer who want to depend on vim-vimlparser:
+" Please use vimlparser as vital-module instead of this autoload function.
+" We do not ensure that future changes are backward compatible.
 function! vimlparser#import()
   return s:VimLParser.import()
 endfunction
