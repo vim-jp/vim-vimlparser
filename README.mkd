@@ -1,6 +1,39 @@
-# Vim Script Parsers
+# VimL Parsers
 
 [![Build Status](https://travis-ci.org/vim-jp/vim-vimlparser.svg?branch=master)](https://travis-ci.org/vim-jp/vim-vimlparser) [![codecov](https://codecov.io/gh/vim-jp/vim-vimlparser/branch/master/graph/badge.svg)](https://codecov.io/gh/vim-jp/vim-vimlparser)
 
+This is Vim script (a.k.a. VimL) parsers.
 
-TODO: write something.
+## Features
+
+* The string tokenizer allows scripts to break a string into tokens.
+* The parser to make AST (Abstract Syntax Tree)
+
+## Supported languages
+
+This parser provide same feature for following languages.
+
+* Vim script
+* Python
+* Javascript 
+
+## Example
+
+All of interfaces are provided from vimlparser module. make StringReader to break a string into tokens, and VimLParser to parse into AST, Compiler to compile nodes.
+
+```vim
+let s:vimlparser = vimlparser#import()
+let code = [
+\ 'let s:message = printf("hello %d", 1+(2*3))'
+\]
+let r = s:StringReader.new(code)
+let p = s:VimLParser.new()
+let c = s:Compiler.new()
+echo join(c.compile(p.parse(r)), "\n")
+```
+
+This above code output following.
+
+```
+(let = s:message (printf "hello %d" (+ 1 (* 2 3))))
+```
