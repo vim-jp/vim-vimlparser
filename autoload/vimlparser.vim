@@ -3,13 +3,13 @@
 "
 " See https://github.com/vim-jp/vital.vim for vital module.
 
-let s:VimLParser = vital#vimlparser#import('VimlParser').import()
+call extend(s:, vital#vimlparser#import('VimlParser').import())
 
 " To Vim plugin developer who want to depend on vim-vimlparser:
 " Please use vimlparser as vital-module instead of this autoload function.
 " We do not ensure that future changes are backward compatible.
 function! vimlparser#import()
-  return s:VimLParser
+  return s:
 endfunction
 
 " @brief Read input as VimScript and return stringified AST.
@@ -31,3 +31,32 @@ function! vimlparser#test(input, ...)
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
 endfunction
+
+if has('patch-7.4.1842')
+  function! s:numtoname(num)
+    for k in keys(s:)
+      if type(s:[k]) == type({})
+        for name in keys(s:[k])
+          if type(s:[k][name]) == type(function('tr')) && get(s:[k][name], 'name') == a:num
+            return printf('%s.%s', k, name)
+          endif
+        endfor
+      endif
+    endfor
+    return a:num
+  endfunction
+else
+  function! s:numtoname(num)
+    let sig = printf("function('%s')", a:num)
+    for k in keys(s:)
+      if type(s:[k]) == type({})
+        for name in keys(s:[k])
+          if type(s:[k][name]) == type(function('tr')) && string(s:[k][name]) == sig
+            return printf('%s.%s', k, name)
+          endif
+        endfor
+      endif
+    endfor
+    return a:num
+  endfunction
+endif
