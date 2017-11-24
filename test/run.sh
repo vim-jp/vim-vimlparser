@@ -1,5 +1,5 @@
 #!/bin/sh
-vim -u NONE -N --cmd "let &rtp .= ',' . getcwd()" -S test/run.vim
+vim -Nu test/vimrc -S test/run.vim
 EXIT=$?
 [ -e test.log ] && cat test.log
 exit $EXIT
