@@ -857,7 +857,7 @@ endfunction
 
 function! s:parse_args() abort
   let v = [
-  \  fnamemodify(s:script_dir . '/../autoload/vimlparser.vim', ':p'),
+  \  fnamemodify(s:script_dir . '/../autoload/vital/__vimlparser__/VimlParser.vim', ':p'),
   \  fnamemodify(s:script_dir . '/vimlparser.py', ':p')
   \]
   let args = argv()[1:]
@@ -866,7 +866,7 @@ function! s:parse_args() abort
     if len(args) != 2
       throw 'invalid argument: ' . string(args)
     endif
-	let v = args
+    let v = args
   endif
   return v
 endfunction:
