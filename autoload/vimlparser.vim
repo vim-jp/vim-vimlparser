@@ -3,15 +3,13 @@
 "
 " See https://github.com/vim-jp/vital.vim for vital module.
 
-let s:VimLParser = vital#vimlparser#import('VimlParser')
-
-call extend(s:, s:VimLParser.import())
+let s:VimLParser = vital#vimlparser#import('VimlParser').import()
 
 " To Vim plugin developer who want to depend on vim-vimlparser:
 " Please use vimlparser as vital-module instead of this autoload function.
 " We do not ensure that future changes are backward compatible.
 function! vimlparser#import()
-  return s:VimLParser.import()
+  return s:VimLParser
 endfunction
 
 " @brief Read input as VimScript and return stringified AST.
