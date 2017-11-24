@@ -26,7 +26,7 @@ py/test: py/vimlparser.py
 	test/run_command.sh python py/vimlparser.py
 
 test/node_position/test_position.out: test/node_position/test_position.vim test/node_position/test_position.ok
-	vim -Nu test/vimrc S test/node_position/test_position.vim
+	vim -Nu test/vimrc -S test/node_position/test_position.vim
 	diff -u test/node_position/test_position.ok test/node_position/test_position.out
 
 .PHONY: all clean_compiled check test js/test py/test
