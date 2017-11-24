@@ -1,5 +1,7 @@
 let s:VimLParser = vital#vimlparser#import('VimlParser')
 
+call extend(s:, s:VimLParser.import())
+
 function! vimlparser#import()
   return s:VimLParser.import()
 endfunction
@@ -23,4 +25,3 @@ function! vimlparser#test(input, ...)
     echoerr substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
 endfunction
-
