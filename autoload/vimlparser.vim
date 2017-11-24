@@ -18,7 +18,7 @@ function! vimlparser#test(input, ...)
     else
       let l:neovim = 0
     endif
-    let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : [a:input]
+    let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : split(a:input, "\n")
     let r = s:StringReader.new(i)
     let p = s:VimLParser.new(l:neovim)
     let c = s:Compiler.new()
