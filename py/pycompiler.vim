@@ -879,6 +879,15 @@ function! s:main() abort
     call writefile([v:exception], has('win32') ? 'conout$' : '/dev/stderr')
     cquit
   endtry
+  if mode(1) ==# 'ce'
+    " This :visual is needed to make exit code 0 for old vim.
+    " Exit code is set to 1, Vim exit from Ex mode after an error
+    " output is performed even if the error is caught by try-catch.
+    "
+    " This problem is fixed at Vim v.8.0.0184.
+    " https://github.com/vim/vim/releases/tag/v8.0.0184
+    visual
+  endif
 endfunction
 
 call s:main()
