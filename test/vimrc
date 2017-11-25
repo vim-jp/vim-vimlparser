@@ -1,0 +1,6 @@
+let &rtp .= ',' . getcwd()
+
+if $TEST_PROFILE != ''
+  execute 'profile' 'start' $TEST_PROFILE
+  profile! file ./autoload/*
+endif
