@@ -583,6 +583,7 @@ class VimLParser:
         self.reader = reader
         self.context = []
         toplevel = Node(NODE_TOPLEVEL)
+        toplevel.pos = self.reader.getpos()
         toplevel.body = []
         self.push_context(toplevel)
         while self.reader.peek() != "<EOF>":

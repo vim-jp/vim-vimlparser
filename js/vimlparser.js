@@ -669,6 +669,7 @@ VimLParser.prototype.parse = function(reader) {
     this.reader = reader;
     this.context = [];
     var toplevel = Node(NODE_TOPLEVEL);
+    toplevel.pos = this.reader.getpos();
     toplevel.body = [];
     this.push_context(toplevel);
     while (this.reader.peek() != "<EOF>") {
