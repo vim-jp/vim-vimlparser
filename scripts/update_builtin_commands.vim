@@ -129,9 +129,9 @@ function! g:VimLParserNewCmds(ex_cmds_h) abort
   let new_cmds = s:gen_new_builtin(vimlparser#import().VimLParser.builtin_commands, latest)
   let generated_text = s:gen_viml(new_cmds)
   if generated_text == ''
-    verbose echo 's:VimLParser.builtin_commands in autoload/vimlparser.vim is up-to-date.'
+    verbose echo 's:VimLParser.builtin_commands is up-to-date.'
   else
-    verbose echo "Append following lines to s:VimLParser.builtin_commands in autoload/vimlparser.vim\n"
+    verbose echo "Append following lines to s:VimLParser.builtin_commands\n"
     verbose echo generated_text
   endif
 endfunction
