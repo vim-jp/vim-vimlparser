@@ -6,8 +6,7 @@ This is Vim script (a.k.a. VimL) parsers.
 
 ## Features
 
-* The tokenizer allows scripts to break a string into tokens.
-* The parser to make AST (Abstract Syntax Tree)
+The parser to make AST (Abstract Syntax Tree)
 
 ## Supported languages
 
