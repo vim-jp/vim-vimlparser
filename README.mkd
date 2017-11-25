@@ -6,7 +6,7 @@ This is Vim script (a.k.a. VimL) parsers.
 
 ## Features
 
-* The string tokenizer allows scripts to break a string into tokens.
+* The tokenizer allows scripts to break a string into tokens.
 * The parser to make AST (Abstract Syntax Tree)
 
 ## Supported languages
@@ -18,8 +18,6 @@ This parser provide same feature for following languages.
 * Javascript 
 
 ## Example
-
-### Parse VimL into AST, and print S-expression
 
 All of interfaces are provided from vimlparser module. VimLParser parse into AST using StringReader, and Compiler to compile nodes.
 
@@ -38,35 +36,4 @@ This above code output following.
 
 ```
 (let = s:message (printf "hello %d" (+ 1 (* 2 3))))
-```
-
-### Parse VimL into AST, and print S-expression
-
-ExprTokenizer break a string buffer into tokens for expression.
-
-```vim
-let code = [
-\ 'echo 1+(2*3)'
-\]
-let s:vimlparser = vimlparser#import()
-let r = s:vimlparser.StringReader.new(code)
-let t = s:vimlparser.ExprTokenizer.new(r)
-while !r.eof()
-  let token = t.get()
-  echo token.value
-endwhile
-```
-
-This above code output following.
-
-```
-echo
-1
-+
-(
-2
-*
-3
-)
-<EOL>
 ```
