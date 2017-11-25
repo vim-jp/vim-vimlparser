@@ -486,6 +486,7 @@ function! s:VimLParser.parse(reader)
   let self.reader = a:reader
   let self.context = []
   let toplevel = s:Node(s:NODE_TOPLEVEL)
+  let toplevel.pos = self.reader.getpos()
   let toplevel.body = []
   call self.push_context(toplevel)
   while self.reader.peek() !=# '<EOF>'
