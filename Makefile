@@ -2,10 +2,10 @@ COMPILED_FILES:=js/vimlparser.js py/vimlparser.py
 
 all: $(COMPILED_FILES)
 
-js/vimlparser.js: autoload/vital/__vimlparser__/VimlParser.vim js/jscompiler.vim js/vimlfunc.js
+js/vimlparser.js: autoload/vital/__vimlparser__/VimLParser.vim js/jscompiler.vim js/vimlfunc.js
 	scripts/jscompile.sh $< $@
 
-py/vimlparser.py: autoload/vital/__vimlparser__/VimlParser.vim py/pycompiler.vim py/vimlfunc.py
+py/vimlparser.py: autoload/vital/__vimlparser__/VimLParser.vim py/pycompiler.vim py/vimlfunc.py
 	scripts/pycompile.sh $< $@
 
 clean_compiled:

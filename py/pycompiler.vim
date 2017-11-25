@@ -857,7 +857,7 @@ endfunction
 
 function! s:parse_args() abort
   let v = [
-  \  fnamemodify(s:script_dir . '/../autoload/vital/__vimlparser__/VimlParser.vim', ':p'),
+  \  fnamemodify(s:script_dir . '/../autoload/vital/__vimlparser__/VimLParser.vim', ':p'),
   \  fnamemodify(s:script_dir . '/vimlparser.py', ':p')
   \]
   let args = argv()[1:]
