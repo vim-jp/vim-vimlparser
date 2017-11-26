@@ -4,6 +4,31 @@
 "
 " License: This file is placed in the public domain.
 
+" s:import is only public API and you can access this script-local function via
+" vital.vim. See https://github.com/vim-jp/vital.vim for more detail.
+"
+" Historically, vimlparser.vim is not vital module and there are other exported
+" functions as vital-module, but they are not expected to be used.
+" The one reason we didn't make them as private function (add `_` prefix to
+" script local function) is that this file will be translated into other
+" languages like Python and JavaScript. Also, vimlparser developers have no
+" need to learn vital.vim convention and develop vimlparser same as before as
+" much as possible.
+"
+" Example:
+" 	call extend(s:, vital#vital#import('VimLParser').import())
+"
+" 	function! s:run() abort
+" 	  let code = [
+" 	  \  'let s:message = printf("hello %d", 1+(2*3))'
+" 	  \ ]
+" 	  let r = s:StringReader.new(code)
+" 	  let p = s:VimLParser.new()
+" 	  let c = s:Compiler.new()
+" 	  echo join(c.compile(p.parse(r)), "\n")
+" 	endfunction
+"
+" 	call s:run()
 function! s:import() abort
   return s:
 endfunction
@@ -906,7 +931,7 @@ function! s:VimLParser.find_command()
     endif
   endfor
 
-  if self.neovim  
+  if self.neovim
     for x in self.neovim_additional_commands
       if stridx(x.name, name) == 0 && len(name) >= x.minlen
         unlet cmd
@@ -923,7 +948,7 @@ function! s:VimLParser.find_command()
       endif
     endfor
   endif
-  
+
   " FIXME: user defined command
   if (cmd is s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
     let name .= self.reader.read_alnum()

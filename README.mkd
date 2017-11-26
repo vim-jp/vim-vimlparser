@@ -14,7 +14,7 @@ This parser provide same feature for following languages.
 
 * Vim script
 * Python
-* Javascript 
+* JavaScript
 
 ## Example
 
