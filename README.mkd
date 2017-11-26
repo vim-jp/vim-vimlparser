@@ -1,4 +1,4 @@
-# VimL Parsers
+# Vim script parsers
 
 [![Build Status](https://travis-ci.org/vim-jp/vim-vimlparser.svg?branch=master)](https://travis-ci.org/vim-jp/vim-vimlparser) [![codecov](https://codecov.io/gh/vim-jp/vim-vimlparser/branch/master/graph/badge.svg)](https://codecov.io/gh/vim-jp/vim-vimlparser)
 
