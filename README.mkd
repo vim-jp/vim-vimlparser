@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/vim-jp/vim-vimlparser.svg?branch=master)](https://travis-ci.org/vim-jp/vim-vimlparser) [![codecov](https://codecov.io/gh/vim-jp/vim-vimlparser/branch/master/graph/badge.svg)](https://codecov.io/gh/vim-jp/vim-vimlparser)
 
-This is Vim script (a.k.a. VimL) parsers.
+This is Vim script language ([a.k.a. VimL](#about-project-name)) parsers.
 
 ## Features
 
@@ -36,3 +36,8 @@ This above code output following.
 ```
 (let = s:message (printf "hello %d" (+ 1 (* 2 3))))
 ```
+
+## About project name
+
+We know "VimL" is not proper short form of "Vim script language".
+But we choice "VimL" for historical and practical reasons and compatibility.
