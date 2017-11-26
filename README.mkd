@@ -39,5 +39,5 @@ This above code output following.
 
 ## About project name
 
-We know a name "VimL" is not the common short form of "Vim script language".
+We know a name "VimL" is not the common short form of "Vim scripting language".
 But we choice "VimL" for historical and practical reasons and compatibility.
