@@ -204,6 +204,63 @@ let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
 
+let s:opprec = {}
+let s:opprec[s:NODE_TERNARY] = 1
+let s:opprec[s:NODE_OR] = 2
+let s:opprec[s:NODE_AND] = 3
+let s:opprec[s:NODE_EQUAL] = 4
+let s:opprec[s:NODE_EQUALCI] = 4
+let s:opprec[s:NODE_EQUALCS] = 4
+let s:opprec[s:NODE_NEQUAL] = 4
+let s:opprec[s:NODE_NEQUALCI] = 4
+let s:opprec[s:NODE_NEQUALCS] = 4
+let s:opprec[s:NODE_GREATER] = 4
+let s:opprec[s:NODE_GREATERCI] = 4
+let s:opprec[s:NODE_GREATERCS] = 4
+let s:opprec[s:NODE_GEQUAL] = 4
+let s:opprec[s:NODE_GEQUALCI] = 4
+let s:opprec[s:NODE_GEQUALCS] = 4
+let s:opprec[s:NODE_SMALLER] = 4
+let s:opprec[s:NODE_SMALLERCI] = 4
+let s:opprec[s:NODE_SMALLERCS] = 4
+let s:opprec[s:NODE_SEQUAL] = 4
+let s:opprec[s:NODE_SEQUALCI] = 4
+let s:opprec[s:NODE_SEQUALCS] = 4
+let s:opprec[s:NODE_MATCH] = 4
+let s:opprec[s:NODE_MATCHCI] = 4
+let s:opprec[s:NODE_MATCHCS] = 4
+let s:opprec[s:NODE_NOMATCH] = 4
+let s:opprec[s:NODE_NOMATCHCI] = 4
+let s:opprec[s:NODE_NOMATCHCS] = 4
+let s:opprec[s:NODE_IS] = 4
+let s:opprec[s:NODE_ISCI] = 4
+let s:opprec[s:NODE_ISCS] = 4
+let s:opprec[s:NODE_ISNOT] = 4
+let s:opprec[s:NODE_ISNOTCI] = 4
+let s:opprec[s:NODE_ISNOTCS] = 4
+let s:opprec[s:NODE_ADD] = 5
+let s:opprec[s:NODE_SUBTRACT] = 5
+let s:opprec[s:NODE_CONCAT] = 5
+let s:opprec[s:NODE_MULTIPLY] = 6
+let s:opprec[s:NODE_DIVIDE] = 6
+let s:opprec[s:NODE_REMAINDER] = 6
+let s:opprec[s:NODE_NOT] = 7
+let s:opprec[s:NODE_MINUS] = 7
+let s:opprec[s:NODE_PLUS] = 7
+let s:opprec[s:NODE_SUBSCRIPT] = 8
+let s:opprec[s:NODE_SLICE] = 8
+let s:opprec[s:NODE_CALL] = 8
+let s:opprec[s:NODE_DOT] = 8
+let s:opprec[s:NODE_NUMBER] = 9
+let s:opprec[s:NODE_STRING] = 9
+let s:opprec[s:NODE_LIST] = 9
+let s:opprec[s:NODE_DICT] = 9
+let s:opprec[s:NODE_OPTION] = 9
+let s:opprec[s:NODE_IDENTIFIER] = 9
+let s:opprec[s:NODE_CURLYNAME] = 9
+let s:opprec[s:NODE_ENV] = 9
+let s:opprec[s:NODE_REG] = 9
+
 let s:MAX_FUNC_ARGS = 20
 
 function! s:isalpha(c)
@@ -4684,6 +4741,750 @@ endfunction
 function! s:Compiler.compile_lambda(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
+endfunction
+
+let s:Printer = {}
+
+function! s:Printer.new(...)
+  let obj = copy(self)
+  call call(obj.__init__, a:000, obj)
+  return obj
+endfunction
+
+function! s:Printer.__init__(...)
+  let opts = a:0 > 0 && type(a:1) == 4 ? a:1 : {}
+  let self.indent_sp = type(get(opts, 'indent_sp', 0)) == 1 ? opts.indent_sp : '  '
+  let self.indent = ['']
+  let self.lines = []
+endfunction
+
+function! s:Printer.out(...)
+  if len(a:000) == 1
+    if a:000[0][0] ==# ')'
+      let self.lines[-1] .= a:000[0]
+    else
+      call add(self.lines, self.indent[0] . a:000[0])
+    endif
+  else
+    call add(self.lines, self.indent[0] . call('printf', a:000))
+  endif
+endfunction
+
+function! s:Printer.incindent()
+  call insert(self.indent, self.indent[0] . self.indent_sp)
+endfunction
+
+function! s:Printer.decindent()
+  call remove(self.indent, 0)
+endfunction
+
+function! s:Printer.print(node)
+  if has_key(a:node, 'ea') && has_key(a:node.ea, 'modifiers') &&
+    \ !empty(a:node.ea.modifiers)
+    call self.print_modifiers(a:node)
+  endif
+  if a:node.type == s:NODE_TOPLEVEL
+    return self.print_toplevel(a:node)
+  elseif a:node.type == s:NODE_COMMENT
+    call self.print_comment(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_EXCMD
+    call self.print_excmd(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_FUNCTION
+    call self.print_function(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_DELFUNCTION
+    call self.print_delfunction(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_RETURN
+    call self.print_return(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_EXCALL
+    call self.print_excall(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_LET
+    call self.print_let(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_UNLET
+    call self.print_unlet(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_LOCKVAR
+    call self.print_lockvar(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_UNLOCKVAR
+    call self.print_unlockvar(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_IF
+    call self.print_if(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_WHILE
+    call self.print_while(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_FOR
+    call self.print_for(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_CONTINUE
+    call self.print_continue(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_BREAK
+    call self.print_break(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_TRY
+    call self.print_try(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_THROW
+    call self.print_throw(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_ECHO
+    call self.print_echo(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_ECHON
+    call self.print_echon(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_ECHOHL
+    call self.print_echohl(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_ECHOMSG
+    call self.print_echomsg(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_ECHOERR
+    call self.print_echoerr(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_EXECUTE
+    call self.print_execute(a:node)
+    return s:NIL
+  elseif a:node.type == s:NODE_TERNARY
+    return self.print_ternary(a:node)
+  elseif a:node.type == s:NODE_OR
+    return self.print_or(a:node)
+  elseif a:node.type == s:NODE_AND
+    return self.print_and(a:node)
+  elseif a:node.type == s:NODE_EQUAL
+    return self.print_equal(a:node)
+  elseif a:node.type == s:NODE_EQUALCI
+    return self.print_equalci(a:node)
+  elseif a:node.type == s:NODE_EQUALCS
+    return self.print_equalcs(a:node)
+  elseif a:node.type == s:NODE_NEQUAL
+    return self.print_nequal(a:node)
+  elseif a:node.type == s:NODE_NEQUALCI
+    return self.print_nequalci(a:node)
+  elseif a:node.type == s:NODE_NEQUALCS
+    return self.print_nequalcs(a:node)
+  elseif a:node.type == s:NODE_GREATER
+    return self.print_greater(a:node)
+  elseif a:node.type == s:NODE_GREATERCI
+    return self.print_greaterci(a:node)
+  elseif a:node.type == s:NODE_GREATERCS
+    return self.print_greatercs(a:node)
+  elseif a:node.type == s:NODE_GEQUAL
+    return self.print_gequal(a:node)
+  elseif a:node.type == s:NODE_GEQUALCI
+    return self.print_gequalci(a:node)
+  elseif a:node.type == s:NODE_GEQUALCS
+    return self.print_gequalcs(a:node)
+  elseif a:node.type == s:NODE_SMALLER
+    return self.print_smaller(a:node)
+  elseif a:node.type == s:NODE_SMALLERCI
+    return self.print_smallerci(a:node)
+  elseif a:node.type == s:NODE_SMALLERCS
+    return self.print_smallercs(a:node)
+  elseif a:node.type == s:NODE_SEQUAL
+    return self.print_sequal(a:node)
+  elseif a:node.type == s:NODE_SEQUALCI
+    return self.print_sequalci(a:node)
+  elseif a:node.type == s:NODE_SEQUALCS
+    return self.print_sequalcs(a:node)
+  elseif a:node.type == s:NODE_MATCH
+    return self.print_match(a:node)
+  elseif a:node.type == s:NODE_MATCHCI
+    return self.print_matchci(a:node)
+  elseif a:node.type == s:NODE_MATCHCS
+    return self.print_matchcs(a:node)
+  elseif a:node.type == s:NODE_NOMATCH
+    return self.print_nomatch(a:node)
+  elseif a:node.type == s:NODE_NOMATCHCI
+    return self.print_nomatchci(a:node)
+  elseif a:node.type == s:NODE_NOMATCHCS
+    return self.print_nomatchcs(a:node)
+  elseif a:node.type == s:NODE_IS
+    return self.print_is(a:node)
+  elseif a:node.type == s:NODE_ISCI
+    return self.print_isci(a:node)
+  elseif a:node.type == s:NODE_ISCS
+    return self.print_iscs(a:node)
+  elseif a:node.type == s:NODE_ISNOT
+    return self.print_isnot(a:node)
+  elseif a:node.type == s:NODE_ISNOTCI
+    return self.print_isnotci(a:node)
+  elseif a:node.type == s:NODE_ISNOTCS
+    return self.print_isnotcs(a:node)
+  elseif a:node.type == s:NODE_ADD
+    return self.print_add(a:node)
+  elseif a:node.type == s:NODE_SUBTRACT
+    return self.print_subtract(a:node)
+  elseif a:node.type == s:NODE_CONCAT
+    return self.print_concat(a:node)
+  elseif a:node.type == s:NODE_MULTIPLY
+    return self.print_multiply(a:node)
+  elseif a:node.type == s:NODE_DIVIDE
+    return self.print_divide(a:node)
+  elseif a:node.type == s:NODE_REMAINDER
+    return self.print_remainder(a:node)
+  elseif a:node.type == s:NODE_NOT
+    return self.print_not(a:node)
+  elseif a:node.type == s:NODE_PLUS
+    return self.print_plus(a:node)
+  elseif a:node.type == s:NODE_MINUS
+    return self.print_minus(a:node)
+  elseif a:node.type == s:NODE_SUBSCRIPT
+    return self.print_subscript(a:node)
+  elseif a:node.type == s:NODE_SLICE
+    return self.print_slice(a:node)
+  elseif a:node.type == s:NODE_DOT
+    return self.print_dot(a:node)
+  elseif a:node.type == s:NODE_CALL
+    return self.print_call(a:node)
+  elseif a:node.type == s:NODE_NUMBER
+    return self.print_number(a:node)
+  elseif a:node.type == s:NODE_STRING
+    return self.print_string(a:node)
+  elseif a:node.type == s:NODE_LIST
+    return self.print_list(a:node)
+  elseif a:node.type == s:NODE_DICT
+    return self.print_dict(a:node)
+  elseif a:node.type == s:NODE_OPTION
+    return self.print_option(a:node)
+  elseif a:node.type == s:NODE_IDENTIFIER
+    return self.print_identifier(a:node)
+  elseif a:node.type == s:NODE_CURLYNAME
+    return self.print_curlyname(a:node)
+  elseif a:node.type == s:NODE_ENV
+    return self.print_env(a:node)
+  elseif a:node.type == s:NODE_REG
+    return self.print_reg(a:node)
+  elseif a:node.type == s:NODE_CURLYNAMEPART
+    return self.print_curlynamepart(a:node)
+  elseif a:node.type == s:NODE_CURLYNAMEEXPR
+    return self.print_curlynameexpr(a:node)
+  elseif a:node.type == s:NODE_LAMBDA
+    return self.print_lambda(a:node)
+  else
+    throw printf('Printer: unknown node: %s', string(a:node))
+  endif
+  return s:NIL
+endfunction
+
+function! s:Printer.print_body(body)
+  for node in a:body
+    call self.print(node)
+  endfor
+endfunction
+
+function! s:Printer.print_toplevel(node)
+  call self.print_body(a:node.body)
+  return self.lines
+endfunction
+
+function! s:Printer.print_comment(node)
+  call self.out('"%s', a:node.str)
+endfunction
+
+function! s:Printer.print_excmd(node)
+  call self.out('%s', a:node.str)
+endfunction
+
+function! s:Printer.print_function(node)
+  let left = self.print(a:node.left)
+  let rlist = map(a:node.rlist, 'self.print(v:val)')
+  let attrs = filter(sort(keys(a:node.attr)), 'a:node.attr[v:val]')
+  let attr = empty(attrs) ? '' : ' ' . join(attrs, ' ')
+  let bang = a:node.ea.forceit ? '!' : ''
+  call self.out('function%s %s(%s)%s', bang, left, join(rlist, ', '), attr)
+  call self.incindent()
+  call self.print_body(a:node.body)
+  call self.decindent()
+  call self.out('endfunction')
+endfunction
+
+function! s:Printer.print_delfunction(node)
+  call self.out('delfunction %s', self.print(a:node.left))
+endfunction
+
+function! s:Printer.print_return(node)
+  if a:node.left is s:NIL
+    call self.out('return')
+  else
+    call self.out('return %s', self.print(a:node.left))
+  endif
+endfunction
+
+function! s:Printer.print_excall(node)
+  call self.out('call %s', self.print(a:node.left))
+endfunction
+
+function! s:Printer.print_let(node)
+  let left = ''
+  if a:node.left isnot s:NIL
+    let left = self.print(a:node.left)
+  else
+    let left = '['
+    let left .= join(map(a:node.list, 'self.print(v:val)'), ', ')
+    if a:node.rest isnot s:NIL
+      let left .= '; ' . self.print(a:node.rest)
+    endif
+    let left .= ']'
+  endif
+  let right = self.print(a:node.right)
+  call self.out('let %s %s %s', left, a:node.op, right)
+endfunction
+
+function! s:Printer.print_unlet(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  let bang = a:node.ea.forceit ? '!' : ''
+  call self.out('unlet%s %s', bang, join(list, ' '))
+endfunction
+
+function! s:Printer.print_lockvar(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  let bang = a:node.ea.forceit ? '!' : ''
+  if a:node.depth is s:NIL
+    call self.out('lockvar%s %s', bang, join(list, ' '))
+  else
+    call self.out('lockvar%s %s %s', bang, a:node.depth, join(list, ' '))
+  endif
+endfunction
+
+function! s:Printer.print_unlockvar(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  let bang = a:node.ea.forceit ? '!' : ''
+  if a:node.depth is s:NIL
+    call self.out('unlockvar%s %s', bang, join(list, ' '))
+  else
+    call self.out('unlockvar%s %s %s', bang, a:node.depth, join(list, ' '))
+  endif
+endfunction
+
+function! s:Printer.print_if(node)
+  call self.out('if %s', self.print(a:node.cond))
+  call self.incindent()
+  call self.print_body(a:node.body)
+  call self.decindent()
+  for enode in a:node.elseif
+    call self.out('elseif %s', self.print(enode.cond))
+    call self.incindent()
+    call self.print_body(enode.body)
+    call self.decindent()
+  endfor
+  if a:node.else isnot s:NIL
+    call self.out('else')
+    call self.incindent()
+    call self.print_body(a:node.else.body)
+    call self.decindent()
+  endif
+  call self.out('endif')
+endfunction
+
+function! s:Printer.print_while(node)
+  call self.out('while %s', self.print(a:node.cond))
+  call self.incindent()
+  call self.print_body(a:node.body)
+  call self.decindent()
+  call self.out('endwhile')
+endfunction
+
+function! s:Printer.print_for(node)
+  let left = ''
+  if a:node.left isnot s:NIL
+    let left = self.print(a:node.left)
+  else
+    let left = '['
+    let left .= join(map(a:node.list, 'self.print(v:val)'), ', ')
+    if a:node.rest isnot s:NIL
+      let left .= '; ' . self.print(a:node.rest)
+    endif
+    let left .= ']'
+  endif
+  let right = self.print(a:node.right)
+  call self.out('for %s in %s', left, right)
+  call self.incindent()
+  call self.print_body(a:node.body)
+  call self.decindent()
+  call self.out('endfor')
+endfunction
+
+function! s:Printer.print_continue(node)
+  call self.out('continue')
+endfunction
+
+function! s:Printer.print_break(node)
+  call self.out('break')
+endfunction
+
+function! s:Printer.print_try(node)
+  call self.out('try')
+  call self.incindent()
+  call self.print_body(a:node.body)
+  for cnode in a:node.catch
+    if cnode.pattern isnot s:NIL
+      call self.decindent()
+      call self.out('catch /%s/', cnode.pattern)
+      call self.incindent()
+      call self.print_body(cnode.body)
+    else
+      call self.decindent()
+      call self.out('catch')
+      call self.incindent()
+      call self.print_body(cnode.body)
+    endif
+  endfor
+  if a:node.finally isnot s:NIL
+    call self.decindent()
+    call self.out('finally')
+    call self.incindent()
+    call self.print_body(a:node.finally.body)
+  endif
+  call self.decindent()
+  call self.out('endtry')
+endfunction
+
+function! s:Printer.print_throw(node)
+  call self.out('throw %s', self.print(a:node.left))
+endfunction
+
+function! s:Printer.print_echo(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  call self.out('echo %s', join(list, ' '))
+endfunction
+
+function! s:Printer.print_echon(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  call self.out('echon %s', join(list, ' '))
+endfunction
+
+function! s:Printer.print_echohl(node)
+  call self.out('echohl %s', a:node.str)
+endfunction
+
+function! s:Printer.print_echomsg(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  call self.out('echomsg %s', join(list, ' '))
+endfunction
+
+function! s:Printer.print_echoerr(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  call self.out('echoerr %s', join(list, ' '))
+endfunction
+
+function! s:Printer.print_execute(node)
+  let list = map(a:node.list, 'self.print(v:val)')
+  call self.out('execute %s', join(list, ' '))
+endfunction
+
+function! s:Printer.print_ternary(node)
+  let cond = self.print(a:node.cond)
+  if s:opprec[a:node.type] >= s:opprec[a:node.cond.type]
+    let cond = '(' . cond . ')'
+  endif
+  let left = self.print(a:node.left)
+  let right = self.print(a:node.right)
+  return printf('%s ? %s : %s', cond, left, right)
+endfunction
+
+function! s:Printer.print_or(node)
+  return self.print_op2(a:node, '||')
+endfunction
+
+function! s:Printer.print_and(node)
+  return self.print_op2(a:node, '&&')
+endfunction
+
+function! s:Printer.print_equal(node)
+  return self.print_op2(a:node, '==')
+endfunction
+
+function! s:Printer.print_equalci(node)
+  return self.print_op2(a:node, '==?')
+endfunction
+
+function! s:Printer.print_equalcs(node)
+  return self.print_op2(a:node, '==#')
+endfunction
+
+function! s:Printer.print_nequal(node)
+  return self.print_op2(a:node, '!=')
+endfunction
+
+function! s:Printer.print_nequalci(node)
+  return self.print_op2(a:node, '!=?')
+endfunction
+
+function! s:Printer.print_nequalcs(node)
+  return self.print_op2(a:node, '!=#')
+endfunction
+
+function! s:Printer.print_greater(node)
+  return self.print_op2(a:node, '>')
+endfunction
+
+function! s:Printer.print_greaterci(node)
+  return self.print_op2(a:node, '>?')
+endfunction
+
+function! s:Printer.print_greatercs(node)
+  return self.print_op2(a:node, '>#')
+endfunction
+
+function! s:Printer.print_gequal(node)
+  return self.print_op2(a:node, '>=')
+endfunction
+
+function! s:Printer.print_gequalci(node)
+  return self.print_op2(a:node, '>=?')
+endfunction
+
+function! s:Printer.print_gequalcs(node)
+  return self.print_op2(a:node, '>=#')
+endfunction
+
+function! s:Printer.print_smaller(node)
+  return self.print_op2(a:node, '<')
+endfunction
+
+function! s:Printer.print_smallerci(node)
+  return self.print_op2(a:node, '<?')
+endfunction
+
+function! s:Printer.print_smallercs(node)
+  return self.print_op2(a:node, '<#')
+endfunction
+
+function! s:Printer.print_sequal(node)
+  return self.print_op2(a:node, '<=')
+endfunction
+
+function! s:Printer.print_sequalci(node)
+  return self.print_op2(a:node, '<=?')
+endfunction
+
+function! s:Printer.print_sequalcs(node)
+  return self.print_op2(a:node, '<=#')
+endfunction
+
+function! s:Printer.print_match(node)
+  return self.print_op2(a:node, '=~')
+endfunction
+
+function! s:Printer.print_matchci(node)
+  return self.print_op2(a:node, '=~?')
+endfunction
+
+function! s:Printer.print_matchcs(node)
+  return self.print_op2(a:node, '=~#')
+endfunction
+
+function! s:Printer.print_nomatch(node)
+  return self.print_op2(a:node, '!~')
+endfunction
+
+function! s:Printer.print_nomatchci(node)
+  return self.print_op2(a:node, '!~?')
+endfunction
+
+function! s:Printer.print_nomatchcs(node)
+  return self.print_op2(a:node, '!~#')
+endfunction
+
+function! s:Printer.print_is(node)
+  return self.print_op2(a:node, 'is')
+endfunction
+
+function! s:Printer.print_isci(node)
+  return self.print_op2(a:node, 'is?')
+endfunction
+
+function! s:Printer.print_iscs(node)
+  return self.print_op2(a:node, 'is#')
+endfunction
+
+function! s:Printer.print_isnot(node)
+  return self.print_op2(a:node, 'isnot')
+endfunction
+
+function! s:Printer.print_isnotci(node)
+  return self.print_op2(a:node, 'isnot?')
+endfunction
+
+function! s:Printer.print_isnotcs(node)
+  return self.print_op2(a:node, 'isnot#')
+endfunction
+
+function! s:Printer.print_add(node)
+  return self.print_op2(a:node, '+')
+endfunction
+
+function! s:Printer.print_subtract(node)
+  return self.print_op2(a:node, '-')
+endfunction
+
+function! s:Printer.print_concat(node)
+  return self.print_op2(a:node, '.')
+endfunction
+
+function! s:Printer.print_multiply(node)
+  return self.print_op2(a:node, '*')
+endfunction
+
+function! s:Printer.print_divide(node)
+  return self.print_op2(a:node, '/')
+endfunction
+
+function! s:Printer.print_remainder(node)
+  return self.print_op2(a:node, '%')
+endfunction
+
+function! s:Printer.print_not(node)
+  return self.print_op1(a:node, '!')
+endfunction
+
+function! s:Printer.print_plus(node)
+  return self.print_op1(a:node, '+')
+endfunction
+
+function! s:Printer.print_minus(node)
+  return self.print_op1(a:node, '-')
+endfunction
+
+function! s:Printer.print_subscript(node)
+  return printf('%s[%s]', self.print(a:node.left), self.print(a:node.right))
+endfunction
+
+function! s:Printer.print_slice(node)
+  let r0 = a:node.rlist[0] is s:NIL ? '' : self.print(a:node.rlist[0])
+  let r1 = a:node.rlist[1] is s:NIL ? '' : self.print(a:node.rlist[1])
+  if r0 =~# '^[bwtglsav]$'
+    let r0 = r0 . ' '
+  endif
+  if r1 =~# '^[bwtglsav]$'
+    let r1 = ' ' . r1
+  endif
+  return printf('%s[%s:%s]', self.print(a:node.left), r0, r1)
+endfunction
+
+function! s:Printer.print_dot(node)
+  return printf('%s.%s', self.print(a:node.left), self.print(a:node.right))
+endfunction
+
+function! s:Printer.print_call(node)
+  let rlist = map(a:node.rlist, 'self.print(v:val)')
+  if empty(rlist)
+    return printf('%s()', self.print(a:node.left))
+  else
+    return printf('%s(%s)', self.print(a:node.left), join(rlist, ', '))
+  endif
+endfunction
+
+function! s:Printer.print_number(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_string(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_list(node)
+  let value = map(a:node.value, 'self.print(v:val)')
+  if empty(value)
+    return '[]'
+  else
+    return printf('[%s]', join(value, ', '))
+  endif
+endfunction
+
+function! s:Printer.print_dict(node)
+  let value = map(a:node.value, 'self.print(v:val[0]) . " : " . self.print(v:val[1])')
+  if empty(value)
+    return '{}'
+  else
+    return printf('{%s}', join(value, ', '))
+  endif
+endfunction
+
+function! s:Printer.print_option(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_identifier(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_curlyname(node)
+  return join(map(a:node.value, 'self.print(v:val)'), '')
+endfunction
+
+function! s:Printer.print_env(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_reg(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_curlynamepart(node)
+  return a:node.value
+endfunction
+
+function! s:Printer.print_curlynameexpr(node)
+  return '{' . self.print(a:node.value) . '}'
+endfunction
+
+function! s:Printer.print_lambda(node)
+  let rlist = map(a:node.rlist, 'self.print(v:val)')
+  return printf('{%s -> %s}', join(rlist, ', '), self.print(a:node.left))
+endfunction
+
+function! s:Printer.print_modifiers(node)
+  if empty(a:node.ea.modifiers)
+    return
+  endif
+  let modlist = []
+  for mod in a:node.ea.modifiers
+    if mod.name == 'silent'
+      call add(modlist, 'silent' . (mod.bang ? '!' : ''))
+    elseif mod.name == 'tab'
+      call add(modlist, get(mod, 'count', '') . 'tab')
+    elseif mod.name == 'verbose'
+      if get(mod, 'count', '1') != '1'
+        call add(modlist, mod.count . 'verbose')
+      else
+        call add(modlist, 'verbose')
+      endif
+    else
+      call add(modlist, mod.name)
+    endif
+  endfor
+  call self.out('%s ', join(modlist, ' '))
+endfunction
+
+function s:Printer.print_op1(node, op)
+  let left = self.print(a:node.left)
+  if s:opprec[a:node.type] > s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  return printf('%s%s', a:op, left)
+endfunction
+
+function s:Printer.print_op2(node, op)
+  let left = self.print(a:node.left)
+  if s:opprec[a:node.type] > s:opprec[a:node.left.type]
+    let left = '(' . left . ')'
+  endif
+  let right = self.print(a:node.right)
+  if s:opprec[a:node.type] > s:opprec[a:node.right.type]
+    let right = '(' . right . ')'
+  endif
+  return printf('%s %s %s', left, a:op, right)
 endfunction
 
 " TODO: under construction

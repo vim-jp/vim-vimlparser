@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # usage: python3 vimlparser.py [--neovim] foo.vim
 
+from __future__ import print_function
 import sys
 import re
 import inspect
@@ -346,6 +347,62 @@ TOKEN_BACKTICK = 62
 TOKEN_DOTDOTDOT = 63
 TOKEN_SHARP = 64
 TOKEN_ARROW = 65
+opprec = AttributeDict({})
+opprec[NODE_TERNARY] = 1
+opprec[NODE_OR] = 2
+opprec[NODE_AND] = 3
+opprec[NODE_EQUAL] = 4
+opprec[NODE_EQUALCI] = 4
+opprec[NODE_EQUALCS] = 4
+opprec[NODE_NEQUAL] = 4
+opprec[NODE_NEQUALCI] = 4
+opprec[NODE_NEQUALCS] = 4
+opprec[NODE_GREATER] = 4
+opprec[NODE_GREATERCI] = 4
+opprec[NODE_GREATERCS] = 4
+opprec[NODE_GEQUAL] = 4
+opprec[NODE_GEQUALCI] = 4
+opprec[NODE_GEQUALCS] = 4
+opprec[NODE_SMALLER] = 4
+opprec[NODE_SMALLERCI] = 4
+opprec[NODE_SMALLERCS] = 4
+opprec[NODE_SEQUAL] = 4
+opprec[NODE_SEQUALCI] = 4
+opprec[NODE_SEQUALCS] = 4
+opprec[NODE_MATCH] = 4
+opprec[NODE_MATCHCI] = 4
+opprec[NODE_MATCHCS] = 4
+opprec[NODE_NOMATCH] = 4
+opprec[NODE_NOMATCHCI] = 4
+opprec[NODE_NOMATCHCS] = 4
+opprec[NODE_IS] = 4
+opprec[NODE_ISCI] = 4
+opprec[NODE_ISCS] = 4
+opprec[NODE_ISNOT] = 4
+opprec[NODE_ISNOTCI] = 4
+opprec[NODE_ISNOTCS] = 4
+opprec[NODE_ADD] = 5
+opprec[NODE_SUBTRACT] = 5
+opprec[NODE_CONCAT] = 5
+opprec[NODE_MULTIPLY] = 6
+opprec[NODE_DIVIDE] = 6
+opprec[NODE_REMAINDER] = 6
+opprec[NODE_NOT] = 7
+opprec[NODE_MINUS] = 7
+opprec[NODE_PLUS] = 7
+opprec[NODE_SUBSCRIPT] = 8
+opprec[NODE_SLICE] = 8
+opprec[NODE_CALL] = 8
+opprec[NODE_DOT] = 8
+opprec[NODE_NUMBER] = 9
+opprec[NODE_STRING] = 9
+opprec[NODE_LIST] = 9
+opprec[NODE_DICT] = 9
+opprec[NODE_OPTION] = 9
+opprec[NODE_IDENTIFIER] = 9
+opprec[NODE_CURLYNAME] = 9
+opprec[NODE_ENV] = 9
+opprec[NODE_REG] = 9
 MAX_FUNC_ARGS = 20
 def isalpha(c):
     return viml_eqregh(c, "^[A-Za-z]$")
@@ -3668,6 +3725,621 @@ class Compiler:
     def compile_lambda(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
+
+class Printer:
+    def __init__(self, *a000):
+        opts = a000[0] if len(a000) > 0 and viml_type(a000[0]) == 4 else AttributeDict({})
+        self.indent_sp = opts.indent_sp if viml_type(viml_get(opts, "indent_sp", 0)) == 1 else "  "
+        self.indent = [""]
+        self.lines = []
+
+    def out(self, *a000):
+        if viml_len(a000) == 1:
+            if a000[0][0] == ")":
+                self.lines[-1] += a000[0]
+            else:
+                viml_add(self.lines, self.indent[0] + a000[0])
+        else:
+            viml_add(self.lines, self.indent[0] + viml_printf(*a000))
+
+    def incindent(self):
+        viml_insert(self.indent, self.indent[0] + self.indent_sp)
+
+    def decindent(self):
+        viml_remove(self.indent, 0)
+
+    def print(self, node):
+        if viml_has_key(node, "ea") and viml_has_key(node.ea, "modifiers") and not viml_empty(node.ea.modifiers):
+            self.print_modifiers(node)
+        if node.type == NODE_TOPLEVEL:
+            return self.print_toplevel(node)
+        elif node.type == NODE_COMMENT:
+            self.print_comment(node)
+            return NIL
+        elif node.type == NODE_EXCMD:
+            self.print_excmd(node)
+            return NIL
+        elif node.type == NODE_FUNCTION:
+            self.print_function(node)
+            return NIL
+        elif node.type == NODE_DELFUNCTION:
+            self.print_delfunction(node)
+            return NIL
+        elif node.type == NODE_RETURN:
+            self.print_return(node)
+            return NIL
+        elif node.type == NODE_EXCALL:
+            self.print_excall(node)
+            return NIL
+        elif node.type == NODE_LET:
+            self.print_let(node)
+            return NIL
+        elif node.type == NODE_UNLET:
+            self.print_unlet(node)
+            return NIL
+        elif node.type == NODE_LOCKVAR:
+            self.print_lockvar(node)
+            return NIL
+        elif node.type == NODE_UNLOCKVAR:
+            self.print_unlockvar(node)
+            return NIL
+        elif node.type == NODE_IF:
+            self.print_if(node)
+            return NIL
+        elif node.type == NODE_WHILE:
+            self.print_while(node)
+            return NIL
+        elif node.type == NODE_FOR:
+            self.print_for(node)
+            return NIL
+        elif node.type == NODE_CONTINUE:
+            self.print_continue(node)
+            return NIL
+        elif node.type == NODE_BREAK:
+            self.print_break(node)
+            return NIL
+        elif node.type == NODE_TRY:
+            self.print_try(node)
+            return NIL
+        elif node.type == NODE_THROW:
+            self.print_throw(node)
+            return NIL
+        elif node.type == NODE_ECHO:
+            self.print_echo(node)
+            return NIL
+        elif node.type == NODE_ECHON:
+            self.print_echon(node)
+            return NIL
+        elif node.type == NODE_ECHOHL:
+            self.print_echohl(node)
+            return NIL
+        elif node.type == NODE_ECHOMSG:
+            self.print_echomsg(node)
+            return NIL
+        elif node.type == NODE_ECHOERR:
+            self.print_echoerr(node)
+            return NIL
+        elif node.type == NODE_EXECUTE:
+            self.print_execute(node)
+            return NIL
+        elif node.type == NODE_TERNARY:
+            return self.print_ternary(node)
+        elif node.type == NODE_OR:
+            return self.print_or(node)
+        elif node.type == NODE_AND:
+            return self.print_and(node)
+        elif node.type == NODE_EQUAL:
+            return self.print_equal(node)
+        elif node.type == NODE_EQUALCI:
+            return self.print_equalci(node)
+        elif node.type == NODE_EQUALCS:
+            return self.print_equalcs(node)
+        elif node.type == NODE_NEQUAL:
+            return self.print_nequal(node)
+        elif node.type == NODE_NEQUALCI:
+            return self.print_nequalci(node)
+        elif node.type == NODE_NEQUALCS:
+            return self.print_nequalcs(node)
+        elif node.type == NODE_GREATER:
+            return self.print_greater(node)
+        elif node.type == NODE_GREATERCI:
+            return self.print_greaterci(node)
+        elif node.type == NODE_GREATERCS:
+            return self.print_greatercs(node)
+        elif node.type == NODE_GEQUAL:
+            return self.print_gequal(node)
+        elif node.type == NODE_GEQUALCI:
+            return self.print_gequalci(node)
+        elif node.type == NODE_GEQUALCS:
+            return self.print_gequalcs(node)
+        elif node.type == NODE_SMALLER:
+            return self.print_smaller(node)
+        elif node.type == NODE_SMALLERCI:
+            return self.print_smallerci(node)
+        elif node.type == NODE_SMALLERCS:
+            return self.print_smallercs(node)
+        elif node.type == NODE_SEQUAL:
+            return self.print_sequal(node)
+        elif node.type == NODE_SEQUALCI:
+            return self.print_sequalci(node)
+        elif node.type == NODE_SEQUALCS:
+            return self.print_sequalcs(node)
+        elif node.type == NODE_MATCH:
+            return self.print_match(node)
+        elif node.type == NODE_MATCHCI:
+            return self.print_matchci(node)
+        elif node.type == NODE_MATCHCS:
+            return self.print_matchcs(node)
+        elif node.type == NODE_NOMATCH:
+            return self.print_nomatch(node)
+        elif node.type == NODE_NOMATCHCI:
+            return self.print_nomatchci(node)
+        elif node.type == NODE_NOMATCHCS:
+            return self.print_nomatchcs(node)
+        elif node.type == NODE_IS:
+            return self.print_is(node)
+        elif node.type == NODE_ISCI:
+            return self.print_isci(node)
+        elif node.type == NODE_ISCS:
+            return self.print_iscs(node)
+        elif node.type == NODE_ISNOT:
+            return self.print_isnot(node)
+        elif node.type == NODE_ISNOTCI:
+            return self.print_isnotci(node)
+        elif node.type == NODE_ISNOTCS:
+            return self.print_isnotcs(node)
+        elif node.type == NODE_ADD:
+            return self.print_add(node)
+        elif node.type == NODE_SUBTRACT:
+            return self.print_subtract(node)
+        elif node.type == NODE_CONCAT:
+            return self.print_concat(node)
+        elif node.type == NODE_MULTIPLY:
+            return self.print_multiply(node)
+        elif node.type == NODE_DIVIDE:
+            return self.print_divide(node)
+        elif node.type == NODE_REMAINDER:
+            return self.print_remainder(node)
+        elif node.type == NODE_NOT:
+            return self.print_not(node)
+        elif node.type == NODE_PLUS:
+            return self.print_plus(node)
+        elif node.type == NODE_MINUS:
+            return self.print_minus(node)
+        elif node.type == NODE_SUBSCRIPT:
+            return self.print_subscript(node)
+        elif node.type == NODE_SLICE:
+            return self.print_slice(node)
+        elif node.type == NODE_DOT:
+            return self.print_dot(node)
+        elif node.type == NODE_CALL:
+            return self.print_call(node)
+        elif node.type == NODE_NUMBER:
+            return self.print_number(node)
+        elif node.type == NODE_STRING:
+            return self.print_string(node)
+        elif node.type == NODE_LIST:
+            return self.print_list(node)
+        elif node.type == NODE_DICT:
+            return self.print_dict(node)
+        elif node.type == NODE_OPTION:
+            return self.print_option(node)
+        elif node.type == NODE_IDENTIFIER:
+            return self.print_identifier(node)
+        elif node.type == NODE_CURLYNAME:
+            return self.print_curlyname(node)
+        elif node.type == NODE_ENV:
+            return self.print_env(node)
+        elif node.type == NODE_REG:
+            return self.print_reg(node)
+        elif node.type == NODE_CURLYNAMEPART:
+            return self.print_curlynamepart(node)
+        elif node.type == NODE_CURLYNAMEEXPR:
+            return self.print_curlynameexpr(node)
+        elif node.type == NODE_LAMBDA:
+            return self.print_lambda(node)
+        else:
+            raise VimLParserException(viml_printf("Printer: unknown node: %s", viml_string(node)))
+        return NIL
+
+    def print_body(self, body):
+        for node in body:
+            self.print(node)
+
+    def print_toplevel(self, node):
+        self.print_body(node.body)
+        return self.lines
+
+    def print_comment(self, node):
+        self.out("\"%s", node.str)
+
+    def print_excmd(self, node):
+        self.out("%s", node.str)
+
+    def print_function(self, node):
+        left = self.print(node.left)
+        rlist = [self.print(vval) for vval in node.rlist]
+        attrs = viml_filter(viml_sort(viml_keys(node.attr)), "a:node.attr[v:val]")
+        attr = "" if viml_empty(attrs) else " " + viml_join(attrs, " ")
+        bang = "!" if node.ea.forceit else ""
+        self.out("function%s %s(%s)%s", bang, left, viml_join(rlist, ", "), attr)
+        self.incindent()
+        self.print_body(node.body)
+        self.decindent()
+        self.out("endfunction")
+
+    def print_delfunction(self, node):
+        self.out("delfunction %s", self.print(node.left))
+
+    def print_return(self, node):
+        if node.left is NIL:
+            self.out("return")
+        else:
+            self.out("return %s", self.print(node.left))
+
+    def print_excall(self, node):
+        self.out("call %s", self.print(node.left))
+
+    def print_let(self, node):
+        left = ""
+        if node.left is not NIL:
+            left = self.print(node.left)
+        else:
+            left = "["
+            left += viml_join([self.print(vval) for vval in node.list], ", ")
+            if node.rest is not NIL:
+                left += "; " + self.print(node.rest)
+            left += "]"
+        right = self.print(node.right)
+        self.out("let %s %s %s", left, node.op, right)
+
+    def print_unlet(self, node):
+        list = [self.print(vval) for vval in node.list]
+        bang = "!" if node.ea.forceit else ""
+        self.out("unlet%s %s", bang, viml_join(list, " "))
+
+    def print_lockvar(self, node):
+        list = [self.print(vval) for vval in node.list]
+        bang = "!" if node.ea.forceit else ""
+        if node.depth is NIL:
+            self.out("lockvar%s %s", bang, viml_join(list, " "))
+        else:
+            self.out("lockvar%s %s %s", bang, node.depth, viml_join(list, " "))
+
+    def print_unlockvar(self, node):
+        list = [self.print(vval) for vval in node.list]
+        bang = "!" if node.ea.forceit else ""
+        if node.depth is NIL:
+            self.out("unlockvar%s %s", bang, viml_join(list, " "))
+        else:
+            self.out("unlockvar%s %s %s", bang, node.depth, viml_join(list, " "))
+
+    def print_if(self, node):
+        self.out("if %s", self.print(node.cond))
+        self.incindent()
+        self.print_body(node.body)
+        self.decindent()
+        for enode in node.elseif:
+            self.out("elseif %s", self.print(enode.cond))
+            self.incindent()
+            self.print_body(enode.body)
+            self.decindent()
+        if node.else_ is not NIL:
+            self.out("else")
+            self.incindent()
+            self.print_body(node.else_.body)
+            self.decindent()
+        self.out("endif")
+
+    def print_while(self, node):
+        self.out("while %s", self.print(node.cond))
+        self.incindent()
+        self.print_body(node.body)
+        self.decindent()
+        self.out("endwhile")
+
+    def print_for(self, node):
+        left = ""
+        if node.left is not NIL:
+            left = self.print(node.left)
+        else:
+            left = "["
+            left += viml_join([self.print(vval) for vval in node.list], ", ")
+            if node.rest is not NIL:
+                left += "; " + self.print(node.rest)
+            left += "]"
+        right = self.print(node.right)
+        self.out("for %s in %s", left, right)
+        self.incindent()
+        self.print_body(node.body)
+        self.decindent()
+        self.out("endfor")
+
+    def print_continue(self, node):
+        self.out("continue")
+
+    def print_break(self, node):
+        self.out("break")
+
+    def print_try(self, node):
+        self.out("try")
+        self.incindent()
+        self.print_body(node.body)
+        for cnode in node.catch:
+            if cnode.pattern is not NIL:
+                self.decindent()
+                self.out("catch /%s/", cnode.pattern)
+                self.incindent()
+                self.print_body(cnode.body)
+            else:
+                self.decindent()
+                self.out("catch")
+                self.incindent()
+                self.print_body(cnode.body)
+        if node.finally_ is not NIL:
+            self.decindent()
+            self.out("finally")
+            self.incindent()
+            self.print_body(node.finally_.body)
+        self.decindent()
+        self.out("endtry")
+
+    def print_throw(self, node):
+        self.out("throw %s", self.print(node.left))
+
+    def print_echo(self, node):
+        list = [self.print(vval) for vval in node.list]
+        self.out("echo %s", viml_join(list, " "))
+
+    def print_echon(self, node):
+        list = [self.print(vval) for vval in node.list]
+        self.out("echon %s", viml_join(list, " "))
+
+    def print_echohl(self, node):
+        self.out("echohl %s", node.str)
+
+    def print_echomsg(self, node):
+        list = [self.print(vval) for vval in node.list]
+        self.out("echomsg %s", viml_join(list, " "))
+
+    def print_echoerr(self, node):
+        list = [self.print(vval) for vval in node.list]
+        self.out("echoerr %s", viml_join(list, " "))
+
+    def print_execute(self, node):
+        list = [self.print(vval) for vval in node.list]
+        self.out("execute %s", viml_join(list, " "))
+
+    def print_ternary(self, node):
+        cond = self.print(node.cond)
+        if opprec[node.type] >= opprec[node.cond.type]:
+            cond = "(" + cond + ")"
+        left = self.print(node.left)
+        right = self.print(node.right)
+        return viml_printf("%s ? %s : %s", cond, left, right)
+
+    def print_or(self, node):
+        return self.print_op2(node, "||")
+
+    def print_and(self, node):
+        return self.print_op2(node, "&&")
+
+    def print_equal(self, node):
+        return self.print_op2(node, "==")
+
+    def print_equalci(self, node):
+        return self.print_op2(node, "==?")
+
+    def print_equalcs(self, node):
+        return self.print_op2(node, "==#")
+
+    def print_nequal(self, node):
+        return self.print_op2(node, "!=")
+
+    def print_nequalci(self, node):
+        return self.print_op2(node, "!=?")
+
+    def print_nequalcs(self, node):
+        return self.print_op2(node, "!=#")
+
+    def print_greater(self, node):
+        return self.print_op2(node, ">")
+
+    def print_greaterci(self, node):
+        return self.print_op2(node, ">?")
+
+    def print_greatercs(self, node):
+        return self.print_op2(node, ">#")
+
+    def print_gequal(self, node):
+        return self.print_op2(node, ">=")
+
+    def print_gequalci(self, node):
+        return self.print_op2(node, ">=?")
+
+    def print_gequalcs(self, node):
+        return self.print_op2(node, ">=#")
+
+    def print_smaller(self, node):
+        return self.print_op2(node, "<")
+
+    def print_smallerci(self, node):
+        return self.print_op2(node, "<?")
+
+    def print_smallercs(self, node):
+        return self.print_op2(node, "<#")
+
+    def print_sequal(self, node):
+        return self.print_op2(node, "<=")
+
+    def print_sequalci(self, node):
+        return self.print_op2(node, "<=?")
+
+    def print_sequalcs(self, node):
+        return self.print_op2(node, "<=#")
+
+    def print_match(self, node):
+        return self.print_op2(node, "=~")
+
+    def print_matchci(self, node):
+        return self.print_op2(node, "=~?")
+
+    def print_matchcs(self, node):
+        return self.print_op2(node, "=~#")
+
+    def print_nomatch(self, node):
+        return self.print_op2(node, "!~")
+
+    def print_nomatchci(self, node):
+        return self.print_op2(node, "!~?")
+
+    def print_nomatchcs(self, node):
+        return self.print_op2(node, "!~#")
+
+    def print_is(self, node):
+        return self.print_op2(node, "is")
+
+    def print_isci(self, node):
+        return self.print_op2(node, "is?")
+
+    def print_iscs(self, node):
+        return self.print_op2(node, "is#")
+
+    def print_isnot(self, node):
+        return self.print_op2(node, "isnot")
+
+    def print_isnotci(self, node):
+        return self.print_op2(node, "isnot?")
+
+    def print_isnotcs(self, node):
+        return self.print_op2(node, "isnot#")
+
+    def print_add(self, node):
+        return self.print_op2(node, "+")
+
+    def print_subtract(self, node):
+        return self.print_op2(node, "-")
+
+    def print_concat(self, node):
+        return self.print_op2(node, ".")
+
+    def print_multiply(self, node):
+        return self.print_op2(node, "*")
+
+    def print_divide(self, node):
+        return self.print_op2(node, "/")
+
+    def print_remainder(self, node):
+        return self.print_op2(node, "%")
+
+    def print_not(self, node):
+        return self.print_op1(node, "!")
+
+    def print_plus(self, node):
+        return self.print_op1(node, "+")
+
+    def print_minus(self, node):
+        return self.print_op1(node, "-")
+
+    def print_subscript(self, node):
+        return viml_printf("%s[%s]", self.print(node.left), self.print(node.right))
+
+    def print_slice(self, node):
+        r0 = "" if node.rlist[0] is NIL else self.print(node.rlist[0])
+        r1 = "" if node.rlist[1] is NIL else self.print(node.rlist[1])
+        if viml_eqregh(r0, "^[bwtglsav]$"):
+            r0 = r0 + " "
+        if viml_eqregh(r1, "^[bwtglsav]$"):
+            r1 = " " + r1
+        return viml_printf("%s[%s:%s]", self.print(node.left), r0, r1)
+
+    def print_dot(self, node):
+        return viml_printf("%s.%s", self.print(node.left), self.print(node.right))
+
+    def print_call(self, node):
+        rlist = [self.print(vval) for vval in node.rlist]
+        if viml_empty(rlist):
+            return viml_printf("%s()", self.print(node.left))
+        else:
+            return viml_printf("%s(%s)", self.print(node.left), viml_join(rlist, ", "))
+
+    def print_number(self, node):
+        return node.value
+
+    def print_string(self, node):
+        return node.value
+
+    def print_list(self, node):
+        value = [self.print(vval) for vval in node.value]
+        if viml_empty(value):
+            return "[]"
+        else:
+            return viml_printf("[%s]", viml_join(value, ", "))
+
+    def print_dict(self, node):
+        value = [self.print(vval[0]) + " : " + self.print(vval[1]) for vval in node.value]
+        if viml_empty(value):
+            return "{}"
+        else:
+            return viml_printf("{%s}", viml_join(value, ", "))
+
+    def print_option(self, node):
+        return node.value
+
+    def print_identifier(self, node):
+        return node.value
+
+    def print_curlyname(self, node):
+        return viml_join([self.print(vval) for vval in node.value], "")
+
+    def print_env(self, node):
+        return node.value
+
+    def print_reg(self, node):
+        return node.value
+
+    def print_curlynamepart(self, node):
+        return node.value
+
+    def print_curlynameexpr(self, node):
+        return "{" + self.print(node.value) + "}"
+
+    def print_lambda(self, node):
+        rlist = [self.print(vval) for vval in node.rlist]
+        return viml_printf("{%s -> %s}", viml_join(rlist, ", "), self.print(node.left))
+
+    def print_modifiers(self, node):
+        if viml_empty(node.ea.modifiers):
+            return
+        modlist = []
+        for mod in node.ea.modifiers:
+            if mod.name == "silent":
+                viml_add(modlist, "silent" + ("!" if mod.bang else ""))
+            elif mod.name == "tab":
+                viml_add(modlist, viml_get(mod, "count", "") + "tab")
+            elif mod.name == "verbose":
+                if viml_get(mod, "count", "1") != "1":
+                    viml_add(modlist, mod.count + "verbose")
+                else:
+                    viml_add(modlist, "verbose")
+            else:
+                viml_add(modlist, mod.name)
+        self.out("%s ", viml_join(modlist, " "))
+
+    def print_op1(self, node, op):
+        left = self.print(node.left)
+        if opprec[node.type] > opprec[node.left.type]:
+            left = "(" + left + ")"
+        return viml_printf("%s%s", op, left)
+
+    def print_op2(self, node, op):
+        left = self.print(node.left)
+        if opprec[node.type] > opprec[node.left.type]:
+            left = "(" + left + ")"
+        right = self.print(node.right)
+        if opprec[node.type] > opprec[node.right.type]:
+            right = "(" + right + ")"
+        return viml_printf("%s %s %s", left, op, right)
 
 # TODO: under construction
 class RegexpParser:

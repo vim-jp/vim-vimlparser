@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # usage: python3 vimlparser.py [--neovim] foo.vim
 
+from __future__ import print_function
 import sys
 import re
 import inspect

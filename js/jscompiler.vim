@@ -290,7 +290,7 @@ function s:JavascriptCompiler.compile_function(node)
     unlet rlist[-1]
     let va = 1
   endif
-  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
+  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\|Printer\)\.'
     let [_0, klass, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
     if name == 'new'
       return
@@ -344,15 +344,15 @@ function s:JavascriptCompiler.compile_let(node)
       call self.out('function LvalueParser() { ExprParser.apply(this, arguments); this.__init__.apply(this, arguments); }')
       call self.out('LvalueParser.prototype = Object.create(ExprParser.prototype);')
       return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\|Printer\)$'
       call self.out('function %s() { this.__init__.apply(this, arguments); }', left)
       return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
+    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\|Printer\)\.'
       let [_0, klass, name; _] = matchlist(left, '^\(.*\)\.\(.*\)$')
       call self.out('%s.prototype.%s %s %s;', klass, name, op, right)
       return
     endif
-    if left =~ '\.' || op != '='
+    if left =~ '\.' || op != '=' || left =~ '^opprec\[\w\+\]$'
       call self.out('%s %s %s;', left, op, right)
     else
       call self.out('var %s %s %s;', left, op, right)
@@ -798,6 +798,10 @@ function s:JavascriptCompiler.compile_identifier(node)
     let name = 'a000'
   elseif name == 'v:val'
     let name = 'vval'
+  elseif name == 'a:0'
+    let name = 'a000.length'
+  elseif name =~ '^a:[1-9]$'
+    let name = 'a000[' . (str2nr(name[2:]) - 1) . ']'
   elseif name =~ '^[sa]:'
     let name = name[2:]
   elseif name == 'self'
@@ -859,7 +863,8 @@ function! s:convert(in, out) abort
       \   '  module.exports = {',
       \   '    VimLParser: VimLParser,',
       \   '    StringReader: StringReader,',
-      \   '    Compiler: Compiler',
+      \   '    Compiler: Compiler,',
+      \   '    Printer: Printer',
       \   '  };',
       \   '}',
       \ ]
@@ -894,10 +899,10 @@ function! s:parse_args() abort
     if len(args) != 2
       throw 'invalid argument: ' . string(args)
     endif
-	let v = args
+    let v = args
   endif
   return v
-endfunction:
+endfunction
 
 function! s:main() abort
   try

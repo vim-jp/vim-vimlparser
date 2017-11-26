@@ -392,6 +392,62 @@ var TOKEN_BACKTICK = 62;
 var TOKEN_DOTDOTDOT = 63;
 var TOKEN_SHARP = 64;
 var TOKEN_ARROW = 65;
+var opprec = {};
+opprec[NODE_TERNARY] = 1;
+opprec[NODE_OR] = 2;
+opprec[NODE_AND] = 3;
+opprec[NODE_EQUAL] = 4;
+opprec[NODE_EQUALCI] = 4;
+opprec[NODE_EQUALCS] = 4;
+opprec[NODE_NEQUAL] = 4;
+opprec[NODE_NEQUALCI] = 4;
+opprec[NODE_NEQUALCS] = 4;
+opprec[NODE_GREATER] = 4;
+opprec[NODE_GREATERCI] = 4;
+opprec[NODE_GREATERCS] = 4;
+opprec[NODE_GEQUAL] = 4;
+opprec[NODE_GEQUALCI] = 4;
+opprec[NODE_GEQUALCS] = 4;
+opprec[NODE_SMALLER] = 4;
+opprec[NODE_SMALLERCI] = 4;
+opprec[NODE_SMALLERCS] = 4;
+opprec[NODE_SEQUAL] = 4;
+opprec[NODE_SEQUALCI] = 4;
+opprec[NODE_SEQUALCS] = 4;
+opprec[NODE_MATCH] = 4;
+opprec[NODE_MATCHCI] = 4;
+opprec[NODE_MATCHCS] = 4;
+opprec[NODE_NOMATCH] = 4;
+opprec[NODE_NOMATCHCI] = 4;
+opprec[NODE_NOMATCHCS] = 4;
+opprec[NODE_IS] = 4;
+opprec[NODE_ISCI] = 4;
+opprec[NODE_ISCS] = 4;
+opprec[NODE_ISNOT] = 4;
+opprec[NODE_ISNOTCI] = 4;
+opprec[NODE_ISNOTCS] = 4;
+opprec[NODE_ADD] = 5;
+opprec[NODE_SUBTRACT] = 5;
+opprec[NODE_CONCAT] = 5;
+opprec[NODE_MULTIPLY] = 6;
+opprec[NODE_DIVIDE] = 6;
+opprec[NODE_REMAINDER] = 6;
+opprec[NODE_NOT] = 7;
+opprec[NODE_MINUS] = 7;
+opprec[NODE_PLUS] = 7;
+opprec[NODE_SUBSCRIPT] = 8;
+opprec[NODE_SLICE] = 8;
+opprec[NODE_CALL] = 8;
+opprec[NODE_DOT] = 8;
+opprec[NODE_NUMBER] = 9;
+opprec[NODE_STRING] = 9;
+opprec[NODE_LIST] = 9;
+opprec[NODE_DICT] = 9;
+opprec[NODE_OPTION] = 9;
+opprec[NODE_IDENTIFIER] = 9;
+opprec[NODE_CURLYNAME] = 9;
+opprec[NODE_ENV] = 9;
+opprec[NODE_REG] = 9;
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -4684,6 +4740,849 @@ Compiler.prototype.compile_lambda = function(node) {
     return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), this.compile(node.left));
 }
 
+function Printer() { this.__init__.apply(this, arguments); }
+Printer.prototype.__init__ = function() {
+    var a000 = Array.prototype.slice.call(arguments, 0);
+    var opts = a000.length > 0 && viml_type(a000[0]) == 4 ? a000[0] : {};
+    this.indent_sp = viml_type(viml_get(opts, "indent_sp", 0)) == 1 ? opts.indent_sp : "  ";
+    this.indent = [""];
+    this.lines = [];
+}
+
+Printer.prototype.out = function() {
+    var a000 = Array.prototype.slice.call(arguments, 0);
+    if (viml_len(a000) == 1) {
+        if (a000[0][0] == ")") {
+            this.lines[this.lines.length - 1] += a000[0];
+        }
+        else {
+            viml_add(this.lines, this.indent[0] + a000[0]);
+        }
+    }
+    else {
+        viml_add(this.lines, this.indent[0] + viml_printf.apply(null, a000));
+    }
+}
+
+Printer.prototype.incindent = function() {
+    viml_insert(this.indent, this.indent[0] + this.indent_sp);
+}
+
+Printer.prototype.decindent = function() {
+    viml_remove(this.indent, 0);
+}
+
+Printer.prototype.print = function(node) {
+    if (viml_has_key(node, "ea") && viml_has_key(node.ea, "modifiers") && !viml_empty(node.ea.modifiers)) {
+        this.print_modifiers(node);
+    }
+    if (node.type == NODE_TOPLEVEL) {
+        return this.print_toplevel(node);
+    }
+    else if (node.type == NODE_COMMENT) {
+        this.print_comment(node);
+        return NIL;
+    }
+    else if (node.type == NODE_EXCMD) {
+        this.print_excmd(node);
+        return NIL;
+    }
+    else if (node.type == NODE_FUNCTION) {
+        this.print_function(node);
+        return NIL;
+    }
+    else if (node.type == NODE_DELFUNCTION) {
+        this.print_delfunction(node);
+        return NIL;
+    }
+    else if (node.type == NODE_RETURN) {
+        this.print_return(node);
+        return NIL;
+    }
+    else if (node.type == NODE_EXCALL) {
+        this.print_excall(node);
+        return NIL;
+    }
+    else if (node.type == NODE_LET) {
+        this.print_let(node);
+        return NIL;
+    }
+    else if (node.type == NODE_UNLET) {
+        this.print_unlet(node);
+        return NIL;
+    }
+    else if (node.type == NODE_LOCKVAR) {
+        this.print_lockvar(node);
+        return NIL;
+    }
+    else if (node.type == NODE_UNLOCKVAR) {
+        this.print_unlockvar(node);
+        return NIL;
+    }
+    else if (node.type == NODE_IF) {
+        this.print_if(node);
+        return NIL;
+    }
+    else if (node.type == NODE_WHILE) {
+        this.print_while(node);
+        return NIL;
+    }
+    else if (node.type == NODE_FOR) {
+        this.print_for(node);
+        return NIL;
+    }
+    else if (node.type == NODE_CONTINUE) {
+        this.print_continue(node);
+        return NIL;
+    }
+    else if (node.type == NODE_BREAK) {
+        this.print_break(node);
+        return NIL;
+    }
+    else if (node.type == NODE_TRY) {
+        this.print_try(node);
+        return NIL;
+    }
+    else if (node.type == NODE_THROW) {
+        this.print_throw(node);
+        return NIL;
+    }
+    else if (node.type == NODE_ECHO) {
+        this.print_echo(node);
+        return NIL;
+    }
+    else if (node.type == NODE_ECHON) {
+        this.print_echon(node);
+        return NIL;
+    }
+    else if (node.type == NODE_ECHOHL) {
+        this.print_echohl(node);
+        return NIL;
+    }
+    else if (node.type == NODE_ECHOMSG) {
+        this.print_echomsg(node);
+        return NIL;
+    }
+    else if (node.type == NODE_ECHOERR) {
+        this.print_echoerr(node);
+        return NIL;
+    }
+    else if (node.type == NODE_EXECUTE) {
+        this.print_execute(node);
+        return NIL;
+    }
+    else if (node.type == NODE_TERNARY) {
+        return this.print_ternary(node);
+    }
+    else if (node.type == NODE_OR) {
+        return this.print_or(node);
+    }
+    else if (node.type == NODE_AND) {
+        return this.print_and(node);
+    }
+    else if (node.type == NODE_EQUAL) {
+        return this.print_equal(node);
+    }
+    else if (node.type == NODE_EQUALCI) {
+        return this.print_equalci(node);
+    }
+    else if (node.type == NODE_EQUALCS) {
+        return this.print_equalcs(node);
+    }
+    else if (node.type == NODE_NEQUAL) {
+        return this.print_nequal(node);
+    }
+    else if (node.type == NODE_NEQUALCI) {
+        return this.print_nequalci(node);
+    }
+    else if (node.type == NODE_NEQUALCS) {
+        return this.print_nequalcs(node);
+    }
+    else if (node.type == NODE_GREATER) {
+        return this.print_greater(node);
+    }
+    else if (node.type == NODE_GREATERCI) {
+        return this.print_greaterci(node);
+    }
+    else if (node.type == NODE_GREATERCS) {
+        return this.print_greatercs(node);
+    }
+    else if (node.type == NODE_GEQUAL) {
+        return this.print_gequal(node);
+    }
+    else if (node.type == NODE_GEQUALCI) {
+        return this.print_gequalci(node);
+    }
+    else if (node.type == NODE_GEQUALCS) {
+        return this.print_gequalcs(node);
+    }
+    else if (node.type == NODE_SMALLER) {
+        return this.print_smaller(node);
+    }
+    else if (node.type == NODE_SMALLERCI) {
+        return this.print_smallerci(node);
+    }
+    else if (node.type == NODE_SMALLERCS) {
+        return this.print_smallercs(node);
+    }
+    else if (node.type == NODE_SEQUAL) {
+        return this.print_sequal(node);
+    }
+    else if (node.type == NODE_SEQUALCI) {
+        return this.print_sequalci(node);
+    }
+    else if (node.type == NODE_SEQUALCS) {
+        return this.print_sequalcs(node);
+    }
+    else if (node.type == NODE_MATCH) {
+        return this.print_match(node);
+    }
+    else if (node.type == NODE_MATCHCI) {
+        return this.print_matchci(node);
+    }
+    else if (node.type == NODE_MATCHCS) {
+        return this.print_matchcs(node);
+    }
+    else if (node.type == NODE_NOMATCH) {
+        return this.print_nomatch(node);
+    }
+    else if (node.type == NODE_NOMATCHCI) {
+        return this.print_nomatchci(node);
+    }
+    else if (node.type == NODE_NOMATCHCS) {
+        return this.print_nomatchcs(node);
+    }
+    else if (node.type == NODE_IS) {
+        return this.print_is(node);
+    }
+    else if (node.type == NODE_ISCI) {
+        return this.print_isci(node);
+    }
+    else if (node.type == NODE_ISCS) {
+        return this.print_iscs(node);
+    }
+    else if (node.type == NODE_ISNOT) {
+        return this.print_isnot(node);
+    }
+    else if (node.type == NODE_ISNOTCI) {
+        return this.print_isnotci(node);
+    }
+    else if (node.type == NODE_ISNOTCS) {
+        return this.print_isnotcs(node);
+    }
+    else if (node.type == NODE_ADD) {
+        return this.print_add(node);
+    }
+    else if (node.type == NODE_SUBTRACT) {
+        return this.print_subtract(node);
+    }
+    else if (node.type == NODE_CONCAT) {
+        return this.print_concat(node);
+    }
+    else if (node.type == NODE_MULTIPLY) {
+        return this.print_multiply(node);
+    }
+    else if (node.type == NODE_DIVIDE) {
+        return this.print_divide(node);
+    }
+    else if (node.type == NODE_REMAINDER) {
+        return this.print_remainder(node);
+    }
+    else if (node.type == NODE_NOT) {
+        return this.print_not(node);
+    }
+    else if (node.type == NODE_PLUS) {
+        return this.print_plus(node);
+    }
+    else if (node.type == NODE_MINUS) {
+        return this.print_minus(node);
+    }
+    else if (node.type == NODE_SUBSCRIPT) {
+        return this.print_subscript(node);
+    }
+    else if (node.type == NODE_SLICE) {
+        return this.print_slice(node);
+    }
+    else if (node.type == NODE_DOT) {
+        return this.print_dot(node);
+    }
+    else if (node.type == NODE_CALL) {
+        return this.print_call(node);
+    }
+    else if (node.type == NODE_NUMBER) {
+        return this.print_number(node);
+    }
+    else if (node.type == NODE_STRING) {
+        return this.print_string(node);
+    }
+    else if (node.type == NODE_LIST) {
+        return this.print_list(node);
+    }
+    else if (node.type == NODE_DICT) {
+        return this.print_dict(node);
+    }
+    else if (node.type == NODE_OPTION) {
+        return this.print_option(node);
+    }
+    else if (node.type == NODE_IDENTIFIER) {
+        return this.print_identifier(node);
+    }
+    else if (node.type == NODE_CURLYNAME) {
+        return this.print_curlyname(node);
+    }
+    else if (node.type == NODE_ENV) {
+        return this.print_env(node);
+    }
+    else if (node.type == NODE_REG) {
+        return this.print_reg(node);
+    }
+    else if (node.type == NODE_CURLYNAMEPART) {
+        return this.print_curlynamepart(node);
+    }
+    else if (node.type == NODE_CURLYNAMEEXPR) {
+        return this.print_curlynameexpr(node);
+    }
+    else if (node.type == NODE_LAMBDA) {
+        return this.print_lambda(node);
+    }
+    else {
+        throw viml_printf("Printer: unknown node: %s", viml_string(node));
+    }
+    return NIL;
+}
+
+Printer.prototype.print_body = function(body) {
+    var __c13 = body;
+    for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
+        var node = __c13[__i13];
+        this.print(node);
+    }
+}
+
+Printer.prototype.print_toplevel = function(node) {
+    this.print_body(node.body);
+    return this.lines;
+}
+
+Printer.prototype.print_comment = function(node) {
+    this.out("\"%s", node.str);
+}
+
+Printer.prototype.print_excmd = function(node) {
+    this.out("%s", node.str);
+}
+
+Printer.prototype.print_function = function(node) {
+    var left = this.print(node.left);
+    var rlist = node.rlist.map((function(vval) { return this.print(vval); }).bind(this));
+    var attrs = viml_filter(viml_sort(viml_keys(node.attr)), "a:node.attr[v:val]");
+    var attr = viml_empty(attrs) ? "" : " " + viml_join(attrs, " ");
+    var bang = node.ea.forceit ? "!" : "";
+    this.out("function%s %s(%s)%s", bang, left, viml_join(rlist, ", "), attr);
+    this.incindent();
+    this.print_body(node.body);
+    this.decindent();
+    this.out("endfunction");
+}
+
+Printer.prototype.print_delfunction = function(node) {
+    this.out("delfunction %s", this.print(node.left));
+}
+
+Printer.prototype.print_return = function(node) {
+    if (node.left === NIL) {
+        this.out("return");
+    }
+    else {
+        this.out("return %s", this.print(node.left));
+    }
+}
+
+Printer.prototype.print_excall = function(node) {
+    this.out("call %s", this.print(node.left));
+}
+
+Printer.prototype.print_let = function(node) {
+    var left = "";
+    if (node.left !== NIL) {
+        var left = this.print(node.left);
+    }
+    else {
+        var left = "[";
+        left += viml_join(node.list.map((function(vval) { return this.print(vval); }).bind(this)), ", ");
+        if (node.rest !== NIL) {
+            left += "; " + this.print(node.rest);
+        }
+        left += "]";
+    }
+    var right = this.print(node.right);
+    this.out("let %s %s %s", left, node.op, right);
+}
+
+Printer.prototype.print_unlet = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    var bang = node.ea.forceit ? "!" : "";
+    this.out("unlet%s %s", bang, viml_join(list, " "));
+}
+
+Printer.prototype.print_lockvar = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    var bang = node.ea.forceit ? "!" : "";
+    if (node.depth === NIL) {
+        this.out("lockvar%s %s", bang, viml_join(list, " "));
+    }
+    else {
+        this.out("lockvar%s %s %s", bang, node.depth, viml_join(list, " "));
+    }
+}
+
+Printer.prototype.print_unlockvar = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    var bang = node.ea.forceit ? "!" : "";
+    if (node.depth === NIL) {
+        this.out("unlockvar%s %s", bang, viml_join(list, " "));
+    }
+    else {
+        this.out("unlockvar%s %s %s", bang, node.depth, viml_join(list, " "));
+    }
+}
+
+Printer.prototype.print_if = function(node) {
+    this.out("if %s", this.print(node.cond));
+    this.incindent();
+    this.print_body(node.body);
+    this.decindent();
+    var __c14 = node.elseif;
+    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
+        var enode = __c14[__i14];
+        this.out("elseif %s", this.print(enode.cond));
+        this.incindent();
+        this.print_body(enode.body);
+        this.decindent();
+    }
+    if (node._else !== NIL) {
+        this.out("else");
+        this.incindent();
+        this.print_body(node._else.body);
+        this.decindent();
+    }
+    this.out("endif");
+}
+
+Printer.prototype.print_while = function(node) {
+    this.out("while %s", this.print(node.cond));
+    this.incindent();
+    this.print_body(node.body);
+    this.decindent();
+    this.out("endwhile");
+}
+
+Printer.prototype.print_for = function(node) {
+    var left = "";
+    if (node.left !== NIL) {
+        var left = this.print(node.left);
+    }
+    else {
+        var left = "[";
+        left += viml_join(node.list.map((function(vval) { return this.print(vval); }).bind(this)), ", ");
+        if (node.rest !== NIL) {
+            left += "; " + this.print(node.rest);
+        }
+        left += "]";
+    }
+    var right = this.print(node.right);
+    this.out("for %s in %s", left, right);
+    this.incindent();
+    this.print_body(node.body);
+    this.decindent();
+    this.out("endfor");
+}
+
+Printer.prototype.print_continue = function(node) {
+    this.out("continue");
+}
+
+Printer.prototype.print_break = function(node) {
+    this.out("break");
+}
+
+Printer.prototype.print_try = function(node) {
+    this.out("try");
+    this.incindent();
+    this.print_body(node.body);
+    var __c15 = node.catch;
+    for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
+        var cnode = __c15[__i15];
+        if (cnode.pattern !== NIL) {
+            this.decindent();
+            this.out("catch /%s/", cnode.pattern);
+            this.incindent();
+            this.print_body(cnode.body);
+        }
+        else {
+            this.decindent();
+            this.out("catch");
+            this.incindent();
+            this.print_body(cnode.body);
+        }
+    }
+    if (node._finally !== NIL) {
+        this.decindent();
+        this.out("finally");
+        this.incindent();
+        this.print_body(node._finally.body);
+    }
+    this.decindent();
+    this.out("endtry");
+}
+
+Printer.prototype.print_throw = function(node) {
+    this.out("throw %s", this.print(node.left));
+}
+
+Printer.prototype.print_echo = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    this.out("echo %s", viml_join(list, " "));
+}
+
+Printer.prototype.print_echon = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    this.out("echon %s", viml_join(list, " "));
+}
+
+Printer.prototype.print_echohl = function(node) {
+    this.out("echohl %s", node.str);
+}
+
+Printer.prototype.print_echomsg = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    this.out("echomsg %s", viml_join(list, " "));
+}
+
+Printer.prototype.print_echoerr = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    this.out("echoerr %s", viml_join(list, " "));
+}
+
+Printer.prototype.print_execute = function(node) {
+    var list = node.list.map((function(vval) { return this.print(vval); }).bind(this));
+    this.out("execute %s", viml_join(list, " "));
+}
+
+Printer.prototype.print_ternary = function(node) {
+    var cond = this.print(node.cond);
+    if (opprec[node.type] >= opprec[node.cond.type]) {
+        var cond = "(" + cond + ")";
+    }
+    var left = this.print(node.left);
+    var right = this.print(node.right);
+    return viml_printf("%s ? %s : %s", cond, left, right);
+}
+
+Printer.prototype.print_or = function(node) {
+    return this.print_op2(node, "||");
+}
+
+Printer.prototype.print_and = function(node) {
+    return this.print_op2(node, "&&");
+}
+
+Printer.prototype.print_equal = function(node) {
+    return this.print_op2(node, "==");
+}
+
+Printer.prototype.print_equalci = function(node) {
+    return this.print_op2(node, "==?");
+}
+
+Printer.prototype.print_equalcs = function(node) {
+    return this.print_op2(node, "==#");
+}
+
+Printer.prototype.print_nequal = function(node) {
+    return this.print_op2(node, "!=");
+}
+
+Printer.prototype.print_nequalci = function(node) {
+    return this.print_op2(node, "!=?");
+}
+
+Printer.prototype.print_nequalcs = function(node) {
+    return this.print_op2(node, "!=#");
+}
+
+Printer.prototype.print_greater = function(node) {
+    return this.print_op2(node, ">");
+}
+
+Printer.prototype.print_greaterci = function(node) {
+    return this.print_op2(node, ">?");
+}
+
+Printer.prototype.print_greatercs = function(node) {
+    return this.print_op2(node, ">#");
+}
+
+Printer.prototype.print_gequal = function(node) {
+    return this.print_op2(node, ">=");
+}
+
+Printer.prototype.print_gequalci = function(node) {
+    return this.print_op2(node, ">=?");
+}
+
+Printer.prototype.print_gequalcs = function(node) {
+    return this.print_op2(node, ">=#");
+}
+
+Printer.prototype.print_smaller = function(node) {
+    return this.print_op2(node, "<");
+}
+
+Printer.prototype.print_smallerci = function(node) {
+    return this.print_op2(node, "<?");
+}
+
+Printer.prototype.print_smallercs = function(node) {
+    return this.print_op2(node, "<#");
+}
+
+Printer.prototype.print_sequal = function(node) {
+    return this.print_op2(node, "<=");
+}
+
+Printer.prototype.print_sequalci = function(node) {
+    return this.print_op2(node, "<=?");
+}
+
+Printer.prototype.print_sequalcs = function(node) {
+    return this.print_op2(node, "<=#");
+}
+
+Printer.prototype.print_match = function(node) {
+    return this.print_op2(node, "=~");
+}
+
+Printer.prototype.print_matchci = function(node) {
+    return this.print_op2(node, "=~?");
+}
+
+Printer.prototype.print_matchcs = function(node) {
+    return this.print_op2(node, "=~#");
+}
+
+Printer.prototype.print_nomatch = function(node) {
+    return this.print_op2(node, "!~");
+}
+
+Printer.prototype.print_nomatchci = function(node) {
+    return this.print_op2(node, "!~?");
+}
+
+Printer.prototype.print_nomatchcs = function(node) {
+    return this.print_op2(node, "!~#");
+}
+
+Printer.prototype.print_is = function(node) {
+    return this.print_op2(node, "is");
+}
+
+Printer.prototype.print_isci = function(node) {
+    return this.print_op2(node, "is?");
+}
+
+Printer.prototype.print_iscs = function(node) {
+    return this.print_op2(node, "is#");
+}
+
+Printer.prototype.print_isnot = function(node) {
+    return this.print_op2(node, "isnot");
+}
+
+Printer.prototype.print_isnotci = function(node) {
+    return this.print_op2(node, "isnot?");
+}
+
+Printer.prototype.print_isnotcs = function(node) {
+    return this.print_op2(node, "isnot#");
+}
+
+Printer.prototype.print_add = function(node) {
+    return this.print_op2(node, "+");
+}
+
+Printer.prototype.print_subtract = function(node) {
+    return this.print_op2(node, "-");
+}
+
+Printer.prototype.print_concat = function(node) {
+    return this.print_op2(node, ".");
+}
+
+Printer.prototype.print_multiply = function(node) {
+    return this.print_op2(node, "*");
+}
+
+Printer.prototype.print_divide = function(node) {
+    return this.print_op2(node, "/");
+}
+
+Printer.prototype.print_remainder = function(node) {
+    return this.print_op2(node, "%");
+}
+
+Printer.prototype.print_not = function(node) {
+    return this.print_op1(node, "!");
+}
+
+Printer.prototype.print_plus = function(node) {
+    return this.print_op1(node, "+");
+}
+
+Printer.prototype.print_minus = function(node) {
+    return this.print_op1(node, "-");
+}
+
+Printer.prototype.print_subscript = function(node) {
+    return viml_printf("%s[%s]", this.print(node.left), this.print(node.right));
+}
+
+Printer.prototype.print_slice = function(node) {
+    var r0 = node.rlist[0] === NIL ? "" : this.print(node.rlist[0]);
+    var r1 = node.rlist[1] === NIL ? "" : this.print(node.rlist[1]);
+    if (viml_eqregh(r0, "^[bwtglsav]$")) {
+        var r0 = r0 + " ";
+    }
+    if (viml_eqregh(r1, "^[bwtglsav]$")) {
+        var r1 = " " + r1;
+    }
+    return viml_printf("%s[%s:%s]", this.print(node.left), r0, r1);
+}
+
+Printer.prototype.print_dot = function(node) {
+    return viml_printf("%s.%s", this.print(node.left), this.print(node.right));
+}
+
+Printer.prototype.print_call = function(node) {
+    var rlist = node.rlist.map((function(vval) { return this.print(vval); }).bind(this));
+    if (viml_empty(rlist)) {
+        return viml_printf("%s()", this.print(node.left));
+    }
+    else {
+        return viml_printf("%s(%s)", this.print(node.left), viml_join(rlist, ", "));
+    }
+}
+
+Printer.prototype.print_number = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_string = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_list = function(node) {
+    var value = node.value.map((function(vval) { return this.print(vval); }).bind(this));
+    if (viml_empty(value)) {
+        return "[]";
+    }
+    else {
+        return viml_printf("[%s]", viml_join(value, ", "));
+    }
+}
+
+Printer.prototype.print_dict = function(node) {
+    var value = node.value.map((function(vval) { return this.print(vval[0]) + " : " + this.print(vval[1]); }).bind(this));
+    if (viml_empty(value)) {
+        return "{}";
+    }
+    else {
+        return viml_printf("{%s}", viml_join(value, ", "));
+    }
+}
+
+Printer.prototype.print_option = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_identifier = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_curlyname = function(node) {
+    return viml_join(node.value.map((function(vval) { return this.print(vval); }).bind(this)), "");
+}
+
+Printer.prototype.print_env = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_reg = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_curlynamepart = function(node) {
+    return node.value;
+}
+
+Printer.prototype.print_curlynameexpr = function(node) {
+    return "{" + this.print(node.value) + "}";
+}
+
+Printer.prototype.print_lambda = function(node) {
+    var rlist = node.rlist.map((function(vval) { return this.print(vval); }).bind(this));
+    return viml_printf("{%s -> %s}", viml_join(rlist, ", "), this.print(node.left));
+}
+
+Printer.prototype.print_modifiers = function(node) {
+    if (viml_empty(node.ea.modifiers)) {
+        return;
+    }
+    var modlist = [];
+    var __c16 = node.ea.modifiers;
+    for (var __i16 = 0; __i16 < __c16.length; ++__i16) {
+        var mod = __c16[__i16];
+        if (mod.name == "silent") {
+            viml_add(modlist, "silent" + (mod.bang ? "!" : ""));
+        }
+        else if (mod.name == "tab") {
+            viml_add(modlist, viml_get(mod, "count", "") + "tab");
+        }
+        else if (mod.name == "verbose") {
+            if (viml_get(mod, "count", "1") != "1") {
+                viml_add(modlist, mod.count + "verbose");
+            }
+            else {
+                viml_add(modlist, "verbose");
+            }
+        }
+        else {
+            viml_add(modlist, mod.name);
+        }
+    }
+    this.out("%s ", viml_join(modlist, " "));
+}
+
+Printer.prototype.print_op1 = function(node, op) {
+    var left = this.print(node.left);
+    if (opprec[node.type] > opprec[node.left.type]) {
+        var left = "(" + left + ")";
+    }
+    return viml_printf("%s%s", op, left);
+}
+
+Printer.prototype.print_op2 = function(node, op) {
+    var left = this.print(node.left);
+    if (opprec[node.type] > opprec[node.left.type]) {
+        var left = "(" + left + ")";
+    }
+    var right = this.print(node.right);
+    if (opprec[node.type] > opprec[node.right.type]) {
+        var right = "(" + right + ")";
+    }
+    return viml_printf("%s %s %s", left, op, right);
+}
+
 // TODO: under construction
 function RegexpParser() { this.__init__.apply(this, arguments); }
 RegexpParser.prototype.RE_VERY_NOMAGIC = 1;
@@ -5364,9 +6263,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c13 = class_names;
-            for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
-                var name = __c13[__i13];
+            var __c17 = class_names;
+            for (var __i17 = 0; __i17 < __c17.length; ++__i17) {
+                var name = __c17[__i17];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5499,9 +6398,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c14 = viml_range(n);
-    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
-        var i = __c14[__i14];
+    var __c18 = viml_range(n);
+    for (var __i18 = 0; __i18 < __c18.length; ++__i18) {
+        var i = __c18[__i18];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;
@@ -5518,6 +6417,7 @@ else {
   module.exports = {
     VimLParser: VimLParser,
     StringReader: StringReader,
-    Compiler: Compiler
+    Compiler: Compiler,
+    Printer: Printer
   };
 }
