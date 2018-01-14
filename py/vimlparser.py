@@ -79,6 +79,7 @@ pat_vim2py = {
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
   "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "[vgslabwt]" : "[vgslabwt]",
   "^[0-7]$" : "^[0-7]$",
 }
 
