@@ -239,7 +239,7 @@ function! s:iswhite(c)
 endfunction
 
 function! s:isnamec(c)
-  return a:c =~# '^([bgls]:)?[0-9A-Za-z_#]$'
+  return a:c =~# '^[0-9A-Za-z_#]$'
 endfunction
 
 function! s:isnamec1(c)
