@@ -22,7 +22,7 @@ script:
   - uname -a
   - which -a vim
   - vim --cmd version --cmd quit
-  - make $MAKE_TARGET
+  - make --keep-going $MAKE_TARGET
 
 after_success:
   - covimerage write_coverage $TEST_PROFILE
