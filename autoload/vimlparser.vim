@@ -3616,7 +3616,7 @@ function! s:ExprParser.parse_curly_parts()
   endif
   while s:TRUE
     let c = self.reader.peek()
-    if s:isnamec1(c)
+    if s:isnamec(c)
       let pos = self.reader.getpos()
       let name = self.reader.read_name()
       let node = s:Node(s:NODE_CURLYNAMEPART)
