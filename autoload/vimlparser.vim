@@ -3570,7 +3570,8 @@ function! s:ExprParser.parse_dot(token, left)
   endif
   let pos = self.reader.getpos()
   let name = self.reader.read_word()
-  if s:isnamec(self.reader.p(0))
+  let c = self.reader.p(0)
+  if c ==# ':' || c ==# '#'
     " XXX: foo is str => ok, foo is obj => invalid expression
     " foo.s:bar or foo.bar#baz
     return s:NIL
@@ -3615,7 +3616,7 @@ function! s:ExprParser.parse_curly_parts()
   endif
   while s:TRUE
     let c = self.reader.peek()
-    if s:isnamec(c)
+    if s:isnamec1(c)
       let pos = self.reader.getpos()
       let name = self.reader.read_name()
       let node = s:Node(s:NODE_CURLYNAMEPART)
@@ -3979,8 +3980,31 @@ function! s:StringReader.read_nonwhite()
 endfunction
 
 function! s:StringReader.read_name()
-  let r = ''
-  while s:isnamec(self.peekn(1))
+  " let c = self.peekn(1)
+  " if !s:isnamec1(c)
+  "   return ''
+  " endif
+  let r = self.getn(1)
+
+  " Colon only allowed at 2nd position, with scope identifiers.
+  let c = self.peekn(1)
+  if c ==# ':'
+    if r !~# '[bglst]'
+      return r
+    endif
+    let r .= self.getn(1)
+    let neednamec1 = 1
+  else
+    let neednamec1 = 0
+  endif
+  let r .= self.getn(1)
+
+  while 1
+    let c = self.peekn(1)
+    if ((neednamec1 && !s:isnamec1(c))
+          \ || (!neednamec1 && !s:isnamec(c)))
+        return r
+    endif
     let r .= self.getn(1)
   endwhile
   return r
