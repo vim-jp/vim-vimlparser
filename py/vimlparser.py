@@ -2795,7 +2795,7 @@ class ExprParser:
             viml_add(curly_parts, node)
         while TRUE:
             c = self.reader.peek()
-            if isnamec1(c):
+            if isnamec(c):
                 pos = self.reader.getpos()
                 name = self.reader.read_name()
                 node = Node(NODE_CURLYNAMEPART)

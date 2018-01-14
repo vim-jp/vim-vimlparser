@@ -3504,7 +3504,7 @@ ExprParser.prototype.parse_curly_parts = function() {
     }
     while (TRUE) {
         var c = this.reader.peek();
-        if (isnamec1(c)) {
+        if (isnamec(c)) {
             var pos = this.reader.getpos();
             var name = this.reader.read_name();
             var node = Node(NODE_CURLYNAMEPART);
