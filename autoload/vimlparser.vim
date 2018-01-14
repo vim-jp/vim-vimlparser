@@ -3980,31 +3980,19 @@ function! s:StringReader.read_nonwhite()
 endfunction
 
 function! s:StringReader.read_name()
-  " let c = self.peekn(1)
-  " if !s:isnamec1(c)
-  "   return ''
-  " endif
+  " We come here for valid names only.
   let r = self.getn(1)
 
   " Colon only allowed at 2nd position, with scope identifiers.
   let c = self.peekn(1)
   if c ==# ':'
-    if r !~# '[bglst]'
+    if r !~# '[vgslabwt]'
       return r
     endif
     let r .= self.getn(1)
-    let neednamec1 = 1
-  else
-    let neednamec1 = 0
   endif
-  let r .= self.getn(1)
 
-  while 1
-    let c = self.peekn(1)
-    if ((neednamec1 && !s:isnamec1(c))
-          \ || (!neednamec1 && !s:isnamec(c)))
-        return r
-    endif
+  while s:isnamec(self.peekn(1))
     let r .= self.getn(1)
   endwhile
   return r
