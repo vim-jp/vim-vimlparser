@@ -1,10 +1,10 @@
-
-
 let s:vimlparser = vimlparser#import()
 
 let s:sdir = expand('<sfile>:p:h')
 
 function! s:run()
+  enew
+  set buftype=nofile
   let ng = 0
   for vimfile in glob(s:sdir . '/test*.vim', 0, 1)
     let okfile = fnamemodify(vimfile, ':r') . '.ok'
@@ -25,7 +25,8 @@ function! s:run()
     catch
       call writefile([v:exception], outfile)
     endtry
-    if system(printf('diff %s %s', shellescape(okfile), shellescape(outfile))) == ""
+    let diff = system(printf('diff -u %s %s', shellescape(okfile), shellescape(outfile)))
+    if empty(diff)
       let line = printf('%s => ok', fnamemodify(vimfile, ':.'))
       call append(line('$'), line)
     else
@@ -34,7 +35,7 @@ function! s:run()
       endif
       let line = printf('%s => ' . (skip ? 'skip' : 'ng'), fnamemodify(vimfile, ':.'))
       call append(line('$'), line)
-      for line in readfile(outfile)
+      for line in split(diff, '\n')
         call append(line('$'), '    ' . line)
       endfor
     endif
