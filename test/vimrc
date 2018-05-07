@@ -2,5 +2,5 @@ let &rtp .= ',' . getcwd()
 
 if $TEST_PROFILE != ''
   execute 'profile' 'start' $TEST_PROFILE
-  profile! file ./autoload/*
+  profile! file ./autoload/vital/__vimlparser__/*
 endif

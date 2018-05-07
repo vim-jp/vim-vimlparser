@@ -885,7 +885,7 @@ endfunction
 
 function! s:parse_args() abort
   let v = [
-  \  fnamemodify(s:script_dir . '/../autoload/vimlparser.vim', ':p'),
+  \  fnamemodify(s:script_dir . '/../autoload/vital/__vimlparser__/VimLParser.vim', ':p'),
   \  fnamemodify(s:script_dir . '/vimlparser.js', ':p')
   \]
   let args = argv()[1:]
@@ -894,7 +894,7 @@ function! s:parse_args() abort
     if len(args) != 2
       throw 'invalid argument: ' . string(args)
     endif
-	let v = args
+    let v = args
   endif
   return v
 endfunction:
@@ -907,6 +907,15 @@ function! s:main() abort
     call writefile([v:exception], has('win32') ? 'conout$' : '/dev/stderr')
     cquit
   endtry
+  if mode(1) ==# 'ce'
+    " This :visual is needed to make exit code 0 for old vim.
+    " Exit code is set to 1, Vim exit from Ex mode after an error
+    " output is performed even if the error is caught by try-catch.
+    "
+    " This problem is fixed at Vim v.8.0.0184.
+    " https://github.com/vim/vim/releases/tag/v8.0.0184
+    visual
+  endif
 endfunction
 
 call s:main()

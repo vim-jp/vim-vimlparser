@@ -620,9 +620,9 @@ VimLParser.prototype.pop_context = function() {
 
 VimLParser.prototype.find_context = function(type) {
     var i = 0;
-    var __c3 = this.context;
-    for (var __i3 = 0; __i3 < __c3.length; ++__i3) {
-        var node = __c3[__i3];
+    var __c1 = this.context;
+    for (var __i1 = 0; __i1 < __c1.length; ++__i1) {
+        var node = __c1[__i1];
         if (node.type == type) {
             return i;
         }
@@ -1201,9 +1201,9 @@ VimLParser.prototype.find_command = function() {
         return this.find_command_cache[name];
     }
     var cmd = NIL;
-    var __c4 = this.builtin_commands;
-    for (var __i4 = 0; __i4 < __c4.length; ++__i4) {
-        var x = __c4[__i4];
+    var __c2 = this.builtin_commands;
+    for (var __i2 = 0; __i2 < __c2.length; ++__i2) {
+        var x = __c2[__i2];
         if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
             delete cmd;
             var cmd = x;
@@ -1211,18 +1211,18 @@ VimLParser.prototype.find_command = function() {
         }
     }
     if (this.neovim) {
-        var __c5 = this.neovim_additional_commands;
-        for (var __i5 = 0; __i5 < __c5.length; ++__i5) {
-            var x = __c5[__i5];
+        var __c3 = this.neovim_additional_commands;
+        for (var __i3 = 0; __i3 < __c3.length; ++__i3) {
+            var x = __c3[__i3];
             if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
                 delete cmd;
                 var cmd = x;
                 break;
             }
         }
-        var __c6 = this.neovim_removed_commands;
-        for (var __i6 = 0; __i6 < __c6.length; ++__i6) {
-            var x = __c6[__i6];
+        var __c4 = this.neovim_removed_commands;
+        for (var __i4 = 0; __i4 < __c4.length; ++__i4) {
+            var x = __c4[__i4];
             if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
                 delete cmd;
                 var cmd = NIL;
@@ -3667,9 +3667,9 @@ StringReader.prototype.__init__ = function(lines) {
     var offset = 0;
     while (lnum < viml_len(lines)) {
         var col = 0;
-        var __c7 = viml_split(lines[lnum], "\\zs");
-        for (var __i7 = 0; __i7 < __c7.length; ++__i7) {
-            var c = __c7[__i7];
+        var __c5 = viml_split(lines[lnum], "\\zs");
+        for (var __i5 = 0; __i5 < __c5.length; ++__i5) {
+            var c = __c5[__i5];
             viml_add(this.buf, c);
             viml_add(this.pos, [lnum + 1, col + 1, offset]);
             col += viml_len(c);
@@ -3678,9 +3678,9 @@ StringReader.prototype.__init__ = function(lines) {
         while (lnum + 1 < viml_len(lines) && viml_eqregh(lines[lnum + 1], "^\\s*\\\\")) {
             var skip = TRUE;
             var col = 0;
-            var __c8 = viml_split(lines[lnum + 1], "\\zs");
-            for (var __i8 = 0; __i8 < __c8.length; ++__i8) {
-                var c = __c8[__i8];
+            var __c6 = viml_split(lines[lnum + 1], "\\zs");
+            for (var __i6 = 0; __i6 < __c6.length; ++__i6) {
+                var c = __c6[__i6];
                 if (skip) {
                     if (c == "\\") {
                         var skip = FALSE;
@@ -3782,9 +3782,9 @@ StringReader.prototype.readline = function() {
 
 StringReader.prototype.getstr = function(begin, end) {
     var r = "";
-    var __c9 = viml_range(begin.i, end.i - 1);
-    for (var __i9 = 0; __i9 < __c9.length; ++__i9) {
-        var i = __c9[__i9];
+    var __c7 = viml_range(begin.i, end.i - 1);
+    for (var __i7 = 0; __i7 < __c7.length; ++__i7) {
+        var i = __c7[__i7];
         if (i >= viml_len(this.buf)) {
             break;
         }
@@ -4212,9 +4212,9 @@ Compiler.prototype.compile = function(node) {
 }
 
 Compiler.prototype.compile_body = function(body) {
-    var __c10 = body;
-    for (var __i10 = 0; __i10 < __c10.length; ++__i10) {
-        var node = __c10[__i10];
+    var __c8 = body;
+    for (var __i8 = 0; __i8 < __c8.length; ++__i8) {
+        var node = __c8[__i8];
         this.compile(node);
     }
 }
@@ -4313,9 +4313,9 @@ Compiler.prototype.compile_if = function(node) {
     this.incindent("  ");
     this.compile_body(node.body);
     this.decindent();
-    var __c11 = node.elseif;
-    for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
-        var enode = __c11[__i11];
+    var __c9 = node.elseif;
+    for (var __i9 = 0; __i9 < __c9.length; ++__i9) {
+        var enode = __c9[__i9];
         this.out(" elseif %s", this.compile(enode.cond));
         this.incindent("  ");
         this.compile_body(enode.body);
@@ -4372,9 +4372,9 @@ Compiler.prototype.compile_try = function(node) {
     this.out("(try");
     this.incindent("  ");
     this.compile_body(node.body);
-    var __c12 = node.catch;
-    for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
-        var cnode = __c12[__i12];
+    var __c10 = node.catch;
+    for (var __i10 = 0; __i10 < __c10.length; ++__i10) {
+        var cnode = __c10[__i10];
         if (cnode.pattern !== NIL) {
             this.decindent();
             this.out(" catch /%s/", cnode.pattern);
@@ -5364,9 +5364,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c13 = class_names;
-            for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
-                var name = __c13[__i13];
+            var __c11 = class_names;
+            for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
+                var name = __c11[__i11];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5499,9 +5499,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c14 = viml_range(n);
-    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
-        var i = __c14[__i14];
+    var __c12 = viml_range(n);
+    for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
+        var i = __c12[__i12];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;
