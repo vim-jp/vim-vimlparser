@@ -2470,10 +2470,10 @@ class ExprParser:
             node = self.parse_expr8()
             return node
 
-# expr8: expr8[expr1]
-#        expr8[expr1 : expr1]
-#        expr8.name
-#        expr8(expr1, ...)
+# expr8: expr9[expr1]
+#        expr9[expr1 : expr1]
+#        expr9.name
+#        expr9(expr1, ...)
     def parse_expr8(self):
         left = self.parse_expr9()
         while TRUE:
