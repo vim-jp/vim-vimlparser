@@ -3097,10 +3097,10 @@ ExprParser.prototype.parse_expr7 = function() {
     }
 }
 
-// expr8: expr8[expr1]
-//        expr8[expr1 : expr1]
-//        expr8.name
-//        expr8(expr1, ...)
+// expr8: expr9[expr1]
+//        expr9[expr1 : expr1]
+//        expr9.name
+//        expr9(expr1, ...)
 ExprParser.prototype.parse_expr8 = function() {
     var left = this.parse_expr9();
     while (TRUE) {

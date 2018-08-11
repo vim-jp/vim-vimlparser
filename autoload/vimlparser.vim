@@ -3245,10 +3245,10 @@ function! s:ExprParser.parse_expr7()
   endif
 endfunction
 
-" expr8: expr8[expr1]
-"        expr8[expr1 : expr1]
-"        expr8.name
-"        expr8(expr1, ...)
+" expr8: expr9[expr1]
+"        expr9[expr1 : expr1]
+"        expr9.name
+"        expr9(expr1, ...)
 function! s:ExprParser.parse_expr8()
   let left = self.parse_expr9()
   while s:TRUE
