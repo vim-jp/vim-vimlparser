@@ -85,6 +85,8 @@ pat_vim2py = {
   "^[0-9A-Fa-f][^0-9A-Fa-f]$" : "^[0-9A-Fa-f][^0-9A-Fa-f]$",
 }
 
+_pat_compiled = {}
+
 def viml_add(lst, item):
     lst.append(item)
 
@@ -100,14 +102,23 @@ def viml_empty(obj):
 def viml_equalci(a, b):
     return a.lower() == b.lower()
 
+def _get_compiled_pat(reg, flags):
+    key = (reg, flags)
+    try:
+        return _pat_compiled[key]
+    except KeyError:
+        pat = re.compile(reg, flags)
+        _pat_compiled[key] = pat
+        return pat
+
 def viml_eqreg(s, reg):
-    return re.search(pat_vim2py[reg], s, re.IGNORECASE)
+    return _get_compiled_pat(reg, re.IGNORECASE).search(s)
 
 def viml_eqregh(s, reg):
-    return re.search(pat_vim2py[reg], s)
+    return _get_compiled_pat(reg, 0).search(s)
 
 def viml_eqregq(s, reg):
-    return re.search(pat_vim2py[reg], s, re.IGNORECASE)
+    return _get_compiled_pat(reg, re.IGNORECASE).search(s)
 
 def viml_escape(s, chars):
     r = ''
