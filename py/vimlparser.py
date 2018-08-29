@@ -175,21 +175,6 @@ def viml_has_key(obj, key):
 def viml_stridx(a, b):
     return a.find(b)
 
-def viml_type(obj):
-    if isinstance(obj, int):
-        return 0
-    elif isinstance(obj, str):
-        return 1
-    elif inspect.isfunction(obj):
-        return 2
-    elif isinstance(obj, list):
-        return 3
-    elif isinstance(obj, dict):
-        return 4
-    elif isinstance(obj, float):
-        return 5
-    raise VimLParserException('Unknown Type')
-
 NIL = []
 TRUE = 1
 FALSE = 0
