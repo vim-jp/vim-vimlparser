@@ -11,3 +11,4 @@
 (echo 0b0)
 (echo 0B1011)
 (echo 0B0)
+(echo 0b01 23)
