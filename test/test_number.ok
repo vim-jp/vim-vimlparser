@@ -6,3 +6,5 @@
 (echo 1.2e-3)
 (echo 4.5E+67)
 (echo 4.5e8)
+(echo 0b1011)
+(echo 0b0)

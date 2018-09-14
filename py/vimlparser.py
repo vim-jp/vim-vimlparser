@@ -1856,6 +1856,10 @@ class ExprTokenizer:
             s = r.getn(3)
             s += r.read_xdigit()
             return self.token(TOKEN_NUMBER, s, pos)
+        elif c == "0" and (r.p(1) == "B" or r.p(1) == "b") and (r.p(2) == "0" or r.p(2) == "1"):
+            s = r.getn(3)
+            s += r.read_bdigit()
+            return self.token(TOKEN_NUMBER, s, pos)
         elif isdigit(c):
             s = r.read_digit()
             if r.p(0) == "." and isdigit(r.p(1)):
@@ -3056,6 +3060,12 @@ class StringReader:
     def read_xdigit(self):
         r = ""
         while isxdigit(self.peekn(1)):
+            r += self.getn(1)
+        return r
+
+    def read_bdigit(self):
+        r = ""
+        while self.peekn(1) == "0" or self.peekn(1) == "1":
             r += self.getn(1)
         return r
 

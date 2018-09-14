@@ -2324,6 +2324,11 @@ ExprTokenizer.prototype.get2 = function() {
         s += r.read_xdigit();
         return this.token(TOKEN_NUMBER, s, pos);
     }
+    else if (c == "0" && (r.p(1) == "B" || r.p(1) == "b") && (r.p(2) == "0" || r.p(2) == "1")) {
+        var s = r.getn(3);
+        s += r.read_bdigit();
+        return this.token(TOKEN_NUMBER, s, pos);
+    }
     else if (isdigit(c)) {
         var s = r.read_digit();
         if (r.p(0) == "." && isdigit(r.p(1))) {
@@ -3844,6 +3849,14 @@ StringReader.prototype.read_odigit = function() {
 StringReader.prototype.read_xdigit = function() {
     var r = "";
     while (isxdigit(this.peekn(1))) {
+        r += this.getn(1);
+    }
+    return r;
+}
+
+StringReader.prototype.read_bdigit = function() {
+    var r = "";
+    while (this.peekn(1) == "0" || this.peekn(1) == "1") {
         r += this.getn(1);
     }
     return r;
