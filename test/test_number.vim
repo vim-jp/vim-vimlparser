@@ -8,3 +8,5 @@ echo 4.5E+67
 echo 4.5e8
 echo 0b1011
 echo 0b0
+echo 0B1011
+echo 0B0
