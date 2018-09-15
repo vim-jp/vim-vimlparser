@@ -2576,6 +2576,10 @@ function! s:ExprTokenizer.get2()
     let s = r.getn(3)
     let s .= r.read_xdigit()
     return self.token(s:TOKEN_NUMBER, s, pos)
+  elseif c ==# '0' && (r.p(1) ==# 'B' || r.p(1) ==# 'b') && (r.p(2) == '0' || r.p(2) == '1')
+    let s = r.getn(3)
+    let s .= r.read_bdigit()
+    return self.token(s:TOKEN_NUMBER, s, pos)
   elseif s:isdigit(c)
     let s = r.read_digit()
     if r.p(0) ==# '.' && s:isdigit(r.p(1))
@@ -3940,6 +3944,14 @@ endfunction
 function! s:StringReader.read_xdigit()
   let r = ''
   while s:isxdigit(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+function! s:StringReader.read_bdigit()
+  let r = ''
+  while self.peekn(1) == '0' || self.peekn(1) == '1'
     let r .= self.getn(1)
   endwhile
   return r
