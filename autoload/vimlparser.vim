@@ -2076,7 +2076,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'debug', 'minlen': 3, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'debuggreedy', 'minlen': 6, 'flags': 'RANGE|NOTADR|ZEROR|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'delcommand', 'minlen': 4, 'flags': 'NEEDARG|WORD1|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': 'delfunction', 'minlen': 4, 'flags': 'NEEDARG|WORD1|CMDWIN', 'parser': 'parse_cmd_delfunction'},
+      \ {'name': 'delfunction', 'minlen': 4, 'flags': 'BANG|NEEDARG|WORD1|CMDWIN', 'parser': 'parse_cmd_delfunction'},
       \ {'name': 'diffupdate', 'minlen': 3, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'diffget', 'minlen': 5, 'flags': 'RANGE|EXTRA|TRLBAR|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'diffoff', 'minlen': 5, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
