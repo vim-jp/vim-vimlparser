@@ -327,6 +327,7 @@ var NODE_REG = 89;
 var NODE_CURLYNAMEPART = 90;
 var NODE_CURLYNAMEEXPR = 91;
 var NODE_LAMBDA = 92;
+var NODE_BLOB = 93;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -392,6 +393,7 @@ var TOKEN_BACKTICK = 62;
 var TOKEN_DOTDOTDOT = 63;
 var TOKEN_SHARP = 64;
 var TOKEN_ARROW = 65;
+var TOKEN_BLOB = 66;
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -2329,6 +2331,11 @@ ExprTokenizer.prototype.get2 = function() {
         s += r.read_bdigit();
         return this.token(TOKEN_NUMBER, s, pos);
     }
+    else if (c == "0" && (r.p(1) == "Z" || r.p(1) == "z") && r.p(2) != ".") {
+        var s = r.getn(3);
+        s += r.read_blob();
+        return this.token(TOKEN_BLOB, s, pos);
+    }
     else if (isdigit(c)) {
         var s = r.read_digit();
         if (r.p(0) == "." && isdigit(r.p(1))) {
@@ -3236,6 +3243,11 @@ ExprParser.prototype.parse_expr9 = function() {
         node.pos = token.pos;
         node.value = token.value;
     }
+    else if (token.type == TOKEN_BLOB) {
+        var node = Node(NODE_BLOB);
+        node.pos = token.pos;
+        node.value = token.value;
+    }
     else if (token.type == TOKEN_DQUOTE) {
         this.reader.seek_set(pos);
         var node = Node(NODE_STRING);
@@ -3846,6 +3858,18 @@ StringReader.prototype.read_odigit = function() {
     return r;
 }
 
+StringReader.prototype.read_blob = function() {
+    var r = "";
+    while (1) {
+        var c = this.peekn(1);
+        if (!isxdigit(c) && c != ".") {
+            break;
+        }
+        r += this.getn(1);
+    }
+    return r;
+}
+
 StringReader.prototype.read_xdigit = function() {
     var r = "";
     while (isxdigit(this.peekn(1))) {
@@ -4184,6 +4208,9 @@ Compiler.prototype.compile = function(node) {
     }
     else if (node.type == NODE_NUMBER) {
         return this.compile_number(node);
+    }
+    else if (node.type == NODE_BLOB) {
+        return this.compile_blob(node);
     }
     else if (node.type == NODE_STRING) {
         return this.compile_string(node);
@@ -4637,6 +4664,10 @@ Compiler.prototype.compile_call = function(node) {
 }
 
 Compiler.prototype.compile_number = function(node) {
+    return node.value;
+}
+
+Compiler.prototype.compile_blob = function(node) {
     return node.value;
 }
 

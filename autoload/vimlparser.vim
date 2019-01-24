@@ -137,6 +137,7 @@ let s:NODE_REG = 89
 let s:NODE_CURLYNAMEPART = 90
 let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
+let s:NODE_BLOB = 93
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -203,6 +204,7 @@ let s:TOKEN_BACKTICK = 62
 let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
+let s:TOKEN_BLOB = 66
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -2580,6 +2582,10 @@ function! s:ExprTokenizer.get2()
     let s = r.getn(3)
     let s .= r.read_bdigit()
     return self.token(s:TOKEN_NUMBER, s, pos)
+  elseif c ==# '0' && (r.p(1) ==# 'Z' || r.p(1) ==# 'z') && r.p(2) !=# '.'
+    let s = r.getn(3)
+    let s .= r.read_blob()
+    return self.token(s:TOKEN_BLOB, s, pos)
   elseif s:isdigit(c)
     let s = r.read_digit()
     if r.p(0) ==# '.' && s:isdigit(r.p(1))
@@ -3374,6 +3380,10 @@ function! s:ExprParser.parse_expr9()
     let node = s:Node(s:NODE_NUMBER)
     let node.pos = token.pos
     let node.value = token.value
+  elseif token.type == s:TOKEN_BLOB
+    let node = s:Node(s:NODE_BLOB)
+    let node.pos = token.pos
+    let node.value = token.value
   elseif token.type == s:TOKEN_DQUOTE
     call self.reader.seek_set(pos)
     let node = s:Node(s:NODE_STRING)
@@ -3941,6 +3951,18 @@ function! s:StringReader.read_odigit()
   return r
 endfunction
 
+function! s:StringReader.read_blob()
+  let r = ''
+  while 1
+    let c = self.peekn(1)
+    if !s:isxdigit(c) && c != '.'
+      break
+    endif
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
 function! s:StringReader.read_xdigit()
   let r = ''
   while s:isxdigit(self.peekn(1))
@@ -4213,6 +4235,8 @@ function! s:Compiler.compile(node)
     return self.compile_call(a:node)
   elseif a:node.type == s:NODE_NUMBER
     return self.compile_number(a:node)
+  elseif a:node.type == s:NODE_BLOB
+    return self.compile_blob(a:node)
   elseif a:node.type == s:NODE_STRING
     return self.compile_string(a:node)
   elseif a:node.type == s:NODE_LIST
@@ -4640,6 +4664,10 @@ function! s:Compiler.compile_call(node)
 endfunction
 
 function! s:Compiler.compile_number(node)
+  return a:node.value
+endfunction
+
+function! s:Compiler.compile_blob(node)
   return a:node.value
 endfunction
 
