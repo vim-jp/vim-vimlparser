@@ -84,6 +84,9 @@ var pat_vim2js = {
   "^[a-z]$" : "^[a-z]$",
   "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
   "^[0-7]$" : "^[0-7]$",
+  "^[0-9A-Fa-f][0-9A-Fa-f]$" : "^[0-9A-Fa-f][0-9A-Fa-f]$",
+  "^\.[0-9A-Fa-f]$" : "^\.[0-9A-Fa-f]$",
+  "^[0-9A-Fa-f][^0-9A-Fa-f]$" : "^[0-9A-Fa-f][^0-9A-Fa-f]$",
 }
 
 function viml_add(lst, item) {
