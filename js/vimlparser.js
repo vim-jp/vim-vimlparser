@@ -2332,7 +2332,7 @@ ExprTokenizer.prototype.get2 = function() {
         return this.token(TOKEN_NUMBER, s, pos);
     }
     else if (c == "0" && (r.p(1) == "Z" || r.p(1) == "z") && r.p(2) != ".") {
-        var s = r.getn(3);
+        var s = r.getn(2);
         s += r.read_blob();
         return this.token(TOKEN_BLOB, s, pos);
     }
@@ -3861,11 +3861,19 @@ StringReader.prototype.read_odigit = function() {
 StringReader.prototype.read_blob = function() {
     var r = "";
     while (1) {
-        var c = this.peekn(1);
-        if (!isxdigit(c) && c != ".") {
+        var s = this.peekn(2);
+        if (s == "") {
             break;
         }
-        r += this.getn(1);
+        else if (viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$")) {
+            r += this.getn(2);
+        }
+        else if (viml_eqregh(s, "^\\.[0-9A-Fa-f]$")) {
+            r += this.getn(1);
+        }
+        else {
+            throw Err("E973: Blob literal should have an even number of hex characters:" + s, this.getpos());
+        }
     }
     return r;
 }
