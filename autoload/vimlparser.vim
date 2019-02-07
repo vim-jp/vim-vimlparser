@@ -2583,7 +2583,7 @@ function! s:ExprTokenizer.get2()
     let s .= r.read_bdigit()
     return self.token(s:TOKEN_NUMBER, s, pos)
   elseif c ==# '0' && (r.p(1) ==# 'Z' || r.p(1) ==# 'z') && r.p(2) !=# '.'
-    let s = r.getn(3)
+    let s = r.getn(2)
     let s .= r.read_blob()
     return self.token(s:TOKEN_BLOB, s, pos)
   elseif s:isdigit(c)
@@ -3954,11 +3954,16 @@ endfunction
 function! s:StringReader.read_blob()
   let r = ''
   while 1
-    let c = self.peekn(1)
-    if !s:isxdigit(c) && c != '.'
+    let s = self.peekn(2)
+    if s == ''
       break
+    elseif s =~# '^[0-9A-Fa-f][0-9A-Fa-f]$'
+      let r .= self.getn(2)
+    elseif s =~# '^\.[0-9A-Fa-f]$'
+      let r .= self.getn(1)
+    else
+      throw s:Err('E973: Blob literal should have an even number of hex characters:' . s, self.getpos())
     endif
-    let r .= self.getn(1)
   endwhile
   return r
 endfunction
