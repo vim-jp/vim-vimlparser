@@ -3955,14 +3955,14 @@ function! s:StringReader.read_blob()
   let r = ''
   while 1
     let s = self.peekn(2)
-    if s == ''
-      break
-    elseif s =~# '^[0-9A-Fa-f][0-9A-Fa-f]$'
+    if s =~# '^[0-9A-Fa-f][0-9A-Fa-f]$'
       let r .= self.getn(2)
     elseif s =~# '^\.[0-9A-Fa-f]$'
       let r .= self.getn(1)
-    else
+    elseif s =~# '^[0-9A-Fa-f][^0-9A-Fa-f]$'
       throw s:Err('E973: Blob literal should have an even number of hex characters:' . s, self.getpos())
+    else
+      break
     endif
   endwhile
   return r

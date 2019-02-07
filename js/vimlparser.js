@@ -3862,17 +3862,17 @@ StringReader.prototype.read_blob = function() {
     var r = "";
     while (1) {
         var s = this.peekn(2);
-        if (s == "") {
-            break;
-        }
-        else if (viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$")) {
+        if (viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$")) {
             r += this.getn(2);
         }
         else if (viml_eqregh(s, "^\\.[0-9A-Fa-f]$")) {
             r += this.getn(1);
         }
-        else {
+        else if (viml_eqregh(s, "^[0-9A-Fa-f][^0-9A-Fa-f]$")) {
             throw Err("E973: Blob literal should have an even number of hex characters:" + s, this.getpos());
+        }
+        else {
+            break;
         }
     }
     return r;

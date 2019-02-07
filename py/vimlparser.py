@@ -3073,14 +3073,14 @@ class StringReader:
         r = ""
         while 1:
             s = self.peekn(2)
-            if s == "":
-                break
-            elif viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$"):
+            if viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$"):
                 r += self.getn(2)
             elif viml_eqregh(s, "^\\.[0-9A-Fa-f]$"):
                 r += self.getn(1)
-            else:
+            elif viml_eqregh(s, "^[0-9A-Fa-f][^0-9A-Fa-f]$"):
                 raise VimLParserException(Err("E973: Blob literal should have an even number of hex characters:" + s, self.getpos()))
+            else:
+                break
         return r
 
     def read_xdigit(self):

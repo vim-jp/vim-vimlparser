@@ -5,3 +5,4 @@
 (echo 0zDEADBEEF)
 (echo 0ZDEADBEEF)
 (echo 0ZDEAD.BEEF)
+(echo (+ 0z00 0zFF))
