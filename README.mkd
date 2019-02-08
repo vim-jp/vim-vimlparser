@@ -21,13 +21,13 @@ This parser provide same feature for following languages.
 All of interfaces are provided from vimlparser module. VimLParser parse into AST using StringReader, and Compiler to compile nodes.
 
 ```vim
-let s:vimlparser = vimlparser#import()
+let s:VP = vimlparser#import()
 let code = [
 \ 'let s:message = printf("hello %d", 1+(2*3))'
 \]
-let r = s:StringReader.new(code)
-let p = s:VimLParser.new()
-let c = s:Compiler.new()
+let r = s:VP.StringReader.new(code)
+let p = s:VP.VimLParser.new()
+let c = s:VP.Compiler.new()
 echo join(c.compile(p.parse(r)), "\n")
 ```
 
