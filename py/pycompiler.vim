@@ -3,6 +3,7 @@ call extend(s:, vimlparser#import())
 
 let s:opprec = {}
 let s:opprec[s:NODE_TERNARY] = 1
+let s:opprec[s:NODE_PARENEXPR] = 1
 let s:opprec[s:NODE_OR] = 2
 let s:opprec[s:NODE_AND] = 3
 let s:opprec[s:NODE_EQUAL] = 4
@@ -290,6 +291,8 @@ function s:PythonCompiler.compile(node)
     return self.compile_env(a:node)
   elseif a:node.type == s:NODE_REG
     return self.compile_reg(a:node)
+  elseif a:node.type == s:NODE_PARENEXPR
+    return self.compile_parenexpr(a:node)
   else
     throw self.err('Compiler: unknown node: %s', string(a:node))
   endif
@@ -797,6 +800,10 @@ endfunction
 
 function s:PythonCompiler.compile_reg(node)
   throw 'NotImplemented: reg'
+endfunction
+
+function s:PythonCompiler.compile_parenexpr(node)
+  return self.compile(a:node.value)
 endfunction
 
 function s:PythonCompiler.compile_op1(node, op)

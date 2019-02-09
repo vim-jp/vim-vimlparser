@@ -137,6 +137,7 @@ let s:NODE_REG = 89
 let s:NODE_CURLYNAMEPART = 90
 let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
+let s:NODE_PARENEXPR = 93
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -403,6 +404,7 @@ endfunction
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
 " LAMBDA .rlist .left
+" PARENEXPR .value
 function! s:Node(type)
   return {'type': a:type}
 endfunction
@@ -3526,7 +3528,9 @@ function! s:ExprParser.parse_expr9()
     endwhile
     return node
   elseif token.type == s:TOKEN_POPEN
-    let node = self.parse_expr1()
+    let node = s:Node(s:NODE_PARENEXPR)
+    let node.pos = token.pos
+    let node.value = self.parse_expr1()
     let token = self.tokenizer.get()
     if token.type != s:TOKEN_PCLOSE
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
@@ -4235,6 +4239,8 @@ function! s:Compiler.compile(node)
     return self.compile_curlynameexpr(a:node)
   elseif a:node.type == s:NODE_LAMBDA
     return self.compile_lambda(a:node)
+  elseif a:node.type == s:NODE_PARENEXPR
+    return self.compile_parenexpr(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -4696,6 +4702,10 @@ endfunction
 function! s:Compiler.compile_lambda(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
+endfunction
+
+function! s:Compiler.compile_parenexpr(node)
+  return self.compile(a:node.value)
 endfunction
 
 " TODO: under construction

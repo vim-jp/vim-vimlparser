@@ -281,6 +281,7 @@ NODE_REG = 89
 NODE_CURLYNAMEPART = 90
 NODE_CURLYNAMEEXPR = 91
 NODE_LAMBDA = 92
+NODE_PARENEXPR = 93
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -528,6 +529,7 @@ def ExArg():
 # CURLYNAMEPART .value
 # CURLYNAMEEXPR .value
 # LAMBDA .rlist .left
+# PARENEXPR .value
 def Node(type):
     return AttributeDict({"type":type})
 
@@ -1141,7 +1143,7 @@ class VimLParser:
                 if c != "`":
                     raise VimLParserException(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
                 self.reader.getn(1)
-            elif c == "|" or c == "\n" or c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and (self.ea.cmd.name != "@" and self.ea.cmd.name != "*" or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@"):
+            elif c == "|" or c == "\n" or (c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and ((self.ea.cmd.name != "@" and self.ea.cmd.name != "*") or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@")):
                 has_cpo_bar = FALSE
                 # &cpoptions =~ 'b'
                 if (not has_cpo_bar or not viml_eqregh(self.ea.cmd.flags, "\\<USECTRLV\\>")) and pc == "\\":
@@ -1422,7 +1424,7 @@ class VimLParser:
         s1 = self.reader.peekn(1)
         s2 = self.reader.peekn(2)
         # :let {var-name} ..
-        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "=":
+        if self.ends_excmds(s1) or (s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "="):
             self.reader.seek_set(pos)
             self.parse_cmd_common()
             return
@@ -1865,7 +1867,7 @@ class ExprTokenizer:
             if r.p(0) == "." and isdigit(r.p(1)):
                 s += r.getn(1)
                 s += r.read_digit()
-                if (r.p(0) == "E" or r.p(0) == "e") and (isdigit(r.p(1)) or (r.p(1) == "-" or r.p(1) == "+") and isdigit(r.p(2))):
+                if (r.p(0) == "E" or r.p(0) == "e") and (isdigit(r.p(1)) or ((r.p(1) == "-" or r.p(1) == "+") and isdigit(r.p(2)))):
                     s += r.getn(2)
                     s += r.read_digit()
             return self.token(TOKEN_NUMBER, s, pos)
@@ -2713,7 +2715,9 @@ class ExprParser:
                     raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
             return node
         elif token.type == TOKEN_POPEN:
-            node = self.parse_expr1()
+            node = Node(NODE_PARENEXPR)
+            node.pos = token.pos
+            node.value = self.parse_expr1()
             token = self.tokenizer.get()
             if token.type != TOKEN_PCLOSE:
                 raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
@@ -3319,6 +3323,8 @@ class Compiler:
             return self.compile_curlynameexpr(node)
         elif node.type == NODE_LAMBDA:
             return self.compile_lambda(node)
+        elif node.type == NODE_PARENEXPR:
+            return self.compile_parenexpr(node)
         else:
             raise VimLParserException(viml_printf("Compiler: unknown node: %s", viml_string(node)))
         return NIL
@@ -3678,6 +3684,9 @@ class Compiler:
     def compile_lambda(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
+
+    def compile_parenexpr(self, node):
+        return self.compile(node.value)
 
 # TODO: under construction
 class RegexpParser:
