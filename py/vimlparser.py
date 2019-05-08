@@ -80,6 +80,9 @@ pat_vim2py = {
   "^[a-z]$" : "^[a-z]$",
   "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
   "^[0-7]$" : "^[0-7]$",
+  "^[0-9A-Fa-f][0-9A-Fa-f]$" : "^[0-9A-Fa-f][0-9A-Fa-f]$",
+  "^\.[0-9A-Fa-f]$" : "^\.[0-9A-Fa-f]$",
+  "^[0-9A-Fa-f][^0-9A-Fa-f]$" : "^[0-9A-Fa-f][^0-9A-Fa-f]$",
 }
 
 def viml_add(lst, item):
@@ -281,6 +284,7 @@ NODE_REG = 89
 NODE_CURLYNAMEPART = 90
 NODE_CURLYNAMEEXPR = 91
 NODE_LAMBDA = 92
+NODE_BLOB = 93
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -346,6 +350,7 @@ TOKEN_BACKTICK = 62
 TOKEN_DOTDOTDOT = 63
 TOKEN_SHARP = 64
 TOKEN_ARROW = 65
+TOKEN_BLOB = 66
 MAX_FUNC_ARGS = 20
 def isalpha(c):
     return viml_eqregh(c, "^[A-Za-z]$")
@@ -1860,6 +1865,10 @@ class ExprTokenizer:
             s = r.getn(3)
             s += r.read_bdigit()
             return self.token(TOKEN_NUMBER, s, pos)
+        elif c == "0" and (r.p(1) == "Z" or r.p(1) == "z") and r.p(2) != ".":
+            s = r.getn(2)
+            s += r.read_blob()
+            return self.token(TOKEN_BLOB, s, pos)
         elif isdigit(c):
             s = r.read_digit()
             if r.p(0) == "." and isdigit(r.p(1)):
@@ -2583,6 +2592,10 @@ class ExprParser:
             node = Node(NODE_NUMBER)
             node.pos = token.pos
             node.value = token.value
+        elif token.type == TOKEN_BLOB:
+            node = Node(NODE_BLOB)
+            node.pos = token.pos
+            node.value = token.value
         elif token.type == TOKEN_DQUOTE:
             self.reader.seek_set(pos)
             node = Node(NODE_STRING)
@@ -3057,6 +3070,20 @@ class StringReader:
             r += self.getn(1)
         return r
 
+    def read_blob(self):
+        r = ""
+        while 1:
+            s = self.peekn(2)
+            if viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$"):
+                r += self.getn(2)
+            elif viml_eqregh(s, "^\\.[0-9A-Fa-f]$"):
+                r += self.getn(1)
+            elif viml_eqregh(s, "^[0-9A-Fa-f][^0-9A-Fa-f]$"):
+                raise VimLParserException(Err("E973: Blob literal should have an even number of hex characters:" + s, self.getpos()))
+            else:
+                break
+        return r
+
     def read_xdigit(self):
         r = ""
         while isxdigit(self.peekn(1)):
@@ -3297,6 +3324,8 @@ class Compiler:
             return self.compile_call(node)
         elif node.type == NODE_NUMBER:
             return self.compile_number(node)
+        elif node.type == NODE_BLOB:
+            return self.compile_blob(node)
         elif node.type == NODE_STRING:
             return self.compile_string(node)
         elif node.type == NODE_LIST:
@@ -3635,6 +3664,9 @@ class Compiler:
             return viml_printf("(%s %s)", self.compile(node.left), viml_join(rlist, " "))
 
     def compile_number(self, node):
+        return node.value
+
+    def compile_blob(self, node):
         return node.value
 
     def compile_string(self, node):

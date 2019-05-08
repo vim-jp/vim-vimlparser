@@ -49,6 +49,7 @@ let s:opprec[s:NODE_SLICE] = 8
 let s:opprec[s:NODE_CALL] = 8
 let s:opprec[s:NODE_DOT] = 8
 let s:opprec[s:NODE_NUMBER] = 9
+let s:opprec[s:NODE_BLOB] = 9
 let s:opprec[s:NODE_STRING] = 9
 let s:opprec[s:NODE_LIST] = 9
 let s:opprec[s:NODE_DICT] = 9
@@ -274,6 +275,8 @@ function s:PythonCompiler.compile(node)
     return self.compile_call(a:node)
   elseif a:node.type == s:NODE_NUMBER
     return self.compile_number(a:node)
+  elseif a:node.type == s:NODE_BLOB
+    return self.compile_blob(a:node)
   elseif a:node.type == s:NODE_STRING
     return self.compile_string(a:node)
   elseif a:node.type == s:NODE_LIST
