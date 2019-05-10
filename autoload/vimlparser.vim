@@ -205,6 +205,7 @@ let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
 let s:TOKEN_BLOB = 66
+let s:TOKEN_DOTDOT = 67
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -2731,9 +2732,12 @@ function! s:ExprTokenizer.get2()
     if r.p(1) ==# '.' && r.p(2) ==# '.'
       call r.seek_cur(3)
       return self.token(s:TOKEN_DOTDOTDOT, '...', pos)
+    elseif r.p(1) ==# '.'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_DOTDOT, '..', pos) " TODO check scriptversion?
     else
       call r.seek_cur(1)
-      return self.token(s:TOKEN_DOT, '.', pos)
+      return self.token(s:TOKEN_DOT, '.', pos) " TODO check scriptversion?
     endif
   elseif c ==# '*'
     call r.seek_cur(1)
@@ -3162,6 +3166,7 @@ endfunction
 " expr5: expr6 + expr6 ..
 "        expr6 - expr6 ..
 "        expr6 . expr6 ..
+"        expr6 .. expr6 ..
 function! s:ExprParser.parse_expr5()
   let left = self.parse_expr6()
   while s:TRUE
@@ -3179,7 +3184,13 @@ function! s:ExprParser.parse_expr5()
       let node.left = left
       let node.right = self.parse_expr6()
       let left = node
-    elseif token.type == s:TOKEN_DOT
+    elseif token.type == s:TOKEN_DOTDOT " TODO check scriptversion?
+      let node = s:Node(s:NODE_CONCAT)
+      let node.pos = token.pos
+      let node.left = left
+      let node.right = self.parse_expr6()
+      let left = node
+    elseif token.type == s:TOKEN_DOT " TODO check scriptversion?
       let node = s:Node(s:NODE_CONCAT)
       let node.pos = token.pos
       let node.left = left
@@ -3342,7 +3353,7 @@ function! s:ExprParser.parse_expr8()
       endif
       let left = node
       unlet node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
+    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT " TODO check scriptversion?
       let node = self.parse_dot(token, left)
       if node is s:NIL
         call self.reader.seek_set(pos)
@@ -3590,6 +3601,31 @@ function! s:ExprParser.parse_dot(token, left)
     return s:NIL
   endif
   let node = s:Node(s:NODE_DOT)
+  let node.pos = a:token.pos
+  let node.left = a:left
+  let node.right = s:Node(s:NODE_IDENTIFIER)
+  let node.right.pos = pos
+  let node.right.value = name
+  return node
+endfunction
+
+" CONCAT
+"   str  ".." expr6         => (concat str expr6)
+function! s:ExprParser.parse_concat(token, left)
+  if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
+    return s:NIL
+  endif
+  if !s:iswordc(self.reader.p(0))
+    return s:NIL
+  endif
+  let pos = self.reader.getpos()
+  let name = self.reader.read_word()
+  if s:isnamec(self.reader.p(0))
+    " XXX: foo is str => ok, foo is obj => invalid expression
+    " foo.s:bar or foo.bar#baz
+    return s:NIL
+  endif
+  let node = s:Node(s:NODE_CONCAT)
   let node.pos = a:token.pos
   let node.left = a:left
   let node.right = s:Node(s:NODE_IDENTIFIER)
