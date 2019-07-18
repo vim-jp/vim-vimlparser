@@ -397,6 +397,7 @@ var TOKEN_DOTDOTDOT = 63;
 var TOKEN_SHARP = 64;
 var TOKEN_ARROW = 65;
 var TOKEN_BLOB = 66;
+var TOKEN_DOTDOT = 67;
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -1798,8 +1799,12 @@ VimLParser.prototype.parse_cmd_let = function() {
     this.reader.skip_white();
     var s1 = this.reader.peekn(1);
     var s2 = this.reader.peekn(2);
+    // TODO check scriptversion?
+    if (s2 == "..") {
+        var s2 = this.reader.peekn(3);
+    }
     // :let {var-name} ..
-    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s2 != "*=" && s2 != "/=" && s2 != "%=" && s1 != "=") {
+    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s2 != "..=" && s2 != "*=" && s2 != "/=" && s2 != "%=" && s1 != "=") {
         this.reader.seek_set(pos);
         this.parse_cmd_common();
         return;
@@ -1813,8 +1818,8 @@ VimLParser.prototype.parse_cmd_let = function() {
     node.list = lhs.list;
     node.rest = lhs.rest;
     node.right = NIL;
-    if (s2 == "+=" || s2 == "-=" || s2 == ".=" || s2 == "*=" || s2 == "/=" || s2 == "%=") {
-        this.reader.getn(2);
+    if (s2 == "+=" || s2 == "-=" || s2 == ".=" || s2 == "..=" || s2 == "*=" || s2 == "/=" || s2 == "%=") {
+        this.reader.getn(viml_len(s2));
         node.op = s2;
     }
     else if (s1 == "=") {
@@ -2522,9 +2527,15 @@ ExprTokenizer.prototype.get2 = function() {
             r.seek_cur(3);
             return this.token(TOKEN_DOTDOTDOT, "...", pos);
         }
+        else if (r.p(1) == ".") {
+            r.seek_cur(2);
+            return this.token(TOKEN_DOTDOT, "..", pos);
+            // TODO check scriptversion?
+        }
         else {
             r.seek_cur(1);
             return this.token(TOKEN_DOT, ".", pos);
+            // TODO check scriptversion?
         }
     }
     else if (c == "*") {
@@ -3010,6 +3021,7 @@ ExprParser.prototype.parse_expr4 = function() {
 // expr5: expr6 + expr6 ..
 //        expr6 - expr6 ..
 //        expr6 . expr6 ..
+//        expr6 .. expr6 ..
 ExprParser.prototype.parse_expr5 = function() {
     var left = this.parse_expr6();
     while (TRUE) {
@@ -3029,7 +3041,16 @@ ExprParser.prototype.parse_expr5 = function() {
             node.right = this.parse_expr6();
             var left = node;
         }
+        else if (token.type == TOKEN_DOTDOT) {
+            // TODO check scriptversion?
+            var node = Node(NODE_CONCAT);
+            node.pos = token.pos;
+            node.left = left;
+            node.right = this.parse_expr6();
+            var left = node;
+        }
         else if (token.type == TOKEN_DOT) {
+            // TODO check scriptversion?
             var node = Node(NODE_CONCAT);
             node.pos = token.pos;
             node.left = left;
@@ -3207,6 +3228,7 @@ ExprParser.prototype.parse_expr8 = function() {
             delete node;
         }
         else if (!iswhite(c) && token.type == TOKEN_DOT) {
+            // TODO check scriptversion?
             var node = this.parse_dot(token, left);
             if (node === NIL) {
                 this.reader.seek_set(pos);
@@ -3481,6 +3503,31 @@ ExprParser.prototype.parse_dot = function(token, left) {
         return NIL;
     }
     var node = Node(NODE_DOT);
+    node.pos = token.pos;
+    node.left = left;
+    node.right = Node(NODE_IDENTIFIER);
+    node.right.pos = pos;
+    node.right.value = name;
+    return node;
+}
+
+// CONCAT
+//   str  ".." expr6         => (concat str expr6)
+ExprParser.prototype.parse_concat = function(token, left) {
+    if (left.type != NODE_IDENTIFIER && left.type != NODE_CURLYNAME && left.type != NODE_DICT && left.type != NODE_SUBSCRIPT && left.type != NODE_CALL && left.type != NODE_DOT) {
+        return NIL;
+    }
+    if (!iswordc(this.reader.p(0))) {
+        return NIL;
+    }
+    var pos = this.reader.getpos();
+    var name = this.reader.read_word();
+    if (isnamec(this.reader.p(0))) {
+        // XXX: foo is str => ok, foo is obj => invalid expression
+        // foo.s:bar or foo.bar#baz
+        return NIL;
+    }
+    var node = Node(NODE_CONCAT);
     node.pos = token.pos;
     node.left = left;
     node.right = Node(NODE_IDENTIFIER);
