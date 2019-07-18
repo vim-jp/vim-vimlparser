@@ -804,97 +804,97 @@ function! s:VimLParser.parse_command()
 endfunction
 
 function! s:VimLParser._parse_command(parser) abort
-  if a:parser == 'parse_cmd_append'
+  if a:parser ==# 'parse_cmd_append'
     call self.parse_cmd_append()
-  elseif a:parser == 'parse_cmd_break'
+  elseif a:parser ==# 'parse_cmd_break'
     call self.parse_cmd_break()
-  elseif a:parser == 'parse_cmd_call'
+  elseif a:parser ==# 'parse_cmd_call'
     call self.parse_cmd_call()
-  elseif a:parser == 'parse_cmd_catch'
+  elseif a:parser ==# 'parse_cmd_catch'
     call self.parse_cmd_catch()
-  elseif a:parser == 'parse_cmd_common'
+  elseif a:parser ==# 'parse_cmd_common'
     call self.parse_cmd_common()
-  elseif a:parser == 'parse_cmd_continue'
+  elseif a:parser ==# 'parse_cmd_continue'
     call self.parse_cmd_continue()
-  elseif a:parser == 'parse_cmd_delfunction'
+  elseif a:parser ==# 'parse_cmd_delfunction'
     call self.parse_cmd_delfunction()
-  elseif a:parser == 'parse_cmd_echo'
+  elseif a:parser ==# 'parse_cmd_echo'
     call self.parse_cmd_echo()
-  elseif a:parser == 'parse_cmd_echoerr'
+  elseif a:parser ==# 'parse_cmd_echoerr'
     call self.parse_cmd_echoerr()
-  elseif a:parser == 'parse_cmd_echohl'
+  elseif a:parser ==# 'parse_cmd_echohl'
     call self.parse_cmd_echohl()
-  elseif a:parser == 'parse_cmd_echomsg'
+  elseif a:parser ==# 'parse_cmd_echomsg'
     call self.parse_cmd_echomsg()
-  elseif a:parser == 'parse_cmd_echon'
+  elseif a:parser ==# 'parse_cmd_echon'
     call self.parse_cmd_echon()
-  elseif a:parser == 'parse_cmd_else'
+  elseif a:parser ==# 'parse_cmd_else'
     call self.parse_cmd_else()
-  elseif a:parser == 'parse_cmd_elseif'
+  elseif a:parser ==# 'parse_cmd_elseif'
     call self.parse_cmd_elseif()
-  elseif a:parser == 'parse_cmd_endfor'
+  elseif a:parser ==# 'parse_cmd_endfor'
     call self.parse_cmd_endfor()
-  elseif a:parser == 'parse_cmd_endfunction'
+  elseif a:parser ==# 'parse_cmd_endfunction'
     call self.parse_cmd_endfunction()
-  elseif a:parser == 'parse_cmd_endif'
+  elseif a:parser ==# 'parse_cmd_endif'
     call self.parse_cmd_endif()
-  elseif a:parser == 'parse_cmd_endtry'
+  elseif a:parser ==# 'parse_cmd_endtry'
     call self.parse_cmd_endtry()
-  elseif a:parser == 'parse_cmd_endwhile'
+  elseif a:parser ==# 'parse_cmd_endwhile'
     call self.parse_cmd_endwhile()
-  elseif a:parser == 'parse_cmd_execute'
+  elseif a:parser ==# 'parse_cmd_execute'
     call self.parse_cmd_execute()
-  elseif a:parser == 'parse_cmd_finally'
+  elseif a:parser ==# 'parse_cmd_finally'
     call self.parse_cmd_finally()
-  elseif a:parser == 'parse_cmd_finish'
+  elseif a:parser ==# 'parse_cmd_finish'
     call self.parse_cmd_finish()
-  elseif a:parser == 'parse_cmd_for'
+  elseif a:parser ==# 'parse_cmd_for'
     call self.parse_cmd_for()
-  elseif a:parser == 'parse_cmd_function'
+  elseif a:parser ==# 'parse_cmd_function'
     call self.parse_cmd_function()
-  elseif a:parser == 'parse_cmd_if'
+  elseif a:parser ==# 'parse_cmd_if'
     call self.parse_cmd_if()
-  elseif a:parser == 'parse_cmd_insert'
+  elseif a:parser ==# 'parse_cmd_insert'
     call self.parse_cmd_insert()
-  elseif a:parser == 'parse_cmd_let'
+  elseif a:parser ==# 'parse_cmd_let'
     call self.parse_cmd_let()
-  elseif a:parser == 'parse_cmd_loadkeymap'
+  elseif a:parser ==# 'parse_cmd_loadkeymap'
     call self.parse_cmd_loadkeymap()
-  elseif a:parser == 'parse_cmd_lockvar'
+  elseif a:parser ==# 'parse_cmd_lockvar'
     call self.parse_cmd_lockvar()
-  elseif a:parser == 'parse_cmd_lua'
+  elseif a:parser ==# 'parse_cmd_lua'
     call self.parse_cmd_lua()
-  elseif a:parser == 'parse_cmd_modifier_range'
+  elseif a:parser ==# 'parse_cmd_modifier_range'
     call self.parse_cmd_modifier_range()
-  elseif a:parser == 'parse_cmd_mzscheme'
+  elseif a:parser ==# 'parse_cmd_mzscheme'
     call self.parse_cmd_mzscheme()
-  elseif a:parser == 'parse_cmd_perl'
+  elseif a:parser ==# 'parse_cmd_perl'
     call self.parse_cmd_perl()
-  elseif a:parser == 'parse_cmd_python'
+  elseif a:parser ==# 'parse_cmd_python'
     call self.parse_cmd_python()
-  elseif a:parser == 'parse_cmd_python3'
+  elseif a:parser ==# 'parse_cmd_python3'
     call self.parse_cmd_python3()
-  elseif a:parser == 'parse_cmd_return'
+  elseif a:parser ==# 'parse_cmd_return'
     call self.parse_cmd_return()
-  elseif a:parser == 'parse_cmd_ruby'
+  elseif a:parser ==# 'parse_cmd_ruby'
     call self.parse_cmd_ruby()
-  elseif a:parser == 'parse_cmd_tcl'
+  elseif a:parser ==# 'parse_cmd_tcl'
     call self.parse_cmd_tcl()
-  elseif a:parser == 'parse_cmd_throw'
+  elseif a:parser ==# 'parse_cmd_throw'
     call self.parse_cmd_throw()
-  elseif a:parser == 'parse_cmd_try'
+  elseif a:parser ==# 'parse_cmd_try'
     call self.parse_cmd_try()
-  elseif a:parser == 'parse_cmd_unlet'
+  elseif a:parser ==# 'parse_cmd_unlet'
     call self.parse_cmd_unlet()
-  elseif a:parser == 'parse_cmd_unlockvar'
+  elseif a:parser ==# 'parse_cmd_unlockvar'
     call self.parse_cmd_unlockvar()
-  elseif a:parser == 'parse_cmd_usercmd'
+  elseif a:parser ==# 'parse_cmd_usercmd'
     call self.parse_cmd_usercmd()
-  elseif a:parser == 'parse_cmd_while'
+  elseif a:parser ==# 'parse_cmd_while'
     call self.parse_cmd_while()
-  elseif a:parser == 'parse_wincmd'
+  elseif a:parser ==# 'parse_wincmd'
     call self.parse_wincmd()
-  elseif a:parser == 'parse_cmd_syntax'
+  elseif a:parser ==# 'parse_cmd_syntax'
     call self.parse_cmd_syntax()
   else
     throw printf('unknown parser: %s', string(a:parser))
@@ -925,7 +925,7 @@ function! s:VimLParser.find_command()
     endif
   endif
 
-  if name == ''
+  if name ==# ''
     return s:NIL
   endif
 
@@ -1499,7 +1499,7 @@ function! s:VimLParser.parse_cmd_let()
   let s2 = self.reader.peekn(2)
 
   " :let {var-name} ..
-  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s1 !=# '=')
+  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
@@ -1514,7 +1514,7 @@ function! s:VimLParser.parse_cmd_let()
   let node.list = lhs.list
   let node.rest = lhs.rest
   let node.right = s:NIL
-  if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.='
+  if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%='
     call self.reader.getn(2)
     let node.op = s2
   elseif s1 ==# '='
@@ -1942,12 +1942,12 @@ function! s:VimLParser.parse_cmd_syntax()
   while s:TRUE
     let end = self.reader.getpos()
     let c = self.reader.peek()
-    if c == "/" || c == "'" || c == "\""
+    if c ==# '/' || c ==# "'" || c ==# '"'
       call self.reader.getn(1)
       call self.parse_pattern(c)
-    elseif c == "="
+    elseif c ==# '='
       call self.reader.getn(1)
-      call self.parse_pattern(" ")
+      call self.parse_pattern(' ')
     elseif self.ends_excmds(c)
       break
     endif
@@ -2579,7 +2579,7 @@ function! s:ExprTokenizer.get2()
     let s = r.getn(3)
     let s .= r.read_xdigit()
     return self.token(s:TOKEN_NUMBER, s, pos)
-  elseif c ==# '0' && (r.p(1) ==# 'B' || r.p(1) ==# 'b') && (r.p(2) == '0' || r.p(2) == '1')
+  elseif c ==# '0' && (r.p(1) ==# 'B' || r.p(1) ==# 'b') && (r.p(2) ==# '0' || r.p(2) ==# '1')
     let s = r.getn(3)
     let s .= r.read_bdigit()
     return self.token(s:TOKEN_NUMBER, s, pos)
@@ -3834,7 +3834,7 @@ function! s:StringReader.__init__(lines)
       let col = 0
       for c in split(a:lines[lnum + 1], '\zs')
         if skip
-          if c == '\'
+          if c ==# '\'
             let skip = s:FALSE
           endif
         else
@@ -4014,7 +4014,7 @@ endfunction
 
 function! s:StringReader.read_bdigit()
   let r = ''
-  while self.peekn(1) == '0' || self.peekn(1) == '1'
+  while self.peekn(1) ==# '0' || self.peekn(1) ==# '1'
     let r .= self.getn(1)
   endwhile
   return r
@@ -4023,7 +4023,7 @@ endfunction
 function! s:StringReader.read_integer()
   let r = ''
   let c = self.peekn(1)
-  if c == '-' || c == '+'
+  if c ==# '-' || c ==# '+'
     let r = self.getn(1)
   endif
   return r . self.read_digit()
@@ -5071,7 +5071,7 @@ function! s:RegexpParser.get_token_backslash_common()
     return ['\\', '\\']
   elseif stridx(cclass, c) != -1
     return ['\' . c, '\' . c]
-  elseif c == '_'
+  elseif c ==# '_'
     let epos = self.reader.getpos()
     let c = self.reader.get()
     if stridx(cclass, c) != -1
@@ -5090,7 +5090,7 @@ function! s:RegexpParser.get_token_backslash_common()
     return ['\' . c, '\' . c]
   elseif stridx('123456789', c) != -1
     return ['\' . c, '\' . c]
-  elseif c == 'z'
+  elseif c ==# 'z'
     let epos = self.reader.getpos()
     let c = self.reader.get()
     if stridx('123456789', c) != -1
@@ -5105,7 +5105,7 @@ function! s:RegexpParser.get_token_backslash_common()
     throw s:Err('E68: Invalid character after \z', epos)
   elseif stridx('cCmMvVZ', c) != -1
     return ['\' . c, '\' . c]
-  elseif c == '%'
+  elseif c ==# '%'
     let epos = self.reader.getpos()
     let c = self.reader.get()
     if c ==# 'd'
@@ -5319,7 +5319,7 @@ endfunction
 
 " [[:alpha:]]
 function! s:RegexpParser.get_token_sq_char_class()
-  let class_names = ["alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower", "print", "punct", "space", "upper", "xdigit", "tab", "return", "backspace", "escape"]
+  let class_names = ['alnum', 'alpha', 'blank', 'cntrl', 'digit', 'graph', 'lower', 'print', 'punct', 'space', 'upper', 'xdigit', 'tab', 'return', 'backspace', 'escape']
   let pos = self.reader.tell()
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# ':'
     call self.reader.seek_cur(2)
