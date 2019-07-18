@@ -39,4 +39,4 @@ script:
 after_success:
   - covimerage write_coverage $TEST_PROFILE
   - coverage xml
-  - bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -f coverage.xml
