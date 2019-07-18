@@ -1799,7 +1799,7 @@ VimLParser.prototype.parse_cmd_let = function() {
     var s1 = this.reader.peekn(1);
     var s2 = this.reader.peekn(2);
     // :let {var-name} ..
-    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s1 != "=") {
+    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s2 != "*=" && s2 != "/=" && s2 != "%=" && s1 != "=") {
         this.reader.seek_set(pos);
         this.parse_cmd_common();
         return;
@@ -1813,7 +1813,7 @@ VimLParser.prototype.parse_cmd_let = function() {
     node.list = lhs.list;
     node.rest = lhs.rest;
     node.right = NIL;
-    if (s2 == "+=" || s2 == "-=" || s2 == ".=") {
+    if (s2 == "+=" || s2 == "-=" || s2 == ".=" || s2 == "*=" || s2 == "/=" || s2 == "%=") {
         this.reader.getn(2);
         node.op = s2;
     }
