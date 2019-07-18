@@ -82,7 +82,7 @@ function! s:gen(ex_cmds_h) abort
 
   let cumname = ''
   for [i, line] in map(copy(lines), {i, l -> [i, l]})
-    if line =~# '^EX('
+    if line =~# '^EXCMD('
       let name = matchstr(line, '"\zs.*\ze",')
       let flags = matchstr(lines[i+1], '\t\+\zs.*\ze,$')
 
@@ -94,7 +94,7 @@ function! s:gen(ex_cmds_h) abort
       \   'flags': flags,
       \   'minlen': minlen,
       \ }
-      let cmds = add(cmds, cmd)
+      call add(cmds, cmd)
     endif
   endfor
   return cmds
