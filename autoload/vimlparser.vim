@@ -205,6 +205,7 @@ let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
 let s:TOKEN_BLOB = 66
+let s:TOKEN_LITCOPEN = 67
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -2772,8 +2773,13 @@ function! s:ExprTokenizer.get2()
     call r.seek_cur(1)
     return self.token(s:TOKEN_COLON, ':', pos)
   elseif c ==# '#'
-    call r.seek_cur(1)
-    return self.token(s:TOKEN_SHARP, '#', pos)
+    if r.p(1) ==# '{'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_LITCOPEN, '#{', pos)
+    else
+      call r.seek_cur(1)
+      return self.token(s:TOKEN_SHARP, '#', pos)
+    endif
   elseif c ==# '('
     call r.seek_cur(1)
     return self.token(s:TOKEN_POPEN, '(', pos)
@@ -2889,6 +2895,29 @@ function! s:ExprTokenizer.get_dstring()
       call self.reader.seek_cur(1)
       let s .= c
     endif
+  endwhile
+  return s
+endfunction
+
+function! s:ExprTokenizer.get_dict_literal_key()
+  call self.reader.skip_white()
+  let r = self.reader
+  let c = r.peek()
+  if !s:isalnum(c) && c != '_' && c != '-'
+    throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+  endif
+  let s = c
+  call self.reader.seek_cur(1)
+  while s:TRUE
+    let c = self.reader.p(0)
+    if c ==# '<EOF>' || c ==# '<EOL>'
+      throw s:Err('unexpectd EOL', self.reader.getpos())
+    endif
+    if !s:isalnum(c) && c != '_' && c != '-'
+      break
+    endif
+    call self.reader.seek_cur(1)
+    let s .= c
   endwhile
   return s
 endfunction
@@ -3381,6 +3410,7 @@ endfunction
 "        'string'
 "        [expr1, ...]
 "        {expr1: expr1, ...}
+"        #{literal_key1: expr1, ...}
 "        {args -> expr1}
 "        &option
 "        (expr1)
@@ -3437,7 +3467,8 @@ function! s:ExprParser.parse_expr9()
         endif
       endwhile
     endif
-  elseif token.type == s:TOKEN_COPEN
+  elseif token.type == s:TOKEN_COPEN || token.type == s:TOKEN_LITCOPEN
+    let is_litdict = token.type == s:TOKEN_LITCOPEN
     let savepos = self.reader.tell()
     let nodepos = token.pos
     let token = self.tokenizer.get()
@@ -3525,7 +3556,7 @@ function! s:ExprParser.parse_expr9()
       return node
     endif
     while 1
-      let key = self.parse_expr1()
+      let key = is_litdict ? self.parse_dict_literal_key() : self.parse_expr1()
       let token = self.tokenizer.get()
       if token.type == s:TOKEN_CCLOSE
         if !empty(node.value)
@@ -3587,6 +3618,13 @@ function! s:ExprParser.parse_expr9()
   else
     throw s:Err(printf('unexpected token: %s', token.value), token.pos)
   endif
+  return node
+endfunction
+
+function! s:ExprParser.parse_dict_literal_key()
+  let node = s:Node(s:NODE_STRING)
+  let node.pos = self.reader.tell()
+  let node.value = "'" . self.tokenizer.get_dict_literal_key() . "'"
   return node
 endfunction
 

@@ -397,6 +397,7 @@ var TOKEN_DOTDOTDOT = 63;
 var TOKEN_SHARP = 64;
 var TOKEN_ARROW = 65;
 var TOKEN_BLOB = 66;
+var TOKEN_LITCOPEN = 67;
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -2552,8 +2553,14 @@ ExprTokenizer.prototype.get2 = function() {
         return this.token(TOKEN_COLON, ":", pos);
     }
     else if (c == "#") {
-        r.seek_cur(1);
-        return this.token(TOKEN_SHARP, "#", pos);
+        if (r.p(1) == "{") {
+            r.seek_cur(2);
+            return this.token(TOKEN_LITCOPEN, "#{", pos);
+        }
+        else {
+            r.seek_cur(1);
+            return this.token(TOKEN_SHARP, "#", pos);
+        }
     }
     else if (c == "(") {
         r.seek_cur(1);
@@ -2693,6 +2700,29 @@ ExprTokenizer.prototype.get_dstring = function() {
             this.reader.seek_cur(1);
             s += c;
         }
+    }
+    return s;
+}
+
+ExprTokenizer.prototype.get_dict_literal_key = function() {
+    this.reader.skip_white();
+    var r = this.reader;
+    var c = r.peek();
+    if (!isalnum(c) && c != "_" && c != "-") {
+        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
+    }
+    var s = c;
+    this.reader.seek_cur(1);
+    while (TRUE) {
+        var c = this.reader.p(0);
+        if (c == "<EOF>" || c == "<EOL>") {
+            throw Err("unexpectd EOL", this.reader.getpos());
+        }
+        if (!isalnum(c) && c != "_" && c != "-") {
+            break;
+        }
+        this.reader.seek_cur(1);
+        s += c;
     }
     return s;
 }
@@ -3228,6 +3258,7 @@ ExprParser.prototype.parse_expr8 = function() {
 //        'string'
 //        [expr1, ...]
 //        {expr1: expr1, ...}
+//        #{literal_key1: expr1, ...}
 //        {args -> expr1}
 //        &option
 //        (expr1)
@@ -3292,7 +3323,8 @@ ExprParser.prototype.parse_expr9 = function() {
             }
         }
     }
-    else if (token.type == TOKEN_COPEN) {
+    else if (token.type == TOKEN_COPEN || token.type == TOKEN_LITCOPEN) {
+        var is_litdict = token.type == TOKEN_LITCOPEN;
         var savepos = this.reader.tell();
         var nodepos = token.pos;
         var token = this.tokenizer.get();
@@ -3387,7 +3419,7 @@ ExprParser.prototype.parse_expr9 = function() {
             return node;
         }
         while (1) {
-            var key = this.parse_expr1();
+            var key = is_litdict ? this.parse_dict_literal_key() : this.parse_expr1();
             var token = this.tokenizer.get();
             if (token.type == TOKEN_CCLOSE) {
                 if (!viml_empty(node.value)) {
@@ -3460,6 +3492,13 @@ ExprParser.prototype.parse_expr9 = function() {
     else {
         throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
     }
+    return node;
+}
+
+ExprParser.prototype.parse_dict_literal_key = function() {
+    var node = Node(NODE_STRING);
+    node.pos = this.reader.tell();
+    node.value = "'" + this.tokenizer.get_dict_literal_key() + "'";
     return node;
 }
 
