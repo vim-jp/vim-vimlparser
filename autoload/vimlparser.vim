@@ -205,7 +205,7 @@ let s:TOKEN_DOTDOTDOT = 63
 let s:TOKEN_SHARP = 64
 let s:TOKEN_ARROW = 65
 let s:TOKEN_BLOB = 66
-let s:TOKEN_RAWCOPEN = 67
+let s:TOKEN_LITCOPEN = 67
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -2757,7 +2757,7 @@ function! s:ExprTokenizer.get2()
   elseif c ==# '#'
     if r.p(1) ==# '{'
       call r.seek_cur(2)
-      return self.token(s:TOKEN_RAWCOPEN, '#{', pos)
+      return self.token(s:TOKEN_LITCOPEN, '#{', pos)
     else
       call r.seek_cur(1)
       return self.token(s:TOKEN_SHARP, '#', pos)
@@ -3449,8 +3449,8 @@ function! s:ExprParser.parse_expr9()
         endif
       endwhile
     endif
-  elseif token.type == s:TOKEN_COPEN || token.type == s:TOKEN_RAWCOPEN
-    let is_rawdict = token.type == s:TOKEN_RAWCOPEN
+  elseif token.type == s:TOKEN_COPEN || token.type == s:TOKEN_LITCOPEN
+    let is_litdict = token.type == s:TOKEN_LITCOPEN
     let savepos = self.reader.tell()
     let nodepos = token.pos
     let token = self.tokenizer.get()
@@ -3538,7 +3538,7 @@ function! s:ExprParser.parse_expr9()
       return node
     endif
     while 1
-      let key = is_rawdict ? self.parse_dict_literal_key() : self.parse_expr1()
+      let key = is_litdict ? self.parse_dict_literal_key() : self.parse_expr1()
       let token = self.tokenizer.get()
       if token.type == s:TOKEN_CCLOSE
         if !empty(node.value)
