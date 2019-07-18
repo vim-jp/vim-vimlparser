@@ -1497,6 +1497,7 @@ function! s:VimLParser.parse_cmd_let()
   call self.reader.skip_white()
   let s1 = self.reader.peekn(1)
   let s2 = self.reader.peekn(2)
+  " TODO check scriptversion?
   if s2 ==# '..'
     let s2 = self.reader.peekn(3)
   endif
