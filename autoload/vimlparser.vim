@@ -1497,9 +1497,12 @@ function! s:VimLParser.parse_cmd_let()
   call self.reader.skip_white()
   let s1 = self.reader.peekn(1)
   let s2 = self.reader.peekn(2)
+  if s2 ==# '..'
+    let s2 = self.reader.peekn(3)
+  endif
 
   " :let {var-name} ..
-  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
+  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
@@ -1514,8 +1517,8 @@ function! s:VimLParser.parse_cmd_let()
   let node.list = lhs.list
   let node.rest = lhs.rest
   let node.right = s:NIL
-  if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%='
-    call self.reader.getn(2)
+  if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.=' || s2 ==# '..=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%='
+    call self.reader.getn(len(s2))
     let node.op = s2
   elseif s1 ==# '='
     call self.reader.getn(1)
