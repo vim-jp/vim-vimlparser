@@ -82,7 +82,7 @@ function! s:gen(ex_cmds_h) abort
 
   let cumname = ''
   for [i, line] in map(copy(lines), {i, l -> [i, l]})
-    if line =~# '^EX('
+    if line =~# '^EXCMD('
       let name = matchstr(line, '"\zs.*\ze",')
       let flags = matchstr(lines[i+1], '\t\+\zs.*\ze,$')
 
@@ -94,7 +94,7 @@ function! s:gen(ex_cmds_h) abort
       \   'flags': flags,
       \   'minlen': minlen,
       \ }
-      let cmds = add(cmds, cmd)
+      call add(cmds, cmd)
     endif
   endfor
   return cmds
@@ -123,12 +123,12 @@ endfunction
 " -- main
 
 " ex_cmds_h: path to vim/src/ex_cmds.h
-function! g:VimLParserNewCmds(ex_cmds_h) abort
+function! VimLParserNewCmds(ex_cmds_h) abort
   let vimlparser = vimlparser#import()
   let latest = s:gen(a:ex_cmds_h)
   let new_cmds = s:gen_new_builtin(vimlparser#import().VimLParser.builtin_commands, latest)
   let generated_text = s:gen_viml(new_cmds)
-  if generated_text == ''
+  if generated_text ==# ''
     verbose echo 's:VimLParser.builtin_commands in autoload/vimlparser.vim is up-to-date.'
   else
     verbose echo "Append following lines to s:VimLParser.builtin_commands in autoload/vimlparser.vim\n"

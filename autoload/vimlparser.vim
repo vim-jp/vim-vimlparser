@@ -2527,6 +2527,24 @@ let s:VimLParser.builtin_commands = [
       \ {'flags': 'EXTRA|TRLBAR|CMDWIN', 'minlen': 5, 'name': 'tmapclear', 'parser': 'parse_cmd_common'},
       \ {'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'minlen': 3, 'name': 'tnoremap', 'parser': 'parse_cmd_common'},
       \ {'flags': 'EXTRA|TRLBAR|NOTRLCOM|USECTRLV|CMDWIN', 'minlen': 5, 'name': 'tunmap', 'parser': 'parse_cmd_common'},
+      \
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 4, 'name': 'cabove', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 3, 'name': 'cafter', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 3, 'name': 'cbefore', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 4, 'name': 'cbelow', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_EXTRA|EX_NOTRLCOM|EX_SBOXOK|EX_CMDWIN', 'minlen': 4, 'name': 'const', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 3, 'name': 'labove', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 3, 'name': 'lafter', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 3, 'name': 'lbefore', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_COUNT|EX_TRLBAR', 'minlen': 4, 'name': 'lbelow', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_TRLBAR|EX_CMDWIN', 'minlen': 7, 'name': 'redrawtabline', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_WORD1|EX_TRLBAR|EX_CMDWIN', 'minlen': 7, 'name': 'scriptversion', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_BANG|EX_FILE1|EX_TRLBAR|EX_CMDWIN', 'minlen': 2, 'name': 'tcd', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_BANG|EX_FILE1|EX_TRLBAR|EX_CMDWIN', 'minlen': 3, 'name': 'tchdir', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_ZEROR|EX_EXTRA|EX_TRLBAR|EX_NOTRLCOM|EX_CTRLV|EX_CMDWIN', 'minlen': 3, 'name': 'tlmenu', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_ZEROR|EX_EXTRA|EX_TRLBAR|EX_NOTRLCOM|EX_CTRLV|EX_CMDWIN', 'minlen': 3, 'name': 'tlnoremenu', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_RANGE|EX_ZEROR|EX_EXTRA|EX_TRLBAR|EX_NOTRLCOM|EX_CTRLV|EX_CMDWIN', 'minlen': 3, 'name': 'tlunmenu', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EX_EXTRA|EX_TRLBAR|EX_CMDWIN', 'minlen': 2, 'name': 'xrestore', 'parser': 'parse_cmd_common'},
       \]
 
 let s:ExprTokenizer = {}
