@@ -1,0 +1,8 @@
+(echo (dict))
+(echo (dict ('foo-bar' 42)))
+(echo (dict ('foo-' 42)))
+(echo (dict ('-bar' 42)))
+(echo (dict ('1-1' 0)))
+(echo (dict ('one' 1) ('two2' 2) ('3three' 3) ('44' 4)))
+(echo (dict ('x' (dict))))
+(echo (list (dict)))
