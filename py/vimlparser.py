@@ -1427,7 +1427,7 @@ class VimLParser:
         s1 = self.reader.peekn(1)
         s2 = self.reader.peekn(2)
         # :let {var-name} ..
-        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s1 != "=":
+        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s2 != "*=" and s2 != "/=" and s2 != "%=" and s1 != "=":
             self.reader.seek_set(pos)
             self.parse_cmd_common()
             return
@@ -1440,7 +1440,7 @@ class VimLParser:
         node.list = lhs.list
         node.rest = lhs.rest
         node.right = NIL
-        if s2 == "+=" or s2 == "-=" or s2 == ".=":
+        if s2 == "+=" or s2 == "-=" or s2 == ".=" or s2 == "*=" or s2 == "/=" or s2 == "%=":
             self.reader.getn(2)
             node.op = s2
         elif s1 == "=":

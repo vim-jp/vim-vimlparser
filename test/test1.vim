@@ -51,3 +51,8 @@ echo {} {"x":"y"} {"x":"y","z":"w",}
 echo x[0] x[y]
 echo x[1:2] x[1:] x[:2] x[:]
 echo x.y x.y.z
+let a = 1
+let a += 2
+let a *= 3
+let a /= 4
+let a %= 5

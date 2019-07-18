@@ -46,3 +46,8 @@
 (echo (subscript x 0) (subscript x y))
 (echo (slice x 1 2) (slice x 1 nil) (slice x nil 2) (slice x nil nil))
 (echo (dot x y) (dot (dot x y) z))
+(let = a 1)
+(let += a 2)
+(let *= a 3)
+(let /= a 4)
+(let %= a 5)
