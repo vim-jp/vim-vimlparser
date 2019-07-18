@@ -74,11 +74,12 @@ pat_vim2py = {
   "^[0-9A-Fa-f]$" : "^[0-9A-Fa-f]$",
   "^[0-9A-Za-z_]$" : "^[0-9A-Za-z_]$",
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
-  "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
+  "^[0-9A-Za-z_#]$" : "^[0-9A-Za-z_#]$",
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
   "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "[vgslabwt]" : "[vgslabwt]",
   "^[0-7]$" : "^[0-7]$",
   "^[0-9A-Fa-f][0-9A-Fa-f]$" : "^[0-9A-Fa-f][0-9A-Fa-f]$",
   "^\.[0-9A-Fa-f]$" : "^\.[0-9A-Fa-f]$",
@@ -378,7 +379,7 @@ def iswhite(c):
     return viml_eqregh(c, "^[ \\t]$")
 
 def isnamec(c):
-    return viml_eqregh(c, "^[0-9A-Za-z_:#]$")
+    return viml_eqregh(c, "^[0-9A-Za-z_#]$")
 
 def isnamec1(c):
     return viml_eqregh(c, "^[A-Za-z_]$")
@@ -2800,7 +2801,8 @@ class ExprParser:
             return NIL
         pos = self.reader.getpos()
         name = self.reader.read_word()
-        if isnamec(self.reader.p(0)):
+        c = self.reader.p(0)
+        if c == ":" or c == "#":
             # XXX: foo is str => ok, foo is obj => invalid expression
             # foo.s:bar or foo.bar#baz
             return NIL
@@ -3153,7 +3155,14 @@ class StringReader:
         return r
 
     def read_name(self):
-        r = ""
+        # We come here for valid names only.
+        r = self.getn(1)
+        # Colon only allowed at 2nd position, with scope identifiers.
+        c = self.peekn(1)
+        if c == ":":
+            if not viml_eqregh(r, "[vgslabwt]"):
+                return r
+            r += self.getn(1)
         while isnamec(self.peekn(1)):
             r += self.getn(1)
         return r

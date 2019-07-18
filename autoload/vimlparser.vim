@@ -242,7 +242,7 @@ function! s:iswhite(c)
 endfunction
 
 function! s:isnamec(c)
-  return a:c =~# '^[0-9A-Za-z_:#]$'
+  return a:c =~# '^[0-9A-Za-z_#]$'
 endfunction
 
 function! s:isnamec1(c)
@@ -3640,7 +3640,8 @@ function! s:ExprParser.parse_dot(token, left)
   endif
   let pos = self.reader.getpos()
   let name = self.reader.read_word()
-  if s:isnamec(self.reader.p(0))
+  let c = self.reader.p(0)
+  if c ==# ':' || c ==# '#'
     " XXX: foo is str => ok, foo is obj => invalid expression
     " foo.s:bar or foo.bar#baz
     return s:NIL
@@ -4074,7 +4075,18 @@ function! s:StringReader.read_nonwhite()
 endfunction
 
 function! s:StringReader.read_name()
-  let r = ''
+  " We come here for valid names only.
+  let r = self.getn(1)
+
+  " Colon only allowed at 2nd position, with scope identifiers.
+  let c = self.peekn(1)
+  if c ==# ':'
+    if r !~# '[vgslabwt]'
+      return r
+    endif
+    let r .= self.getn(1)
+  endif
+
   while s:isnamec(self.peekn(1))
     let r .= self.getn(1)
   endwhile

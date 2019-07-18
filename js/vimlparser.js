@@ -78,11 +78,12 @@ var pat_vim2js = {
   "^[0-9A-Fa-f]$" : "^[0-9A-Fa-f]$",
   "^[0-9A-Za-z_]$" : "^[0-9A-Za-z_]$",
   "^[A-Za-z_]$" : "^[A-Za-z_]$",
-  "^[0-9A-Za-z_:#]$" : "^[0-9A-Za-z_:#]$",
+  "^[0-9A-Za-z_#]$" : "^[0-9A-Za-z_#]$",
   "^[A-Za-z_][0-9A-Za-z_]*$" : "^[A-Za-z_][0-9A-Za-z_]*$",
   "^[A-Z]$" : "^[A-Z]$",
   "^[a-z]$" : "^[a-z]$",
   "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$" : "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+  "[vgslabwt]" : "[vgslabwt]",
   "^[0-7]$" : "^[0-7]$",
   "^[0-9A-Fa-f][0-9A-Fa-f]$" : "^[0-9A-Fa-f][0-9A-Fa-f]$",
   "^\\.[0-9A-Fa-f]$" : "^\\.[0-9A-Fa-f]$",
@@ -432,7 +433,7 @@ function iswhite(c) {
 }
 
 function isnamec(c) {
-    return viml_eqregh(c, "^[0-9A-Za-z_:#]$");
+    return viml_eqregh(c, "^[0-9A-Za-z_#]$");
 }
 
 function isnamec1(c) {
@@ -3514,7 +3515,8 @@ ExprParser.prototype.parse_dot = function(token, left) {
     }
     var pos = this.reader.getpos();
     var name = this.reader.read_word();
-    if (isnamec(this.reader.p(0))) {
+    var c = this.reader.p(0);
+    if (c == ":" || c == "#") {
         // XXX: foo is str => ok, foo is obj => invalid expression
         // foo.s:bar or foo.bar#baz
         return NIL;
@@ -3970,7 +3972,16 @@ StringReader.prototype.read_nonwhite = function() {
 }
 
 StringReader.prototype.read_name = function() {
-    var r = "";
+    // We come here for valid names only.
+    var r = this.getn(1);
+    // Colon only allowed at 2nd position, with scope identifiers.
+    var c = this.peekn(1);
+    if (c == ":") {
+        if (!viml_eqregh(r, "[vgslabwt]")) {
+            return r;
+        }
+        r += this.getn(1);
+    }
     while (isnamec(this.peekn(1))) {
         r += this.getn(1);
     }
