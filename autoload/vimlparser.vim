@@ -2759,7 +2759,7 @@ function! s:ExprTokenizer.get2()
       call r.seek_cur(2)
       return self.token(s:TOKEN_RAWCOPEN, '#{', pos)
     else
-      call r.seek_cur(2)
+      call r.seek_cur(1)
       return self.token(s:TOKEN_SHARP, '#', pos)
     endif
   elseif c ==# '('
