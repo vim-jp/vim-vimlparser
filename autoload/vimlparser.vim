@@ -1500,15 +1500,18 @@ function! s:VimLParser.parse_heredoc()
     if key == ''
       break
     endif
-    call add(words, key)
+    if key == 'trim'
+      call add(words, key)
+    else
+      let node.op = key
+    endif
   endwhile
   if empty(words)
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
   endif
-  let node.rlist = words[:-2]
-  let node.op = words[-1]
+  let node.rlist = words
   let lines = []
   call self.parse_trail()
   while s:TRUE

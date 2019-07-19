@@ -270,6 +270,7 @@ NODE_CURLYNAMEPART = 90
 NODE_CURLYNAMEEXPR = 91
 NODE_LAMBDA = 92
 NODE_BLOB = 93
+NODE_HEREDOC = 94
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -338,6 +339,7 @@ TOKEN_ARROW = 65
 TOKEN_BLOB = 66
 TOKEN_LITCOPEN = 67
 TOKEN_DOTDOT = 68
+TOKEN_HEREDOC = 69
 MAX_FUNC_ARGS = 20
 def isalpha(c):
     return viml_eqregh(c, "^[A-Za-z]$")
@@ -520,6 +522,7 @@ def ExArg():
 # CURLYNAMEPART .value
 # CURLYNAMEEXPR .value
 # LAMBDA .rlist .left
+# HEREDOC .rlist .op .str
 def Node(type):
     return AttributeDict({"type":type})
 
@@ -1401,6 +1404,40 @@ class VimLParser:
             raise VimLParserException(Err("Not an function call", node.left.pos))
         self.add_node(node)
 
+    def parse_heredoc(self):
+        node = Node(NODE_HEREDOC)
+        node.pos = self.ea.cmdpos
+        node.op = ""
+        node.rlist = []
+        node.str = ""
+        words = []
+        while TRUE:
+            self.reader.skip_white()
+            key = self.reader.read_alpha()
+            if key == "":
+                break
+            if key == "trim":
+                viml_add(words, key)
+            else:
+                node.op = key
+        if viml_empty(words):
+            self.reader.seek_set(pos)
+            self.parse_cmd_common()
+            return
+        node.rlist = words
+        lines = []
+        self.parse_trail()
+        while TRUE:
+            if self.reader.peek() == "<EOF>":
+                break
+            line = self.reader.getn(-1)
+            if line == node.op:
+                node.str = viml_join(lines, "\n") + "\n"
+                return node
+            viml_add(lines, line)
+            self.reader.get()
+        return NIL
+
     def parse_cmd_let(self):
         pos = self.reader.tell()
         self.reader.skip_white()
@@ -1416,8 +1453,10 @@ class VimLParser:
         # TODO check scriptversion?
         if s2 == "..":
             s2 = self.reader.peekn(3)
+        elif s2 == "=<":
+            s2 = self.reader.peekn(3)
         # :let {var-name} ..
-        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s2 != "..=" and s2 != "*=" and s2 != "/=" and s2 != "%=" and s1 != "=":
+        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s2 != "..=" and s2 != "*=" and s2 != "/=" and s2 != "%=" and s2 != "=<<" and s1 != "=":
             self.reader.seek_set(pos)
             self.parse_cmd_common()
             return
@@ -1433,6 +1472,13 @@ class VimLParser:
         if s2 == "+=" or s2 == "-=" or s2 == ".=" or s2 == "..=" or s2 == "*=" or s2 == "/=" or s2 == "%=":
             self.reader.getn(viml_len(s2))
             node.op = s2
+        elif s2 == "=<<":
+            self.reader.getn(viml_len(s2))
+            self.reader.skip_white()
+            node.op = "="
+            node.right = self.parse_heredoc()
+            self.add_node(node)
+            return
         elif s1 == "=":
             self.reader.getn(1)
             node.op = s1
@@ -3404,6 +3450,8 @@ class Compiler:
             return self.compile_curlynameexpr(node)
         elif node.type == NODE_LAMBDA:
             return self.compile_lambda(node)
+        elif node.type == NODE_HEREDOC:
+            return self.compile_heredoc(node)
         else:
             raise VimLParserException(viml_printf("Compiler: unknown node: %s", viml_string(node)))
         return NIL
@@ -3766,6 +3814,16 @@ class Compiler:
     def compile_lambda(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
+
+def escape_string(str):
+    str = "\"" + viml_escape(str, "\\\"") + "\""
+    str = viml_substitute(str, "\r", "\\\\r", "g")
+    str = viml_substitute(str, "\n", "\\\\n", "g")
+    str = viml_substitute(str, "\t", "\\\\t", "g")
+    return str
+
+    def compile_heredoc(self, node):
+        return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, escape_string(node.str))
 
 # TODO: under construction
 class RegexpParser:
