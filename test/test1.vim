@@ -58,3 +58,6 @@ let a /= 4
 let a %= 5
 let a ..= 'foo'
 echo ('foo' .. 'bar')..'baz'
+const a = 1
+const [a, b] = [1, 2]
+const [a, b; c] = [1, 2, 3]
