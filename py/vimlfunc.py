@@ -3,7 +3,6 @@
 
 import sys
 import re
-import inspect
 
 
 def main():
