@@ -423,9 +423,9 @@ def isargname(s):
 
 def isvarname(s):
     return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$")
+
+
 # FIXME:
-
-
 def isidc(c):
     return viml_eqregh(c, "^[0-9A-Za-z_]$")
 
@@ -465,6 +465,8 @@ def ExArg():
     ea.argopt = AttributeDict({})
     ea.argcmd = AttributeDict({})
     return ea
+
+
 # struct node {
 #   int     type
 #   pos     pos
@@ -573,8 +575,6 @@ def ExArg():
 # CURLYNAMEPART .value
 # CURLYNAMEEXPR .value
 # LAMBDA .rlist .left
-
-
 def Node(type):
     return AttributeDict({"type": type})
 
@@ -665,8 +665,8 @@ class VimLParser:
         self.parse_range()
         self.parse_command()
         self.parse_trail()
-# FIXME:
 
+# FIXME:
     def parse_command_modifiers(self):
         modifiers = []
         while TRUE:
@@ -760,8 +760,8 @@ class VimLParser:
                 self.reader.seek_set(pos)
                 break
         self.ea.modifiers = modifiers
-# FIXME:
 
+# FIXME:
     def parse_range(self):
         tokens = []
         while TRUE:
@@ -820,8 +820,8 @@ class VimLParser:
                 continue
             break
         self.ea.range = tokens
-# FIXME:
 
+# FIXME:
     def parse_pattern(self, delimiter):
         pattern = ""
         endc = ""
@@ -1043,13 +1043,13 @@ class VimLParser:
             cmd = AttributeDict({"name": name, "flags": "USERCMD", "parser": "parse_cmd_usercmd"})
         self.find_command_cache[name] = cmd
         return cmd
-# TODO:
 
+# TODO:
     def parse_hashbang(self):
         self.reader.getn(-1)
+
 # TODO:
 # ++opt=val
-
     def parse_argopt(self):
         while self.reader.p(0) == "+" and self.reader.p(1) == "+":
             s = self.reader.peekn(20)
@@ -1087,9 +1087,9 @@ class VimLParser:
             else:
                 break
             self.reader.skip_white()
+
 # TODO:
 # +command
-
     def parse_argcmd(self):
         if self.reader.peekn(1) == "+":
             self.reader.getn(1)
@@ -1135,16 +1135,16 @@ class VimLParser:
             self.reader.get()
         else:
             raise VimLParserException(Err(viml_printf("E488: Trailing characters: %s", c), self.reader.getpos()))
-# modifier or range only command line
 
+# modifier or range only command line
     def parse_cmd_modifier_range(self):
         node = Node(NODE_EXCMD)
         node.pos = self.ea.cmdpos
         node.ea = self.ea
         node.str = self.reader.getstr(self.ea.linepos, self.reader.getpos())
         self.add_node(node)
-# TODO:
 
+# TODO:
     def parse_cmd_common(self):
         end = self.reader.getpos()
         if viml_eqregh(self.ea.cmd.flags, "\\<TRLBAR\\>") and not self.ea.usefilter:
@@ -1207,8 +1207,8 @@ class VimLParser:
         if not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>"):
             end = nospend
         return end
-# FIXME
 
+# FIXME
     def skip_vimgrep_pat(self):
         if self.reader.peekn(1) == "":
             # pass
@@ -1315,8 +1315,8 @@ class VimLParser:
         self.parse_cmd_common()
         if self.context[0].type == NODE_TOPLEVEL:
             self.reader.seek_end(0)
-# FIXME
 
+# FIXME
     def parse_cmd_usercmd(self):
         self.parse_cmd_common()
 
@@ -1796,8 +1796,8 @@ class VimLParser:
         if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME or node.type == NODE_SUBSCRIPT or node.type == NODE_DOT or node.type == NODE_OPTION or node.type == NODE_ENV or node.type == NODE_REG:
             return node
         raise VimLParserException(Err("Invalid Expression", node.pos))
-# FIXME:
 
+# FIXME:
     def parse_lvalue(self):
         p = LvalueParser(self.reader)
         node = p.parse()
@@ -1838,8 +1838,8 @@ class VimLParser:
             node = self.parse_lvalue()
             viml_add(list, node)
         return list
-# FIXME:
 
+# FIXME:
     def parse_letlhs(self):
         lhs = AttributeDict({"left": NIL, "list": NIL, "rest": NIL})
         tokenizer = ExprTokenizer(self.reader)
@@ -1899,8 +1899,8 @@ class VimLParser:
 
     def ends_excmds(self, c):
         return c == "" or c == "|" or c == "\"" or c == "<EOF>" or c == "<EOL>"
-# FIXME: validate argument
 
+# FIXME: validate argument
     def parse_wincmd(self):
         c = self.reader.getn(1)
         if c == "":
@@ -1919,8 +1919,8 @@ class VimLParser:
         node.ea = self.ea
         node.str = self.reader.getstr(self.ea.linepos, end)
         self.add_node(node)
-# FIXME: validate argument
 
+# FIXME: validate argument
     def parse_cmd_syntax(self):
         end = self.reader.getpos()
         while TRUE:
@@ -2297,8 +2297,8 @@ class ExprParser:
 
     def parse(self):
         return self.parse_expr1()
-# expr1: expr2 ? expr1 : expr1
 
+# expr1: expr2 ? expr1 : expr1
     def parse_expr1(self):
         left = self.parse_expr2()
         pos = self.reader.tell()
@@ -2316,8 +2316,8 @@ class ExprParser:
         else:
             self.reader.seek_set(pos)
         return left
-# expr2: expr3 || expr3 ..
 
+# expr2: expr3 || expr3 ..
     def parse_expr2(self):
         left = self.parse_expr3()
         while TRUE:
@@ -2333,8 +2333,8 @@ class ExprParser:
                 self.reader.seek_set(pos)
                 break
         return left
-# expr3: expr4 && expr4
 
+# expr3: expr4 && expr4
     def parse_expr3(self):
         left = self.parse_expr4()
         while TRUE:
@@ -2350,6 +2350,7 @@ class ExprParser:
                 self.reader.seek_set(pos)
                 break
         return left
+
 # expr4: expr5 == expr5
 #        expr5 != expr5
 #        expr5 >  expr5
@@ -2365,7 +2366,6 @@ class ExprParser:
 #
 #        expr5 is expr5
 #        expr5 isnot expr5
-
     def parse_expr4(self):
         left = self.parse_expr5()
         pos = self.reader.tell()
@@ -2553,11 +2553,11 @@ class ExprParser:
         else:
             self.reader.seek_set(pos)
         return left
+
 # expr5: expr6 + expr6 ..
 #        expr6 - expr6 ..
 #        expr6 . expr6 ..
 #        expr6 .. expr6 ..
-
     def parse_expr5(self):
         left = self.parse_expr6()
         while TRUE:
@@ -2593,10 +2593,10 @@ class ExprParser:
                 self.reader.seek_set(pos)
                 break
         return left
+
 # expr6: expr7 * expr7 ..
 #        expr7 / expr7 ..
 #        expr7 % expr7 ..
-
     def parse_expr6(self):
         left = self.parse_expr7()
         while TRUE:
@@ -2624,10 +2624,10 @@ class ExprParser:
                 self.reader.seek_set(pos)
                 break
         return left
+
 # expr7: ! expr7
 #        - expr7
 #        + expr7
-
     def parse_expr7(self):
         pos = self.reader.tell()
         token = self.tokenizer.get()
@@ -2650,11 +2650,11 @@ class ExprParser:
             self.reader.seek_set(pos)
             node = self.parse_expr8()
             return node
+
 # expr8: expr8[expr1]
 #        expr8[expr1 : expr1]
 #        expr8.name
 #        expr8(expr1, ...)
-
     def parse_expr8(self):
         left = self.parse_expr9()
         while TRUE:
@@ -2738,6 +2738,7 @@ class ExprParser:
                 self.reader.seek_set(pos)
                 break
         return left
+
 # expr9: number
 #        "string"
 #        'string'
@@ -2753,7 +2754,6 @@ class ExprParser:
 #        @r
 #        function(expr1, ...)
 #        func{ti}on(expr1, ...)
-
     def parse_expr9(self):
         pos = self.reader.tell()
         token = self.tokenizer.get()
@@ -2935,10 +2935,10 @@ class ExprParser:
         node.pos = self.reader.tell()
         node.value = "'" + self.tokenizer.get_dict_literal_key() + "'"
         return node
+
 # SUBSCRIPT or CONCAT
 #   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 #   str  "." expr6         => (concat str expr6)
-
     def parse_dot(self, token, left):
         if left.type != NODE_IDENTIFIER and left.type != NODE_CURLYNAME and left.type != NODE_DICT and left.type != NODE_SUBSCRIPT and left.type != NODE_CALL and left.type != NODE_DOT:
             return NIL
@@ -2957,9 +2957,9 @@ class ExprParser:
         node.right.pos = pos
         node.right.value = name
         return node
+
 # CONCAT
 #   str  ".." expr6         => (concat str expr6)
-
     def parse_concat(self, token, left):
         if left.type != NODE_IDENTIFIER and left.type != NODE_CURLYNAME and left.type != NODE_DICT and left.type != NODE_SUBSCRIPT and left.type != NODE_CALL and left.type != NODE_DOT:
             return NIL
@@ -3040,10 +3040,10 @@ class LvalueParser(ExprParser):
 
     def parse(self):
         return self.parse_lv8()
+
 # expr8: expr8[expr1]
 #        expr8[expr1 : expr1]
 #        expr8.name
-
     def parse_lv8(self):
         left = self.parse_lv9()
         while TRUE:
@@ -3100,12 +3100,12 @@ class LvalueParser(ExprParser):
                 self.reader.seek_set(pos)
                 break
         return left
+
 # expr9: &option
 #        variable
 #        var{ria}ble
 #        $VAR
 #        @r
-
     def parse_lv9(self):
         pos = self.reader.tell()
         token = self.tokenizer.get()
@@ -3996,8 +3996,8 @@ class RegexpParser:
                     ntoken = "?"
             viml_add(ret, ntoken)
         return ret
-# @return [actual_token, normalized_token]
 
+# @return [actual_token, normalized_token]
     def get_token(self):
         if self.reg_magic == self.RE_VERY_MAGIC:
             return self.get_token_very_magic()
@@ -4255,8 +4255,8 @@ class RegexpParser:
                     return ["\\%U" + r, "\\%U" + r]
             raise VimLParserException(Err("E678: Invalid character after \\%[dxouU]", epos))
         return ["\\" + c, c]
-# \{}
 
+# \{}
     def get_token_brace(self, pre):
         r = ""
         minus = ""
@@ -4281,8 +4281,8 @@ class RegexpParser:
             raise VimLParserException(Err("E554: Syntax error in \\{...}", self.reader.getpos()))
         self.reader.get()
         return [pre + r, "\\{" + minus + n + comma + m + "}"]
-# \[]
 
+# \[]
     def get_token_sq(self, pre):
         start = self.reader.tell()
         r = ""
@@ -4330,8 +4330,8 @@ class RegexpParser:
                     r += e
                 if startc > endc or endc > startc + 256:
                     raise VimLParserException(Err("E16: Invalid range", self.reader.getpos()))
-# [c]
 
+# [c]
     def get_token_sq_c(self):
         c = self.reader.p(0)
         if c == "\\":
@@ -4366,8 +4366,8 @@ class RegexpParser:
         else:
             self.reader.seek_cur(1)
             return [c, viml_char2nr(c)]
-# [\d123]
 
+# [\d123]
     def get_token_sq_coll_char(self):
         pos = self.reader.tell()
         c = self.reader.get()
@@ -4392,20 +4392,20 @@ class RegexpParser:
             self.reader.seek_set(pos)
             return "\\"
         return ["\\" + c + r, n]
-# [[.a.]]
 
+# [[.a.]]
     def get_token_sq_coll_element(self):
         if self.reader.p(0) == "[" and self.reader.p(1) == "." and not self.isend(self.reader.p(2)) and self.reader.p(3) == "." and self.reader.p(4) == "]":
             return self.reader.getn(5)
         return ""
-# [[=a=]]
 
+# [[=a=]]
     def get_token_sq_equi_class(self):
         if self.reader.p(0) == "[" and self.reader.p(1) == "=" and not self.isend(self.reader.p(2)) and self.reader.p(3) == "=" and self.reader.p(4) == "]":
             return self.reader.getn(5)
         return ""
-# [[:alpha:]]
 
+# [[:alpha:]]
     def get_token_sq_char_class(self):
         class_names = ["alnum", "alpha", "blank", "cntrl", "digit", "graph", "lower", "print", "punct", "space", "upper", "xdigit", "tab", "return", "backspace", "escape"]
         pos = self.reader.tell()
@@ -4419,8 +4419,8 @@ class RegexpParser:
                         return "[:" + name + ":]"
         self.reader.seek_set(pos)
         return ""
-# \@...
 
+# \@...
     def get_token_at(self, pre):
         epos = self.reader.getpos()
         c = self.reader.get()
@@ -4437,8 +4437,8 @@ class RegexpParser:
             elif c == "!":
                 return [pre + "<!", "\\@<!"]
         raise VimLParserException(Err("E64: @ follows nothing", epos))
-# \%...
 
+# \%...
     def get_token_percent(self, pre):
         c = self.reader.get()
         if c == "^":
@@ -4455,8 +4455,8 @@ class RegexpParser:
             return [pre + "(", "\\%("]
         else:
             return self.get_token_mlcv(pre)
-# \%[]
 
+# \%[]
     def get_token_percent_sq(self, pre):
         r = ""
         while TRUE:
@@ -4471,8 +4471,8 @@ class RegexpParser:
             self.reader.seek_cur(1)
             r += c
         return [pre + r + "]", "\\%[" + r + "]"]
-# \%'m \%l \%c \%v
 
+# \%'m \%l \%c \%v
     def get_token_mlvc(self, pre):
         r = ""
         cmp = ""
