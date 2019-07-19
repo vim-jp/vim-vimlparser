@@ -4151,16 +4151,16 @@ class RegexpParser:
                 return ["\\n", 0]
             elif c == "r":
                 self.reader.seek_cur(1)
-                return ["\\r", viml_char2nr("\r")]
+                return ["\\r", 13]
             elif c == "t":
                 self.reader.seek_cur(1)
-                return ["\\t", viml_char2nr("\t")]
+                return ["\\t", 9]
             elif c == "e":
                 self.reader.seek_cur(1)
-                return ["\\e", viml_char2nr("\e")]
+                return ["\\e", 27]
             elif c == "b":
                 self.reader.seek_cur(1)
-                return ["\\b", viml_char2nr("\b")]
+                return ["\\b", 8]
             elif viml_stridx("]^-\\", c) != -1:
                 self.reader.seek_cur(1)
                 return ["\\" + c, viml_char2nr(c)]
