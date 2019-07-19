@@ -1506,11 +1506,6 @@ function! s:VimLParser.parse_heredoc()
       let node.op = key
     endif
   endwhile
-  if empty(words)
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
-    return
-  endif
   let node.rlist = words
   let lines = []
   call self.parse_trail()
@@ -1573,7 +1568,7 @@ function! s:VimLParser.parse_cmd_let()
   elseif s2 ==# '=<<'
     call self.reader.getn(len(s2))
     call self.reader.skip_white()
-    let node.op = '='
+    let node.op = s2
     let node.right = self.parse_heredoc()
     call self.add_node(node)
     return
@@ -4879,21 +4874,28 @@ function! s:Compiler.compile_curlynameexpr(node)
   return '{' . self.compile(a:node.value) . '}'
 endfunction
 
+function! s:Compiler.escape_string(str)
+  let m = {"\n": '\n', "\t": '\t', "\r": '\r'}
+  let out = '"'
+  for i in range(len(a:str))
+    let c = a:str[i]
+    if has_key(m, c)
+      let out .= m[c]
+    else
+      let out .= c
+    endif
+  endfor
+  let out .= '"'
+  return out
+endfunction
+
 function! s:Compiler.compile_lambda(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
 endfunction
 
-function! s:escape_string(str)
-  let str = '"' . escape(a:str, '\"') . '"'
-  let str = substitute(str, "\r", '\\r', 'g')
-  let str = substitute(str, "\n", '\\n', 'g')
-  let str = substitute(str, "\t", '\\t', 'g')
-  return str
-endfunction
-
 function! s:Compiler.compile_heredoc(node)
-  return printf('(heredoc (%s) "%s" %s))', join(a:node.rlist, ' '), a:node.op, s:escape_string(a:node.str))
+  return printf('(heredoc (%s) "%s" %s))', join(a:node.rlist, ' '), a:node.op, self.escape_string(a:node.str))
 endfunction
 
 " TODO: under construction

@@ -1793,11 +1793,6 @@ VimLParser.prototype.parse_heredoc = function() {
             node.op = key;
         }
     }
-    if (viml_empty(words)) {
-        this.reader.seek_set(pos);
-        this.parse_cmd_common();
-        return;
-    }
     node.rlist = words;
     var lines = [];
     this.parse_trail();
@@ -1858,7 +1853,7 @@ VimLParser.prototype.parse_cmd_let = function() {
     else if (s2 == "=<<") {
         this.reader.getn(viml_len(s2));
         this.reader.skip_white();
-        node.op = "=";
+        node.op = s2;
         node.right = this.parse_heredoc();
         this.add_node(node);
         return;
@@ -4863,21 +4858,31 @@ Compiler.prototype.compile_curlynameexpr = function(node) {
     return "{" + this.compile(node.value) + "}";
 }
 
+Compiler.prototype.escape_string = function(str) {
+    var m = {"\n":"\\n", "\t":"\\t", "\r":"\\r"};
+    var out = "\"";
+    var __c13 = viml_range(viml_len(str));
+    for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
+        var i = __c13[__i13];
+        var c = str[i];
+        if (viml_has_key(m, c)) {
+            out += m[c];
+        }
+        else {
+            out += c;
+        }
+    }
+    out += "\"";
+    return out;
+}
+
 Compiler.prototype.compile_lambda = function(node) {
     var rlist = node.rlist.map((function(vval) { return this.compile(vval); }).bind(this));
     return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), this.compile(node.left));
 }
 
-function escape_string(str) {
-    var str = "\"" + viml_escape(str, "\\\"") + "\"";
-    var str = viml_substitute(str, "\r", "\\\\r", "g");
-    var str = viml_substitute(str, "\n", "\\\\n", "g");
-    var str = viml_substitute(str, "\t", "\\\\t", "g");
-    return str;
-}
-
 Compiler.prototype.compile_heredoc = function(node) {
-    return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, escape_string(node.str));
+    return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, this.escape_string(node.str));
 }
 
 // TODO: under construction
@@ -5560,9 +5565,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c13 = class_names;
-            for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
-                var name = __c13[__i13];
+            var __c14 = class_names;
+            for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
+                var name = __c14[__i14];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5695,9 +5700,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c14 = viml_range(n);
-    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
-        var i = __c14[__i14];
+    var __c15 = viml_range(n);
+    for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
+        var i = __c15[__i15];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;

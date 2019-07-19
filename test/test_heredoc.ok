@@ -1,2 +1,2 @@
-(let = a (heredoc () "EOS" "hello\n world\n")))
-(let = a (heredoc (trim) "EOS" "\thello\nworld\n")))
+(let =<< a (heredoc () "EOS" "hello\n world\n")))
+(let =<< a (heredoc (trim) "EOS" "\thello\nworld\n")))

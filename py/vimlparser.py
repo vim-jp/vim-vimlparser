@@ -1420,10 +1420,6 @@ class VimLParser:
                 viml_add(words, key)
             else:
                 node.op = key
-        if viml_empty(words):
-            self.reader.seek_set(pos)
-            self.parse_cmd_common()
-            return
         node.rlist = words
         lines = []
         self.parse_trail()
@@ -1475,7 +1471,7 @@ class VimLParser:
         elif s2 == "=<<":
             self.reader.getn(viml_len(s2))
             self.reader.skip_white()
-            node.op = "="
+            node.op = s2
             node.right = self.parse_heredoc()
             self.add_node(node)
             return
@@ -3811,19 +3807,24 @@ class Compiler:
     def compile_curlynameexpr(self, node):
         return "{" + self.compile(node.value) + "}"
 
+    def escape_string(self, str):
+        m = AttributeDict({"\n":"\\n", "\t":"\\t", "\r":"\\r"})
+        out = "\""
+        for i in viml_range(viml_len(str)):
+            c = str[i]
+            if viml_has_key(m, c):
+                out += m[c]
+            else:
+                out += c
+        out += "\""
+        return out
+
     def compile_lambda(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
 
-def escape_string(str):
-    str = "\"" + viml_escape(str, "\\\"") + "\""
-    str = viml_substitute(str, "\r", "\\\\r", "g")
-    str = viml_substitute(str, "\n", "\\\\n", "g")
-    str = viml_substitute(str, "\t", "\\\\t", "g")
-    return str
-
     def compile_heredoc(self, node):
-        return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, escape_string(node.str))
+        return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, self.escape_string(node.str))
 
 # TODO: under construction
 class RegexpParser:
