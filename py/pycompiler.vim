@@ -344,6 +344,7 @@ function s:PythonCompiler.compile_function(node)
     endif
   endif
 
+  " if self.in_class
   if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let left = matchstr(left, '\.\zs.*')
     if left == 'new'
