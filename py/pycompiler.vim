@@ -335,6 +335,7 @@ function s:PythonCompiler.compile_function(node)
     if left == 'new'
       return
     endif
+    call self.emptyline()
     call insert(rlist, 'self')
     call self.incindent('    ')
     call self.out('def %s(%s):', left, join(rlist, ', '))
@@ -343,12 +344,13 @@ function s:PythonCompiler.compile_function(node)
     call self.decindent()
     call self.decindent()
   else
+    call self.emptyline()
+    call self.emptyline()
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
     call self.decindent()
   endif
-  call self.emptyline()
 endfunction
 
 function s:PythonCompiler.compile_delfunction(node)
@@ -376,9 +378,13 @@ function s:PythonCompiler.compile_let(node)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
     if left == 'LvalueParser'
+      call self.emptyline()
+      call self.emptyline()
       call self.out('class LvalueParser(ExprParser):')
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
+      call self.emptyline()
+      call self.emptyline()
       call self.out('class %s:', left)
       return
     elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
@@ -763,7 +769,7 @@ function s:PythonCompiler.compile_list(node)
 endfunction
 
 function s:PythonCompiler.compile_dict(node)
-  let value = map(a:node.value, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
+  let value = map(a:node.value, 'self.compile(v:val[0]) . ": " . self.compile(v:val[1])')
   if empty(value)
     return 'AttributeDict({})'
   else
@@ -828,7 +834,7 @@ let s:viml_builtin_functions = map(copy(s:VimLParser.builtin_functions), 'v:val.
 let s:script_dir = expand('<sfile>:h')
 function! s:convert(in, out)
   let vimlfunc = fnamemodify(s:script_dir . '/vimlfunc.py', ':p')
-  let head = readfile(vimlfunc)
+  let head = readfile(vimlfunc) + ['', '']
   try
     let r = s:StringReader.new(readfile(a:in))
     let p = s:VimLParser.new()
@@ -836,6 +842,8 @@ function! s:convert(in, out)
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'NIL = []') - 1]
     let tail = [
+    \   '',
+    \   '',
     \   'if __name__ == ''__main__'':',
     \   '    main()',
     \ ]
