@@ -106,6 +106,7 @@ endfunction
 function s:PythonCompiler.__init__()
   let self.indent = ['']
   let self.lines = []
+  let self.in_class = 0
 endfunction
 
 function s:PythonCompiler.out(...)
@@ -354,13 +355,15 @@ function s:PythonCompiler.compile_function(node)
       call self.emptyline()
     endif
     call insert(rlist, 'self')
-    call self.incindent('    ')
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
     call self.decindent()
-    call self.decindent()
   else
+    if self.in_class
+      let self.in_class = 0
+      call self.decindent()
+    endif
     if comment_start
       call insert(self.lines, '', comment_start)
       call insert(self.lines, '', comment_start)
@@ -399,24 +402,27 @@ function s:PythonCompiler.compile_let(node)
   let right = self.compile(a:node.right)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
-    if left == 'LvalueParser'
-      call self.emptyline()
-      call self.emptyline()
-      call self.out('class LvalueParser(ExprParser):')
-      return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
-      call self.emptyline()
-      call self.emptyline()
-      call self.out('class %s:', left)
-      return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
+    if left ==# 'LvalueParser'
+      let class_def = 'LvalueParser(ExprParser)'
+    elseif left =~# '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
+      let class_def = left
+    elseif left =~# '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let left = matchstr(left, '\.\zs.*')
-      call self.incindent('    ')
       call self.out('%s %s %s', left, op, right)
-      call self.decindent()
+      return
+    else
+      call self.out('%s %s %s', left, op, right)
       return
     endif
-    call self.out('%s %s %s', left, op, right)
+
+    if self.in_class
+      call self.decindent()
+    endif
+    call self.emptyline()
+    call self.emptyline()
+    call self.out('class %s:', class_def)
+    let self.in_class = 1
+    call self.incindent('    ')
   else
     let list = map(a:node.list, 'self.compile(v:val)')
     if a:node.rest isnot s:NIL
