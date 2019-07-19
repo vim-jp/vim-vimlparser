@@ -5304,16 +5304,16 @@ function! s:RegexpParser.get_token_sq_c()
       return ['\n', 0]
     elseif c ==# 'r'
       call self.reader.seek_cur(1)
-      return ['\r', char2nr("\r")]
+      return ['\r', 13]
     elseif c ==# 't'
       call self.reader.seek_cur(1)
-      return ['\t', char2nr("\t")]
+      return ['\t', 9]
     elseif c ==# 'e'
       call self.reader.seek_cur(1)
-      return ['\e', char2nr("\e")]
+      return ['\e', 27]
     elseif c ==# 'b'
       call self.reader.seek_cur(1)
-      return ['\b', char2nr("\b")]
+      return ['\b', 8]
     elseif stridx(']^-\', c) != -1
       call self.reader.seek_cur(1)
       return ['\' . c, char2nr(c)]

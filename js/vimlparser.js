@@ -5391,19 +5391,19 @@ RegexpParser.prototype.get_token_sq_c = function() {
         }
         else if (c == "r") {
             this.reader.seek_cur(1);
-            return ["\\r", viml_char2nr("\r")];
+            return ["\\r", 13];
         }
         else if (c == "t") {
             this.reader.seek_cur(1);
-            return ["\\t", viml_char2nr("\t")];
+            return ["\\t", 9];
         }
         else if (c == "e") {
             this.reader.seek_cur(1);
-            return ["\\e", viml_char2nr("\e")];
+            return ["\\e", 27];
         }
         else if (c == "b") {
             this.reader.seek_cur(1);
-            return ["\\b", viml_char2nr("\b")];
+            return ["\\b", 8];
         }
         else if (viml_stridx("]^-\\", c) != -1) {
             this.reader.seek_cur(1);
