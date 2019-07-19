@@ -325,13 +325,7 @@ function s:PythonCompiler.compile_excmd(node)
   throw 'NotImplemented: excmd'
 endfunction
 
-function s:PythonCompiler.compile_function(node)
-  let left = self.compile(a:node.left)
-  let rlist = map(a:node.rlist, 'self.compile(v:val)')
-  if !empty(rlist) && rlist[-1] == '...'
-    let rlist[-1] = '*a000'
-  endif
-
+function s:PythonCompiler.insert_empty_lines_before_comment(count)
   " Find start of preceding comment (block).
   let comment_start = 0
   let len_lines = len(self.lines)
@@ -344,17 +338,30 @@ function s:PythonCompiler.compile_function(node)
     endif
   endif
 
-  " if self.in_class
+  if comment_start
+    for c in range(a:count)
+      call insert(self.lines, '', comment_start)
+    endfor
+  else
+    for c in range(a:count)
+      call self.emptyline()
+    endfor
+  endif
+endfunction
+
+function s:PythonCompiler.compile_function(node)
+  let left = self.compile(a:node.left)
+  let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  if !empty(rlist) && rlist[-1] == '...'
+    let rlist[-1] = '*a000'
+  endif
+
   if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let left = matchstr(left, '\.\zs.*')
     if left == 'new'
       return
     endif
-    if comment_start
-      call insert(self.lines, '', comment_start)
-    else
-      call self.emptyline()
-    endif
+    call self.insert_empty_lines_before_comment(1)
     call insert(rlist, 'self')
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
@@ -365,13 +372,7 @@ function s:PythonCompiler.compile_function(node)
       let self.in_class = 0
       call self.decindent()
     endif
-    if comment_start
-      call insert(self.lines, '', comment_start)
-      call insert(self.lines, '', comment_start)
-    else
-      call self.emptyline()
-      call self.emptyline()
-    endif
+    call self.insert_empty_lines_before_comment(2)
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
@@ -419,8 +420,7 @@ function s:PythonCompiler.compile_let(node)
     if self.in_class
       call self.decindent()
     endif
-    call self.emptyline()
-    call self.emptyline()
+    call self.insert_empty_lines_before_comment(2)
     call self.out('class %s:', class_def)
     let self.in_class = 1
     call self.incindent('    ')
