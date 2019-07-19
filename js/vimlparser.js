@@ -2703,7 +2703,7 @@ ExprTokenizer.prototype.get_dict_literal_key = function() {
     var r = this.reader;
     var c = r.peek();
     if (!isalnum(c) && c != "_" && c != "-") {
-        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
+        throw Err(viml_printf("unexpected character: %s", c), this.reader.getpos());
     }
     var s = c;
     this.reader.seek_cur(1);

@@ -2135,7 +2135,7 @@ class ExprTokenizer:
         r = self.reader
         c = r.peek()
         if not isalnum(c) and c != "_" and c != "-":
-            raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
+            raise VimLParserException(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
         s = c
         self.reader.seek_cur(1)
         while TRUE:
