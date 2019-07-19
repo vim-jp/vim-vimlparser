@@ -2911,7 +2911,7 @@ function! s:ExprTokenizer.get_dict_literal_key()
   call self.reader.skip_white()
   let r = self.reader
   let c = r.peek()
-  if !s:isalnum(c) && c != '_' && c != '-'
+  if !s:isalnum(c) && c !=# '_' && c !=# '-'
     throw s:Err(printf('unexpected token: %s', token.value), token.pos)
   endif
   let s = c
@@ -2921,7 +2921,7 @@ function! s:ExprTokenizer.get_dict_literal_key()
     if c ==# '<EOF>' || c ==# '<EOL>'
       throw s:Err('unexpectd EOL', self.reader.getpos())
     endif
-    if !s:isalnum(c) && c != '_' && c != '-'
+    if !s:isalnum(c) && c !=# '_' && c !=# '-'
       break
     endif
     call self.reader.seek_cur(1)
