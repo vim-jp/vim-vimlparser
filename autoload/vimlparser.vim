@@ -2912,7 +2912,7 @@ function! s:ExprTokenizer.get_dict_literal_key()
   let r = self.reader
   let c = r.peek()
   if !s:isalnum(c) && c != '_' && c != '-'
-    throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+    throw s:Err(printf('unexpected character: %s', c), self.reader.getpos())
   endif
   let s = c
   call self.reader.seek_cur(1)
