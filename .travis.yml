@@ -3,21 +3,25 @@ dist: xenial
 git:
   depth: 10
 
-matrix:
+jobs:
   include:
-    - env:
+    - name: Vim 7.4
+      env:
       - VIM_VERSION=v7.4
       - MAKE_TARGET=test
       - TEST_PROFILE=vim-profile-v7.4.txt
-    - env:
+    - name: Vim v8
+      env:
       - VIM_VERSION=v8.0.0000
       - MAKE_TARGET=test
       - TEST_PROFILE=vim-profile-v8.0.txt
-    - env:
+    - name: Vim master
+      env:
       - VIM_VERSION=master
       - MAKE_TARGET=test
       - TEST_PROFILE=vim-profile-master.txt
-    - env:
+    - name: Installed Vim with checks
+      env:
       - VIM_VERSION=installed
       - MAKE_TARGET="clean_compiled check js/test py/test test/node_position/test_position.out"
       - TEST_PROFILE=vim-profile-installed.txt
