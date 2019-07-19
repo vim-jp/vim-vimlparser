@@ -16,6 +16,9 @@ check: all
 	  echo 'Compiled files were updated, but should have been included/committed.'; \
 	  exit 1; }
 
+checkqa: all
+	flake8 py
+
 test:
 	test/run.sh
 
