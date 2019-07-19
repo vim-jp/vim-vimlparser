@@ -7,7 +7,7 @@ import inspect
 
 
 def main():
-    use_neovim = sys.argv[1] == '--neovim'
+    use_neovim = sys.argv[1] == "--neovim"
 
     r = StringReader(viml_readfile(sys.argv[-1]))
     p = VimLParser(use_neovim)
@@ -123,7 +123,7 @@ def viml_eqregq(s, reg):
 
 
 def viml_escape(s, chars):
-    r = ''
+    r = ""
     for c in s:
         if c in chars:
             r += "\\" + c
@@ -153,7 +153,7 @@ def viml_len(obj):
         if sys.version_info < (3, 0):
             b = bytes(obj)
         else:
-            b = bytes(obj, 'utf8')
+            b = bytes(obj, "utf8")
         return len(b)
     return len(obj)
 
