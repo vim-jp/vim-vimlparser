@@ -330,12 +330,29 @@ function s:PythonCompiler.compile_function(node)
   if !empty(rlist) && rlist[-1] == '...'
     let rlist[-1] = '*a000'
   endif
+
+  " Find start of preceding comment (block).
+  let comment_start = 0
+  let len_lines = len(self.lines)
+  if len_lines
+    while get(self.lines, comment_start - 1, '') =~# '^\s*#'
+      let comment_start -= 1
+    endwhile
+    if comment_start != 0
+      let comment_start = len_lines + comment_start
+    endif
+  endif
+
   if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let left = matchstr(left, '\.\zs.*')
     if left == 'new'
       return
     endif
-    call self.emptyline()
+    if comment_start
+      call insert(self.lines, '', comment_start)
+    else
+      call self.emptyline()
+    endif
     call insert(rlist, 'self')
     call self.incindent('    ')
     call self.out('def %s(%s):', left, join(rlist, ', '))
@@ -344,8 +361,13 @@ function s:PythonCompiler.compile_function(node)
     call self.decindent()
     call self.decindent()
   else
-    call self.emptyline()
-    call self.emptyline()
+    if comment_start
+      call insert(self.lines, '', comment_start)
+      call insert(self.lines, '', comment_start)
+    else
+      call self.emptyline()
+      call self.emptyline()
+    endif
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
