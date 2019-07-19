@@ -3930,9 +3930,9 @@ class Compiler:
     def compile_lambda(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
+
+
     # TODO: under construction
-
-
 class RegexpParser:
     RE_VERY_NOMAGIC = 1
     RE_NOMAGIC = 2
