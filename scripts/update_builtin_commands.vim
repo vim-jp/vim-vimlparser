@@ -135,4 +135,3 @@ function! VimLParserNewCmds(ex_cmds_h) abort
     verbose echo generated_text
   endif
 endfunction
-" call s:vimlparser_new_cmds('/home/haya14busa/src/github.com/vim/vim/src/ex_cmds.h')
