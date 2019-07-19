@@ -28,7 +28,9 @@ jobs:
 
 install:
   - |
-    if [ "$VIM_VERSION" != 'installed' ]; then
+    if [ "$VIM_VERSION" = 'installed' ]; then
+      pip install --user flake8
+    else
       bash scripts/install-vim.sh
       export PATH=$HOME/vim/bin:$PATH
     fi
