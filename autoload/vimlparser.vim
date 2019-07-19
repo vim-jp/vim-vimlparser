@@ -138,6 +138,7 @@ let s:NODE_CURLYNAMEPART = 90
 let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
+let s:NODE_HEREDOC = 94
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -207,6 +208,7 @@ let s:TOKEN_ARROW = 65
 let s:TOKEN_BLOB = 66
 let s:TOKEN_LITCOPEN = 67
 let s:TOKEN_DOTDOT = 68
+let s:TOKEN_HEREDOC = 69
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -407,6 +409,7 @@ endfunction
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
 " LAMBDA .rlist .left
+" HEREDOC .rlist .op .value
 function! s:Node(type)
   return {'type': a:type}
 endfunction
@@ -1483,6 +1486,42 @@ function! s:VimLParser.parse_cmd_call()
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_heredoc()
+  let node = s:Node(s:NODE_HEREDOC)
+  let node.pos = self.ea.cmdpos
+  let node.op = ''
+  let node.rlist = []
+  let node.str = ''
+
+  let words = []
+  while s:TRUE
+    call self.reader.skip_white()
+    let key = self.reader.read_alpha()
+    if key == ''
+      break
+    endif
+    call add(words, key)
+  endwhile
+  if empty(words)
+    call self.reader.seek_set(pos)
+    call self.parse_cmd_common()
+    return
+  endif
+  let node.rlist = words[:-2]
+  let node.op = words[-1]
+  let lines = []
+  call self.parse_trail()
+  while self.reader.peek() !=# '<EOF>'
+    let line = self.reader.readline()
+    if line ==# node.op
+      let node.str = join(lines, "\n") . "\n"
+      return node
+    endif
+    call add(lines, line)
+  endwhile
+  return s:NIL
+endfunction
+
 function! s:VimLParser.parse_cmd_let()
   let pos = self.reader.tell()
   call self.reader.skip_white()
@@ -1501,10 +1540,12 @@ function! s:VimLParser.parse_cmd_let()
   " TODO check scriptversion?
   if s2 ==# '..'
     let s2 = self.reader.peekn(3)
+  elseif s2 ==# '=<'
+    let s2 = self.reader.peekn(3)
   endif
 
   " :let {var-name} ..
-  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
+  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s2 !=# '=<<' && s1 !=# '=')
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
@@ -1522,6 +1563,12 @@ function! s:VimLParser.parse_cmd_let()
   if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.=' || s2 ==# '..=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%='
     call self.reader.getn(len(s2))
     let node.op = s2
+  elseif s2 ==# '=<<'
+    call self.reader.getn(len(s2))
+    call self.reader.skip_white()
+    let node.right = self.parse_heredoc()
+    call self.add_node(node)
+    return
   elseif s1 ==# '='
     call self.reader.getn(1)
     let node.op = s1
@@ -4360,6 +4407,8 @@ function! s:Compiler.compile(node)
     return self.compile_curlynameexpr(a:node)
   elseif a:node.type == s:NODE_LAMBDA
     return self.compile_lambda(a:node)
+  elseif a:node.type == s:NODE_HEREDOC
+    return self.compile_heredoc(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -4825,6 +4874,18 @@ endfunction
 function! s:Compiler.compile_lambda(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
+endfunction
+
+function! s:escape_string(str)
+  let str = '"' . escape(a:str, '\"') . '"'
+  let str = substitute(str, "\r", '\\r', 'g')
+  let str = substitute(str, "\n", '\\n', 'g')
+  let str = substitute(str, "\t", '\\t', 'g')
+  return str
+endfunction
+
+function! s:Compiler.compile_heredoc(node)
+  return printf('(heredoc (%s) "%s" %s))', join(a:node.rlist, ' '), a:node.op, s:escape_string(a:node.str))
 endfunction
 
 " TODO: under construction

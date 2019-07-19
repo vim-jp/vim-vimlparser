@@ -1,0 +1,1 @@
+(let  a (heredoc () "EOS" "hello\n world\n")))
