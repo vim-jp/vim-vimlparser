@@ -1511,13 +1511,17 @@ function! s:VimLParser.parse_heredoc()
   let node.op = words[-1]
   let lines = []
   call self.parse_trail()
-  while self.reader.peek() !=# '<EOF>'
-    let line = self.reader.readline()
+  while s:TRUE
+    if self.reader.peek() ==# '<EOF>'
+      break
+    endif
+    let line = self.reader.getn(-1)
     if line ==# node.op
       let node.str = join(lines, "\n") . "\n"
       return node
     endif
     call add(lines, line)
+    call self.reader.get()
   endwhile
   return s:NIL
 endfunction
@@ -1566,6 +1570,7 @@ function! s:VimLParser.parse_cmd_let()
   elseif s2 ==# '=<<'
     call self.reader.getn(len(s2))
     call self.reader.skip_white()
+    let node.op = '='
     let node.right = self.parse_heredoc()
     call self.add_node(node)
     return
