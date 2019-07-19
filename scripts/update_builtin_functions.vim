@@ -12,7 +12,7 @@ function! s:get_parse_lines(lines) abort
   return map(range(from + 1, to - 1), {_,i -> a:lines[i] })
 endfunction
 
-function! s:gen(evalfunc_c) abort
+function! s:parse(evalfunc_c) abort
   let lines = readfile(a:evalfunc_c)
 
   " { 'name': string, 'min_argc': integer, 'max_argc': integer }
@@ -32,7 +32,7 @@ function! s:gen(evalfunc_c) abort
   return funcs
 endfunction
 
-function! s:gen_new_builtin(existing, latest) abort
+function! s:diff(existing, latest) abort
   let existing_names = {}
   for func in a:existing
     let existing_names[func.name] = v:true
@@ -60,8 +60,8 @@ endfunction
 " evalfunc_c: path to vim/src/evalfunc.c
 function! VimLParserNewFuncs(evalfunc_c) abort
   let vimlparser = vimlparser#import()
-  let latest = s:gen(a:evalfunc_c)
-  let new_funcs = s:gen_new_builtin(vimlparser#import().VimLParser.builtin_functions, latest)
+  let latest = s:parse(a:evalfunc_c)
+  let new_funcs = s:diff(vimlparser#import().VimLParser.builtin_functions, latest)
   let generated_text = s:gen_viml(new_funcs)
   if generated_text ==# ''
     verbose echo 's:VimLParser.builtin_functions in autoload/vimlparser.vim is up-to-date.'
