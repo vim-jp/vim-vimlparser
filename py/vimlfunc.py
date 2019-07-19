@@ -47,11 +47,12 @@ pat_vim2py = {
     "\\h": "[A-Za-z_]",
     "\\s": "\\s",
     "\\v^d%[elete][lp]$": "^d(elete|elet|ele|el|e)[lp]$",
-    "\\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])": "^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])",
+    "\\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])":
+        "^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])",
     "\\w": "[0-9A-Za-z_]",
     "\\w\\|[:#]": "[0-9A-Za-z_]|[:#]",
     "\\x": "[0-9A-Fa-f]",
-    "^++": "^\+\+",
+    "^++": r"^\+\+",
     "^++bad=\\(keep\\|drop\\|.\\)\\>": "^\\+\\+bad=(keep|drop|.)\\b",
     "^++bad=drop": "^\\+\\+bad=drop",
     "^++bad=keep": "^\\+\\+bad=keep",
@@ -60,13 +61,15 @@ pat_vim2py = {
     "^++enc=\\S": "^\\+\\+enc=\\S",
     "^++encoding=\\S": "^\\+\\+encoding=\\S",
     "^++ff=\\(dos\\|unix\\|mac\\)\\>": "^\\+\\+ff=(dos|unix|mac)\\b",
-    "^++fileformat=\\(dos\\|unix\\|mac\\)\\>": "^\\+\\+fileformat=(dos|unix|mac)\\b",
+    "^++fileformat=\\(dos\\|unix\\|mac\\)\\>":
+        "^\\+\\+fileformat=(dos|unix|mac)\\b",
     "^++nobin\\>": "^\\+\\+nobin\\b",
     "^[A-Z]": "^[A-Z]",
     "^\\$\\w\\+": "^\\$[0-9A-Za-z_]+",
     "^\\(!\\|global\\|vglobal\\)$": "^(!|global|vglobal)$",
     "^\\(WHILE\\|FOR\\)$": "^(WHILE|FOR)$",
-    "^\\(vimgrep\\|vimgrepadd\\|lvimgrep\\|lvimgrepadd\\)$": "^(vimgrep|vimgrepadd|lvimgrep|lvimgrepadd)$",
+    "^\\(vimgrep\\|vimgrepadd\\|lvimgrep\\|lvimgrepadd\\)$":
+        "^(vimgrep|vimgrepadd|lvimgrep|lvimgrepadd)$",
     "^\\d": "^\\d",
     "^\\h": "^[A-Za-z_]",
     "^\\s": "^\\s",
@@ -82,10 +85,11 @@ pat_vim2py = {
     "^[A-Za-z_][0-9A-Za-z_]*$": "^[A-Za-z_][0-9A-Za-z_]*$",
     "^[A-Z]$": "^[A-Z]$",
     "^[a-z]$": "^[a-z]$",
-    "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$": "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
+    "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$":
+        "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
     "^[0-7]$": "^[0-7]$",
     "^[0-9A-Fa-f][0-9A-Fa-f]$": "^[0-9A-Fa-f][0-9A-Fa-f]$",
-    "^\.[0-9A-Fa-f]$": "^\.[0-9A-Fa-f]$",
+    r"^\.[0-9A-Fa-f]$": r"^\.[0-9A-Fa-f]$",
     "^[0-9A-Fa-f][^0-9A-Fa-f]$": "^[0-9A-Fa-f][^0-9A-Fa-f]$",
 }
 
