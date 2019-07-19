@@ -409,7 +409,7 @@ endfunction
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
 " LAMBDA .rlist .left
-" HEREDOC .rlist .op .value
+" HEREDOC .rlist .op .str
 function! s:Node(type)
   return {'type': a:type}
 endfunction
