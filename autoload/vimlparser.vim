@@ -804,6 +804,7 @@ function! s:VimLParser.parse_command()
   call self._parse_command(self.ea.cmd.parser)
 endfunction
 
+" TODO: self[a:parser]
 function! s:VimLParser._parse_command(parser) abort
   if a:parser ==# 'parse_cmd_append'
     call self.parse_cmd_append()
