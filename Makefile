@@ -23,7 +23,9 @@ js/test: js/vimlparser.js
 	test/run_command.sh node js/vimlparser.js
 
 py/test: py/vimlparser.py
-	test/run_command.sh python2.7 py/vimlparser.py
+	for python in $(VIMLPARSER_PYTHON_LIST); do \
+		test/run_command.sh $$python py/vimlparser.py; \
+	done
 
 test/node_position/test_position.out: test/node_position/test_position.vim test/node_position/test_position.ok
 	vim -Nu test/vimrc -S test/node_position/test_position.vim
