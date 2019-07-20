@@ -131,11 +131,12 @@ def viml_keys(obj):
     return obj.keys()
 
 def viml_len(obj):
-    try:
-        if type(obj) is str:
-            return len(obj.encode('utf-8', 'ignore'))
-    except UnicodeDecodeError:
-        pass
+    if type(obj) is str:
+        if sys.version_info < (3, 0):
+            b = bytes(obj)
+        else:
+            b = bytes(obj, 'utf8')
+        return len(b)
     return len(obj)
 
 def viml_printf(*args):
