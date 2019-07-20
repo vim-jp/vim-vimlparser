@@ -4895,7 +4895,7 @@ function! s:Compiler.compile_lambda(node)
 endfunction
 
 function! s:Compiler.compile_heredoc(node)
-  return printf('(heredoc (%s) "%s" %s))', join(a:node.rlist, ' '), a:node.op, self.escape_string(a:node.str))
+  return printf('(heredoc (%s) %s %s))', join(a:node.rlist, ' '), self.escape_string(a:node.op), self.escape_string(a:node.str))
 endfunction
 
 " TODO: under construction
