@@ -21,6 +21,9 @@ jobs:
       - MAKE_TARGET=test
       - TEST_PROFILE=vim-profile-master.txt
     - name: Installed Vim with checks
+      python:
+        - "2.7"
+        - "3.4"
       env:
       - VIM_VERSION=installed
       - MAKE_TARGET="clean_compiled check js/test py/test test/node_position/test_position.out"
