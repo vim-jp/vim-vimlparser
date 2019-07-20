@@ -3,6 +3,10 @@ dist: xenial
 git:
   depth: 10
 
+python:
+  - "2.7"
+  - "3.4"
+
 jobs:
   include:
     - name: Vim 7.4
@@ -21,9 +25,6 @@ jobs:
       - MAKE_TARGET=test
       - TEST_PROFILE=vim-profile-master.txt
     - name: Installed Vim with checks
-      python:
-        - "2.7"
-        - "3.4"
       env:
       - VIM_VERSION=installed
       - VIMLPARSER_PYTHON_LIST='python2.7 python3.4'
