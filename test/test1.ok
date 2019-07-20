@@ -53,3 +53,4 @@
 (let %= a 5)
 (let ..= a 'foo')
 (echo (concat (concat 'foo' 'bar') 'baz'))
+(let = a '🐥')
