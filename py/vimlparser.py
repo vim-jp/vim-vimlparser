@@ -3824,7 +3824,7 @@ class Compiler:
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
 
     def compile_heredoc(self, node):
-        return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, self.escape_string(node.str))
+        return viml_printf("(heredoc (%s) %s %s))", viml_join(node.rlist, " "), self.escape_string(node.op), self.escape_string(node.str))
 
 # TODO: under construction
 class RegexpParser:

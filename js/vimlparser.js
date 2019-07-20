@@ -4882,7 +4882,7 @@ Compiler.prototype.compile_lambda = function(node) {
 }
 
 Compiler.prototype.compile_heredoc = function(node) {
-    return viml_printf("(heredoc (%s) \"%s\" %s))", viml_join(node.rlist, " "), node.op, this.escape_string(node.str));
+    return viml_printf("(heredoc (%s) %s %s))", viml_join(node.rlist, " "), this.escape_string(node.op), this.escape_string(node.str));
 }
 
 // TODO: under construction
