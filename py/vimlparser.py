@@ -1410,20 +1410,18 @@ class VimLParser:
         node.op = ""
         node.rlist = []
         node.body = []
-        words = []
         while TRUE:
             self.reader.skip_white()
             key = self.reader.read_alpha()
             if key == "":
                 break
-            if not viml_eqregh(key, "^[a-z]"):
+            if not islower(key[0]):
                 node.op = key
                 break
             else:
-                viml_add(words, key)
-        if node.op == "":
-            return NIL
-        node.rlist = words
+                viml_add(node.rlist, key)
+        if node.op == "" or not viml_eqregh(node.op, "^[^a-z]\\S\\+$"):
+            raise VimLParserException(Err("E172: Missing marker", self.reader.getpos()))
         self.parse_trail()
         while TRUE:
             if self.reader.peek() == "<EOF>":
@@ -1433,7 +1431,7 @@ class VimLParser:
                 return node
             viml_add(node.body, line)
             self.reader.get()
-        return NIL
+        raise VimLParserException(Err(viml_printf("E990: Missing end marker '%s'", node.op), self.reader.getpos()))
 
     def parse_cmd_let(self):
         pos = self.reader.tell()
@@ -3825,9 +3823,16 @@ class Compiler:
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
 
     def compile_heredoc(self, node):
-        rlist = [self.escape_string(vval) for vval in node.rlist]
-        body = [self.escape_string(vval) for vval in node.body]
-        return viml_printf("(heredoc (list %s) %s (list %s))", viml_join(rlist, " "), self.escape_string(node.op), viml_join(body, " "))
+        if viml_empty(node.rlist):
+            rlist = "(list)"
+        else:
+            rlist = "(list " + viml_join([self.escape_string(vval) for vval in node.rlist], " ") + ")"
+        if viml_empty(node.body):
+            body = "(list)"
+        else:
+            body = "(list " + viml_join([self.escape_string(vval) for vval in node.body], " ") + ")"
+        op = self.escape_string(node.op)
+        return viml_printf("(heredoc %s %s %s)", rlist, op, body)
 
 # TODO: under construction
 class RegexpParser:

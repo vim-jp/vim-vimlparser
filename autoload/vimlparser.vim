@@ -1493,24 +1493,22 @@ function! s:VimLParser.parse_heredoc()
   let node.rlist = []
   let node.body = []
 
-  let words = []
   while s:TRUE
     call self.reader.skip_white()
     let key = self.reader.read_alpha()
     if key == ''
       break
     endif
-    if key !~# '^[a-z]'
+    if !s:islower(key[0])
       let node.op = key
       break
     else
-      call add(words, key)
+      call add(node.rlist, key)
     endif
   endwhile
-  if node.op ==# ''
-    return s:NIL
+  if node.op ==# '' || node.op !~# '^[^a-z]\S\+$'
+    throw s:Err('E172: Missing marker', self.reader.getpos())
   endif
-  let node.rlist = words
   call self.parse_trail()
   while s:TRUE
     if self.reader.peek() ==# '<EOF>'
@@ -1523,7 +1521,7 @@ function! s:VimLParser.parse_heredoc()
     call add(node.body, line)
     call self.reader.get()
   endwhile
-  return s:NIL
+  throw s:Err(printf("E990: Missing end marker '%s'", node.op), self.reader.getpos())
 endfunction
 
 function! s:VimLParser.parse_cmd_let()
@@ -4897,9 +4895,18 @@ function! s:Compiler.compile_lambda(node)
 endfunction
 
 function! s:Compiler.compile_heredoc(node)
-  let rlist = map(a:node.rlist, 'self.escape_string(v:val)')
-  let body = map(a:node.body, 'self.escape_string(v:val)')
-  return printf('(heredoc (list %s) %s (list %s))', join(rlist, ' '), self.escape_string(a:node.op), join(body, ' '))
+  if empty(a:node.rlist)
+    let rlist = '(list)'
+  else
+    let rlist = '(list ' . join(map(a:node.rlist, 'self.escape_string(v:val)'), ' ') . ')'
+  endif
+  if empty(a:node.body)
+    let body = '(list)'
+  else
+    let body = '(list ' . join(map(a:node.body, 'self.escape_string(v:val)'), ' ') . ')'
+  endif
+  let op = self.escape_string(a:node.op)
+  return printf('(heredoc %s %s %s)', rlist, op, body)
 endfunction
 
 " TODO: under construction

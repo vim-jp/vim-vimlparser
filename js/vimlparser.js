@@ -1779,25 +1779,23 @@ VimLParser.prototype.parse_heredoc = function() {
     node.op = "";
     node.rlist = [];
     node.body = [];
-    var words = [];
     while (TRUE) {
         this.reader.skip_white();
         var key = this.reader.read_alpha();
         if (key == "") {
             break;
         }
-        if (!viml_eqregh(key, "^[a-z]")) {
+        if (!islower(key[0])) {
             node.op = key;
             break;
         }
         else {
-            viml_add(words, key);
+            viml_add(node.rlist, key);
         }
     }
-    if (node.op == "") {
-        return NIL;
+    if (node.op == "" || !viml_eqregh(node.op, "^[^a-z]\\S\\+$")) {
+        throw Err("E172: Missing marker", this.reader.getpos());
     }
-    node.rlist = words;
     this.parse_trail();
     while (TRUE) {
         if (this.reader.peek() == "<EOF>") {
@@ -1810,7 +1808,7 @@ VimLParser.prototype.parse_heredoc = function() {
         viml_add(node.body, line);
         this.reader.get();
     }
-    return NIL;
+    throw Err(viml_printf("E990: Missing end marker '%s'", node.op), this.reader.getpos());
 }
 
 VimLParser.prototype.parse_cmd_let = function() {
@@ -4884,9 +4882,20 @@ Compiler.prototype.compile_lambda = function(node) {
 }
 
 Compiler.prototype.compile_heredoc = function(node) {
-    var rlist = node.rlist.map((function(vval) { return this.escape_string(vval); }).bind(this));
-    var body = node.body.map((function(vval) { return this.escape_string(vval); }).bind(this));
-    return viml_printf("(heredoc (list %s) %s (list %s))", viml_join(rlist, " "), this.escape_string(node.op), viml_join(body, " "));
+    if (viml_empty(node.rlist)) {
+        var rlist = "(list)";
+    }
+    else {
+        var rlist = "(list " + viml_join(node.rlist.map((function(vval) { return this.escape_string(vval); }).bind(this)), " ") + ")";
+    }
+    if (viml_empty(node.body)) {
+        var body = "(list)";
+    }
+    else {
+        var body = "(list " + viml_join(node.body.map((function(vval) { return this.escape_string(vval); }).bind(this)), " ") + ")";
+    }
+    var op = this.escape_string(node.op);
+    return viml_printf("(heredoc %s %s %s)", rlist, op, body);
 }
 
 // TODO: under construction
