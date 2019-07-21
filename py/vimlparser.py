@@ -83,6 +83,7 @@ pat_vim2py = {
   "^[0-9A-Fa-f][0-9A-Fa-f]$" : "^[0-9A-Fa-f][0-9A-Fa-f]$",
   "^\.[0-9A-Fa-f]$" : "^\.[0-9A-Fa-f]$",
   "^[0-9A-Fa-f][^0-9A-Fa-f]$" : "^[0-9A-Fa-f][^0-9A-Fa-f]$",
+  "^[^a-z]\\S\\+$": "^[^a-z]\\S\\+$",
 }
 
 def viml_add(lst, item):
@@ -1412,7 +1413,7 @@ class VimLParser:
         node.body = []
         while TRUE:
             self.reader.skip_white()
-            key = self.reader.read_alpha()
+            key = self.reader.read_word()
             if key == "":
                 break
             if not islower(key[0]):
@@ -1420,7 +1421,7 @@ class VimLParser:
                 break
             else:
                 viml_add(node.rlist, key)
-        if node.op == "" or not viml_eqregh(node.op, "^[^a-z]\\S\\+$"):
+        if node.op == "":
             raise VimLParserException(Err("E172: Missing marker", self.reader.getpos()))
         self.parse_trail()
         while TRUE:

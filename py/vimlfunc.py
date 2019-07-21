@@ -83,6 +83,7 @@ pat_vim2py = {
   "^[0-9A-Fa-f][0-9A-Fa-f]$" : "^[0-9A-Fa-f][0-9A-Fa-f]$",
   "^\.[0-9A-Fa-f]$" : "^\.[0-9A-Fa-f]$",
   "^[0-9A-Fa-f][^0-9A-Fa-f]$" : "^[0-9A-Fa-f][^0-9A-Fa-f]$",
+  "^[^a-z]\\S\\+$": "^[^a-z]\\S\\+$",
 }
 
 def viml_add(lst, item):

@@ -1781,7 +1781,7 @@ VimLParser.prototype.parse_heredoc = function() {
     node.body = [];
     while (TRUE) {
         this.reader.skip_white();
-        var key = this.reader.read_alpha();
+        var key = this.reader.read_word();
         if (key == "") {
             break;
         }
@@ -1793,7 +1793,7 @@ VimLParser.prototype.parse_heredoc = function() {
             viml_add(node.rlist, key);
         }
     }
-    if (node.op == "" || !viml_eqregh(node.op, "^[^a-z]\\S\\+$")) {
+    if (node.op == "") {
         throw Err("E172: Missing marker", this.reader.getpos());
     }
     this.parse_trail();

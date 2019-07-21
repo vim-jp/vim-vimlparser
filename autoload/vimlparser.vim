@@ -1495,7 +1495,7 @@ function! s:VimLParser.parse_heredoc()
 
   while s:TRUE
     call self.reader.skip_white()
-    let key = self.reader.read_alpha()
+    let key = self.reader.read_word()
     if key == ''
       break
     endif
@@ -1506,7 +1506,7 @@ function! s:VimLParser.parse_heredoc()
       call add(node.rlist, key)
     endif
   endwhile
-  if node.op ==# '' || node.op !~# '^[^a-z]\S\+$'
+  if node.op ==# ''
     throw s:Err('E172: Missing marker', self.reader.getpos())
   endif
   call self.parse_trail()
