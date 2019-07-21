@@ -582,7 +582,7 @@ function ExArg() {
 // CURLYNAMEPART .value
 // CURLYNAMEEXPR .value
 // LAMBDA .rlist .left
-// HEREDOC .rlist .op .str
+// HEREDOC .rlist .op .body
 function Node(type) {
     return {"type":type};
 }
@@ -1778,7 +1778,7 @@ VimLParser.prototype.parse_heredoc = function() {
     node.pos = this.ea.cmdpos;
     node.op = "";
     node.rlist = [];
-    node.str = "";
+    node.body = [];
     var words = [];
     while (TRUE) {
         this.reader.skip_white();
@@ -1786,15 +1786,18 @@ VimLParser.prototype.parse_heredoc = function() {
         if (key == "") {
             break;
         }
-        if (key == "trim") {
-            viml_add(words, key);
+        if (!viml_eqregh(key, "^[a-z]")) {
+            node.op = key;
+            break;
         }
         else {
-            node.op = key;
+            viml_add(words, key);
         }
     }
+    if (node.op == "") {
+        return NIL;
+    }
     node.rlist = words;
-    var lines = [];
     this.parse_trail();
     while (TRUE) {
         if (this.reader.peek() == "<EOF>") {
@@ -1802,10 +1805,9 @@ VimLParser.prototype.parse_heredoc = function() {
         }
         var line = this.reader.getn(-1);
         if (line == node.op) {
-            node.str = viml_join(lines, "\n") + "\n";
             return node;
         }
-        viml_add(lines, line);
+        viml_add(node.body, line);
         this.reader.get();
     }
     return NIL;
@@ -4882,7 +4884,9 @@ Compiler.prototype.compile_lambda = function(node) {
 }
 
 Compiler.prototype.compile_heredoc = function(node) {
-    return viml_printf("(heredoc (%s) %s %s))", viml_join(node.rlist, " "), this.escape_string(node.op), this.escape_string(node.str));
+    var rlist = node.rlist.map((function(vval) { return this.escape_string(vval); }).bind(this));
+    var body = node.body.map((function(vval) { return this.escape_string(vval); }).bind(this));
+    return viml_printf("(heredoc (list %s) %s (list %s))", viml_join(rlist, " "), this.escape_string(node.op), viml_join(body, " "));
 }
 
 // TODO: under construction

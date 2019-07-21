@@ -522,7 +522,7 @@ def ExArg():
 # CURLYNAMEPART .value
 # CURLYNAMEEXPR .value
 # LAMBDA .rlist .left
-# HEREDOC .rlist .op .str
+# HEREDOC .rlist .op .body
 def Node(type):
     return AttributeDict({"type":type})
 
@@ -1409,28 +1409,29 @@ class VimLParser:
         node.pos = self.ea.cmdpos
         node.op = ""
         node.rlist = []
-        node.str = ""
+        node.body = []
         words = []
         while TRUE:
             self.reader.skip_white()
             key = self.reader.read_alpha()
             if key == "":
                 break
-            if key == "trim":
-                viml_add(words, key)
-            else:
+            if not viml_eqregh(key, "^[a-z]"):
                 node.op = key
+                break
+            else:
+                viml_add(words, key)
+        if node.op == "":
+            return NIL
         node.rlist = words
-        lines = []
         self.parse_trail()
         while TRUE:
             if self.reader.peek() == "<EOF>":
                 break
             line = self.reader.getn(-1)
             if line == node.op:
-                node.str = viml_join(lines, "\n") + "\n"
                 return node
-            viml_add(lines, line)
+            viml_add(node.body, line)
             self.reader.get()
         return NIL
 
@@ -3824,7 +3825,9 @@ class Compiler:
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
 
     def compile_heredoc(self, node):
-        return viml_printf("(heredoc (%s) %s %s))", viml_join(node.rlist, " "), self.escape_string(node.op), self.escape_string(node.str))
+        rlist = [self.escape_string(vval) for vval in node.rlist]
+        body = [self.escape_string(vval) for vval in node.body]
+        return viml_printf("(heredoc (list %s) %s (list %s))", viml_join(rlist, " "), self.escape_string(node.op), viml_join(body, " "))
 
 # TODO: under construction
 class RegexpParser:

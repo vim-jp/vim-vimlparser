@@ -409,7 +409,7 @@ endfunction
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
 " LAMBDA .rlist .left
-" HEREDOC .rlist .op .str
+" HEREDOC .rlist .op .body
 function! s:Node(type)
   return {'type': a:type}
 endfunction
@@ -1491,7 +1491,7 @@ function! s:VimLParser.parse_heredoc()
   let node.pos = self.ea.cmdpos
   let node.op = ''
   let node.rlist = []
-  let node.str = ''
+  let node.body = []
 
   let words = []
   while s:TRUE
@@ -1500,14 +1500,17 @@ function! s:VimLParser.parse_heredoc()
     if key == ''
       break
     endif
-    if key == 'trim'
-      call add(words, key)
-    else
+    if key !~# '^[a-z]'
       let node.op = key
+      break
+    else
+      call add(words, key)
     endif
   endwhile
+  if node.op ==# ''
+    return s:NIL
+  endif
   let node.rlist = words
-  let lines = []
   call self.parse_trail()
   while s:TRUE
     if self.reader.peek() ==# '<EOF>'
@@ -1515,10 +1518,9 @@ function! s:VimLParser.parse_heredoc()
     endif
     let line = self.reader.getn(-1)
     if line ==# node.op
-      let node.str = join(lines, "\n") . "\n"
       return node
     endif
-    call add(lines, line)
+    call add(node.body, line)
     call self.reader.get()
   endwhile
   return s:NIL
@@ -4895,7 +4897,9 @@ function! s:Compiler.compile_lambda(node)
 endfunction
 
 function! s:Compiler.compile_heredoc(node)
-  return printf('(heredoc (%s) %s %s))', join(a:node.rlist, ' '), self.escape_string(a:node.op), self.escape_string(a:node.str))
+  let rlist = map(a:node.rlist, 'self.escape_string(v:val)')
+  let body = map(a:node.body, 'self.escape_string(v:val)')
+  return printf('(heredoc (list %s) %s (list %s))', join(rlist, ' '), self.escape_string(a:node.op), join(body, ' '))
 endfunction
 
 " TODO: under construction
