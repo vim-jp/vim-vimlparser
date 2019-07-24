@@ -1916,6 +1916,14 @@ function! s:VimLParser.parse_constlvalue()
   endif
   if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME
     return node
+  elseif node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_SLICE || node.type == s:NODE_DOT
+    throw s:Err('E996: Cannot lock a list or dict', node.pos)
+  elseif node.type == s:NODE_OPTION
+    throw s:Err('E996: Cannot lock an option', node.pos)
+  elseif node.type == s:NODE_ENV
+    throw s:Err('E996: Cannot lock an environment variable', node.pos)
+  elseif node.type == s:NODE_REG
+    throw s:Err('E996: Cannot lock a register', node.pos)
   endif
   throw s:Err('Invalid Expression', node.pos)
 endfunction
