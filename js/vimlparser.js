@@ -155,7 +155,12 @@ function viml_keys(obj) {
 
 function viml_len(obj) {
     if (typeof obj === 'string') {
-      return encodeURIComponent(obj).replace(/%../g, ' ').length;
+      var len = 0;
+      for (var i = 0; i < obj.length; i++) {
+          var c = obj.charCodeAt(i);
+          len += c < 128 ? 1 : ((c > 127) && (c < 2048)) ? 2 : 3;
+      }
+      return len;
     }
     return obj.length;
 }
@@ -2794,7 +2799,7 @@ ExprTokenizer.prototype.get_dict_literal_key = function() {
     var r = this.reader;
     var c = r.peek();
     if (!isalnum(c) && c != "_" && c != "-") {
-        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
+        throw Err(viml_printf("unexpected character: %s", c), this.reader.getpos());
     }
     var s = c;
     this.reader.seek_cur(1);
@@ -5503,19 +5508,19 @@ RegexpParser.prototype.get_token_sq_c = function() {
         }
         else if (c == "r") {
             this.reader.seek_cur(1);
-            return ["\\r", viml_char2nr("\r")];
+            return ["\\r", 13];
         }
         else if (c == "t") {
             this.reader.seek_cur(1);
-            return ["\\t", viml_char2nr("\t")];
+            return ["\\t", 9];
         }
         else if (c == "e") {
             this.reader.seek_cur(1);
-            return ["\\e", viml_char2nr("\e")];
+            return ["\\e", 27];
         }
         else if (c == "b") {
             this.reader.seek_cur(1);
-            return ["\\b", viml_char2nr("\b")];
+            return ["\\b", 8];
         }
         else if (viml_stridx("]^-\\", c) != -1) {
             this.reader.seek_cur(1);

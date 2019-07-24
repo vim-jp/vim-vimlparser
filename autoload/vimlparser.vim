@@ -3003,7 +3003,7 @@ function! s:ExprTokenizer.get_dict_literal_key()
   let r = self.reader
   let c = r.peek()
   if !s:isalnum(c) && c != '_' && c != '-'
-    throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+    throw s:Err(printf('unexpected character: %s', c), self.reader.getpos())
   endif
   let s = c
   call self.reader.seek_cur(1)
@@ -5414,16 +5414,16 @@ function! s:RegexpParser.get_token_sq_c()
       return ['\n', 0]
     elseif c ==# 'r'
       call self.reader.seek_cur(1)
-      return ['\r', char2nr("\r")]
+      return ['\r', 13]
     elseif c ==# 't'
       call self.reader.seek_cur(1)
-      return ['\t', char2nr("\t")]
+      return ['\t', 9]
     elseif c ==# 'e'
       call self.reader.seek_cur(1)
-      return ['\e', char2nr("\e")]
+      return ['\e', 27]
     elseif c ==# 'b'
       call self.reader.seek_cur(1)
-      return ['\b', char2nr("\b")]
+      return ['\b', 8]
     elseif stridx(']^-\', c) != -1
       call self.reader.seek_cur(1)
       return ['\' . c, char2nr(c)]

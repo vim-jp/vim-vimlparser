@@ -53,6 +53,7 @@
 (let %= a 5)
 (let ..= a 'foo')
 (echo (concat (concat 'foo' 'bar') 'baz'))
+(let = a '🐥')
 (const = a 1)
 (const = (a b) (list 1 2))
 (const = (a b . c) (list 1 2 3))

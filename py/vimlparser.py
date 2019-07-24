@@ -132,7 +132,11 @@ def viml_keys(obj):
 
 def viml_len(obj):
     if type(obj) is str:
-        return len(obj.encode('utf-8'))
+        if sys.version_info < (3, 0):
+            b = bytes(obj)
+        else:
+            b = bytes(obj, 'utf8')
+        return len(b)
     return len(obj)
 
 def viml_printf(*args):
@@ -2208,7 +2212,7 @@ class ExprTokenizer:
         r = self.reader
         c = r.peek()
         if not isalnum(c) and c != "_" and c != "-":
-            raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
+            raise VimLParserException(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
         s = c
         self.reader.seek_cur(1)
         while TRUE:
@@ -4265,16 +4269,16 @@ class RegexpParser:
                 return ["\\n", 0]
             elif c == "r":
                 self.reader.seek_cur(1)
-                return ["\\r", viml_char2nr("\r")]
+                return ["\\r", 13]
             elif c == "t":
                 self.reader.seek_cur(1)
-                return ["\\t", viml_char2nr("\t")]
+                return ["\\t", 9]
             elif c == "e":
                 self.reader.seek_cur(1)
-                return ["\\e", viml_char2nr("\e")]
+                return ["\\e", 27]
             elif c == "b":
                 self.reader.seek_cur(1)
-                return ["\\b", viml_char2nr("\b")]
+                return ["\\b", 8]
             elif viml_stridx("]^-\\", c) != -1:
                 self.reader.seek_cur(1)
                 return ["\\" + c, viml_char2nr(c)]

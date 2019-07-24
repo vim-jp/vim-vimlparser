@@ -155,7 +155,12 @@ function viml_keys(obj) {
 
 function viml_len(obj) {
     if (typeof obj === 'string') {
-      return encodeURIComponent(obj).replace(/%../g, ' ').length;
+      var len = 0;
+      for (var i = 0; i < obj.length; i++) {
+          var c = obj.charCodeAt(i);
+          len += c < 128 ? 1 : ((c > 127) && (c < 2048)) ? 2 : 3;
+      }
+      return len;
     }
     return obj.length;
 }
