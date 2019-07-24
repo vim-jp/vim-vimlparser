@@ -2207,6 +2207,18 @@ VimLParser.prototype.parse_constlvalue = function() {
     if (node.type == NODE_IDENTIFIER || node.type == NODE_CURLYNAME) {
         return node;
     }
+    else if (node.type == NODE_SUBSCRIPT || node.type == NODE_SLICE || node.type == NODE_DOT) {
+        throw Err("E996: Cannot lock a list or dict", node.pos);
+    }
+    else if (node.type == NODE_OPTION) {
+        throw Err("E996: Cannot lock an option", node.pos);
+    }
+    else if (node.type == NODE_ENV) {
+        throw Err("E996: Cannot lock an environment variable", node.pos);
+    }
+    else if (node.type == NODE_REG) {
+        throw Err("E996: Cannot lock a register", node.pos);
+    }
     throw Err("Invalid Expression", node.pos);
 }
 

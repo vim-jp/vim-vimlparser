@@ -1765,6 +1765,14 @@ class VimLParser:
                 raise VimLParserException(Err(viml_printf("E461: Illegal variable name: %s", node.value), node.pos))
         if node.type == NODE_IDENTIFIER or node.type == NODE_CURLYNAME:
             return node
+        elif node.type == NODE_SUBSCRIPT or node.type == NODE_SLICE or node.type == NODE_DOT:
+            raise VimLParserException(Err("E996: Cannot lock a list or dict", node.pos))
+        elif node.type == NODE_OPTION:
+            raise VimLParserException(Err("E996: Cannot lock an option", node.pos))
+        elif node.type == NODE_ENV:
+            raise VimLParserException(Err("E996: Cannot lock an environment variable", node.pos))
+        elif node.type == NODE_REG:
+            raise VimLParserException(Err("E996: Cannot lock a register", node.pos))
         raise VimLParserException(Err("Invalid Expression", node.pos))
 
     def parse_lvaluelist(self):
