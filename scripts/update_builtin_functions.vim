@@ -4,7 +4,7 @@
 function! s:get_parse_lines(lines) abort
   let from = index(a:lines, '} functions[] =')
   if from ==# -1
-    return []
+    throw 'cannot parse functions'
   endif
   " find next '{'
   let from = index(a:lines, '{', from + 1)
@@ -59,14 +59,19 @@ endfunction
 
 " evalfunc_c: path to vim/src/evalfunc.c
 function! VimLParserNewFuncs(evalfunc_c) abort
-  let vimlparser = vimlparser#import()
-  let latest = s:parse(a:evalfunc_c)
-  let new_funcs = s:diff(vimlparser#import().VimLParser.builtin_functions, latest)
-  let generated_text = s:gen_viml(new_funcs)
-  if generated_text ==# ''
-    verbose echo 's:VimLParser.builtin_functions in autoload/vimlparser.vim is up-to-date.'
-  else
-    verbose echo "Append following lines to s:VimLParser.builtin_functions in autoload/vimlparser.vim\n"
-    verbose echo generated_text
-  endif
+  try
+    let vimlparser = vimlparser#import()
+    let latest = s:parse(a:evalfunc_c)
+    let new_funcs = s:diff(vimlparser#import().VimLParser.builtin_functions, latest)
+    let generated_text = s:gen_viml(new_funcs)
+    if generated_text ==# ''
+      verbose echo 's:VimLParser.builtin_functions in autoload/vimlparser.vim is up-to-date.'
+    else
+      verbose echo "Append following lines to s:VimLParser.builtin_functions in autoload/vimlparser.vim\n"
+      verbose echo generated_text
+    endif
+  catch
+    " :echoerr doesn't show output
+    verbose echo '[ERROR]' v:exception 'at' v:throwpoint
+  endtry
 endfunction
