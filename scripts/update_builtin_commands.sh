@@ -8,6 +8,6 @@ fi
 vim -u NONE -i NONE -n -N -e -s \
   --cmd "let &rtp .= ',' . getcwd()" \
   --cmd "source scripts/update_builtin_commands.vim" \
-  --cmd "call VimLParserNewCmds('$1')" \
-  --cmd "qall!"
+  --cmd "call VimLParserNewCmds(expand('$1'))" \
+  --cmd "qall!" 2>&1
 echo
