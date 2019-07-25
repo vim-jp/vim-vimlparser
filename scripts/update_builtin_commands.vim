@@ -72,7 +72,7 @@ function! s:Trie.remove(s) abort
   return v:true
 endfunction
 
-function! s:gen(ex_cmds_h) abort
+function! s:parse(ex_cmds_h) abort
   let lines = readfile(a:ex_cmds_h)
 
   " { 'name': string, 'flags': string, 'minlen': int, 'parser': string}
@@ -100,14 +100,14 @@ function! s:gen(ex_cmds_h) abort
   return cmds
 endfunction
 
-function! s:gen_new_builtin(existing, latest) abort
+function! s:diff(existing, latest) abort
   let existing_names = {}
   for cmd in a:existing
     let existing_names[cmd.name] = v:true
   endfor
   let newcmds = []
   for cmd in filter(copy(a:latest), {_, c -> !has_key(existing_names, c.name)})
-    let newcmds = add(newcmds, extend(cmd, {'parser': 'parse_cmd_common'}))
+    let newcmds = add(newcmds, cmd)
   endfor
   return newcmds
 endfunction
@@ -125,8 +125,9 @@ endfunction
 " ex_cmds_h: path to vim/src/ex_cmds.h
 function! VimLParserNewCmds(ex_cmds_h) abort
   let vimlparser = vimlparser#import()
-  let latest = s:gen(a:ex_cmds_h)
-  let new_cmds = s:gen_new_builtin(vimlparser#import().VimLParser.builtin_commands, latest)
+  let latest = s:parse(a:ex_cmds_h)
+  let new_cmds = s:diff(vimlparser#import().VimLParser.builtin_commands, latest)
+  call map(new_cmds, {_,cmd -> extend(cmd, {'parser': 'parse_cmd_common'})})
   let generated_text = s:gen_viml(new_cmds)
   if generated_text ==# ''
     verbose echo 's:VimLParser.builtin_commands in autoload/vimlparser.vim is up-to-date.'
@@ -135,4 +136,3 @@ function! VimLParserNewCmds(ex_cmds_h) abort
     verbose echo generated_text
   endif
 endfunction
-" call s:vimlparser_new_cmds('/home/haya14busa/src/github.com/vim/vim/src/ex_cmds.h')
