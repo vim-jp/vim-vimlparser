@@ -138,6 +138,7 @@ let s:NODE_CURLYNAMEPART = 90
 let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
+let s:NODE_CONST = 94
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -324,6 +325,7 @@ endfunction
 " RETURN .ea .left
 " EXCALL .ea .left
 " LET .ea .op .left .list .rest .right
+" CONST .ea .op .left .list .rest .right
 " UNLET .ea .list
 " LOCKVAR .ea .depth .list
 " UNLOCKVAR .ea .depth .list
@@ -804,6 +806,7 @@ function! s:VimLParser.parse_command()
   call self._parse_command(self.ea.cmd.parser)
 endfunction
 
+" TODO: self[a:parser]
 function! s:VimLParser._parse_command(parser) abort
   if a:parser ==# 'parse_cmd_append'
     call self.parse_cmd_append()
@@ -859,6 +862,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_insert()
   elseif a:parser ==# 'parse_cmd_let'
     call self.parse_cmd_let()
+  elseif a:parser ==# 'parse_cmd_const'
+    call self.parse_cmd_const()
   elseif a:parser ==# 'parse_cmd_loadkeymap'
     call self.parse_cmd_loadkeymap()
   elseif a:parser ==# 'parse_cmd_lockvar'
@@ -1532,6 +1537,41 @@ function! s:VimLParser.parse_cmd_let()
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_cmd_const()
+  let pos = self.reader.tell()
+  call self.reader.skip_white()
+
+  " :const
+  if self.ends_excmds(self.reader.peek())
+    call self.reader.seek_set(pos)
+    call self.parse_cmd_common()
+    return
+  endif
+
+  let lhs = self.parse_constlhs()
+  call self.reader.skip_white()
+  let s1 = self.reader.peekn(1)
+
+  " :const {var-name}
+  if self.ends_excmds(s1) || s1 !=# '='
+    call self.reader.seek_set(pos)
+    call self.parse_cmd_common()
+    return
+  endif
+
+  " :const left op right
+  let node = s:Node(s:NODE_CONST)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  call self.reader.getn(1)
+  let node.op = s1
+  let node.left = lhs.left
+  let node.list = lhs.list
+  let node.rest = lhs.rest
+  let node.right = self.parse_expr()
+  call self.add_node(node)
+endfunction
+
 function! s:VimLParser.parse_cmd_unlet()
   let node = s:Node(s:NODE_UNLET)
   let node.pos = self.ea.cmdpos
@@ -1865,6 +1905,30 @@ function! s:VimLParser.parse_lvalue()
   throw s:Err('Invalid Expression', node.pos)
 endfunction
 
+" TODO: merge with s:VimLParser.parse_lvalue()
+function! s:VimLParser.parse_constlvalue()
+  let p = s:LvalueParser.new(self.reader)
+  let node = p.parse()
+  if node.type == s:NODE_IDENTIFIER
+    if !s:isvarname(node.value)
+      throw s:Err(printf('E461: Illegal variable name: %s', node.value), node.pos)
+    endif
+  endif
+  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME
+    return node
+  elseif node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_SLICE || node.type == s:NODE_DOT
+    throw s:Err('E996: Cannot lock a list or dict', node.pos)
+  elseif node.type == s:NODE_OPTION
+    throw s:Err('E996: Cannot lock an option', node.pos)
+  elseif node.type == s:NODE_ENV
+    throw s:Err('E996: Cannot lock an environment variable', node.pos)
+  elseif node.type == s:NODE_REG
+    throw s:Err('E996: Cannot lock a register', node.pos)
+  endif
+  throw s:Err('Invalid Expression', node.pos)
+endfunction
+
+
 function! s:VimLParser.parse_lvaluelist()
   let list = []
   let node = self.parse_expr()
@@ -1910,6 +1974,40 @@ function! s:VimLParser.parse_letlhs()
     endwhile
   else
     let lhs.left = self.parse_lvalue()
+  endif
+  return lhs
+endfunction
+
+" TODO: merge with s:VimLParser.parse_letlhs() ?
+function! s:VimLParser.parse_constlhs()
+  let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
+  let tokenizer = s:ExprTokenizer.new(self.reader)
+  if tokenizer.peek().type == s:TOKEN_SQOPEN
+    call tokenizer.get()
+    let lhs.list = []
+    while s:TRUE
+      let node = self.parse_lvalue()
+      call add(lhs.list, node)
+      let token = tokenizer.get()
+      if token.type == s:TOKEN_SQCLOSE
+        break
+      elseif token.type == s:TOKEN_COMMA
+        continue
+      elseif token.type == s:TOKEN_SEMICOLON
+        let node = self.parse_lvalue()
+        let lhs.rest = node
+        let token = tokenizer.get()
+        if token.type == s:TOKEN_SQCLOSE
+          break
+        else
+          throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
+        endif
+      else
+        throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
+      endif
+    endwhile
+  else
+    let lhs.left = self.parse_constlvalue()
   endif
   return lhs
 endfunction
@@ -2192,6 +2290,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'left', 'minlen': 2, 'flags': 'TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'leftabove', 'minlen': 5, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'let', 'minlen': 3, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_let'},
+      \ {'name': 'const', 'minlen': 4, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_const'},
       \ {'name': 'lexpr', 'minlen': 3, 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lfile', 'minlen': 2, 'flags': 'TRLBAR|FILE1|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lfirst', 'minlen': 4, 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
@@ -4669,6 +4768,9 @@ function! s:Compiler.compile(node)
   elseif a:node.type == s:NODE_LET
     call self.compile_let(a:node)
     return s:NIL
+  elseif a:node.type == s:NODE_CONST
+    call self.compile_const(a:node)
+    return s:NIL
   elseif a:node.type == s:NODE_UNLET
     call self.compile_unlet(a:node)
     return s:NIL
@@ -4906,6 +5008,22 @@ function! s:Compiler.compile_let(node)
   endif
   let right = self.compile(a:node.right)
   call self.out('(let %s %s %s)', a:node.op, left, right)
+endfunction
+
+" TODO: merge with s:Compiler.compile_let() ?
+function! s:Compiler.compile_const(node)
+  let left = ''
+  if a:node.left isnot s:NIL
+    let left = self.compile(a:node.left)
+  else
+    let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
+    if a:node.rest isnot s:NIL
+      let left .= ' . ' . self.compile(a:node.rest)
+    endif
+    let left = '(' . left . ')'
+  endif
+  let right = self.compile(a:node.right)
+  call self.out('(const %s %s %s)', a:node.op, left, right)
 endfunction
 
 function! s:Compiler.compile_unlet(node)

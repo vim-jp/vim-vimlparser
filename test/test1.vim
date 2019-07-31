@@ -59,3 +59,6 @@ let a %= 5
 let a ..= 'foo'
 echo ('foo' .. 'bar')..'baz'
 let a = '🐥'
+const a = 1
+const [a, b] = [1, 2]
+const [a, b; c] = [1, 2, 3]
