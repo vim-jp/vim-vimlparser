@@ -330,9 +330,16 @@ function s:PythonCompiler.insert_empty_lines_before_comment(count)
   let comment_start = 0
   let len_lines = len(self.lines)
   if len_lines
-    while get(self.lines, comment_start - 1, '') =~# '^\s*#'
+    while 1
+      let line = get(self.lines, comment_start - 1, '')
+      if line !~# '^\s*#'
+        break
+      endif
       let comment_start -= 1
+      " Adjust indentation to current level.
+      let self.lines[comment_start] = substitute(line, '^\s\+', self.indent[0], '')
     endwhile
+
     if comment_start != 0
       let comment_start = len_lines + comment_start
     endif
