@@ -106,6 +106,7 @@ endfunction
 function s:PythonCompiler.__init__()
   let self.indent = ['']
   let self.lines = []
+  let self.in_class = 0
 endfunction
 
 function s:PythonCompiler.out(...)
@@ -324,31 +325,66 @@ function s:PythonCompiler.compile_excmd(node)
   throw 'NotImplemented: excmd'
 endfunction
 
+function s:PythonCompiler.insert_empty_lines_before_comment(count)
+  " Find start of preceding comment (block).
+  let comment_start = 0
+  let len_lines = len(self.lines)
+  if len_lines
+    while 1
+      let line = get(self.lines, comment_start - 1, '')
+      if line !~# '^\s*#'
+        break
+      endif
+      let comment_start -= 1
+      " Adjust indentation to current level.
+      let self.lines[comment_start] = substitute(line, '^\s\+', self.indent[0], '')
+    endwhile
+
+    if comment_start != 0
+      let comment_start = len_lines + comment_start
+    endif
+  endif
+
+  if comment_start
+    for c in range(a:count)
+      call insert(self.lines, '', comment_start)
+    endfor
+  else
+    for c in range(a:count)
+      call self.emptyline()
+    endfor
+  endif
+endfunction
+
 function s:PythonCompiler.compile_function(node)
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   if !empty(rlist) && rlist[-1] == '...'
     let rlist[-1] = '*a000'
   endif
+
   if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let left = matchstr(left, '\.\zs.*')
     if left == 'new'
       return
     endif
+    call self.insert_empty_lines_before_comment(1)
     call insert(rlist, 'self')
-    call self.incindent('    ')
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
     call self.decindent()
-    call self.decindent()
   else
+    if self.in_class
+      let self.in_class = 0
+      call self.decindent()
+    endif
+    call self.insert_empty_lines_before_comment(2)
     call self.out('def %s(%s):', left, join(rlist, ', '))
     call self.incindent('    ')
     call self.compile_body(a:node.body)
     call self.decindent()
   endif
-  call self.emptyline()
 endfunction
 
 function s:PythonCompiler.compile_delfunction(node)
@@ -375,20 +411,26 @@ function s:PythonCompiler.compile_let(node)
   let right = self.compile(a:node.right)
   if a:node.left isnot s:NIL
     let left = self.compile(a:node.left)
-    if left == 'LvalueParser'
-      call self.out('class LvalueParser(ExprParser):')
-      return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
-      call self.out('class %s:', left)
-      return
-    elseif left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
+    if left ==# 'LvalueParser'
+      let class_def = 'LvalueParser(ExprParser)'
+    elseif left =~# '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)$'
+      let class_def = left
+    elseif left =~# '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
       let left = matchstr(left, '\.\zs.*')
-      call self.incindent('    ')
       call self.out('%s %s %s', left, op, right)
-      call self.decindent()
+      return
+    else
+      call self.out('%s %s %s', left, op, right)
       return
     endif
-    call self.out('%s %s %s', left, op, right)
+
+    if self.in_class
+      call self.decindent()
+    endif
+    call self.insert_empty_lines_before_comment(2)
+    call self.out('class %s:', class_def)
+    let self.in_class = 1
+    call self.incindent('    ')
   else
     let list = map(a:node.list, 'self.compile(v:val)')
     if a:node.rest isnot s:NIL
@@ -763,7 +805,7 @@ function s:PythonCompiler.compile_list(node)
 endfunction
 
 function s:PythonCompiler.compile_dict(node)
-  let value = map(a:node.value, 'self.compile(v:val[0]) . ":" . self.compile(v:val[1])')
+  let value = map(a:node.value, 'self.compile(v:val[0]) . ": " . self.compile(v:val[1])')
   if empty(value)
     return 'AttributeDict({})'
   else
@@ -828,7 +870,7 @@ let s:viml_builtin_functions = map(copy(s:VimLParser.builtin_functions), 'v:val.
 let s:script_dir = expand('<sfile>:h')
 function! s:convert(in, out)
   let vimlfunc = fnamemodify(s:script_dir . '/vimlfunc.py', ':p')
-  let head = readfile(vimlfunc)
+  let head = readfile(vimlfunc) + ['', '']
   try
     let r = s:StringReader.new(readfile(a:in))
     let p = s:VimLParser.new()
@@ -836,6 +878,8 @@ function! s:convert(in, out)
     let lines = c.compile(p.parse(r))
     unlet lines[0 : index(lines, 'NIL = []') - 1]
     let tail = [
+    \   '',
+    \   '',
     \   'if __name__ == ''__main__'':',
     \   '    main()',
     \ ]

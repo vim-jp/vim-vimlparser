@@ -755,7 +755,7 @@ VimLParser.prototype.parse_command_modifiers = function() {
             viml_add(modifiers, {"name":"keeppatterns"});
         }
         else if (viml_stridx("hide", k) == 0 && viml_len(k) >= 3) {
-            //hid\%[e]
+            // hid\%[e]
             if (this.ends_excmds(c)) {
                 break;
             }
@@ -778,7 +778,7 @@ VimLParser.prototype.parse_command_modifiers = function() {
             viml_add(modifiers, {"name":"noswapfile"});
         }
         else if (viml_stridx("rightbelow", k) == 0 && viml_len(k) >= 6) {
-            //rightb\%[elow]
+            // rightb\%[elow]
             viml_add(modifiers, {"name":"rightbelow"});
         }
         else if (viml_stridx("sandbox", k) == 0 && viml_len(k) >= 3) {
