@@ -691,7 +691,7 @@ function s:PythonCompiler.compile_isci(node)
 endfunction
 
 function s:PythonCompiler.compile_iscs(node)
-  throw 'NotImplemented: is#'
+  return self.compile_op2(a:node, 'is')
 endfunction
 
 function s:PythonCompiler.compile_isnot(node)
@@ -703,7 +703,7 @@ function s:PythonCompiler.compile_isnotci(node)
 endfunction
 
 function s:PythonCompiler.compile_isnotcs(node)
-  throw 'NotImplemented: isnot#'
+  return self.compile_op2(a:node, 'is not')
 endfunction
 
 function s:PythonCompiler.compile_add(node)
