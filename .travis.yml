@@ -25,6 +25,7 @@ jobs:
       - VIM_VERSION=installed
       - MAKE_TARGET="clean_compiled check checkpy js/test py/test test/node_position/test_position.out"
       - TEST_PROFILE=vim-profile-installed.txt
+      - RUN_VINT=true
 
 install:
   - |
@@ -35,12 +36,15 @@ install:
       export PATH=$HOME/vim/bin:$PATH
     fi
   - pip install covimerage --user
+  - if [ "$RUN_VINT" = "true" ]; then pip install --user --upgrade vim-vint pathlib enum34 typing; fi
 
 script:
   - uname -a
   - which -a vim
   - vim --cmd version --cmd quit
   - make --keep-going $MAKE_TARGET
+  - if [ "$RUN_VINT" = "true" ]; then python --version; fi
+  - if [ "$RUN_VINT" = "true" ]; then vint autoload; fi
 
 after_success:
   - covimerage write_coverage $TEST_PROFILE
