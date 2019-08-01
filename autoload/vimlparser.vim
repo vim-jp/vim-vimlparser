@@ -740,7 +740,7 @@ function! s:VimLParser.parse_command()
 
   let self.ea.cmd = self.find_command()
 
-  if self.ea.cmd is s:NIL
+  if self.ea.cmd is# s:NIL
     call self.reader.setpos(self.ea.cmdpos)
     throw s:Err(printf('E492: Not an editor command: %s', self.reader.peekline()), self.ea.cmdpos)
   endif
@@ -968,7 +968,7 @@ function! s:VimLParser.find_command()
   endif
   
   " FIXME: user defined command
-  if (cmd is s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
+  if (cmd is# s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
     let name .= self.reader.read_alnum()
     unlet cmd
     let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
@@ -1159,7 +1159,7 @@ function! s:VimLParser.separate_nextcmd()
           \   && ((self.ea.cmd.name !=# '@' && self.ea.cmd.name !=# '*')
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
-          \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc !=# '@'))
+          \       || self.reader.getpos().i !=# self.ea.argpos.i + 1 || pc !=# '@'))
       let has_cpo_bar = s:FALSE " &cpoptions =~ 'b'
       if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
@@ -1437,7 +1437,7 @@ function! s:VimLParser.parse_cmd_endfunction()
   call self.check_missing_endtry('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endwhile('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endfor('ENDFUNCTION', self.ea.cmdpos)
-  if self.context[0].type != s:NODE_FUNCTION
+  if self.context[0].type !=# s:NODE_FUNCTION
     throw s:Err('E193: :endfunction not inside a function', self.ea.cmdpos)
   endif
   call self.reader.getn(-1)
@@ -1482,7 +1482,7 @@ function! s:VimLParser.parse_cmd_call()
     throw s:Err('E471: Argument required', self.reader.getpos())
   endif
   let node.left = self.parse_expr()
-  if node.left.type != s:NODE_CALL
+  if node.left.type !=# s:NODE_CALL
     throw s:Err('Not an function call', node.left.pos)
   endif
   call self.add_node(node)
@@ -1622,10 +1622,10 @@ function! s:VimLParser.parse_cmd_if()
 endfunction
 
 function! s:VimLParser.parse_cmd_elseif()
-  if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF
+  if self.context[0].type !=# s:NODE_IF && self.context[0].type !=# s:NODE_ELSEIF
     throw s:Err('E582: :elseif without :if', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_IF
+  if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ELSEIF)
@@ -1638,10 +1638,10 @@ function! s:VimLParser.parse_cmd_elseif()
 endfunction
 
 function! s:VimLParser.parse_cmd_else()
-  if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF
+  if self.context[0].type !=# s:NODE_IF && self.context[0].type !=# s:NODE_ELSEIF
     throw s:Err('E581: :else without :if', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_IF
+  if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ELSE)
@@ -1653,10 +1653,10 @@ function! s:VimLParser.parse_cmd_else()
 endfunction
 
 function! s:VimLParser.parse_cmd_endif()
-  if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF && self.context[0].type != s:NODE_ELSE
+  if self.context[0].type !=# s:NODE_IF && self.context[0].type !=# s:NODE_ELSEIF && self.context[0].type !=# s:NODE_ELSE
     throw s:Err('E580: :endif without :if', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_IF
+  if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ENDIF)
@@ -1678,7 +1678,7 @@ function! s:VimLParser.parse_cmd_while()
 endfunction
 
 function! s:VimLParser.parse_cmd_endwhile()
-  if self.context[0].type != s:NODE_WHILE
+  if self.context[0].type !=# s:NODE_WHILE
     throw s:Err('E588: :endwhile without :while', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_ENDWHILE)
@@ -1711,7 +1711,7 @@ function! s:VimLParser.parse_cmd_for()
 endfunction
 
 function! s:VimLParser.parse_cmd_endfor()
-  if self.context[0].type != s:NODE_FOR
+  if self.context[0].type !=# s:NODE_FOR
     throw s:Err('E588: :endfor without :for', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_ENDFOR)
@@ -1756,10 +1756,10 @@ endfunction
 function! s:VimLParser.parse_cmd_catch()
   if self.context[0].type == s:NODE_FINALLY
     throw s:Err('E604: :catch after :finally', self.ea.cmdpos)
-  elseif self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
+  elseif self.context[0].type !=# s:NODE_TRY && self.context[0].type !=# s:NODE_CATCH
     throw s:Err('E603: :catch without :try', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_TRY
+  if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_CATCH)
@@ -1776,10 +1776,10 @@ function! s:VimLParser.parse_cmd_catch()
 endfunction
 
 function! s:VimLParser.parse_cmd_finally()
-  if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
+  if self.context[0].type !=# s:NODE_TRY && self.context[0].type !=# s:NODE_CATCH
     throw s:Err('E606: :finally without :try', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_TRY
+  if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_FINALLY)
@@ -1791,10 +1791,10 @@ function! s:VimLParser.parse_cmd_finally()
 endfunction
 
 function! s:VimLParser.parse_cmd_endtry()
-  if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH && self.context[0].type != s:NODE_FINALLY
+  if self.context[0].type !=# s:NODE_TRY && self.context[0].type !=# s:NODE_CATCH && self.context[0].type !=# s:NODE_FINALLY
     throw s:Err('E602: :endtry without :try', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_TRY
+  if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ENDTRY)
@@ -3485,7 +3485,7 @@ function! s:ExprTokenizer.get_dict_literal_key()
   call self.reader.skip_white()
   let r = self.reader
   let c = r.peek()
-  if !s:isalnum(c) && c != '_' && c != '-'
+  if !s:isalnum(c) && c !=# '_' && c !=# '-'
     throw s:Err(printf('unexpected character: %s', c), self.reader.getpos())
   endif
   let s = c
@@ -3495,7 +3495,7 @@ function! s:ExprTokenizer.get_dict_literal_key()
     if c ==# '<EOF>' || c ==# '<EOL>'
       throw s:Err('unexpectd EOL', self.reader.getpos())
     endif
-    if !s:isalnum(c) && c != '_' && c != '-'
+    if !s:isalnum(c) && c !=# '_' && c !=# '-'
       break
     endif
     call self.reader.seek_cur(1)
@@ -3532,7 +3532,7 @@ function! s:ExprParser.parse_expr1()
     let node.cond = left
     let node.left = self.parse_expr1()
     let token = self.tokenizer.get()
-    if token.type != s:TOKEN_COLON
+    if token.type !=# s:TOKEN_COLON
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
     endif
     let node.right = self.parse_expr1()
@@ -3910,11 +3910,11 @@ function! s:ExprParser.parse_expr8()
         let node.left = left
         let node.rlist = [s:NIL, s:NIL]
         let token = self.tokenizer.peek()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           let node.rlist[1] = self.parse_expr1()
         endif
         let token = self.tokenizer.get()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
         let left = node
@@ -3927,11 +3927,11 @@ function! s:ExprParser.parse_expr8()
           let node.left = left
           let node.rlist = [right, s:NIL]
           let token = self.tokenizer.peek()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             let node.rlist[1] = self.parse_expr1()
           endif
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
           let left = node
@@ -3941,7 +3941,7 @@ function! s:ExprParser.parse_expr8()
           let node.left = left
           let node.right = right
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
           let left = node
@@ -3980,7 +3980,7 @@ function! s:ExprParser.parse_expr8()
       unlet node
     elseif !s:iswhite(c) && token.type == s:TOKEN_DOT " TODO check scriptversion?
       let node = self.parse_dot(token, left)
-      if node is s:NIL
+      if node is# s:NIL
         call self.reader.seek_set(pos)
         break
       endif
@@ -4128,7 +4128,7 @@ function! s:ExprParser.parse_expr9()
       if !fallback
         let node.left = self.parse_expr1()
         let token = self.tokenizer.get()
-        if token.type != s:TOKEN_CCLOSE
+        if token.type !=# s:TOKEN_CCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
         return node
@@ -4155,7 +4155,7 @@ function! s:ExprParser.parse_expr9()
         let node = self.parse_identifier()
         break
       endif
-      if token.type != s:TOKEN_COLON
+      if token.type !=# s:TOKEN_COLON
         throw s:Err(printf('unexpected token: %s', token.value), token.pos)
       endif
       let val = self.parse_expr1()
@@ -4176,7 +4176,7 @@ function! s:ExprParser.parse_expr9()
   elseif token.type == s:TOKEN_POPEN
     let node = self.parse_expr1()
     let token = self.tokenizer.get()
-    if token.type != s:TOKEN_PCLOSE
+    if token.type !=# s:TOKEN_PCLOSE
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
     endif
   elseif token.type == s:TOKEN_OPTION
@@ -4221,7 +4221,7 @@ endfunction
 "   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 "   str  "." expr6         => (concat str expr6)
 function! s:ExprParser.parse_dot(token, left)
-  if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
+  if a:left.type !=# s:NODE_IDENTIFIER && a:left.type !=# s:NODE_CURLYNAME && a:left.type !=# s:NODE_DICT && a:left.type !=# s:NODE_SUBSCRIPT && a:left.type !=# s:NODE_CALL && a:left.type !=# s:NODE_DOT
     return s:NIL
   endif
   if !s:iswordc(self.reader.p(0))
@@ -4246,7 +4246,7 @@ endfunction
 " CONCAT
 "   str  ".." expr6         => (concat str expr6)
 function! s:ExprParser.parse_concat(token, left)
-  if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
+  if a:left.type !=# s:NODE_IDENTIFIER && a:left.type !=# s:NODE_CURLYNAME && a:left.type !=# s:NODE_DICT && a:left.type !=# s:NODE_SUBSCRIPT && a:left.type !=# s:NODE_CALL && a:left.type !=# s:NODE_DOT
     return s:NIL
   endif
   if !s:iswordc(self.reader.p(0))
@@ -4353,11 +4353,11 @@ function! s:LvalueParser.parse_lv8()
         let node.left = left
         let node.rlist = [s:NIL, s:NIL]
         let token = self.tokenizer.peek()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           let node.rlist[1] = self.parse_expr1()
         endif
         let token = self.tokenizer.get()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
       else
@@ -4369,11 +4369,11 @@ function! s:LvalueParser.parse_lv8()
           let node.left = left
           let node.rlist = [right, s:NIL]
           let token = self.tokenizer.peek()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             let node.rlist[1] = self.parse_expr1()
           endif
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         else
@@ -4382,7 +4382,7 @@ function! s:LvalueParser.parse_lv8()
           let node.left = left
           let node.right = right
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         endif
@@ -4391,7 +4391,7 @@ function! s:LvalueParser.parse_lv8()
       unlet node
     elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
       let node = self.parse_dot(token, left)
-      if node is s:NIL
+      if node is# s:NIL
         call self.reader.seek_set(pos)
         break
       endif
@@ -4984,7 +4984,7 @@ function! s:Compiler.compile_delfunction(node)
 endfunction
 
 function! s:Compiler.compile_return(node)
-  if a:node.left is s:NIL
+  if a:node.left is# s:NIL
     call self.out('(return)')
   else
     call self.out('(return %s)', self.compile(a:node.left))
@@ -4997,11 +4997,11 @@ endfunction
 
 function! s:Compiler.compile_let(node)
   let left = ''
-  if a:node.left isnot s:NIL
+  if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
   else
     let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot s:NIL
+    if a:node.rest isnot# s:NIL
       let left .= ' . ' . self.compile(a:node.rest)
     endif
     let left = '(' . left . ')'
@@ -5013,11 +5013,11 @@ endfunction
 " TODO: merge with s:Compiler.compile_let() ?
 function! s:Compiler.compile_const(node)
   let left = ''
-  if a:node.left isnot s:NIL
+  if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
   else
     let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot s:NIL
+    if a:node.rest isnot# s:NIL
       let left .= ' . ' . self.compile(a:node.rest)
     endif
     let left = '(' . left . ')'
@@ -5033,7 +5033,7 @@ endfunction
 
 function! s:Compiler.compile_lockvar(node)
   let list = map(a:node.list, 'self.compile(v:val)')
-  if a:node.depth is s:NIL
+  if a:node.depth is# s:NIL
     call self.out('(lockvar %s)', join(list, ' '))
   else
     call self.out('(lockvar %s %s)', a:node.depth, join(list, ' '))
@@ -5042,7 +5042,7 @@ endfunction
 
 function! s:Compiler.compile_unlockvar(node)
   let list = map(a:node.list, 'self.compile(v:val)')
-  if a:node.depth is s:NIL
+  if a:node.depth is# s:NIL
     call self.out('(unlockvar %s)', join(list, ' '))
   else
     call self.out('(unlockvar %s %s)', a:node.depth, join(list, ' '))
@@ -5060,7 +5060,7 @@ function! s:Compiler.compile_if(node)
     call self.compile_body(enode.body)
     call self.decindent()
   endfor
-  if a:node.else isnot s:NIL
+  if a:node.else isnot# s:NIL
     call self.out(' else')
     call self.incindent('  ')
     call self.compile_body(a:node.else.body)
@@ -5081,11 +5081,11 @@ endfunction
 
 function! s:Compiler.compile_for(node)
   let left = ''
-  if a:node.left isnot s:NIL
+  if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
   else
     let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot s:NIL
+    if a:node.rest isnot# s:NIL
       let left .= ' . ' . self.compile(a:node.rest)
     endif
     let left = '(' . left . ')'
@@ -5111,7 +5111,7 @@ function! s:Compiler.compile_try(node)
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   for cnode in a:node.catch
-    if cnode.pattern isnot s:NIL
+    if cnode.pattern isnot# s:NIL
       call self.decindent()
       call self.out(' catch /%s/', cnode.pattern)
       call self.incindent('  ')
@@ -5123,7 +5123,7 @@ function! s:Compiler.compile_try(node)
       call self.compile_body(cnode.body)
     endif
   endfor
-  if a:node.finally isnot s:NIL
+  if a:node.finally isnot# s:NIL
     call self.decindent()
     call self.out(' finally')
     call self.incindent('  ')
@@ -5339,8 +5339,8 @@ function! s:Compiler.compile_subscript(node)
 endfunction
 
 function! s:Compiler.compile_slice(node)
-  let r0 = a:node.rlist[0] is s:NIL ? 'nil' : self.compile(a:node.rlist[0])
-  let r1 = a:node.rlist[1] is s:NIL ? 'nil' : self.compile(a:node.rlist[1])
+  let r0 = a:node.rlist[0] is# s:NIL ? 'nil' : self.compile(a:node.rlist[0])
+  let r1 = a:node.rlist[1] is# s:NIL ? 'nil' : self.compile(a:node.rlist[1])
   return printf('(slice %s %s %s)', self.compile(a:node.left), r0, r1)
 endfunction
 
@@ -5475,13 +5475,13 @@ function! s:RegexpParser.parse_regexp()
       endif
     elseif ntoken ==# '\^'
       " '^' is only magic as the very first character.
-      if self.reg_magic != self.RE_VERY_MAGIC && prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
+      if self.reg_magic !=# self.RE_VERY_MAGIC && prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
         let ntoken = '^'
       endif
     elseif ntoken ==# '\$'
       " '$' is only magic as the very last character
       let pos = self.reader.tell()
-      if self.reg_magic != self.RE_VERY_MAGIC
+      if self.reg_magic !=# self.RE_VERY_MAGIC
         while !self.isend(self.reader.peek())
           let [t, n] = self.get_token()
           " XXX: Vim doesn't check \v and \V?
@@ -5722,12 +5722,12 @@ function! s:RegexpParser.get_token_backslash_common()
   let c = self.reader.get()
   if c ==# '\'
     return ['\\', '\\']
-  elseif stridx(cclass, c) != -1
+  elseif stridx(cclass, c) !=# -1
     return ['\' . c, '\' . c]
   elseif c ==# '_'
     let epos = self.reader.getpos()
     let c = self.reader.get()
-    if stridx(cclass, c) != -1
+    if stridx(cclass, c) !=# -1
       return ['\_' . c, '\_ . c']
     elseif c ==# '^'
       return ['\_^', '\_^']
@@ -5739,14 +5739,14 @@ function! s:RegexpParser.get_token_backslash_common()
       return self.get_token_sq('\_[')
     endif
     throw s:Err('E63: invalid use of \_', epos)
-  elseif stridx('etrb', c) != -1
+  elseif stridx('etrb', c) !=# -1
     return ['\' . c, '\' . c]
-  elseif stridx('123456789', c) != -1
+  elseif stridx('123456789', c) !=# -1
     return ['\' . c, '\' . c]
   elseif c ==# 'z'
     let epos = self.reader.getpos()
     let c = self.reader.get()
-    if stridx('123456789', c) != -1
+    if stridx('123456789', c) !=# -1
       return ['\z' . c, '\z' . c]
     elseif c ==# 's'
       return ['\zs', '\zs']
@@ -5756,7 +5756,7 @@ function! s:RegexpParser.get_token_backslash_common()
       return ['\z(', '\z(']
     endif
     throw s:Err('E68: Invalid character after \z', epos)
-  elseif stridx('cCmMvVZ', c) != -1
+  elseif stridx('cCmMvVZ', c) !=# -1
     return ['\' . c, '\' . c]
   elseif c ==# '%'
     let epos = self.reader.getpos()
@@ -5863,7 +5863,7 @@ function! s:RegexpParser.get_token_sq(pre)
       let [e, startc] = self.get_token_sq_c()
       let r .= e
     endif
-    if startc != 0 && self.reader.p(0) ==# '-' && !self.isend(self.reader.p(1)) && !(self.reader.p(1) ==# '\' && self.reader.p(2) ==# 'n')
+    if startc !=# 0 && self.reader.p(0) ==# '-' && !self.isend(self.reader.p(1)) && !(self.reader.p(1) ==# '\' && self.reader.p(2) ==# 'n')
       call self.reader.seek_cur(1)
       let r .= '-'
       let c = self.reader.p(0)
@@ -5907,10 +5907,10 @@ function! s:RegexpParser.get_token_sq_c()
     elseif c ==# 'b'
       call self.reader.seek_cur(1)
       return ['\b', 8]
-    elseif stridx(']^-\', c) != -1
+    elseif stridx(']^-\', c) !=# -1
       call self.reader.seek_cur(1)
       return ['\' . c, char2nr(c)]
-    elseif stridx('doxuU', c) != -1
+    elseif stridx('doxuU', c) !=# -1
       let [c, n] = self.get_token_sq_coll_char()
       return [c, n]
     else
