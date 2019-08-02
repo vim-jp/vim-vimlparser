@@ -1506,7 +1506,7 @@ function! s:VimLParser.parse_cmd_let() abort
     return
   endif
 
-  let lhs = self.parse_letlhs()
+  let lhs = self.parse_letlhs(s:FALSE)
   call self.reader.skip_white()
   let s1 = self.reader.peekn(1)
   let s2 = self.reader.peekn(2)
@@ -1567,7 +1567,7 @@ function! s:VimLParser.parse_cmd_const() abort
     return
   endif
 
-  let lhs = self.parse_constlhs()
+  let lhs = self.parse_letlhs(s:TRUE)
   call self.reader.skip_white()
   let s1 = self.reader.peekn(1)
 
@@ -1721,7 +1721,7 @@ function! s:VimLParser.parse_cmd_for() abort
   let node.left = s:NIL
   let node.right = s:NIL
   let node.endfor = s:NIL
-  let lhs = self.parse_letlhs()
+  let lhs = self.parse_letlhs(s:FALSE)
   let node.left = lhs.left
   let node.list = lhs.list
   let node.rest = lhs.rest
@@ -1930,7 +1930,6 @@ function! s:VimLParser.parse_lvalue() abort
   throw s:Err('Invalid Expression', node.pos)
 endfunction
 
-" TODO: merge with s:VimLParser.parse_lvalue()
 function! s:VimLParser.parse_constlvalue() abort
   let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
@@ -1970,7 +1969,7 @@ function! s:VimLParser.parse_lvaluelist() abort
 endfunction
 
 " FIXME:
-function! s:VimLParser.parse_letlhs() abort
+function! s:VimLParser.parse_letlhs(is_const) abort
   let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
   let tokenizer = s:ExprTokenizer.new(self.reader)
   if tokenizer.peek().type ==# s:TOKEN_SQOPEN
@@ -1997,42 +1996,10 @@ function! s:VimLParser.parse_letlhs() abort
         throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
       endif
     endwhile
+  elseif a:is_const
+    let lhs.left = self.parse_constlvalue()
   else
     let lhs.left = self.parse_lvalue()
-  endif
-  return lhs
-endfunction
-
-" TODO: merge with s:VimLParser.parse_letlhs() ?
-function! s:VimLParser.parse_constlhs() abort
-  let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
-  let tokenizer = s:ExprTokenizer.new(self.reader)
-  if tokenizer.peek().type ==# s:TOKEN_SQOPEN
-    call tokenizer.get()
-    let lhs.list = []
-    while s:TRUE
-      let node = self.parse_lvalue()
-      call add(lhs.list, node)
-      let token = tokenizer.get()
-      if token.type ==# s:TOKEN_SQCLOSE
-        break
-      elseif token.type ==# s:TOKEN_COMMA
-        continue
-      elseif token.type ==# s:TOKEN_SEMICOLON
-        let node = self.parse_lvalue()
-        let lhs.rest = node
-        let token = tokenizer.get()
-        if token.type ==# s:TOKEN_SQCLOSE
-          break
-        else
-          throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
-        endif
-      else
-        throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
-      endif
-    endwhile
-  else
-    let lhs.left = self.parse_constlvalue()
   endif
   return lhs
 endfunction
