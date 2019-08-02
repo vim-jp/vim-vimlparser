@@ -22,3 +22,7 @@
 (const = a 1)
 (const = (a b) (list 1 2))
 (const = (a b . c) (list 1 2 3))
+(let)
+(let () var)
+(const)
+(const () var)

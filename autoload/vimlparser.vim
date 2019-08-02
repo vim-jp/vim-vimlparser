@@ -1495,7 +1495,14 @@ function! s:VimLParser.parse_cmd_let() abort
   " :let
   if self.ends_excmds(self.reader.peek())
     call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
+    let node = s:Node(s:NODE_LET)
+    let node.pos = self.ea.cmdpos
+    let node.ea = self.ea
+    let node.left = s:NIL
+    let node.list = s:NIL
+    let node.rest = s:NIL
+    let node.right = s:NIL
+    call self.add_node(node)
     return
   endif
 
@@ -1510,8 +1517,14 @@ function! s:VimLParser.parse_cmd_let() abort
 
   " :let {var-name} ..
   if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
+    let node = s:Node(s:NODE_LET)
+    let node.pos = self.ea.cmdpos
+    let node.ea = self.ea
+    let node.left = lhs.left
+    let node.list = lhs.list
+    let node.rest = lhs.rest
+    let node.right = s:NIL
+    call self.add_node(node)
     return
   endif
 
@@ -1543,8 +1556,14 @@ function! s:VimLParser.parse_cmd_const() abort
 
   " :const
   if self.ends_excmds(self.reader.peek())
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
+    let node = s:Node(s:NODE_CONST)
+    let node.pos = self.ea.cmdpos
+    let node.ea = self.ea
+    let node.left = s:NIL
+    let node.list = s:NIL
+    let node.rest = s:NIL
+    let node.right = s:NIL
+    call self.add_node(node)
     return
   endif
 
@@ -1554,8 +1573,14 @@ function! s:VimLParser.parse_cmd_const() abort
 
   " :const {var-name}
   if self.ends_excmds(s1) || s1 !=# '='
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
+    let node = s:Node(s:NODE_CONST)
+    let node.pos = self.ea.cmdpos
+    let node.ea = self.ea
+    let node.left = lhs.left
+    let node.list = lhs.list
+    let node.rest = lhs.rest
+    let node.right = s:NIL
+    call self.add_node(node)
     return
   endif
 
@@ -4996,23 +5021,20 @@ function! s:Compiler.compile_excall(node) abort
 endfunction
 
 function! s:Compiler.compile_let(node) abort
-  let left = ''
-  if a:node.left isnot# s:NIL
-    let left = self.compile(a:node.left)
-  else
-    let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot# s:NIL
-      let left .= ' . ' . self.compile(a:node.rest)
-    endif
-    let left = '(' . left . ')'
-  endif
-  let right = self.compile(a:node.right)
-  call self.out('(let %s %s %s)', a:node.op, left, right)
+  call self.compile_letconst(a:node, 'let')
 endfunction
 
-" TODO: merge with s:Compiler.compile_let() ?
 function! s:Compiler.compile_const(node) abort
+  call self.compile_letconst(a:node, 'const')
+endfunction
+
+function! s:Compiler.compile_letconst(node, cmd) abort
   let left = ''
+  let right = ''
+  if a:node.left is# s:NIL && a:node.right is# s:NIL
+    call self.out('(%s)', a:cmd)
+    return
+  endif
   if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
   else
@@ -5022,8 +5044,14 @@ function! s:Compiler.compile_const(node) abort
     endif
     let left = '(' . left . ')'
   endif
-  let right = self.compile(a:node.right)
-  call self.out('(const %s %s %s)', a:node.op, left, right)
+  if a:node.right isnot# s:NIL
+    let right = self.compile(a:node.right)
+  endif
+  if a:node.left isnot# s:NIL && a:node.right is# s:NIL
+    call self.out('(%s () %s)', a:cmd, left)
+  else
+    call self.out('(%s %s %s %s)', a:cmd, a:node.op, left, right)
+  endif
 endfunction
 
 function! s:Compiler.compile_unlet(node) abort

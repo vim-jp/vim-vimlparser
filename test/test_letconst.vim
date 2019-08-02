@@ -22,3 +22,7 @@ let a = '🐥'
 const a = 1
 const [a, b] = [1, 2]
 const [a, b; c] = [1, 2, 3]
+let
+let var
+const
+const var
