@@ -1787,10 +1787,17 @@ VimLParser.prototype.parse_cmd_let = function() {
     // :let
     if (this.ends_excmds(this.reader.peek())) {
         this.reader.seek_set(pos);
-        this.parse_cmd_common();
+        var node = Node(NODE_LET);
+        node.pos = this.ea.cmdpos;
+        node.ea = this.ea;
+        node.left = NIL;
+        node.list = NIL;
+        node.rest = NIL;
+        node.right = NIL;
+        this.add_node(node);
         return;
     }
-    var lhs = this.parse_letlhs();
+    var lhs = this.parse_letlhs(FALSE);
     this.reader.skip_white();
     var s1 = this.reader.peekn(1);
     var s2 = this.reader.peekn(2);
@@ -1800,8 +1807,14 @@ VimLParser.prototype.parse_cmd_let = function() {
     }
     // :let {var-name} ..
     if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s2 != "..=" && s2 != "*=" && s2 != "/=" && s2 != "%=" && s1 != "=") {
-        this.reader.seek_set(pos);
-        this.parse_cmd_common();
+        var node = Node(NODE_LET);
+        node.pos = this.ea.cmdpos;
+        node.ea = this.ea;
+        node.left = lhs.left;
+        node.list = lhs.list;
+        node.rest = lhs.rest;
+        node.right = NIL;
+        this.add_node(node);
         return;
     }
     // :let left op right
@@ -1833,17 +1846,29 @@ VimLParser.prototype.parse_cmd_const = function() {
     this.reader.skip_white();
     // :const
     if (this.ends_excmds(this.reader.peek())) {
-        this.reader.seek_set(pos);
-        this.parse_cmd_common();
+        var node = Node(NODE_CONST);
+        node.pos = this.ea.cmdpos;
+        node.ea = this.ea;
+        node.left = NIL;
+        node.list = NIL;
+        node.rest = NIL;
+        node.right = NIL;
+        this.add_node(node);
         return;
     }
-    var lhs = this.parse_constlhs();
+    var lhs = this.parse_letlhs(TRUE);
     this.reader.skip_white();
     var s1 = this.reader.peekn(1);
     // :const {var-name}
     if (this.ends_excmds(s1) || s1 != "=") {
-        this.reader.seek_set(pos);
-        this.parse_cmd_common();
+        var node = Node(NODE_CONST);
+        node.pos = this.ea.cmdpos;
+        node.ea = this.ea;
+        node.left = lhs.left;
+        node.list = lhs.list;
+        node.rest = lhs.rest;
+        node.right = NIL;
+        this.add_node(node);
         return;
     }
     // :const left op right
@@ -1983,7 +2008,7 @@ VimLParser.prototype.parse_cmd_for = function() {
     node.left = NIL;
     node.right = NIL;
     node.endfor = NIL;
-    var lhs = this.parse_letlhs();
+    var lhs = this.parse_letlhs(FALSE);
     node.left = lhs.left;
     node.list = lhs.list;
     node.rest = lhs.rest;
@@ -2195,7 +2220,6 @@ VimLParser.prototype.parse_lvalue = function() {
     throw Err("Invalid Expression", node.pos);
 }
 
-// TODO: merge with s:VimLParser.parse_lvalue()
 VimLParser.prototype.parse_constlvalue = function() {
     var p = new LvalueParser(this.reader);
     var node = p.parse();
@@ -2238,7 +2262,7 @@ VimLParser.prototype.parse_lvaluelist = function() {
 }
 
 // FIXME:
-VimLParser.prototype.parse_letlhs = function() {
+VimLParser.prototype.parse_letlhs = function(is_const) {
     var lhs = {"left":NIL, "list":NIL, "rest":NIL};
     var tokenizer = new ExprTokenizer(this.reader);
     if (tokenizer.peek().type == TOKEN_SQOPEN) {
@@ -2269,48 +2293,12 @@ VimLParser.prototype.parse_letlhs = function() {
                 throw Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos);
             }
         }
+    }
+    else if (is_const) {
+        lhs.left = this.parse_constlvalue();
     }
     else {
         lhs.left = this.parse_lvalue();
-    }
-    return lhs;
-}
-
-// TODO: merge with s:VimLParser.parse_letlhs() ?
-VimLParser.prototype.parse_constlhs = function() {
-    var lhs = {"left":NIL, "list":NIL, "rest":NIL};
-    var tokenizer = new ExprTokenizer(this.reader);
-    if (tokenizer.peek().type == TOKEN_SQOPEN) {
-        tokenizer.get();
-        lhs.list = [];
-        while (TRUE) {
-            var node = this.parse_lvalue();
-            viml_add(lhs.list, node);
-            var token = tokenizer.get();
-            if (token.type == TOKEN_SQCLOSE) {
-                break;
-            }
-            else if (token.type == TOKEN_COMMA) {
-                continue;
-            }
-            else if (token.type == TOKEN_SEMICOLON) {
-                var node = this.parse_lvalue();
-                lhs.rest = node;
-                var token = tokenizer.get();
-                if (token.type == TOKEN_SQCLOSE) {
-                    break;
-                }
-                else {
-                    throw Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos);
-                }
-            }
-            else {
-                throw Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos);
-            }
-        }
-    }
-    else {
-        lhs.left = this.parse_constlvalue();
     }
     return lhs;
 }
@@ -4501,24 +4489,20 @@ Compiler.prototype.compile_excall = function(node) {
 }
 
 Compiler.prototype.compile_let = function(node) {
-    var left = "";
-    if (node.left !== NIL) {
-        var left = this.compile(node.left);
-    }
-    else {
-        var left = viml_join(node.list.map((function(vval) { return this.compile(vval); }).bind(this)), " ");
-        if (node.rest !== NIL) {
-            left += " . " + this.compile(node.rest);
-        }
-        var left = "(" + left + ")";
-    }
-    var right = this.compile(node.right);
-    this.out("(let %s %s %s)", node.op, left, right);
+    this.compile_letconst(node, "let");
 }
 
-// TODO: merge with s:Compiler.compile_let() ?
 Compiler.prototype.compile_const = function(node) {
+    this.compile_letconst(node, "const");
+}
+
+Compiler.prototype.compile_letconst = function(node, cmd) {
     var left = "";
+    var right = "";
+    if (node.left === NIL && node.right === NIL) {
+        this.out("(%s)", cmd);
+        return;
+    }
     if (node.left !== NIL) {
         var left = this.compile(node.left);
     }
@@ -4529,8 +4513,15 @@ Compiler.prototype.compile_const = function(node) {
         }
         var left = "(" + left + ")";
     }
-    var right = this.compile(node.right);
-    this.out("(const %s %s %s)", node.op, left, right);
+    if (node.right !== NIL) {
+        var right = this.compile(node.right);
+    }
+    if (node.left !== NIL && node.right === NIL) {
+        this.out("(%s () %s)", cmd, left);
+    }
+    else {
+        this.out("(%s %s %s %s)", cmd, node.op, left, right);
+    }
 }
 
 Compiler.prototype.compile_unlet = function(node) {
