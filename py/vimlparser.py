@@ -1338,7 +1338,7 @@ class VimLParser:
         if left.type == NODE_IDENTIFIER:
             s = left.value
             ss = viml_split(s, "\\zs")
-            if ss[0] != "<" and not isupper(ss[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
+            if ss[0] != "<" and ss[0] != "_" and not isupper(ss[0]) and viml_stridx(s, ":") == -1 and viml_stridx(s, "#") == -1:
                 raise VimLParserException(Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos))
         # :function {name}
         if self.reader.peekn(1) != "(":
