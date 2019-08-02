@@ -1622,7 +1622,7 @@ VimLParser.prototype.parse_cmd_function = function() {
     if (left.type == NODE_IDENTIFIER) {
         var s = left.value;
         var ss = viml_split(s, "\\zs");
-        if (ss[0] != "<" && !isupper(ss[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
+        if (ss[0] != "<" && ss[0] != "_" && !isupper(ss[0]) && viml_stridx(s, ":") == -1 && viml_stridx(s, "#") == -1) {
             throw Err(viml_printf("E128: Function name must start with a capital or contain a colon: %s", s), left.pos);
         }
     }
