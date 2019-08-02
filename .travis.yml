@@ -25,6 +25,7 @@ jobs:
       - VIM_VERSION=installed
       - MAKE_TARGET="clean_compiled check checkpy js/test py/test test/node_position/test_position.out"
       - TEST_PROFILE=vim-profile-installed.txt
+      - TEST_PYTHON=python3
 
 install:
   - |
