@@ -23,14 +23,14 @@ jobs:
     - name: Installed Vim with checks
       env:
       - VIM_VERSION=installed
-      - MAKE_TARGET="clean_compiled check checkpy js/test py/test test/node_position/test_position.out"
+      - MAKE_TARGET="clean_compiled check checkpy checkvim js/test py/test test/node_position/test_position.out"
       - TEST_PROFILE=vim-profile-installed.txt
       - TEST_PYTHON=python3
 
 install:
   - |
     if [ "$VIM_VERSION" = 'installed' ]; then
-      pip install --user flake8
+      pip install -q --user flake8 git+https://github.com/Kuniwak/vint
     else
       bash scripts/install-vim.sh
       export PATH=$HOME/vim/bin:$PATH
