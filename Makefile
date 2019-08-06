@@ -19,6 +19,9 @@ check: all
 checkpy: all
 	flake8 py
 
+checkvim: all
+	vint autoload
+
 test:
 	test/run.sh
 
