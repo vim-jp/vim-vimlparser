@@ -656,7 +656,7 @@ function s:JavascriptCompiler.compile_isci(node)
 endfunction
 
 function s:JavascriptCompiler.compile_iscs(node)
-  throw 'NotImplemented: is#'
+  return self.compile_op2(a:node, '===')
 endfunction
 
 function s:JavascriptCompiler.compile_isnot(node)
@@ -668,7 +668,7 @@ function s:JavascriptCompiler.compile_isnotci(node)
 endfunction
 
 function s:JavascriptCompiler.compile_isnotcs(node)
-  throw 'NotImplemented: isnot#'
+  return self.compile_op2(a:node, '!==')
 endfunction
 
 function s:JavascriptCompiler.compile_add(node)
