@@ -1551,7 +1551,6 @@ function! s:VimLParser.parse_cmd_let() abort
 endfunction
 
 function! s:VimLParser.parse_cmd_const() abort
-  let pos = self.reader.tell()
   call self.reader.skip_white()
 
   " :const

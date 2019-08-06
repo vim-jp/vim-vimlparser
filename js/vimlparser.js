@@ -1842,7 +1842,6 @@ VimLParser.prototype.parse_cmd_let = function() {
 }
 
 VimLParser.prototype.parse_cmd_const = function() {
-    var pos = this.reader.tell();
     this.reader.skip_white();
     // :const
     if (this.ends_excmds(this.reader.peek())) {

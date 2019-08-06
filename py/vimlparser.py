@@ -1516,7 +1516,6 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_const(self):
-        pos = self.reader.tell()
         self.reader.skip_white()
         # :const
         if self.ends_excmds(self.reader.peek()):
