@@ -69,6 +69,10 @@ let s:opprec[s:NODE_ENV] = 9
 let s:opprec[s:NODE_REG] = 9
 " vint: +ProhibitUsingUndeclaredVariable
 
+function! s:Err(msg, pos) abort
+  return printf('vimlparser: pycompiler: %s: line %d col %d', a:msg, a:pos.lnum, a:pos.col)
+endfunction
+
 " Reserved Python keywords (dict for faster lookup).
 let s:reserved_keywords = {
       \ 'False': 1,
@@ -673,27 +677,33 @@ function s:PythonCompiler.compile_sequalcs(node)
 endfunction
 
 function s:PythonCompiler.compile_match(node)
-  return printf('viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  let right = s:compile_regpat_node(a:node.right)
+  return printf('viml_eqreg(%s, %s)', self.compile(a:node.left), right)
 endfunction
 
 function s:PythonCompiler.compile_matchci(node)
-  return printf('viml_eqregq(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  let right = s:compile_regpat_node(a:node.right)
+  return printf('viml_eqregq(%s, %s)', self.compile(a:node.left), right)
 endfunction
 
 function s:PythonCompiler.compile_matchcs(node)
-  return printf('viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  let right = s:compile_regpat_node(a:node.right)
+  return printf('viml_eqregh(%s, %s)', self.compile(a:node.left), right)
 endfunction
 
 function s:PythonCompiler.compile_nomatch(node)
-  return printf('not viml_eqreg(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  let right = s:compile_regpat_node(a:node.right)
+  return printf('not viml_eqreg(%s, %s)', self.compile(a:node.left), right)
 endfunction
 
 function s:PythonCompiler.compile_nomatchci(node)
-  return printf('not viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), self.compile(a:node.right))
+  let right = s:compile_regpat_node(a:node.right)
+  return printf('not viml_eqregq(%s, %s, flags=re.IGNORECASE)', self.compile(a:node.left), right)
 endfunction
 
 function s:PythonCompiler.compile_nomatchcs(node)
-  return printf('not viml_eqregh(%s, %s)', self.compile(a:node.left), self.compile(a:node.right))
+  let right = s:compile_regpat_node(a:node.right)
+  return printf('not viml_eqregh(%s, %s)', self.compile(a:node.left), right)
 endfunction
 
 function s:PythonCompiler.compile_is(node)
@@ -878,6 +888,85 @@ function s:PythonCompiler.compile_op2(node, op)
   return printf('%s %s %s', left, a:op, right)
 endfunction
 
+
+let s:pat_vim2py = {
+      \ '[0-9a-zA-Z]': '[0-9a-zA-Z]',
+      \ '[@*!=><&~#]': '[@*!=><&~#]',
+      \ '\<ARGOPT\>': '\bARGOPT\b',
+      \ '\<BANG\>': '\bBANG\b',
+      \ '\<EDITCMD\>': '\bEDITCMD\b',
+      \ '\<NOTRLCOM\>': '\bNOTRLCOM\b',
+      \ '\<TRLBAR\>': '\bTRLBAR\b',
+      \ '\<USECTRLV\>': '\bUSECTRLV\b',
+      \ '\<USERCMD\>': '\bUSERCMD\b',
+      \ '\<\(XFILE\|FILES\|FILE1\)\>': '\b(XFILE|FILES|FILE1)\b',
+      \ '\S': '\S',
+      \ '\a': '[A-Za-z]',
+      \ '\d': '\d',
+      \ '\h': '[A-Za-z_]',
+      \ '\s': '\s',
+      \ '\v^d%[elete][lp]$': '^d(elete|elet|ele|el|e)[lp]$',
+      \ '\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])':
+      \     '^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])',
+      \ '\w': '[0-9A-Za-z_]',
+      \ '\w\|[:#]': '[0-9A-Za-z_]|[:#]',
+      \ '\x': '[0-9A-Fa-f]',
+      \ '^++': '^\+\+',
+      \ '^++bad=\(keep\|drop\|.\)\>': '^\+\+bad=(keep|drop|.)\b',
+      \ '^++bad=drop': '^\+\+bad=drop',
+      \ '^++bad=keep': '^\+\+bad=keep',
+      \ '^++bin\>': '^\+\+bin\b',
+      \ '^++edit\>': '^\+\+edit\b',
+      \ '^++enc=\S': '^\+\+enc=\S',
+      \ '^++encoding=\S': '^\+\+encoding=\S',
+      \ '^++ff=\(dos\|unix\|mac\)\>': '^\+\+ff=(dos|unix|mac)\b',
+      \ '^++fileformat=\(dos\|unix\|mac\)\>':
+      \     '^\+\+fileformat=(dos|unix|mac)\b',
+      \ '^++nobin\>': '^\+\+nobin\b',
+      \ '^[A-Z]': '^[A-Z]',
+      \ '^\$\w\+': '^\$[0-9A-Za-z_]+',
+      \ '^\(!\|global\|vglobal\)$': '^(!|global|vglobal)$',
+      \ '^\(WHILE\|FOR\)$': '^(WHILE|FOR)$',
+      \ '^\(vimgrep\|vimgrepadd\|lvimgrep\|lvimgrepadd\)$':
+      \     '^(vimgrep|vimgrepadd|lvimgrep|lvimgrepadd)$',
+      \ '^\d': '^\d',
+      \ '^\h': '^[A-Za-z_]',
+      \ '^\s': '^\s',
+      \ '^\s*\\': '^\s*\\',
+      \ '^[ \t]$': '^[ \t]$',
+      \ '^[A-Za-z]$': '^[A-Za-z]$',
+      \ '^[0-9A-Za-z]$': '^[0-9A-Za-z]$',
+      \ '^[0-9]$': '^[0-9]$',
+      \ '^[0-9A-Fa-f]$': '^[0-9A-Fa-f]$',
+      \ '^[0-9A-Za-z_]$': '^[0-9A-Za-z_]$',
+      \ '^[A-Za-z_]$': '^[A-Za-z_]$',
+      \ '^[0-9A-Za-z_:#]$': '^[0-9A-Za-z_:#]$',
+      \ '^[A-Za-z_][0-9A-Za-z_]*$': '^[A-Za-z_][0-9A-Za-z_]*$',
+      \ '^[A-Z]$': '^[A-Z]$',
+      \ '^[a-z]$': '^[a-z]$',
+      \ '^[vgslabwt]:$\|^\([vgslabwt]:\)\?[A-Za-z_][0-9A-Za-z_#]*$':
+      \     '^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$',
+      \ '^[0-7]$': '^[0-7]$',
+      \ '^[0-9A-Fa-f][0-9A-Fa-f]$': '^[0-9A-Fa-f][0-9A-Fa-f]$',
+      \ '^\.[0-9A-Fa-f]$': '^\.[0-9A-Fa-f]$',
+      \ '^[0-9A-Fa-f][^0-9A-Fa-f]$': '^[0-9A-Fa-f][^0-9A-Fa-f]$',
+      \}
+
+function! s:compile_regpat_node(node) abort
+  " vint: -ProhibitUsingUndeclaredVariable
+  if a:node.type !=# s:NODE_STRING
+  " vint: +ProhibitUsingUndeclaredVariable
+    throw s:Err(printf('expected regexp string node, but got node.type = %d', a:node.type), a:node.pos)
+  endif
+  if a:node.value[0] !=# "'"
+    throw s:Err('must use single quote', a:node.pos)
+  endif
+  let vimpat = substitute(a:node.value[1:-2], "''", "'", 'g')
+  if !has_key(s:pat_vim2py, vimpat)
+    throw s:Err(printf('the pattern does not exist: %s', vimpat), a:node.pos)
+  endif
+  return 'r"' . s:pat_vim2py[vimpat] . '"'
+endfunction
 
 let s:viml_builtin_functions = map(copy(s:VimLParser.builtin_functions), 'v:val.name')
 
