@@ -1,7 +1,16 @@
 
 call extend(s:, vimlparser#import())
 
+" Ignore undefined variable errors of vint
+" vint: -ProhibitUsingUndeclaredVariable
+let s:StringReader = s:StringReader
+let s:VimLParser = s:VimLParser
+let s:ExprParser = s:ExprParser
+let s:NIL = s:NIL
+" vint: +ProhibitUsingUndeclaredVariable
+
 let s:opprec = {}
+" vint: -ProhibitUsingUndeclaredVariable
 let s:opprec[s:NODE_TERNARY] = 1
 let s:opprec[s:NODE_OR] = 2
 let s:opprec[s:NODE_AND] = 3
@@ -58,6 +67,7 @@ let s:opprec[s:NODE_IDENTIFIER] = 9
 let s:opprec[s:NODE_CURLYNAME] = 9
 let s:opprec[s:NODE_ENV] = 9
 let s:opprec[s:NODE_REG] = 9
+" vint: +ProhibitUsingUndeclaredVariable
 
 " Reserved Python keywords (dict for faster lookup).
 let s:reserved_keywords = {
@@ -110,8 +120,8 @@ function s:PythonCompiler.__init__()
 endfunction
 
 function s:PythonCompiler.out(...)
-  if len(a:000) == 1
-    if a:000[0] =~ '^)\+$'
+  if len(a:000) ==# 1
+    if a:000[0] =~# '^)\+$'
       let self.lines[-1] .= a:000[0]
     else
       call add(self.lines, self.indent[0] . a:000[0])
@@ -133,177 +143,181 @@ function s:PythonCompiler.decindent()
   call remove(self.indent, 0)
 endfunction
 
+" vint: -ProhibitUsingUndeclaredVariable
 function s:PythonCompiler.compile(node)
-  if a:node.type == s:NODE_TOPLEVEL
+  if a:node.type ==# s:NODE_TOPLEVEL
     return self.compile_toplevel(a:node)
-  elseif a:node.type == s:NODE_COMMENT
+  elseif a:node.type ==# s:NODE_COMMENT
     return self.compile_comment(a:node)
-  elseif a:node.type == s:NODE_EXCMD
+  elseif a:node.type ==# s:NODE_EXCMD
     return self.compile_excmd(a:node)
-  elseif a:node.type == s:NODE_FUNCTION
+  elseif a:node.type ==# s:NODE_FUNCTION
     return self.compile_function(a:node)
-  elseif a:node.type == s:NODE_DELFUNCTION
+  elseif a:node.type ==# s:NODE_DELFUNCTION
     return self.compile_delfunction(a:node)
-  elseif a:node.type == s:NODE_RETURN
+  elseif a:node.type ==# s:NODE_RETURN
     return self.compile_return(a:node)
-  elseif a:node.type == s:NODE_EXCALL
+  elseif a:node.type ==# s:NODE_EXCALL
     return self.compile_excall(a:node)
-  elseif a:node.type == s:NODE_LET
+  elseif a:node.type ==# s:NODE_LET
     return self.compile_let(a:node)
-  elseif a:node.type == s:NODE_UNLET
+  elseif a:node.type ==# s:NODE_UNLET
     return self.compile_unlet(a:node)
-  elseif a:node.type == s:NODE_LOCKVAR
+  elseif a:node.type ==# s:NODE_LOCKVAR
     return self.compile_lockvar(a:node)
-  elseif a:node.type == s:NODE_UNLOCKVAR
+  elseif a:node.type ==# s:NODE_UNLOCKVAR
     return self.compile_unlockvar(a:node)
-  elseif a:node.type == s:NODE_IF
+  elseif a:node.type ==# s:NODE_IF
     return self.compile_if(a:node)
-  elseif a:node.type == s:NODE_WHILE
+  elseif a:node.type ==# s:NODE_WHILE
     return self.compile_while(a:node)
-  elseif a:node.type == s:NODE_FOR
+  elseif a:node.type ==# s:NODE_FOR
     return self.compile_for(a:node)
-  elseif a:node.type == s:NODE_CONTINUE
+  elseif a:node.type ==# s:NODE_CONTINUE
     return self.compile_continue(a:node)
-  elseif a:node.type == s:NODE_BREAK
+  elseif a:node.type ==# s:NODE_BREAK
     return self.compile_break(a:node)
-  elseif a:node.type == s:NODE_TRY
+  elseif a:node.type ==# s:NODE_TRY
     return self.compile_try(a:node)
-  elseif a:node.type == s:NODE_THROW
+  elseif a:node.type ==# s:NODE_THROW
     return self.compile_throw(a:node)
-  elseif a:node.type == s:NODE_ECHO
+  elseif a:node.type ==# s:NODE_ECHO
     return self.compile_echo(a:node)
-  elseif a:node.type == s:NODE_ECHON
+  elseif a:node.type ==# s:NODE_ECHON
     return self.compile_echon(a:node)
-  elseif a:node.type == s:NODE_ECHOHL
+  elseif a:node.type ==# s:NODE_ECHOHL
     return self.compile_echohl(a:node)
-  elseif a:node.type == s:NODE_ECHOMSG
+  elseif a:node.type ==# s:NODE_ECHOMSG
     return self.compile_echomsg(a:node)
-  elseif a:node.type == s:NODE_ECHOERR
+  elseif a:node.type ==# s:NODE_ECHOERR
     return self.compile_echoerr(a:node)
-  elseif a:node.type == s:NODE_EXECUTE
+  elseif a:node.type ==# s:NODE_EXECUTE
     return self.compile_execute(a:node)
-  elseif a:node.type == s:NODE_TERNARY
+  elseif a:node.type ==# s:NODE_TERNARY
     return self.compile_ternary(a:node)
-  elseif a:node.type == s:NODE_OR
+  elseif a:node.type ==# s:NODE_OR
     return self.compile_or(a:node)
-  elseif a:node.type == s:NODE_AND
+  elseif a:node.type ==# s:NODE_AND
     return self.compile_and(a:node)
-  elseif a:node.type == s:NODE_EQUAL
+  elseif a:node.type ==# s:NODE_EQUAL
     return self.compile_equal(a:node)
-  elseif a:node.type == s:NODE_EQUALCI
+  elseif a:node.type ==# s:NODE_EQUALCI
     return self.compile_equalci(a:node)
-  elseif a:node.type == s:NODE_EQUALCS
+  elseif a:node.type ==# s:NODE_EQUALCS
     return self.compile_equalcs(a:node)
-  elseif a:node.type == s:NODE_NEQUAL
+  elseif a:node.type ==# s:NODE_NEQUAL
     return self.compile_nequal(a:node)
-  elseif a:node.type == s:NODE_NEQUALCI
+  elseif a:node.type ==# s:NODE_NEQUALCI
     return self.compile_nequalci(a:node)
-  elseif a:node.type == s:NODE_NEQUALCS
+  elseif a:node.type ==# s:NODE_NEQUALCS
     return self.compile_nequalcs(a:node)
-  elseif a:node.type == s:NODE_GREATER
+  elseif a:node.type ==# s:NODE_GREATER
     return self.compile_greater(a:node)
-  elseif a:node.type == s:NODE_GREATERCI
+  elseif a:node.type ==# s:NODE_GREATERCI
     return self.compile_greaterci(a:node)
-  elseif a:node.type == s:NODE_GREATERCS
+  elseif a:node.type ==# s:NODE_GREATERCS
     return self.compile_greatercs(a:node)
-  elseif a:node.type == s:NODE_GEQUAL
+  elseif a:node.type ==# s:NODE_GEQUAL
     return self.compile_gequal(a:node)
-  elseif a:node.type == s:NODE_GEQUALCI
+  elseif a:node.type ==# s:NODE_GEQUALCI
     return self.compile_gequalci(a:node)
-  elseif a:node.type == s:NODE_GEQUALCS
+  elseif a:node.type ==# s:NODE_GEQUALCS
     return self.compile_gequalcs(a:node)
-  elseif a:node.type == s:NODE_SMALLER
+  elseif a:node.type ==# s:NODE_SMALLER
     return self.compile_smaller(a:node)
-  elseif a:node.type == s:NODE_SMALLERCI
+  elseif a:node.type ==# s:NODE_SMALLERCI
     return self.compile_smallerci(a:node)
-  elseif a:node.type == s:NODE_SMALLERCS
+  elseif a:node.type ==# s:NODE_SMALLERCS
     return self.compile_smallercs(a:node)
-  elseif a:node.type == s:NODE_SEQUAL
+  elseif a:node.type ==# s:NODE_SEQUAL
     return self.compile_sequal(a:node)
-  elseif a:node.type == s:NODE_SEQUALCI
+  elseif a:node.type ==# s:NODE_SEQUALCI
     return self.compile_sequalci(a:node)
-  elseif a:node.type == s:NODE_SEQUALCS
+  elseif a:node.type ==# s:NODE_SEQUALCS
     return self.compile_sequalcs(a:node)
-  elseif a:node.type == s:NODE_MATCH
+  elseif a:node.type ==# s:NODE_MATCH
     return self.compile_match(a:node)
-  elseif a:node.type == s:NODE_MATCHCI
+  elseif a:node.type ==# s:NODE_MATCHCI
     return self.compile_matchci(a:node)
-  elseif a:node.type == s:NODE_MATCHCS
+  elseif a:node.type ==# s:NODE_MATCHCS
     return self.compile_matchcs(a:node)
-  elseif a:node.type == s:NODE_NOMATCH
+  elseif a:node.type ==# s:NODE_NOMATCH
     return self.compile_nomatch(a:node)
-  elseif a:node.type == s:NODE_NOMATCHCI
+  elseif a:node.type ==# s:NODE_NOMATCHCI
     return self.compile_nomatchci(a:node)
-  elseif a:node.type == s:NODE_NOMATCHCS
+  elseif a:node.type ==# s:NODE_NOMATCHCS
     return self.compile_nomatchcs(a:node)
-  elseif a:node.type == s:NODE_IS
+  elseif a:node.type ==# s:NODE_IS
     return self.compile_is(a:node)
-  elseif a:node.type == s:NODE_ISCI
+  elseif a:node.type ==# s:NODE_ISCI
     return self.compile_isci(a:node)
-  elseif a:node.type == s:NODE_ISCS
+  elseif a:node.type ==# s:NODE_ISCS
     return self.compile_iscs(a:node)
-  elseif a:node.type == s:NODE_ISNOT
+  elseif a:node.type ==# s:NODE_ISNOT
     return self.compile_isnot(a:node)
-  elseif a:node.type == s:NODE_ISNOTCI
+  elseif a:node.type ==# s:NODE_ISNOTCI
     return self.compile_isnotci(a:node)
-  elseif a:node.type == s:NODE_ISNOTCS
+  elseif a:node.type ==# s:NODE_ISNOTCS
     return self.compile_isnotcs(a:node)
-  elseif a:node.type == s:NODE_ADD
+  elseif a:node.type ==# s:NODE_ADD
     return self.compile_add(a:node)
-  elseif a:node.type == s:NODE_SUBTRACT
+  elseif a:node.type ==# s:NODE_SUBTRACT
     return self.compile_subtract(a:node)
-  elseif a:node.type == s:NODE_CONCAT
+  elseif a:node.type ==# s:NODE_CONCAT
     return self.compile_concat(a:node)
-  elseif a:node.type == s:NODE_MULTIPLY
+  elseif a:node.type ==# s:NODE_MULTIPLY
     return self.compile_multiply(a:node)
-  elseif a:node.type == s:NODE_DIVIDE
+  elseif a:node.type ==# s:NODE_DIVIDE
     return self.compile_divide(a:node)
-  elseif a:node.type == s:NODE_REMAINDER
+  elseif a:node.type ==# s:NODE_REMAINDER
     return self.compile_remainder(a:node)
-  elseif a:node.type == s:NODE_NOT
+  elseif a:node.type ==# s:NODE_NOT
     return self.compile_not(a:node)
-  elseif a:node.type == s:NODE_PLUS
+  elseif a:node.type ==# s:NODE_PLUS
     return self.compile_plus(a:node)
-  elseif a:node.type == s:NODE_MINUS
+  elseif a:node.type ==# s:NODE_MINUS
     return self.compile_minus(a:node)
-  elseif a:node.type == s:NODE_SUBSCRIPT
+  elseif a:node.type ==# s:NODE_SUBSCRIPT
     return self.compile_subscript(a:node)
-  elseif a:node.type == s:NODE_SLICE
+  elseif a:node.type ==# s:NODE_SLICE
     return self.compile_slice(a:node)
-  elseif a:node.type == s:NODE_DOT
+  elseif a:node.type ==# s:NODE_DOT
     return self.compile_dot(a:node)
-  elseif a:node.type == s:NODE_CALL
+  elseif a:node.type ==# s:NODE_CALL
     return self.compile_call(a:node)
-  elseif a:node.type == s:NODE_NUMBER
+  elseif a:node.type ==# s:NODE_NUMBER
     return self.compile_number(a:node)
-  elseif a:node.type == s:NODE_BLOB
+  elseif a:node.type ==# s:NODE_BLOB
     return self.compile_blob(a:node)
-  elseif a:node.type == s:NODE_STRING
+  elseif a:node.type ==# s:NODE_STRING
     return self.compile_string(a:node)
-  elseif a:node.type == s:NODE_LIST
+  elseif a:node.type ==# s:NODE_LIST
     return self.compile_list(a:node)
-  elseif a:node.type == s:NODE_DICT
+  elseif a:node.type ==# s:NODE_DICT
     return self.compile_dict(a:node)
-  elseif a:node.type == s:NODE_OPTION
+  elseif a:node.type ==# s:NODE_OPTION
     return self.compile_option(a:node)
-  elseif a:node.type == s:NODE_IDENTIFIER
+  elseif a:node.type ==# s:NODE_IDENTIFIER
     return self.compile_identifier(a:node)
-  elseif a:node.type == s:NODE_CURLYNAME
+  elseif a:node.type ==# s:NODE_CURLYNAME
     return self.compile_curlyname(a:node)
-  elseif a:node.type == s:NODE_ENV
+  elseif a:node.type ==# s:NODE_ENV
     return self.compile_env(a:node)
-  elseif a:node.type == s:NODE_REG
+  elseif a:node.type ==# s:NODE_REG
     return self.compile_reg(a:node)
   else
     throw self.err('Compiler: unknown node: %s', string(a:node))
   endif
 endfunction
+" vint: +ProhibitUsingUndeclaredVariable
 
 function s:PythonCompiler.compile_body(body)
   let empty = 1
   for node in a:body
     call self.compile(node)
+    " vint: -ProhibitUsingUndeclaredVariable
     if node.type != s:NODE_COMMENT
+    " vint: +ProhibitUsingUndeclaredVariable
       let empty = 0
     endif
   endfor
@@ -359,13 +373,13 @@ endfunction
 function s:PythonCompiler.compile_function(node)
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
-  if !empty(rlist) && rlist[-1] == '...'
+  if !empty(rlist) && rlist[-1] ==# '...'
     let rlist[-1] = '*a000'
   endif
 
-  if left =~ '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
+  if left =~# '^\(VimLParser\|ExprTokenizer\|ExprParser\|LvalueParser\|StringReader\|Compiler\|RegexpParser\)\.'
     let left = matchstr(left, '\.\zs.*')
-    if left == 'new'
+    if left ==# 'new'
       return
     endif
     call self.insert_empty_lines_before_comment(1)
@@ -405,7 +419,7 @@ endfunction
 
 function s:PythonCompiler.compile_let(node)
   let op = a:node.op
-  if op == '.='
+  if op ==# '.='
     let op = '+='
   endif
   let right = self.compile(a:node.right)
@@ -745,7 +759,7 @@ endfunction
 function s:PythonCompiler.compile_subscript(node)
   let left = self.compile(a:node.left)
   let right = self.compile(a:node.right)
-  if left == 'self'
+  if left ==# 'self'
     return printf('getattr(%s, %s)', left, right)
   else
     return printf('%s[%s]', left, right)
@@ -765,15 +779,15 @@ endfunction
 function s:PythonCompiler.compile_call(node)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let left = self.compile(a:node.left)
-  if left == 'map'
+  if left ==# 'map'
     let r = s:StringReader.new([eval(rlist[1])])
     let p = s:ExprParser.new(r)
     let n = p.parse()
     return printf('[%s for vval in %s]', self.compile(n), rlist[0])
-  elseif left == 'call' && rlist[0][0] =~ '[''"]'
+  elseif left ==# 'call' && rlist[0][0] =~# '[''"]'
     return printf('viml_%s(*%s)', rlist[0][1:-2], rlist[1])
   endif
-  if left =~ '\.new$'
+  if left =~# '\.new$'
     let left = matchstr(left, '.*\ze\.new$')
   endif
   if index(s:viml_builtin_functions, left) != -1
@@ -787,7 +801,7 @@ function s:PythonCompiler.compile_number(node)
 endfunction
 
 function s:PythonCompiler.compile_string(node)
-  if a:node.value[0] == "'"
+  if a:node.value[0] ==# "'"
     let s = substitute(a:node.value[1:-2], "''", "'", 'g')
     return '"' . escape(s, '\"') . '"'
   else
@@ -819,11 +833,11 @@ endfunction
 
 function s:PythonCompiler.compile_identifier(node)
   let name = a:node.value
-  if name == 'a:000'
+  if name ==# 'a:000'
     let name = 'a000'
-  elseif name == 'v:val'
+  elseif name ==# 'v:val'
     let name = 'vval'
-  elseif name =~ '^[sa]:'
+  elseif name =~# '^[sa]:'
     let name = name[2:]
   endif
   if has_key(s:reserved_keywords, name)
@@ -892,9 +906,9 @@ endfunction
 function! s:numtoname(num)
   let sig = printf("function('%s')", a:num)
   for k in keys(s:)
-    if type(s:[k]) == type({})
+    if type(s:[k]) ==# type({})
       for name in keys(s:[k])
-        if type(s:[k][name]) == type(function('tr')) && string(s:[k][name]) == sig
+        if type(s:[k][name]) ==# type(function('tr')) && string(s:[k][name]) ==# sig
           return printf('%s.%s', k, name)
         endif
       endfor
