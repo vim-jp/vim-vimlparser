@@ -20,7 +20,7 @@ checkpy: all
 	flake8 py
 
 checkvim: all
-	vint autoload
+	vint autoload py/pycompiler.vim
 
 test:
 	test/run.sh
