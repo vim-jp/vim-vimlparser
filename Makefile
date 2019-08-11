@@ -3,7 +3,7 @@ COMPILED_FILES:=js/vimlparser.js py/vimlparser.py
 all: $(COMPILED_FILES)
 
 test: clean_compiled check fast-test
-fast-test: checkpy checkvim js/test py/test test/node_position/test_position.out
+fast-test: checkpy checkvim vim/test js/test py/test test/node_position/test_position.out
 
 js/vimlparser.js: autoload/vimlparser.vim js/jscompiler.vim js/vimlfunc.js
 	scripts/jscompile.sh $< $@
@@ -26,6 +26,7 @@ checkvim: all
 	vint autoload
 
 vim/test:
+	test/run.sh
 
 js/test: js/vimlparser.js
 	test/run_command.sh node js/vimlparser.js
