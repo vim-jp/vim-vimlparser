@@ -40,7 +40,7 @@ install:
 script:
   - uname -a
   - which -a vim
-  - vim --cmd version --cmd quit
+  - vim --version
   - make --keep-going $MAKE_TARGET
 
 after_success:
