@@ -3319,8 +3319,10 @@ class StringReader:
 
     def read_nonwhite(self):
         r = ""
-        while not iswhite(self.peekn(1)):
+        ch = self.peekn(1)
+        while not iswhite(ch) and ch != "":
             r += self.getn(1)
+            ch = self.peekn(1)
         return r
 
     def read_name(self):

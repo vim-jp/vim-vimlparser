@@ -949,7 +949,7 @@ function! s:VimLParser.find_command() abort
     endif
   endfor
 
-  if self.neovim  
+  if self.neovim
     for x in self.neovim_additional_commands
       if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
         unlet cmd
@@ -966,7 +966,7 @@ function! s:VimLParser.find_command() abort
       endif
     endfor
   endif
-  
+
   " FIXME: user defined command
   if (cmd is# s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
     let name .= self.reader.read_alnum()
@@ -4681,8 +4681,10 @@ endfunction
 
 function! s:StringReader.read_nonwhite() abort
   let r = ''
-  while !s:iswhite(self.peekn(1))
+  let ch = self.peekn(1)
+  while !s:iswhite(ch) && ch !=# ''
     let r .= self.getn(1)
+    let ch = self.peekn(1)
   endwhile
   return r
 endfunction
