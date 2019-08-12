@@ -4102,8 +4102,10 @@ StringReader.prototype.read_white = function() {
 
 StringReader.prototype.read_nonwhite = function() {
     var r = "";
-    while (!iswhite(this.peekn(1))) {
+    var ch = this.peekn(1);
+    while (!iswhite(ch) && ch != "") {
         r += this.getn(1);
+        var ch = this.peekn(1);
     }
     return r;
 }
