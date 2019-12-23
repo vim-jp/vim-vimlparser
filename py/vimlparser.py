@@ -2270,14 +2270,15 @@ class ExprTokenizer:
                 s += c
         return s
 
-    def get_dict_literal_key(self):
+    def parse_dict_literal_key(self):
         self.reader.skip_white()
-        r = self.reader
-        c = r.peek()
+        c = self.reader.peek()
         if not isalnum(c) and c != "_" and c != "-":
             raise VimLParserException(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
+        node = Node(NODE_STRING)
         s = c
         self.reader.seek_cur(1)
+        node.pos = self.reader.getpos()
         while TRUE:
             c = self.reader.p(0)
             if c == "<EOF>" or c == "<EOL>":
@@ -2286,7 +2287,8 @@ class ExprTokenizer:
                 break
             self.reader.seek_cur(1)
             s += c
-        return s
+        node.value = "'" + s + "'"
+        return node
 
 
 class ExprParser:
@@ -2874,7 +2876,7 @@ class ExprParser:
                 self.tokenizer.get()
                 return node
             while 1:
-                key = self.parse_dict_literal_key() if is_litdict else self.parse_expr1()
+                key = self.tokenizer.parse_dict_literal_key() if is_litdict else self.parse_expr1()
                 token = self.tokenizer.get()
                 if token.type == TOKEN_CCLOSE:
                     if not viml_empty(node.value):
@@ -2928,12 +2930,6 @@ class ExprParser:
             node.value = token.value
         else:
             raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
-        return node
-
-    def parse_dict_literal_key(self):
-        node = Node(NODE_STRING)
-        node.pos = self.reader.tell()
-        node.value = "'" + self.tokenizer.get_dict_literal_key() + "'"
         return node
 
     # SUBSCRIPT or CONCAT
