@@ -488,6 +488,7 @@ function ExArg() {
 //   node    rest
 //   node[]  list
 //   node[]  rlist
+//   node[]  default_args
 //   node[]  body
 //   string  op
 //   string  str
@@ -497,7 +498,7 @@ function ExArg() {
 // TOPLEVEL .body
 // COMMENT .str
 // EXCMD .ea .str
-// FUNCTION .ea .body .left .rlist .attr .endfunction
+// FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 // ENDFUNCTION .ea
 // DELFUNCTION .ea .left
 // RETURN .ea .left
@@ -1639,6 +1640,7 @@ VimLParser.prototype.parse_cmd_function = function() {
     node.ea = this.ea;
     node.left = left;
     node.rlist = [];
+    node.default_args = [];
     node.attr = {"range":0, "abort":0, "dict":0, "closure":0};
     node.endfunction = NIL;
     this.reader.getn(1);
@@ -1662,6 +1664,13 @@ VimLParser.prototype.parse_cmd_function = function() {
                 varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
+                if (tokenizer.peek().type == TOKEN_EQ) {
+                    tokenizer.get();
+                    viml_add(node.default_args, this.parse_expr());
+                }
+                else if (viml_len(node.default_args) > 0) {
+                    throw Err("E989: Non-default argument follows default argument", varnode.pos);
+                }
                 // XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
                 if (iswhite(this.reader.p(0)) && tokenizer.peek().type == TOKEN_COMMA) {
                     throw Err("E475: Invalid argument: White space is not allowed before comma", this.reader.getpos());
@@ -4465,14 +4474,18 @@ Compiler.prototype.compile_excmd = function(node) {
 Compiler.prototype.compile_function = function(node) {
     var left = this.compile(node.left);
     var rlist = node.rlist.map((function(vval) { return this.compile(vval); }).bind(this));
+    var default_args = node.default_args.map((function(vval) { return this.compile(vval); }).bind(this));
     if (!viml_empty(rlist) && rlist[rlist.length - 1] == "...") {
         rlist[rlist.length - 1] = ". ...";
     }
     if (viml_empty(rlist)) {
         this.out("(function (%s)", left);
     }
+    else if (viml_empty(default_args)) {
+        this.out("(function (%s) (%s)", left, viml_join(rlist, " "));
+    }
     else {
-        this.out("(function (%s %s)", left, viml_join(rlist, " "));
+        this.out("(function (%s) (%s) (%s)", left, viml_join(rlist, " "), viml_join(default_args, " "));
     }
     this.incindent("  ");
     this.compile_body(node.body);
