@@ -319,7 +319,7 @@ endfunction
 " TOPLEVEL .body
 " COMMENT .str
 " EXCMD .ea .str
-" FUNCTION .ea .body .left .rlist .attr .endfunction
+" FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 " ENDFUNCTION .ea
 " DELFUNCTION .ea .left
 " RETURN .ea .left
@@ -1358,6 +1358,7 @@ function! s:VimLParser.parse_cmd_function() abort
   let node.ea = self.ea
   let node.left = left
   let node.rlist = []
+  let node.default_args = []
   let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0}
   let node.endfunction = s:NIL
   call self.reader.getn(1)
@@ -1379,6 +1380,12 @@ function! s:VimLParser.parse_cmd_function() abort
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
+        if tokenizer.peek().type ==# s:TOKEN_EQ
+          call tokenizer.get()
+          call add(node.default_args, self.parse_expr())
+        elseif len(node.default_args) > 0
+          throw s:Err('E989: Non-default argument follows default argument', varnode.pos)
+        endif
         " XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
         if s:iswhite(self.reader.p(0)) && tokenizer.peek().type ==# s:TOKEN_COMMA
           throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
@@ -4962,13 +4969,16 @@ endfunction
 function! s:Compiler.compile_function(node) abort
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  let default_args = map(a:node.default_args, 'self.compile(v:val)')
   if !empty(rlist) && rlist[-1] ==# '...'
     let rlist[-1] = '. ...'
   endif
   if empty(rlist)
     call self.out('(function (%s)', left)
+  elseif empty(default_args)
+    call self.out('(function (%s) (%s)', left, join(rlist, ' '))
   else
-    call self.out('(function (%s %s)', left, join(rlist, ' '))
+    call self.out('(function (%s) (%s) (%s)', left, join(rlist, ' '), join(default_args, ' '))
   endif
   call self.incindent('  ')
   call self.compile_body(a:node.body)
