@@ -1,2 +1,2 @@
-(function (F) (a))
-(function (G) (a))
+(function (F (a)))
+(function (G (a)))

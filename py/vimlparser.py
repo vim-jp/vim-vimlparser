@@ -3587,9 +3587,9 @@ class Compiler:
         if viml_empty(rlist):
             self.out("(function (%s)", left)
         elif viml_empty(default_args):
-            self.out("(function (%s) (%s)", left, viml_join(rlist, " "))
+            self.out("(function (%s (%s))", left, viml_join(rlist, " "))
         else:
-            self.out("(function (%s) (%s) (%s)", left, viml_join(rlist, " "), viml_join(default_args, " "))
+            self.out("(function (%s (%s) (%s))", left, viml_join(rlist, " "), viml_join(default_args, " "))
         self.incindent("  ")
         self.compile_body(node.body)
         self.out(")")

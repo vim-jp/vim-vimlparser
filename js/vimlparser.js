@@ -4482,10 +4482,10 @@ Compiler.prototype.compile_function = function(node) {
         this.out("(function (%s)", left);
     }
     else if (viml_empty(default_args)) {
-        this.out("(function (%s) (%s)", left, viml_join(rlist, " "));
+        this.out("(function (%s (%s))", left, viml_join(rlist, " "));
     }
     else {
-        this.out("(function (%s) (%s) (%s)", left, viml_join(rlist, " "), viml_join(default_args, " "));
+        this.out("(function (%s (%s) (%s))", left, viml_join(rlist, " "), viml_join(default_args, " "));
     }
     this.incindent("  ");
     this.compile_body(node.body);

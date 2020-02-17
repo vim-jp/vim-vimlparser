@@ -4977,9 +4977,9 @@ function! s:Compiler.compile_function(node) abort
   if empty(rlist)
     call self.out('(function (%s)', left)
   elseif empty(default_args)
-    call self.out('(function (%s) (%s)', left, join(rlist, ' '))
+    call self.out('(function (%s (%s))', left, join(rlist, ' '))
   else
-    call self.out('(function (%s) (%s) (%s)', left, join(rlist, ' '), join(default_args, ' '))
+    call self.out('(function (%s (%s) (%s))', left, join(rlist, ' '), join(default_args, ' '))
   endif
   call self.incindent('  ')
   call self.compile_body(a:node.body)

@@ -1,7 +1,7 @@
 ; test1
-(function (s:foo) (a b . ...)
+(function (s:foo (a b . ...))
   (return 0))
-(function (s:bar) (a b . ...) (1 2)
+(function (s:bar (a b . ...) (1 2))
   (return 0))
 (if 1
   (echo "if 1")
