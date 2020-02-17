@@ -310,6 +310,7 @@ endfunction
 "   node    rest
 "   node[]  list
 "   node[]  rlist
+"   node[]  default_args
 "   node[]  body
 "   string  op
 "   string  str
