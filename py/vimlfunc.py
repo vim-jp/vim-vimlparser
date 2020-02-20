@@ -29,70 +29,6 @@ class AttributeDict(dict):
     __delattr__ = dict.__delitem__
 
 
-pat_vim2py = {
-    "[0-9a-zA-Z]": "[0-9a-zA-Z]",
-    "[@*!=><&~#]": "[@*!=><&~#]",
-    "\\<ARGOPT\\>": "\\bARGOPT\\b",
-    "\\<BANG\\>": "\\bBANG\\b",
-    "\\<EDITCMD\\>": "\\bEDITCMD\\b",
-    "\\<NOTRLCOM\\>": "\\bNOTRLCOM\\b",
-    "\\<TRLBAR\\>": "\\bTRLBAR\\b",
-    "\\<USECTRLV\\>": "\\bUSECTRLV\\b",
-    "\\<USERCMD\\>": "\\bUSERCMD\\b",
-    "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>": "\\b(XFILE|FILES|FILE1)\\b",
-    "\\S": "\\S",
-    "\\a": "[A-Za-z]",
-    "\\d": "\\d",
-    "\\h": "[A-Za-z_]",
-    "\\s": "\\s",
-    "\\v^d%[elete][lp]$": "^d(elete|elet|ele|el|e)[lp]$",
-    "\\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])":
-        "^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])",
-    "\\w": "[0-9A-Za-z_]",
-    "\\w\\|[:#]": "[0-9A-Za-z_]|[:#]",
-    "\\x": "[0-9A-Fa-f]",
-    "^++": r"^\+\+",
-    "^++bad=\\(keep\\|drop\\|.\\)\\>": "^\\+\\+bad=(keep|drop|.)\\b",
-    "^++bad=drop": "^\\+\\+bad=drop",
-    "^++bad=keep": "^\\+\\+bad=keep",
-    "^++bin\\>": "^\\+\\+bin\\b",
-    "^++edit\\>": "^\\+\\+edit\\b",
-    "^++enc=\\S": "^\\+\\+enc=\\S",
-    "^++encoding=\\S": "^\\+\\+encoding=\\S",
-    "^++ff=\\(dos\\|unix\\|mac\\)\\>": "^\\+\\+ff=(dos|unix|mac)\\b",
-    "^++fileformat=\\(dos\\|unix\\|mac\\)\\>":
-        "^\\+\\+fileformat=(dos|unix|mac)\\b",
-    "^++nobin\\>": "^\\+\\+nobin\\b",
-    "^[A-Z]": "^[A-Z]",
-    "^\\$\\w\\+": "^\\$[0-9A-Za-z_]+",
-    "^\\(!\\|global\\|vglobal\\)$": "^(!|global|vglobal)$",
-    "^\\(WHILE\\|FOR\\)$": "^(WHILE|FOR)$",
-    "^\\(vimgrep\\|vimgrepadd\\|lvimgrep\\|lvimgrepadd\\)$":
-        "^(vimgrep|vimgrepadd|lvimgrep|lvimgrepadd)$",
-    "^\\d": "^\\d",
-    "^\\h": "^[A-Za-z_]",
-    "^\\s": "^\\s",
-    "^\\s*\\\\": "^\\s*\\\\",
-    "^[ \\t]$": "^[ \\t]$",
-    "^[A-Za-z]$": "^[A-Za-z]$",
-    "^[0-9A-Za-z]$": "^[0-9A-Za-z]$",
-    "^[0-9]$": "^[0-9]$",
-    "^[0-9A-Fa-f]$": "^[0-9A-Fa-f]$",
-    "^[0-9A-Za-z_]$": "^[0-9A-Za-z_]$",
-    "^[A-Za-z_]$": "^[A-Za-z_]$",
-    "^[0-9A-Za-z_:#]$": "^[0-9A-Za-z_:#]$",
-    "^[A-Za-z_][0-9A-Za-z_]*$": "^[A-Za-z_][0-9A-Za-z_]*$",
-    "^[A-Z]$": "^[A-Z]$",
-    "^[a-z]$": "^[a-z]$",
-    "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$":
-        "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
-    "^[0-7]$": "^[0-7]$",
-    "^[0-9A-Fa-f][0-9A-Fa-f]$": "^[0-9A-Fa-f][0-9A-Fa-f]$",
-    r"^\.[0-9A-Fa-f]$": r"^\.[0-9A-Fa-f]$",
-    "^[0-9A-Fa-f][^0-9A-Fa-f]$": "^[0-9A-Fa-f][^0-9A-Fa-f]$",
-}
-
-
 def viml_add(lst, item):
     lst.append(item)
 
@@ -114,15 +50,15 @@ def viml_equalci(a, b):
 
 
 def viml_eqreg(s, reg):
-    return re.search(pat_vim2py[reg], s, re.IGNORECASE)
+    return re.search(reg, s, re.IGNORECASE)
 
 
 def viml_eqregh(s, reg):
-    return re.search(pat_vim2py[reg], s)
+    return re.search(reg, s)
 
 
 def viml_eqregq(s, reg):
-    return re.search(pat_vim2py[reg], s, re.IGNORECASE)
+    return re.search(reg, s, re.IGNORECASE)
 
 
 def viml_escape(s, chars):

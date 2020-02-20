@@ -29,70 +29,6 @@ class AttributeDict(dict):
     __delattr__ = dict.__delitem__
 
 
-pat_vim2py = {
-    "[0-9a-zA-Z]": "[0-9a-zA-Z]",
-    "[@*!=><&~#]": "[@*!=><&~#]",
-    "\\<ARGOPT\\>": "\\bARGOPT\\b",
-    "\\<BANG\\>": "\\bBANG\\b",
-    "\\<EDITCMD\\>": "\\bEDITCMD\\b",
-    "\\<NOTRLCOM\\>": "\\bNOTRLCOM\\b",
-    "\\<TRLBAR\\>": "\\bTRLBAR\\b",
-    "\\<USECTRLV\\>": "\\bUSECTRLV\\b",
-    "\\<USERCMD\\>": "\\bUSERCMD\\b",
-    "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>": "\\b(XFILE|FILES|FILE1)\\b",
-    "\\S": "\\S",
-    "\\a": "[A-Za-z]",
-    "\\d": "\\d",
-    "\\h": "[A-Za-z_]",
-    "\\s": "\\s",
-    "\\v^d%[elete][lp]$": "^d(elete|elet|ele|el|e)[lp]$",
-    "\\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])":
-        "^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])",
-    "\\w": "[0-9A-Za-z_]",
-    "\\w\\|[:#]": "[0-9A-Za-z_]|[:#]",
-    "\\x": "[0-9A-Fa-f]",
-    "^++": r"^\+\+",
-    "^++bad=\\(keep\\|drop\\|.\\)\\>": "^\\+\\+bad=(keep|drop|.)\\b",
-    "^++bad=drop": "^\\+\\+bad=drop",
-    "^++bad=keep": "^\\+\\+bad=keep",
-    "^++bin\\>": "^\\+\\+bin\\b",
-    "^++edit\\>": "^\\+\\+edit\\b",
-    "^++enc=\\S": "^\\+\\+enc=\\S",
-    "^++encoding=\\S": "^\\+\\+encoding=\\S",
-    "^++ff=\\(dos\\|unix\\|mac\\)\\>": "^\\+\\+ff=(dos|unix|mac)\\b",
-    "^++fileformat=\\(dos\\|unix\\|mac\\)\\>":
-        "^\\+\\+fileformat=(dos|unix|mac)\\b",
-    "^++nobin\\>": "^\\+\\+nobin\\b",
-    "^[A-Z]": "^[A-Z]",
-    "^\\$\\w\\+": "^\\$[0-9A-Za-z_]+",
-    "^\\(!\\|global\\|vglobal\\)$": "^(!|global|vglobal)$",
-    "^\\(WHILE\\|FOR\\)$": "^(WHILE|FOR)$",
-    "^\\(vimgrep\\|vimgrepadd\\|lvimgrep\\|lvimgrepadd\\)$":
-        "^(vimgrep|vimgrepadd|lvimgrep|lvimgrepadd)$",
-    "^\\d": "^\\d",
-    "^\\h": "^[A-Za-z_]",
-    "^\\s": "^\\s",
-    "^\\s*\\\\": "^\\s*\\\\",
-    "^[ \\t]$": "^[ \\t]$",
-    "^[A-Za-z]$": "^[A-Za-z]$",
-    "^[0-9A-Za-z]$": "^[0-9A-Za-z]$",
-    "^[0-9]$": "^[0-9]$",
-    "^[0-9A-Fa-f]$": "^[0-9A-Fa-f]$",
-    "^[0-9A-Za-z_]$": "^[0-9A-Za-z_]$",
-    "^[A-Za-z_]$": "^[A-Za-z_]$",
-    "^[0-9A-Za-z_:#]$": "^[0-9A-Za-z_:#]$",
-    "^[A-Za-z_][0-9A-Za-z_]*$": "^[A-Za-z_][0-9A-Za-z_]*$",
-    "^[A-Z]$": "^[A-Z]$",
-    "^[a-z]$": "^[a-z]$",
-    "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$":
-        "^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$",
-    "^[0-7]$": "^[0-7]$",
-    "^[0-9A-Fa-f][0-9A-Fa-f]$": "^[0-9A-Fa-f][0-9A-Fa-f]$",
-    r"^\.[0-9A-Fa-f]$": r"^\.[0-9A-Fa-f]$",
-    "^[0-9A-Fa-f][^0-9A-Fa-f]$": "^[0-9A-Fa-f][^0-9A-Fa-f]$",
-}
-
-
 def viml_add(lst, item):
     lst.append(item)
 
@@ -114,15 +50,15 @@ def viml_equalci(a, b):
 
 
 def viml_eqreg(s, reg):
-    return re.search(pat_vim2py[reg], s, re.IGNORECASE)
+    return re.search(reg, s, re.IGNORECASE)
 
 
 def viml_eqregh(s, reg):
-    return re.search(pat_vim2py[reg], s)
+    return re.search(reg, s)
 
 
 def viml_eqregq(s, reg):
-    return re.search(pat_vim2py[reg], s, re.IGNORECASE)
+    return re.search(reg, s, re.IGNORECASE)
 
 
 def viml_escape(s, chars):
@@ -378,64 +314,64 @@ MAX_FUNC_ARGS = 20
 
 
 def isalpha(c):
-    return viml_eqregh(c, "^[A-Za-z]$")
+    return viml_eqregh(c, r"^[A-Za-z]$")
 
 
 def isalnum(c):
-    return viml_eqregh(c, "^[0-9A-Za-z]$")
+    return viml_eqregh(c, r"^[0-9A-Za-z]$")
 
 
 def isdigit(c):
-    return viml_eqregh(c, "^[0-9]$")
+    return viml_eqregh(c, r"^[0-9]$")
 
 
 def isodigit(c):
-    return viml_eqregh(c, "^[0-7]$")
+    return viml_eqregh(c, r"^[0-7]$")
 
 
 def isxdigit(c):
-    return viml_eqregh(c, "^[0-9A-Fa-f]$")
+    return viml_eqregh(c, r"^[0-9A-Fa-f]$")
 
 
 def iswordc(c):
-    return viml_eqregh(c, "^[0-9A-Za-z_]$")
+    return viml_eqregh(c, r"^[0-9A-Za-z_]$")
 
 
 def iswordc1(c):
-    return viml_eqregh(c, "^[A-Za-z_]$")
+    return viml_eqregh(c, r"^[A-Za-z_]$")
 
 
 def iswhite(c):
-    return viml_eqregh(c, "^[ \\t]$")
+    return viml_eqregh(c, r"^[ \t]$")
 
 
 def isnamec(c):
-    return viml_eqregh(c, "^[0-9A-Za-z_:#]$")
+    return viml_eqregh(c, r"^[0-9A-Za-z_:#]$")
 
 
 def isnamec1(c):
-    return viml_eqregh(c, "^[A-Za-z_]$")
+    return viml_eqregh(c, r"^[A-Za-z_]$")
 
 
 def isargname(s):
-    return viml_eqregh(s, "^[A-Za-z_][0-9A-Za-z_]*$")
+    return viml_eqregh(s, r"^[A-Za-z_][0-9A-Za-z_]*$")
 
 
 def isvarname(s):
-    return viml_eqregh(s, "^[vgslabwt]:$\\|^\\([vgslabwt]:\\)\\?[A-Za-z_][0-9A-Za-z_#]*$")
+    return viml_eqregh(s, r"^[vgslabwt]:$|^([vgslabwt]:)?[A-Za-z_][0-9A-Za-z_#]*$")
 
 
 # FIXME:
 def isidc(c):
-    return viml_eqregh(c, "^[0-9A-Za-z_]$")
+    return viml_eqregh(c, r"^[0-9A-Za-z_]$")
 
 
 def isupper(c):
-    return viml_eqregh(c, "^[A-Z]$")
+    return viml_eqregh(c, r"^[A-Z]$")
 
 
 def islower(c):
-    return viml_eqregh(c, "^[a-z]$")
+    return viml_eqregh(c, r"^[a-z]$")
 
 
 def ExArg():
@@ -862,12 +798,12 @@ class VimLParser:
             self.ea.forceit = TRUE
         else:
             self.ea.forceit = FALSE
-        if not viml_eqregh(self.ea.cmd.flags, "\\<BANG\\>") and self.ea.forceit and not viml_eqregh(self.ea.cmd.flags, "\\<USERCMD\\>"):
+        if not viml_eqregh(self.ea.cmd.flags, r"\bBANG\b") and self.ea.forceit and not viml_eqregh(self.ea.cmd.flags, r"\bUSERCMD\b"):
             raise VimLParserException(Err("E477: No ! allowed", self.ea.cmdpos))
         if self.ea.cmd.name != "!":
             self.reader.skip_white()
         self.ea.argpos = self.reader.getpos()
-        if viml_eqregh(self.ea.cmd.flags, "\\<ARGOPT\\>"):
+        if viml_eqregh(self.ea.cmd.flags, r"\bARGOPT\b"):
             self.parse_argopt()
         if self.ea.cmd.name == "write" or self.ea.cmd.name == "update":
             if self.reader.p(0) == ">":
@@ -892,7 +828,7 @@ class VimLParser:
                 self.reader.getn(1)
                 self.ea.amount += 1
             self.reader.skip_white()
-        if viml_eqregh(self.ea.cmd.flags, "\\<EDITCMD\\>") and not self.ea.usefilter:
+        if viml_eqregh(self.ea.cmd.flags, r"\bEDITCMD\b") and not self.ea.usefilter:
             self.parse_argcmd()
         self._parse_command(self.ea.cmd.parser)
 
@@ -1001,10 +937,10 @@ class VimLParser:
         if c == "k":
             self.reader.getn(1)
             name = "k"
-        elif c == "s" and viml_eqregh(self.reader.peekn(5), "\\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])"):
+        elif c == "s" and viml_eqregh(self.reader.peekn(5), r"^s(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])"):
             self.reader.getn(1)
             name = "substitute"
-        elif viml_eqregh(c, "[@*!=><&~#]"):
+        elif viml_eqregh(c, r"[@*!=><&~#]"):
             self.reader.getn(1)
             name = c
         elif self.reader.peekn(2) == "py":
@@ -1012,7 +948,7 @@ class VimLParser:
         else:
             pos = self.reader.tell()
             name = self.reader.read_alpha()
-            if name != "del" and viml_eqregh(name, "\\v^d%[elete][lp]$"):
+            if name != "del" and viml_eqregh(name, r"^d(elete|elet|ele|el|e)[lp]$"):
                 self.reader.seek_set(pos)
                 name = self.reader.getn(viml_len(name) - 1)
         if name == "":
@@ -1037,7 +973,7 @@ class VimLParser:
                     cmd = NIL
                     break
         # FIXME: user defined command
-        if (cmd is NIL or cmd.name == "Print") and viml_eqregh(name, "^[A-Z]"):
+        if (cmd is NIL or cmd.name == "Print") and viml_eqregh(name, r"^[A-Z]"):
             name += self.reader.read_alnum()
             del cmd
             cmd = AttributeDict({"name": name, "flags": "USERCMD", "parser": "parse_cmd_usercmd"})
@@ -1053,36 +989,36 @@ class VimLParser:
     def parse_argopt(self):
         while self.reader.p(0) == "+" and self.reader.p(1) == "+":
             s = self.reader.peekn(20)
-            if viml_eqregh(s, "^++bin\\>"):
+            if viml_eqregh(s, r"^\+\+bin\b"):
                 self.reader.getn(5)
                 self.ea.force_bin = 1
-            elif viml_eqregh(s, "^++nobin\\>"):
+            elif viml_eqregh(s, r"^\+\+nobin\b"):
                 self.reader.getn(7)
                 self.ea.force_bin = 2
-            elif viml_eqregh(s, "^++edit\\>"):
+            elif viml_eqregh(s, r"^\+\+edit\b"):
                 self.reader.getn(6)
                 self.ea.read_edit = 1
-            elif viml_eqregh(s, "^++ff=\\(dos\\|unix\\|mac\\)\\>"):
+            elif viml_eqregh(s, r"^\+\+ff=(dos|unix|mac)\b"):
                 self.reader.getn(5)
                 self.ea.force_ff = self.reader.read_alpha()
-            elif viml_eqregh(s, "^++fileformat=\\(dos\\|unix\\|mac\\)\\>"):
+            elif viml_eqregh(s, r"^\+\+fileformat=(dos|unix|mac)\b"):
                 self.reader.getn(13)
                 self.ea.force_ff = self.reader.read_alpha()
-            elif viml_eqregh(s, "^++enc=\\S"):
+            elif viml_eqregh(s, r"^\+\+enc=\S"):
                 self.reader.getn(6)
                 self.ea.force_enc = self.reader.read_nonwhite()
-            elif viml_eqregh(s, "^++encoding=\\S"):
+            elif viml_eqregh(s, r"^\+\+encoding=\S"):
                 self.reader.getn(11)
                 self.ea.force_enc = self.reader.read_nonwhite()
-            elif viml_eqregh(s, "^++bad=\\(keep\\|drop\\|.\\)\\>"):
+            elif viml_eqregh(s, r"^\+\+bad=(keep|drop|.)\b"):
                 self.reader.getn(6)
-                if viml_eqregh(s, "^++bad=keep"):
+                if viml_eqregh(s, r"^\+\+bad=keep"):
                     self.ea.bad_char = self.reader.getn(4)
-                elif viml_eqregh(s, "^++bad=drop"):
+                elif viml_eqregh(s, r"^\+\+bad=drop"):
                     self.ea.bad_char = self.reader.getn(4)
                 else:
                     self.ea.bad_char = self.reader.getn(1)
-            elif viml_eqregh(s, "^++"):
+            elif viml_eqregh(s, r"^\+\+"):
                 raise VimLParserException(Err("E474: Invalid Argument", self.reader.getpos()))
             else:
                 break
@@ -1147,7 +1083,7 @@ class VimLParser:
     # TODO:
     def parse_cmd_common(self):
         end = self.reader.getpos()
-        if viml_eqregh(self.ea.cmd.flags, "\\<TRLBAR\\>") and not self.ea.usefilter:
+        if viml_eqregh(self.ea.cmd.flags, r"\bTRLBAR\b") and not self.ea.usefilter:
             end = self.separate_nextcmd()
         elif self.ea.cmd.name == "!" or self.ea.cmd.name == "global" or self.ea.cmd.name == "vglobal" or self.ea.usefilter:
             while TRUE:
@@ -1187,24 +1123,24 @@ class VimLParser:
                 if c == "<EOF>" or c == "<EOL>":
                     break
                 self.reader.get()
-            elif self.reader.peekn(2) == "`=" and viml_eqregh(self.ea.cmd.flags, "\\<\\(XFILE\\|FILES\\|FILE1\\)\\>"):
+            elif self.reader.peekn(2) == "`=" and viml_eqregh(self.ea.cmd.flags, r"\b(XFILE|FILES|FILE1)\b"):
                 self.reader.getn(2)
                 self.parse_expr()
                 c = self.reader.peekn(1)
                 if c != "`":
                     raise VimLParserException(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
                 self.reader.getn(1)
-            elif c == "|" or c == "\n" or c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and (self.ea.cmd.name != "@" and self.ea.cmd.name != "*" or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@"):
+            elif c == "|" or c == "\n" or c == "\"" and not viml_eqregh(self.ea.cmd.flags, r"\bNOTRLCOM\b") and (self.ea.cmd.name != "@" and self.ea.cmd.name != "*" or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@"):
                 has_cpo_bar = FALSE
                 # &cpoptions =~ 'b'
-                if (not has_cpo_bar or not viml_eqregh(self.ea.cmd.flags, "\\<USECTRLV\\>")) and pc == "\\":
+                if (not has_cpo_bar or not viml_eqregh(self.ea.cmd.flags, r"\bUSECTRLV\b")) and pc == "\\":
                     self.reader.get()
                 else:
                     break
             else:
                 self.reader.get()
             pc = c
-        if not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>"):
+        if not viml_eqregh(self.ea.cmd.flags, r"\bNOTRLCOM\b"):
             end = nospend
         return end
 
@@ -3147,7 +3083,7 @@ class StringReader:
                 viml_add(self.pos, [lnum + 1, col + 1, offset])
                 col += viml_len(c)
                 offset += viml_len(c)
-            while lnum + 1 < viml_len(lines) and viml_eqregh(lines[lnum + 1], "^\\s*\\\\"):
+            while lnum + 1 < viml_len(lines) and viml_eqregh(lines[lnum + 1], r"^\s*\\"):
                 skip = TRUE
                 col = 0
                 for c in viml_split(lines[lnum + 1], "\\zs"):
@@ -3272,11 +3208,11 @@ class StringReader:
         r = ""
         while 1:
             s = self.peekn(2)
-            if viml_eqregh(s, "^[0-9A-Fa-f][0-9A-Fa-f]$"):
+            if viml_eqregh(s, r"^[0-9A-Fa-f][0-9A-Fa-f]$"):
                 r += self.getn(2)
-            elif viml_eqregh(s, "^\\.[0-9A-Fa-f]$"):
+            elif viml_eqregh(s, r"^\.[0-9A-Fa-f]$"):
                 r += self.getn(1)
-            elif viml_eqregh(s, "^[0-9A-Fa-f][^0-9A-Fa-f]$"):
+            elif viml_eqregh(s, r"^[0-9A-Fa-f][^0-9A-Fa-f]$"):
                 raise VimLParserException(Err("E973: Blob literal should have an even number of hex characters:" + s, self.getpos()))
             else:
                 break
