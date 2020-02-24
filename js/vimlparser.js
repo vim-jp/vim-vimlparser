@@ -4476,16 +4476,16 @@ Compiler.prototype.compile_function = function(node) {
     var rlist = node.rlist.map((function(vval) { return this.compile(vval); }).bind(this));
     var default_args = node.default_args.map((function(vval) { return this.compile(vval); }).bind(this));
     if (!viml_empty(rlist)) {
-        var remaining = v:false;
+        var remaining = FALSE;
         if (rlist[rlist.length - 1] == "...") {
             viml_remove(rlist, -1);
-            var remaining = v:true;
+            var remaining = TRUE;
         }
         var __c11 = viml_range(viml_len(rlist));
         for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
             var i = __c11[__i11];
             if (i < viml_len(rlist) - viml_len(default_args)) {
-                left += viml_printf(" (%s)", rlist[i]);
+                left += viml_printf(" %s", rlist[i]);
             }
             else {
                 left += viml_printf(" (%s %s)", rlist[i], default_args[i + viml_len(default_args) - viml_len(rlist)]);

@@ -3583,13 +3583,13 @@ class Compiler:
         rlist = [self.compile(vval) for vval in node.rlist]
         default_args = [self.compile(vval) for vval in node.default_args]
         if not viml_empty(rlist):
-            remaining = v:false
+            remaining = FALSE
             if rlist[-1] == "...":
                 viml_remove(rlist, -1)
-                remaining = v:true
+                remaining = TRUE
             for i in viml_range(viml_len(rlist)):
                 if i < viml_len(rlist) - viml_len(default_args):
-                    left += viml_printf(" (%s)", rlist[i])
+                    left += viml_printf(" %s", rlist[i])
                 else:
                     left += viml_printf(" (%s %s)", rlist[i], default_args[i + viml_len(default_args) - viml_len(rlist)])
             if remaining:

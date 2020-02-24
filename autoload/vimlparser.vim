@@ -4979,7 +4979,7 @@ function! s:Compiler.compile_function(node) abort
     endif
     for i in range(len(rlist))
       if i < len(rlist) - len(default_args)
-        let left .= printf(' (%s)', rlist[i])
+        let left .= printf(' %s', rlist[i])
       else
         let left .= printf(' (%s %s)', rlist[i], default_args[i + len(default_args) - len(rlist)])
       endif

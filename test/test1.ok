@@ -1,5 +1,5 @@
 ; test1
-(function (s:foo (a) (b) . ...)
+(function (s:foo a b . ...)
   (return 0))
 (function (s:bar (a 1) (b 2) . ...)
   (return 0))
