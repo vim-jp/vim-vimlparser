@@ -4972,10 +4972,10 @@ function! s:Compiler.compile_function(node) abort
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let default_args = map(a:node.default_args, 'self.compile(v:val)')
   if !empty(rlist)
-    let remaining = v:false
+    let remaining = s:FALSE
     if rlist[-1] ==# '...'
       call remove(rlist, -1)
-      let remaining = v:true
+      let remaining = s:TRUE
     endif
     for i in range(len(rlist))
       if i < len(rlist) - len(default_args)
