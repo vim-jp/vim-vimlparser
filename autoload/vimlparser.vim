@@ -4971,16 +4971,24 @@ function! s:Compiler.compile_function(node) abort
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let default_args = map(a:node.default_args, 'self.compile(v:val)')
-  if !empty(rlist) && rlist[-1] ==# '...'
-    let rlist[-1] = '. ...'
+  if !empty(rlist)
+    let remaining = v:false
+    if rlist[-1] ==# '...'
+      call remove(rlist, -1)
+      let remaining = v:true
+    endif
+    for i in range(len(rlist))
+      if i < len(rlist) - len(default_args)
+        let left .= printf(' (%s)', rlist[i])
+      else
+        let left .= printf(' (%s %s)', rlist[i], default_args[i + len(default_args) - len(rlist)])
+      endif
+    endfor
+    if remaining
+      let left .= ' . ...'
+    endif
   endif
-  if empty(rlist)
-    call self.out('(function (%s)', left)
-  elseif empty(default_args)
-    call self.out('(function (%s (%s))', left, join(rlist, ' '))
-  else
-    call self.out('(function (%s (%s) (%s))', left, join(rlist, ' '), join(default_args, ' '))
-  endif
+  call self.out('(function (%s)', left)
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   call self.out(')')

@@ -3582,14 +3582,19 @@ class Compiler:
         left = self.compile(node.left)
         rlist = [self.compile(vval) for vval in node.rlist]
         default_args = [self.compile(vval) for vval in node.default_args]
-        if not viml_empty(rlist) and rlist[-1] == "...":
-            rlist[-1] = ". ..."
-        if viml_empty(rlist):
-            self.out("(function (%s)", left)
-        elif viml_empty(default_args):
-            self.out("(function (%s (%s))", left, viml_join(rlist, " "))
-        else:
-            self.out("(function (%s (%s) (%s))", left, viml_join(rlist, " "), viml_join(default_args, " "))
+        if not viml_empty(rlist):
+            remaining = v:false
+            if rlist[-1] == "...":
+                viml_remove(rlist, -1)
+                remaining = v:true
+            for i in viml_range(viml_len(rlist)):
+                if i < viml_len(rlist) - viml_len(default_args):
+                    left += viml_printf(" (%s)", rlist[i])
+                else:
+                    left += viml_printf(" (%s %s)", rlist[i], default_args[i + viml_len(default_args) - viml_len(rlist)])
+            if remaining:
+                left += " . ..."
+        self.out("(function (%s)", left)
         self.incindent("  ")
         self.compile_body(node.body)
         self.out(")")
