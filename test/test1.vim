@@ -18,6 +18,8 @@ for [a, b; c] in d
 endfor
 delfunction s:foo
 call s:foo(1, 2, 3)
+eval filter(odds, 'v:val % 2')
+eval 42
 let a = {"x": "y"}
 let [a, b; c] = [1, 2, 3]
 let [a, b; c] += [1, 2, 3]
