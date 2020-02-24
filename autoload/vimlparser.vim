@@ -139,6 +139,7 @@ let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
 let s:NODE_CONST = 94
+let s:NODE_METHOD = 95
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -394,6 +395,7 @@ endfunction
 " PLUS .left
 " SUBSCRIPT .left .right
 " SLICE .left .rlist
+" METHOD .left .right .lambda_rlist
 " CALL .left .rlist
 " DOT .left .right
 " NUMBER .value
@@ -3896,6 +3898,9 @@ endfunction
 " expr8: expr8[expr1]
 "        expr8[expr1 : expr1]
 "        expr8.name
+"        expr8->name(expr1, ...)
+"        expr8->s:user_func(expr1, ...)
+"        expr8->{lambda}(expr1, ...)
 "        expr8(expr1, ...)
 function! s:ExprParser.parse_expr8() abort
   let left = self.parse_expr9()
@@ -3949,6 +3954,17 @@ function! s:ExprParser.parse_expr8() abort
           let left = node
         endif
       endif
+      unlet node
+    elseif token.type ==# s:TOKEN_ARROW
+      let node = s:Node(s:NODE_METHOD)
+      let node.pos = token.pos
+      let node.left = left
+      let node.right = self.parse_expr8()
+      let node.lambda_rlist = s:NIL
+      if node.right.type !=# s:NODE_CALL
+        throw s:Err('Invalid method syntax', node.right.pos)
+      endif
+      let left = node
       unlet node
     elseif token.type ==# s:TOKEN_POPEN
       let node = s:Node(s:NODE_CALL)
@@ -4906,6 +4922,8 @@ function! s:Compiler.compile(node) abort
     return self.compile_slice(a:node)
   elseif a:node.type ==# s:NODE_DOT
     return self.compile_dot(a:node)
+  elseif a:node.type ==# s:NODE_METHOD
+    return self.compile_method(a:node)
   elseif a:node.type ==# s:NODE_CALL
     return self.compile_call(a:node)
   elseif a:node.type ==# s:NODE_NUMBER
@@ -5343,6 +5361,10 @@ endfunction
 
 function! s:Compiler.compile_dot(node) abort
   return printf('(dot %s %s)', self.compile(a:node.left), self.compile(a:node.right))
+endfunction
+
+function! s:Compiler.compile_method(node) abort
+  return printf('(method %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function! s:Compiler.compile_call(node) abort
