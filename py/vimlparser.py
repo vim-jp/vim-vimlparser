@@ -1475,9 +1475,16 @@ class VimLParser:
         # :let
         if self.ends_excmds(self.reader.peek()):
             self.reader.seek_set(pos)
-            self.parse_cmd_common()
+            node = Node(NODE_LET)
+            node.pos = self.ea.cmdpos
+            node.ea = self.ea
+            node.left = NIL
+            node.list = NIL
+            node.rest = NIL
+            node.right = NIL
+            self.add_node(node)
             return
-        lhs = self.parse_letlhs()
+        lhs = self.parse_letlhs(FALSE)
         self.reader.skip_white()
         s1 = self.reader.peekn(1)
         s2 = self.reader.peekn(2)
@@ -1486,8 +1493,14 @@ class VimLParser:
             s2 = self.reader.peekn(3)
         # :let {var-name} ..
         if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s2 != "..=" and s2 != "*=" and s2 != "/=" and s2 != "%=" and s1 != "=":
-            self.reader.seek_set(pos)
-            self.parse_cmd_common()
+            node = Node(NODE_LET)
+            node.pos = self.ea.cmdpos
+            node.ea = self.ea
+            node.left = lhs.left
+            node.list = lhs.list
+            node.rest = lhs.rest
+            node.right = NIL
+            self.add_node(node)
             return
         # :let left op right
         node = Node(NODE_LET)
@@ -1510,20 +1523,31 @@ class VimLParser:
         self.add_node(node)
 
     def parse_cmd_const(self):
-        pos = self.reader.tell()
         self.reader.skip_white()
         # :const
         if self.ends_excmds(self.reader.peek()):
-            self.reader.seek_set(pos)
-            self.parse_cmd_common()
+            node = Node(NODE_CONST)
+            node.pos = self.ea.cmdpos
+            node.ea = self.ea
+            node.left = NIL
+            node.list = NIL
+            node.rest = NIL
+            node.right = NIL
+            self.add_node(node)
             return
-        lhs = self.parse_constlhs()
+        lhs = self.parse_letlhs(TRUE)
         self.reader.skip_white()
         s1 = self.reader.peekn(1)
         # :const {var-name}
         if self.ends_excmds(s1) or s1 != "=":
-            self.reader.seek_set(pos)
-            self.parse_cmd_common()
+            node = Node(NODE_CONST)
+            node.pos = self.ea.cmdpos
+            node.ea = self.ea
+            node.left = lhs.left
+            node.list = lhs.list
+            node.rest = lhs.rest
+            node.right = NIL
+            self.add_node(node)
             return
         # :const left op right
         node = Node(NODE_CONST)
@@ -1643,7 +1667,7 @@ class VimLParser:
         node.left = NIL
         node.right = NIL
         node.endfor = NIL
-        lhs = self.parse_letlhs()
+        lhs = self.parse_letlhs(FALSE)
         node.left = lhs.left
         node.list = lhs.list
         node.rest = lhs.rest
@@ -1815,7 +1839,6 @@ class VimLParser:
             return node
         raise VimLParserException(Err("Invalid Expression", node.pos))
 
-    # TODO: merge with s:VimLParser.parse_lvalue()
     def parse_constlvalue(self):
         p = LvalueParser(self.reader)
         node = p.parse()
@@ -1847,7 +1870,7 @@ class VimLParser:
         return list
 
     # FIXME:
-    def parse_letlhs(self):
+    def parse_letlhs(self, is_const):
         lhs = AttributeDict({"left": NIL, "list": NIL, "rest": NIL})
         tokenizer = ExprTokenizer(self.reader)
         if tokenizer.peek().type == TOKEN_SQOPEN:
@@ -1871,37 +1894,10 @@ class VimLParser:
                         raise VimLParserException(Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos))
                 else:
                     raise VimLParserException(Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos))
+        elif is_const:
+            lhs.left = self.parse_constlvalue()
         else:
             lhs.left = self.parse_lvalue()
-        return lhs
-
-    # TODO: merge with s:VimLParser.parse_letlhs() ?
-    def parse_constlhs(self):
-        lhs = AttributeDict({"left": NIL, "list": NIL, "rest": NIL})
-        tokenizer = ExprTokenizer(self.reader)
-        if tokenizer.peek().type == TOKEN_SQOPEN:
-            tokenizer.get()
-            lhs.list = []
-            while TRUE:
-                node = self.parse_lvalue()
-                viml_add(lhs.list, node)
-                token = tokenizer.get()
-                if token.type == TOKEN_SQCLOSE:
-                    break
-                elif token.type == TOKEN_COMMA:
-                    continue
-                elif token.type == TOKEN_SEMICOLON:
-                    node = self.parse_lvalue()
-                    lhs.rest = node
-                    token = tokenizer.get()
-                    if token.type == TOKEN_SQCLOSE:
-                        break
-                    else:
-                        raise VimLParserException(Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos))
-                else:
-                    raise VimLParserException(Err(viml_printf("E475 Invalid argument: %s", token.value), token.pos))
-        else:
-            lhs.left = self.parse_constlvalue()
         return lhs
 
     def ends_excmds(self, c):
@@ -3613,20 +3609,17 @@ class Compiler:
         self.out("(call %s)", self.compile(node.left))
 
     def compile_let(self, node):
-        left = ""
-        if node.left is not NIL:
-            left = self.compile(node.left)
-        else:
-            left = viml_join([self.compile(vval) for vval in node.list], " ")
-            if node.rest is not NIL:
-                left += " . " + self.compile(node.rest)
-            left = "(" + left + ")"
-        right = self.compile(node.right)
-        self.out("(let %s %s %s)", node.op, left, right)
+        self.compile_letconst(node, "let")
 
-    # TODO: merge with s:Compiler.compile_let() ?
     def compile_const(self, node):
+        self.compile_letconst(node, "const")
+
+    def compile_letconst(self, node, cmd):
         left = ""
+        right = ""
+        if node.left is NIL and node.right is NIL:
+            self.out("(%s)", cmd)
+            return
         if node.left is not NIL:
             left = self.compile(node.left)
         else:
@@ -3634,8 +3627,12 @@ class Compiler:
             if node.rest is not NIL:
                 left += " . " + self.compile(node.rest)
             left = "(" + left + ")"
-        right = self.compile(node.right)
-        self.out("(const %s %s %s)", node.op, left, right)
+        if node.right is not NIL:
+            right = self.compile(node.right)
+        if node.left is not NIL and node.right is NIL:
+            self.out("(%s () %s)", cmd, left)
+        else:
+            self.out("(%s %s %s %s)", cmd, node.op, left, right)
 
     def compile_unlet(self, node):
         list = [self.compile(vval) for vval in node.list]
