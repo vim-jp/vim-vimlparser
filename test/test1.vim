@@ -2,6 +2,12 @@
 function s:foo(a, b, ...)
   return 0
 endfunction
+function s:bar(a = 1, b = 2, ...)
+  return 0
+endfunction
+function s:baz(a, b = 2, ...)
+  return 0
+endfunction
 if 1
   echo "if 1"
 elseif 2

@@ -488,6 +488,7 @@ function ExArg() {
 //   node    rest
 //   node[]  list
 //   node[]  rlist
+//   node[]  default_args
 //   node[]  body
 //   string  op
 //   string  str
@@ -497,7 +498,7 @@ function ExArg() {
 // TOPLEVEL .body
 // COMMENT .str
 // EXCMD .ea .str
-// FUNCTION .ea .body .left .rlist .attr .endfunction
+// FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 // ENDFUNCTION .ea
 // DELFUNCTION .ea .left
 // RETURN .ea .left
@@ -1639,6 +1640,7 @@ VimLParser.prototype.parse_cmd_function = function() {
     node.ea = this.ea;
     node.left = left;
     node.rlist = [];
+    node.default_args = [];
     node.attr = {"range":0, "abort":0, "dict":0, "closure":0};
     node.endfunction = NIL;
     this.reader.getn(1);
@@ -1662,6 +1664,13 @@ VimLParser.prototype.parse_cmd_function = function() {
                 varnode.pos = token.pos;
                 varnode.value = token.value;
                 viml_add(node.rlist, varnode);
+                if (tokenizer.peek().type == TOKEN_EQ) {
+                    tokenizer.get();
+                    viml_add(node.default_args, this.parse_expr());
+                }
+                else if (viml_len(node.default_args) > 0) {
+                    throw Err("E989: Non-default argument follows default argument", varnode.pos);
+                }
                 // XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
                 if (iswhite(this.reader.p(0)) && tokenizer.peek().type == TOKEN_COMMA) {
                     throw Err("E475: Invalid argument: White space is not allowed before comma", this.reader.getpos());
@@ -4465,15 +4474,28 @@ Compiler.prototype.compile_excmd = function(node) {
 Compiler.prototype.compile_function = function(node) {
     var left = this.compile(node.left);
     var rlist = node.rlist.map((function(vval) { return this.compile(vval); }).bind(this));
-    if (!viml_empty(rlist) && rlist[rlist.length - 1] == "...") {
-        rlist[rlist.length - 1] = ". ...";
+    var default_args = node.default_args.map((function(vval) { return this.compile(vval); }).bind(this));
+    if (!viml_empty(rlist)) {
+        var remaining = FALSE;
+        if (rlist[rlist.length - 1] == "...") {
+            viml_remove(rlist, -1);
+            var remaining = TRUE;
+        }
+        var __c11 = viml_range(viml_len(rlist));
+        for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
+            var i = __c11[__i11];
+            if (i < viml_len(rlist) - viml_len(default_args)) {
+                left += viml_printf(" %s", rlist[i]);
+            }
+            else {
+                left += viml_printf(" (%s %s)", rlist[i], default_args[i + viml_len(default_args) - viml_len(rlist)]);
+            }
+        }
+        if (remaining) {
+            left += " . ...";
+        }
     }
-    if (viml_empty(rlist)) {
-        this.out("(function (%s)", left);
-    }
-    else {
-        this.out("(function (%s %s)", left, viml_join(rlist, " "));
-    }
+    this.out("(function (%s)", left);
     this.incindent("  ");
     this.compile_body(node.body);
     this.out(")");
@@ -4560,9 +4582,9 @@ Compiler.prototype.compile_if = function(node) {
     this.incindent("  ");
     this.compile_body(node.body);
     this.decindent();
-    var __c11 = node.elseif;
-    for (var __i11 = 0; __i11 < __c11.length; ++__i11) {
-        var enode = __c11[__i11];
+    var __c12 = node.elseif;
+    for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
+        var enode = __c12[__i12];
         this.out(" elseif %s", this.compile(enode.cond));
         this.incindent("  ");
         this.compile_body(enode.body);
@@ -4619,9 +4641,9 @@ Compiler.prototype.compile_try = function(node) {
     this.out("(try");
     this.incindent("  ");
     this.compile_body(node.body);
-    var __c12 = node.catch;
-    for (var __i12 = 0; __i12 < __c12.length; ++__i12) {
-        var cnode = __c12[__i12];
+    var __c13 = node.catch;
+    for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
+        var cnode = __c13[__i13];
         if (cnode.pattern !== NIL) {
             this.decindent();
             this.out(" catch /%s/", cnode.pattern);
@@ -5615,9 +5637,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c13 = class_names;
-            for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
-                var name = __c13[__i13];
+            var __c14 = class_names;
+            for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
+                var name = __c14[__i14];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5750,9 +5772,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c14 = viml_range(n);
-    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
-        var i = __c14[__i14];
+    var __c15 = viml_range(n);
+    for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
+        var i = __c15[__i15];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;

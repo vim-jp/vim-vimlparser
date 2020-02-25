@@ -476,6 +476,7 @@ def ExArg():
 #   node    rest
 #   node[]  list
 #   node[]  rlist
+#   node[]  default_args
 #   node[]  body
 #   string  op
 #   string  str
@@ -485,7 +486,7 @@ def ExArg():
 # TOPLEVEL .body
 # COMMENT .str
 # EXCMD .ea .str
-# FUNCTION .ea .body .left .rlist .attr .endfunction
+# FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 # ENDFUNCTION .ea
 # DELFUNCTION .ea .left
 # RETURN .ea .left
@@ -1352,6 +1353,7 @@ class VimLParser:
         node.ea = self.ea
         node.left = left
         node.rlist = []
+        node.default_args = []
         node.attr = AttributeDict({"range": 0, "abort": 0, "dict": 0, "closure": 0})
         node.endfunction = NIL
         self.reader.getn(1)
@@ -1372,6 +1374,11 @@ class VimLParser:
                     varnode.pos = token.pos
                     varnode.value = token.value
                     viml_add(node.rlist, varnode)
+                    if tokenizer.peek().type == TOKEN_EQ:
+                        tokenizer.get()
+                        viml_add(node.default_args, self.parse_expr())
+                    elif viml_len(node.default_args) > 0:
+                        raise VimLParserException(Err("E989: Non-default argument follows default argument", varnode.pos))
                     # XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
                     if iswhite(self.reader.p(0)) and tokenizer.peek().type == TOKEN_COMMA:
                         raise VimLParserException(Err("E475: Invalid argument: White space is not allowed before comma", self.reader.getpos()))
@@ -3574,12 +3581,20 @@ class Compiler:
     def compile_function(self, node):
         left = self.compile(node.left)
         rlist = [self.compile(vval) for vval in node.rlist]
-        if not viml_empty(rlist) and rlist[-1] == "...":
-            rlist[-1] = ". ..."
-        if viml_empty(rlist):
-            self.out("(function (%s)", left)
-        else:
-            self.out("(function (%s %s)", left, viml_join(rlist, " "))
+        default_args = [self.compile(vval) for vval in node.default_args]
+        if not viml_empty(rlist):
+            remaining = FALSE
+            if rlist[-1] == "...":
+                viml_remove(rlist, -1)
+                remaining = TRUE
+            for i in viml_range(viml_len(rlist)):
+                if i < viml_len(rlist) - viml_len(default_args):
+                    left += viml_printf(" %s", rlist[i])
+                else:
+                    left += viml_printf(" (%s %s)", rlist[i], default_args[i + viml_len(default_args) - viml_len(rlist)])
+            if remaining:
+                left += " . ..."
+        self.out("(function (%s)", left)
         self.incindent("  ")
         self.compile_body(node.body)
         self.out(")")
