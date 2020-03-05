@@ -18,6 +18,8 @@
   (echo a b c))
 (delfunction s:foo)
 (call (s:foo 1 2 3))
+(eval (filter odds 'v:val % 2'))
+(eval 42)
 (let = a (dict ("x" "y")))
 (let = (a b . c) (list 1 2 3))
 (let += (a b . c) (list 1 2 3))

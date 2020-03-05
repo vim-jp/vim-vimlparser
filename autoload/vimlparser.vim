@@ -139,6 +139,7 @@ let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
 let s:NODE_CONST = 94
+let s:NODE_EVAL = 95
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -345,6 +346,7 @@ endfunction
 " FINALLY .ea .body
 " ENDTRY .ea
 " THROW .ea .left
+" EVAL .ea .left
 " ECHO .ea .list
 " ECHON .ea .list
 " ECHOHL .ea .str
@@ -889,6 +891,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_tcl()
   elseif a:parser ==# 'parse_cmd_throw'
     call self.parse_cmd_throw()
+  elseif a:parser ==# 'parse_cmd_eval'
+    call self.parse_cmd_eval()
   elseif a:parser ==# 'parse_cmd_try'
     call self.parse_cmd_try()
   elseif a:parser ==# 'parse_cmd_unlet'
@@ -1820,6 +1824,14 @@ function! s:VimLParser.parse_cmd_throw() abort
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_cmd_eval() abort
+  let node = s:Node(s:NODE_EVAL)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.left = self.parse_expr()
+  call self.add_node(node)
+endfunction
+
 function! s:VimLParser.parse_cmd_echo() abort
   let node = s:Node(s:NODE_ECHO)
   let node.pos = self.ea.cmdpos
@@ -2223,6 +2235,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'endtry', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endtry'},
       \ {'name': 'endwhile', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endwhile'},
       \ {'name': 'enew', 'minlen': 3, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'eval', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_eval'},
       \ {'name': 'ex', 'minlen': 2, 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'execute', 'minlen': 3, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_execute'},
       \ {'name': 'exit', 'minlen': 3, 'flags': 'RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -4770,6 +4783,9 @@ function! s:Compiler.compile(node) abort
   elseif a:node.type ==# s:NODE_EXCALL
     call self.compile_excall(a:node)
     return s:NIL
+  elseif a:node.type ==# s:NODE_EVAL
+    call self.compile_eval(a:node)
+    return s:NIL
   elseif a:node.type ==# s:NODE_LET
     call self.compile_let(a:node)
     return s:NIL
@@ -5009,6 +5025,10 @@ endfunction
 
 function! s:Compiler.compile_excall(node) abort
   call self.out('(call %s)', self.compile(a:node.left))
+endfunction
+
+function! s:Compiler.compile_eval(node) abort
+  call self.out('(eval %s)', self.compile(a:node.left))
 endfunction
 
 function! s:Compiler.compile_let(node) abort
