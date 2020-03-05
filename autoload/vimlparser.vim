@@ -3962,7 +3962,7 @@ function! s:ExprParser.parse_expr8() abort
       let node.right = self.parse_expr8()
       let node.lambda_rlist = s:NIL
       if node.right.type !=# s:NODE_CALL
-        throw s:Err('Invalid method syntax', node.right.pos)
+        throw s:Err('Rhs of method operator must be an function call', node.right.pos)
       endif
       let left = node
       unlet node
