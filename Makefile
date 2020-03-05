@@ -22,8 +22,9 @@ check: all
 checkpy: all
 	flake8 py
 
+# Run vint, using py/vimlparser.py.
 checkvim: all
-	vint autoload py/pycompiler.vim
+	PYTHONPATH=py vint autoload py/pycompiler.vim
 
 vim/test:
 	test/run.sh

@@ -139,7 +139,8 @@ let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
 let s:NODE_CONST = 94
-let s:NODE_METHOD = 95
+let s:NODE_EVAL = 95
+let s:NODE_METHOD = 96
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -311,6 +312,7 @@ endfunction
 "   node    rest
 "   node[]  list
 "   node[]  rlist
+"   node[]  default_args
 "   node[]  body
 "   string  op
 "   string  str
@@ -320,7 +322,7 @@ endfunction
 " TOPLEVEL .body
 " COMMENT .str
 " EXCMD .ea .str
-" FUNCTION .ea .body .left .rlist .attr .endfunction
+" FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 " ENDFUNCTION .ea
 " DELFUNCTION .ea .left
 " RETURN .ea .left
@@ -345,6 +347,7 @@ endfunction
 " FINALLY .ea .body
 " ENDTRY .ea
 " THROW .ea .left
+" EVAL .ea .left
 " ECHO .ea .list
 " ECHON .ea .list
 " ECHOHL .ea .str
@@ -890,6 +893,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_tcl()
   elseif a:parser ==# 'parse_cmd_throw'
     call self.parse_cmd_throw()
+  elseif a:parser ==# 'parse_cmd_eval'
+    call self.parse_cmd_eval()
   elseif a:parser ==# 'parse_cmd_try'
     call self.parse_cmd_try()
   elseif a:parser ==# 'parse_cmd_unlet'
@@ -1360,6 +1365,7 @@ function! s:VimLParser.parse_cmd_function() abort
   let node.ea = self.ea
   let node.left = left
   let node.rlist = []
+  let node.default_args = []
   let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0}
   let node.endfunction = s:NIL
   call self.reader.getn(1)
@@ -1381,6 +1387,12 @@ function! s:VimLParser.parse_cmd_function() abort
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
+        if tokenizer.peek().type ==# s:TOKEN_EQ
+          call tokenizer.get()
+          call add(node.default_args, self.parse_expr())
+        elseif len(node.default_args) > 0
+          throw s:Err('E989: Non-default argument follows default argument', varnode.pos)
+        endif
         " XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
         if s:iswhite(self.reader.p(0)) && tokenizer.peek().type ==# s:TOKEN_COMMA
           throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
@@ -1814,6 +1826,14 @@ function! s:VimLParser.parse_cmd_throw() abort
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_cmd_eval() abort
+  let node = s:Node(s:NODE_EVAL)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.left = self.parse_expr()
+  call self.add_node(node)
+endfunction
+
 function! s:VimLParser.parse_cmd_echo() abort
   let node = s:Node(s:NODE_ECHO)
   let node.pos = self.ea.cmdpos
@@ -2217,6 +2237,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'endtry', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endtry'},
       \ {'name': 'endwhile', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endwhile'},
       \ {'name': 'enew', 'minlen': 3, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'eval', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_eval'},
       \ {'name': 'ex', 'minlen': 2, 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'execute', 'minlen': 3, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_execute'},
       \ {'name': 'exit', 'minlen': 3, 'flags': 'RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -4778,6 +4799,9 @@ function! s:Compiler.compile(node) abort
   elseif a:node.type ==# s:NODE_EXCALL
     call self.compile_excall(a:node)
     return s:NIL
+  elseif a:node.type ==# s:NODE_EVAL
+    call self.compile_eval(a:node)
+    return s:NIL
   elseif a:node.type ==# s:NODE_LET
     call self.compile_let(a:node)
     return s:NIL
@@ -4980,14 +5004,25 @@ endfunction
 function! s:Compiler.compile_function(node) abort
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
-  if !empty(rlist) && rlist[-1] ==# '...'
-    let rlist[-1] = '. ...'
+  let default_args = map(a:node.default_args, 'self.compile(v:val)')
+  if !empty(rlist)
+    let remaining = s:FALSE
+    if rlist[-1] ==# '...'
+      call remove(rlist, -1)
+      let remaining = s:TRUE
+    endif
+    for i in range(len(rlist))
+      if i < len(rlist) - len(default_args)
+        let left .= printf(' %s', rlist[i])
+      else
+        let left .= printf(' (%s %s)', rlist[i], default_args[i + len(default_args) - len(rlist)])
+      endif
+    endfor
+    if remaining
+      let left .= ' . ...'
+    endif
   endif
-  if empty(rlist)
-    call self.out('(function (%s)', left)
-  else
-    call self.out('(function (%s %s)', left, join(rlist, ' '))
-  endif
+  call self.out('(function (%s)', left)
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   call self.out(')')
@@ -5008,6 +5043,10 @@ endfunction
 
 function! s:Compiler.compile_excall(node) abort
   call self.out('(call %s)', self.compile(a:node.left))
+endfunction
+
+function! s:Compiler.compile_eval(node) abort
+  call self.out('(eval %s)', self.compile(a:node.left))
 endfunction
 
 function! s:Compiler.compile_let(node) abort

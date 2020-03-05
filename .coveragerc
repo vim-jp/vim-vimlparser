@@ -1,4 +1,5 @@
 [run]
 plugins = covimerage
 data_file = .coverage_covimerage
+include = py/*.py
 branch = 1
