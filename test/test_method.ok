@@ -3,3 +3,4 @@
 (echo (method (list 1 2 3) (map (lambda (i n) (* n 2)))))
 (echo (method 'john' ((lambda (s) (concat 'hello ' s)))))
 (echo (method 'john' ((lambda (s b) (concat (concat (concat (concat 'hello ' s) ' ... and goodbye ') b) '!')) 'bob')))
+(echo (method 'john' ((lambda (...) (concat 'hello ' (method a:000 (join ', ')))) 'bob')))
