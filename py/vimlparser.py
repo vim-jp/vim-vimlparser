@@ -567,13 +567,14 @@ def ExArg():
 # PLUS .left
 # SUBSCRIPT .left .right
 # SLICE .left .rlist
-# METHOD .left .right .lambda_rlist
+# METHOD .left .right
 # CALL .left .rlist
 # DOT .left .right
 # NUMBER .value
 # STRING .value
 # LIST .value
 # DICT .value
+# BLOB .value
 # NESTING .left
 # OPTION .value
 # IDENTIFIER .value
@@ -2769,38 +2770,25 @@ class ExprParser:
                         left = node
                 del node
             elif token.type == TOKEN_ARROW:
+                funcname_or_lambda = self.parse_expr9()
+                token = self.tokenizer.get()
+                if token.type != TOKEN_POPEN:
+                    raise VimLParserException(Err("E107: Missing parentheses: lambda", token.pos))
+                right = Node(NODE_CALL)
+                right.pos = token.pos
+                right.left = funcname_or_lambda
+                right.rlist = self.parse_rlist()
                 node = Node(NODE_METHOD)
                 node.pos = token.pos
                 node.left = left
-                node.right = self.parse_expr8()
-                node.lambda_rlist = NIL
-                if node.right.type != NODE_CALL:
-                    raise VimLParserException(Err("Rhs of method operator must be an function call", node.right.pos))
+                node.right = right
                 left = node
                 del node
             elif token.type == TOKEN_POPEN:
                 node = Node(NODE_CALL)
                 node.pos = token.pos
                 node.left = left
-                node.rlist = []
-                if self.tokenizer.peek().type == TOKEN_PCLOSE:
-                    self.tokenizer.get()
-                else:
-                    while TRUE:
-                        viml_add(node.rlist, self.parse_expr1())
-                        token = self.tokenizer.get()
-                        if token.type == TOKEN_COMMA:
-                            # XXX: Vim allows foo(a, b, ).  Lint should warn it.
-                            if self.tokenizer.peek().type == TOKEN_PCLOSE:
-                                self.tokenizer.get()
-                                break
-                        elif token.type == TOKEN_PCLOSE:
-                            break
-                        else:
-                            raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
-                if viml_len(node.rlist) > MAX_FUNC_ARGS:
-                    # TODO: funcname E740: Too many arguments for function: %s
-                    raise VimLParserException(Err("E740: Too many arguments for function", node.pos))
+                node.rlist = self.parse_rlist()
                 left = node
                 del node
             elif not iswhite(c) and token.type == TOKEN_DOT:
@@ -2815,6 +2803,29 @@ class ExprParser:
                 self.reader.seek_set(pos)
                 break
         return left
+
+    def parse_rlist(self):
+        rlist = []
+        token = self.tokenizer.peek()
+        if self.tokenizer.peek().type == TOKEN_PCLOSE:
+            self.tokenizer.get()
+        else:
+            while TRUE:
+                viml_add(rlist, self.parse_expr1())
+                token = self.tokenizer.get()
+                if token.type == TOKEN_COMMA:
+                    # XXX: Vim allows foo(a, b, ).  Lint should warn it.
+                    if self.tokenizer.peek().type == TOKEN_PCLOSE:
+                        self.tokenizer.get()
+                        break
+                elif token.type == TOKEN_PCLOSE:
+                    break
+                else:
+                    raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
+        if viml_len(rlist) > MAX_FUNC_ARGS:
+            # TODO: funcname E740: Too many arguments for function: %s
+            raise VimLParserException(Err("E740: Too many arguments for function", token.pos))
+        return rlist
 
     # expr9: number
     #        "string"
