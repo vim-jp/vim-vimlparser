@@ -400,7 +400,7 @@ endfunction
 " PLUS .left
 " SUBSCRIPT .left .right
 " SLICE .left .rlist
-" METHOD .left .right .lambda_rlist
+" METHOD .left .right
 " CALL .left .rlist
 " DOT .left .right
 " NUMBER .value
