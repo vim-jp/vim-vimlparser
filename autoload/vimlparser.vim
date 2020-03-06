@@ -407,6 +407,7 @@ endfunction
 " STRING .value
 " LIST .value
 " DICT .value
+" BLOB .value
 " NESTING .left
 " OPTION .value
 " IDENTIFIER .value
