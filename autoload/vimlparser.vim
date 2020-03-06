@@ -140,7 +140,8 @@ let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
 let s:NODE_CONST = 94
 let s:NODE_EVAL = 95
-let s:NODE_METHOD = 96
+let s:NODE_HEREDOC = 96
+let s:NODE_METHOD = 97
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -210,6 +211,7 @@ let s:TOKEN_ARROW = 65
 let s:TOKEN_BLOB = 66
 let s:TOKEN_LITCOPEN = 67
 let s:TOKEN_DOTDOT = 68
+let s:TOKEN_HEREDOC = 69
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -414,6 +416,7 @@ endfunction
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
 " LAMBDA .rlist .left
+" HEREDOC .rlist .op .body
 function! s:Node(type) abort
   return {'type': a:type}
 endfunction
@@ -1502,6 +1505,44 @@ function! s:VimLParser.parse_cmd_call() abort
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_heredoc() abort
+  let node = s:Node(s:NODE_HEREDOC)
+  let node.pos = self.ea.cmdpos
+  let node.op = ''
+  let node.rlist = []
+  let node.body = []
+
+  while s:TRUE
+    call self.reader.skip_white()
+    let key = self.reader.read_word()
+    if key == ''
+      break
+    endif
+    if !s:islower(key[0])
+      let node.op = key
+      break
+    else
+      call add(node.rlist, key)
+    endif
+  endwhile
+  if node.op ==# ''
+    throw s:Err('E172: Missing marker', self.reader.getpos())
+  endif
+  call self.parse_trail()
+  while s:TRUE
+    if self.reader.peek() ==# '<EOF>'
+      break
+    endif
+    let line = self.reader.getn(-1)
+    if line ==# node.op
+      return node
+    endif
+    call add(node.body, line)
+    call self.reader.get()
+  endwhile
+  throw s:Err(printf("E990: Missing end marker '%s'", node.op), self.reader.getpos())
+endfunction
+
 function! s:VimLParser.parse_cmd_let() abort
   let pos = self.reader.tell()
   call self.reader.skip_white()
@@ -1520,10 +1561,12 @@ function! s:VimLParser.parse_cmd_let() abort
   " TODO check scriptversion?
   if s2 ==# '..'
     let s2 = self.reader.peekn(3)
+  elseif s2 ==# '=<'
+    let s2 = self.reader.peekn(3)
   endif
 
   " :let {var-name} ..
-  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
+  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s2 !=# '=<<' && s1 !=# '=')
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
@@ -1541,6 +1584,13 @@ function! s:VimLParser.parse_cmd_let() abort
   if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.=' || s2 ==# '..=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%='
     call self.reader.getn(len(s2))
     let node.op = s2
+  elseif s2 ==# '=<<'
+    call self.reader.getn(len(s2))
+    call self.reader.skip_white()
+    let node.op = s2
+    let node.right = self.parse_heredoc()
+    call self.add_node(node)
+    return
   elseif s1 ==# '='
     call self.reader.getn(1)
     let node.op = s1
@@ -4976,6 +5026,8 @@ function! s:Compiler.compile(node) abort
     return self.compile_curlynameexpr(a:node)
   elseif a:node.type ==# s:NODE_LAMBDA
     return self.compile_lambda(a:node)
+  elseif a:node.type == s:NODE_HEREDOC
+    return self.compile_heredoc(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -5473,9 +5525,39 @@ function! s:Compiler.compile_curlynameexpr(node) abort
   return '{' . self.compile(a:node.value) . '}'
 endfunction
 
+function! s:Compiler.escape_string(str) abort
+  let m = {"\n": '\n', "\t": '\t', "\r": '\r'}
+  let out = '"'
+  for i in range(len(a:str))
+    let c = a:str[i]
+    if has_key(m, c)
+      let out .= m[c]
+    else
+      let out .= c
+    endif
+  endfor
+  let out .= '"'
+  return out
+endfunction
+
 function! s:Compiler.compile_lambda(node) abort
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
+endfunction
+
+function! s:Compiler.compile_heredoc(node) abort
+  if empty(a:node.rlist)
+    let rlist = '(list)'
+  else
+    let rlist = '(list ' . join(map(a:node.rlist, 'self.escape_string(v:val)'), ' ') . ')'
+  endif
+  if empty(a:node.body)
+    let body = '(list)'
+  else
+    let body = '(list ' . join(map(a:node.body, 'self.escape_string(v:val)'), ' ') . ')'
+  endif
+  let op = self.escape_string(a:node.op)
+  return printf('(heredoc %s %s %s)', rlist, op, body)
 endfunction
 
 " TODO: under construction

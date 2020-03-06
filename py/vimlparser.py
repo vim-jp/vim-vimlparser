@@ -90,6 +90,7 @@ pat_vim2py = {
     "^[0-9A-Fa-f][0-9A-Fa-f]$": "^[0-9A-Fa-f][0-9A-Fa-f]$",
     r"^\.[0-9A-Fa-f]$": r"^\.[0-9A-Fa-f]$",
     "^[0-9A-Fa-f][^0-9A-Fa-f]$": "^[0-9A-Fa-f][^0-9A-Fa-f]$",
+    "^[^a-z]\\S\\+$": "^[^a-z]\\S\\+$",
 }
 
 
@@ -307,7 +308,8 @@ NODE_LAMBDA = 92
 NODE_BLOB = 93
 NODE_CONST = 94
 NODE_EVAL = 95
-NODE_METHOD = 96
+NODE_HEREDOC = 96
+NODE_METHOD = 97
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -376,6 +378,7 @@ TOKEN_ARROW = 65
 TOKEN_BLOB = 66
 TOKEN_LITCOPEN = 67
 TOKEN_DOTDOT = 68
+TOKEN_HEREDOC = 69
 MAX_FUNC_ARGS = 20
 
 
@@ -580,6 +583,7 @@ def ExArg():
 # CURLYNAMEPART .value
 # CURLYNAMEEXPR .value
 # LAMBDA .rlist .left
+# HEREDOC .rlist .op .body
 def Node(type):
     return AttributeDict({"type": type})
 
@@ -1475,6 +1479,35 @@ class VimLParser:
             raise VimLParserException(Err("Not an function call", node.left.pos))
         self.add_node(node)
 
+    def parse_heredoc(self):
+        node = Node(NODE_HEREDOC)
+        node.pos = self.ea.cmdpos
+        node.op = ""
+        node.rlist = []
+        node.body = []
+        while TRUE:
+            self.reader.skip_white()
+            key = self.reader.read_word()
+            if key == "":
+                break
+            if not islower(key[0]):
+                node.op = key
+                break
+            else:
+                viml_add(node.rlist, key)
+        if node.op == "":
+            raise VimLParserException(Err("E172: Missing marker", self.reader.getpos()))
+        self.parse_trail()
+        while TRUE:
+            if self.reader.peek() == "<EOF>":
+                break
+            line = self.reader.getn(-1)
+            if line == node.op:
+                return node
+            viml_add(node.body, line)
+            self.reader.get()
+        raise VimLParserException(Err(viml_printf("E990: Missing end marker '%s'", node.op), self.reader.getpos()))
+
     def parse_cmd_let(self):
         pos = self.reader.tell()
         self.reader.skip_white()
@@ -1490,8 +1523,10 @@ class VimLParser:
         # TODO check scriptversion?
         if s2 == "..":
             s2 = self.reader.peekn(3)
+        elif s2 == "=<":
+            s2 = self.reader.peekn(3)
         # :let {var-name} ..
-        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s2 != "..=" and s2 != "*=" and s2 != "/=" and s2 != "%=" and s1 != "=":
+        if self.ends_excmds(s1) or s2 != "+=" and s2 != "-=" and s2 != ".=" and s2 != "..=" and s2 != "*=" and s2 != "/=" and s2 != "%=" and s2 != "=<<" and s1 != "=":
             self.reader.seek_set(pos)
             self.parse_cmd_common()
             return
@@ -1507,6 +1542,13 @@ class VimLParser:
         if s2 == "+=" or s2 == "-=" or s2 == ".=" or s2 == "..=" or s2 == "*=" or s2 == "/=" or s2 == "%=":
             self.reader.getn(viml_len(s2))
             node.op = s2
+        elif s2 == "=<<":
+            self.reader.getn(viml_len(s2))
+            self.reader.skip_white()
+            node.op = s2
+            node.right = self.parse_heredoc()
+            self.add_node(node)
+            return
         elif s1 == "=":
             self.reader.getn(1)
             node.op = s1
@@ -3591,6 +3633,8 @@ class Compiler:
             return self.compile_curlynameexpr(node)
         elif node.type == NODE_LAMBDA:
             return self.compile_lambda(node)
+        elif node.type == NODE_HEREDOC:
+            return self.compile_heredoc(node)
         else:
             raise VimLParserException(viml_printf("Compiler: unknown node: %s", viml_string(node)))
         return NIL
@@ -3977,9 +4021,33 @@ class Compiler:
     def compile_curlynameexpr(self, node):
         return "{" + self.compile(node.value) + "}"
 
+    def escape_string(self, str):
+        m = AttributeDict({"\n": "\\n", "\t": "\\t", "\r": "\\r"})
+        out = "\""
+        for i in viml_range(viml_len(str)):
+            c = str[i]
+            if viml_has_key(m, c):
+                out += m[c]
+            else:
+                out += c
+        out += "\""
+        return out
+
     def compile_lambda(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
         return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), self.compile(node.left))
+
+    def compile_heredoc(self, node):
+        if viml_empty(node.rlist):
+            rlist = "(list)"
+        else:
+            rlist = "(list " + viml_join([self.escape_string(vval) for vval in node.rlist], " ") + ")"
+        if viml_empty(node.body):
+            body = "(list)"
+        else:
+            body = "(list " + viml_join([self.escape_string(vval) for vval in node.body], " ") + ")"
+        op = self.escape_string(node.op)
+        return viml_printf("(heredoc %s %s %s)", rlist, op, body)
 
 
 # TODO: under construction

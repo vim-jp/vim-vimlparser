@@ -1,0 +1,3 @@
+(let =<< a (heredoc (list) "EOS" (list "hello" " world")))
+(let =<< a (heredoc (list "trim") "EOS" (list "\thello" "world")))
+(let =<< a (heredoc (list) "EOS" (list)))
