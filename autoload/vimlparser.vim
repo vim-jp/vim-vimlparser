@@ -2718,6 +2718,14 @@ let s:VimLParser.builtin_commands = [
       \ {'flags': 'RANGE|ZEROR|EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN', 'minlen': 3, 'name': 'tlnoremenu', 'parser': 'parse_cmd_common'},
       \ {'flags': 'RANGE|ZEROR|EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN', 'minlen': 3, 'name': 'tlunmenu', 'parser': 'parse_cmd_common'},
       \ {'flags': 'EXTRA|TRLBAR|CMDWIN', 'minlen': 2, 'name': 'xrestore', 'parser': 'parse_cmd_common'},
+      \
+      \ {'flags': 'EXTRA|BANG|SBOXOK|CMDWIN', 'minlen': 3, 'name': 'def', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|NEEDARG|TRLBAR|CMDWIN', 'minlen': 4, 'name': 'disassemble', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'TRLBAR|CMDWIN', 'minlen': 4, 'name': 'enddef', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|NOTRLCOM', 'minlen': 3, 'name': 'export', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'EXTRA|NOTRLCOM', 'minlen': 3, 'name': 'import', 'parser': 'parse_cmd_common'},
+      \ {'flags': 'BANG|RANGE|NEEDARG|EXTRA|TRLBAR', 'minlen': 7, 'name': 'spellrare', 'parser': 'parse_cmd_common'},
+      \ {'flags': '', 'minlen': 4, 'name': 'vim9script', 'parser': 'parse_cmd_common'},
       \]
 
 let s:VimLParser.builtin_functions = [
