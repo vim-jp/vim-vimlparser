@@ -321,6 +321,7 @@ var NODE_LAMBDA = 92;
 var NODE_BLOB = 93;
 var NODE_CONST = 94;
 var NODE_EVAL = 95;
+var NODE_HEREDOC = 96;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -389,6 +390,7 @@ var TOKEN_ARROW = 65;
 var TOKEN_BLOB = 66;
 var TOKEN_LITCOPEN = 67;
 var TOKEN_DOTDOT = 68;
+var TOKEN_HEREDOC = 69;
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -590,6 +592,7 @@ function ExArg() {
 // CURLYNAMEPART .value
 // CURLYNAMEEXPR .value
 // LAMBDA .rlist .left
+// HEREDOC .rlist .op .body
 function Node(type) {
     return {"type":type};
 }
@@ -1795,6 +1798,44 @@ VimLParser.prototype.parse_cmd_call = function() {
     this.add_node(node);
 }
 
+VimLParser.prototype.parse_heredoc = function() {
+    var node = Node(NODE_HEREDOC);
+    node.pos = this.ea.cmdpos;
+    node.op = "";
+    node.rlist = [];
+    node.body = [];
+    while (TRUE) {
+        this.reader.skip_white();
+        var key = this.reader.read_word();
+        if (key == "") {
+            break;
+        }
+        if (!islower(key[0])) {
+            node.op = key;
+            break;
+        }
+        else {
+            viml_add(node.rlist, key);
+        }
+    }
+    if (node.op == "") {
+        throw Err("E172: Missing marker", this.reader.getpos());
+    }
+    this.parse_trail();
+    while (TRUE) {
+        if (this.reader.peek() == "<EOF>") {
+            break;
+        }
+        var line = this.reader.getn(-1);
+        if (line == node.op) {
+            return node;
+        }
+        viml_add(node.body, line);
+        this.reader.get();
+    }
+    throw Err(viml_printf("E990: Missing end marker '%s'", node.op), this.reader.getpos());
+}
+
 VimLParser.prototype.parse_cmd_let = function() {
     var pos = this.reader.tell();
     this.reader.skip_white();
@@ -1812,8 +1853,11 @@ VimLParser.prototype.parse_cmd_let = function() {
     if (s2 == "..") {
         var s2 = this.reader.peekn(3);
     }
+    else if (s2 == "=<") {
+        var s2 = this.reader.peekn(3);
+    }
     // :let {var-name} ..
-    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s2 != "..=" && s2 != "*=" && s2 != "/=" && s2 != "%=" && s1 != "=") {
+    if (this.ends_excmds(s1) || s2 != "+=" && s2 != "-=" && s2 != ".=" && s2 != "..=" && s2 != "*=" && s2 != "/=" && s2 != "%=" && s2 != "=<<" && s1 != "=") {
         this.reader.seek_set(pos);
         this.parse_cmd_common();
         return;
@@ -1830,6 +1874,14 @@ VimLParser.prototype.parse_cmd_let = function() {
     if (s2 == "+=" || s2 == "-=" || s2 == ".=" || s2 == "..=" || s2 == "*=" || s2 == "/=" || s2 == "%=") {
         this.reader.getn(viml_len(s2));
         node.op = s2;
+    }
+    else if (s2 == "=<<") {
+        this.reader.getn(viml_len(s2));
+        this.reader.skip_white();
+        node.op = s2;
+        node.right = this.parse_heredoc();
+        this.add_node(node);
+        return;
     }
     else if (s1 == "=") {
         this.reader.getn(1);
@@ -4461,6 +4513,9 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_LAMBDA) {
         return this.compile_lambda(node);
     }
+    else if (node.type == NODE_HEREDOC) {
+        return this.compile_heredoc(node);
+    }
     else {
         throw viml_printf("Compiler: unknown node: %s", viml_string(node));
     }
@@ -4973,9 +5028,44 @@ Compiler.prototype.compile_curlynameexpr = function(node) {
     return "{" + this.compile(node.value) + "}";
 }
 
+Compiler.prototype.escape_string = function(str) {
+    var m = {"\n":"\\n", "\t":"\\t", "\r":"\\r"};
+    var out = "\"";
+    var __c14 = viml_range(viml_len(str));
+    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
+        var i = __c14[__i14];
+        var c = str[i];
+        if (viml_has_key(m, c)) {
+            out += m[c];
+        }
+        else {
+            out += c;
+        }
+    }
+    out += "\"";
+    return out;
+}
+
 Compiler.prototype.compile_lambda = function(node) {
     var rlist = node.rlist.map((function(vval) { return this.compile(vval); }).bind(this));
     return viml_printf("(lambda (%s) %s)", viml_join(rlist, " "), this.compile(node.left));
+}
+
+Compiler.prototype.compile_heredoc = function(node) {
+    if (viml_empty(node.rlist)) {
+        var rlist = "(list)";
+    }
+    else {
+        var rlist = "(list " + viml_join(node.rlist.map((function(vval) { return this.escape_string(vval); }).bind(this)), " ") + ")";
+    }
+    if (viml_empty(node.body)) {
+        var body = "(list)";
+    }
+    else {
+        var body = "(list " + viml_join(node.body.map((function(vval) { return this.escape_string(vval); }).bind(this)), " ") + ")";
+    }
+    var op = this.escape_string(node.op);
+    return viml_printf("(heredoc %s %s %s)", rlist, op, body);
 }
 
 // TODO: under construction
@@ -5658,9 +5748,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c14 = class_names;
-            for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
-                var name = __c14[__i14];
+            var __c15 = class_names;
+            for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
+                var name = __c15[__i15];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5793,9 +5883,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c15 = viml_range(n);
-    for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
-        var i = __c15[__i15];
+    var __c16 = viml_range(n);
+    for (var __i16 = 0; __i16 < __c16.length; ++__i16) {
+        var i = __c16[__i16];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;
