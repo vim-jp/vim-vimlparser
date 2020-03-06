@@ -5523,7 +5523,7 @@ function! s:Compiler.compile_lambda(node) abort
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_heredoc(node)
+function! s:Compiler.compile_heredoc(node) abort
   if empty(a:node.rlist)
     let rlist = '(list)'
   else
