@@ -322,6 +322,7 @@ var NODE_BLOB = 93;
 var NODE_CONST = 94;
 var NODE_EVAL = 95;
 var NODE_HEREDOC = 96;
+var NODE_METHOD = 97;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -577,6 +578,7 @@ function ExArg() {
 // PLUS .left
 // SUBSCRIPT .left .right
 // SLICE .left .rlist
+// METHOD .left .right .lambda_rlist
 // CALL .left .rlist
 // DOT .left .right
 // NUMBER .value
@@ -3334,6 +3336,9 @@ ExprParser.prototype.parse_expr7 = function() {
 // expr8: expr8[expr1]
 //        expr8[expr1 : expr1]
 //        expr8.name
+//        expr8->name(expr1, ...)
+//        expr8->s:user_func(expr1, ...)
+//        expr8->{lambda}(expr1, ...)
 //        expr8(expr1, ...)
 ExprParser.prototype.parse_expr8 = function() {
     var left = this.parse_expr9();
@@ -3389,6 +3394,18 @@ ExprParser.prototype.parse_expr8 = function() {
                     var left = node;
                 }
             }
+            delete node;
+        }
+        else if (token.type == TOKEN_ARROW) {
+            var node = Node(NODE_METHOD);
+            node.pos = token.pos;
+            node.left = left;
+            node.right = this.parse_expr8();
+            node.lambda_rlist = NIL;
+            if (node.right.type != NODE_CALL) {
+                throw Err("Rhs of method operator must be an function call", node.right.pos);
+            }
+            var left = node;
             delete node;
         }
         else if (token.type == TOKEN_POPEN) {
@@ -4471,6 +4488,9 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_DOT) {
         return this.compile_dot(node);
     }
+    else if (node.type == NODE_METHOD) {
+        return this.compile_method(node);
+    }
     else if (node.type == NODE_CALL) {
         return this.compile_call(node);
     }
@@ -4956,6 +4976,10 @@ Compiler.prototype.compile_slice = function(node) {
 
 Compiler.prototype.compile_dot = function(node) {
     return viml_printf("(dot %s %s)", this.compile(node.left), this.compile(node.right));
+}
+
+Compiler.prototype.compile_method = function(node) {
+    return viml_printf("(method %s %s)", this.compile(node.left), this.compile(node.right));
 }
 
 Compiler.prototype.compile_call = function(node) {

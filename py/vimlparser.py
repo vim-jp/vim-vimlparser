@@ -309,6 +309,7 @@ NODE_BLOB = 93
 NODE_CONST = 94
 NODE_EVAL = 95
 NODE_HEREDOC = 96
+NODE_METHOD = 97
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -566,6 +567,7 @@ def ExArg():
 # PLUS .left
 # SUBSCRIPT .left .right
 # SLICE .left .rlist
+# METHOD .left .right .lambda_rlist
 # CALL .left .rlist
 # DOT .left .right
 # NUMBER .value
@@ -2716,6 +2718,9 @@ class ExprParser:
     # expr8: expr8[expr1]
     #        expr8[expr1 : expr1]
     #        expr8.name
+    #        expr8->name(expr1, ...)
+    #        expr8->s:user_func(expr1, ...)
+    #        expr8->{lambda}(expr1, ...)
     #        expr8(expr1, ...)
     def parse_expr8(self):
         left = self.parse_expr9()
@@ -2762,6 +2767,16 @@ class ExprParser:
                         if token.type != TOKEN_SQCLOSE:
                             raise VimLParserException(Err(viml_printf("unexpected token: %s", token.value), token.pos))
                         left = node
+                del node
+            elif token.type == TOKEN_ARROW:
+                node = Node(NODE_METHOD)
+                node.pos = token.pos
+                node.left = left
+                node.right = self.parse_expr8()
+                node.lambda_rlist = NIL
+                if node.right.type != NODE_CALL:
+                    raise VimLParserException(Err("Rhs of method operator must be an function call", node.right.pos))
+                left = node
                 del node
             elif token.type == TOKEN_POPEN:
                 node = Node(NODE_CALL)
@@ -3588,6 +3603,8 @@ class Compiler:
             return self.compile_slice(node)
         elif node.type == NODE_DOT:
             return self.compile_dot(node)
+        elif node.type == NODE_METHOD:
+            return self.compile_method(node)
         elif node.type == NODE_CALL:
             return self.compile_call(node)
         elif node.type == NODE_NUMBER:
@@ -3949,6 +3966,9 @@ class Compiler:
 
     def compile_dot(self, node):
         return viml_printf("(dot %s %s)", self.compile(node.left), self.compile(node.right))
+
+    def compile_method(self, node):
+        return viml_printf("(method %s %s)", self.compile(node.left), self.compile(node.right))
 
     def compile_call(self, node):
         rlist = [self.compile(vval) for vval in node.rlist]
