@@ -4002,7 +4002,7 @@ class Compiler:
         return "{" + self.compile(node.value) + "}"
 
     def escape_string(self, str):
-        m = AttributeDict({"\n":"\\n", "\t":"\\t", "\r":"\\r"})
+        m = AttributeDict({"\n": "\\n", "\t": "\\t", "\r": "\\r"})
         out = "\""
         for i in viml_range(viml_len(str)):
             c = str[i]
@@ -4028,6 +4028,7 @@ class Compiler:
             body = "(list " + viml_join([self.escape_string(vval) for vval in node.body], " ") + ")"
         op = self.escape_string(node.op)
         return viml_printf("(heredoc %s %s %s)", rlist, op, body)
+
 
 # TODO: under construction
 class RegexpParser:

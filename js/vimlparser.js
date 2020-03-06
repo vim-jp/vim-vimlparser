@@ -5031,9 +5031,9 @@ Compiler.prototype.compile_curlynameexpr = function(node) {
 Compiler.prototype.escape_string = function(str) {
     var m = {"\n":"\\n", "\t":"\\t", "\r":"\\r"};
     var out = "\"";
-    var __c13 = viml_range(viml_len(str));
-    for (var __i13 = 0; __i13 < __c13.length; ++__i13) {
-        var i = __c13[__i13];
+    var __c14 = viml_range(viml_len(str));
+    for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
+        var i = __c14[__i14];
         var c = str[i];
         if (viml_has_key(m, c)) {
             out += m[c];
@@ -5748,9 +5748,9 @@ RegexpParser.prototype.get_token_sq_char_class = function() {
         var r = this.reader.read_alpha();
         if (this.reader.p(0) == ":" && this.reader.p(1) == "]") {
             this.reader.seek_cur(2);
-            var __c14 = class_names;
-            for (var __i14 = 0; __i14 < __c14.length; ++__i14) {
-                var name = __c14[__i14];
+            var __c15 = class_names;
+            for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
+                var name = __c15[__i15];
                 if (r == name) {
                     return "[:" + name + ":]";
                 }
@@ -5883,9 +5883,9 @@ RegexpParser.prototype.getoctchrs = function() {
 
 RegexpParser.prototype.gethexchrs = function(n) {
     var r = "";
-    var __c15 = viml_range(n);
-    for (var __i15 = 0; __i15 < __c15.length; ++__i15) {
-        var i = __c15[__i15];
+    var __c16 = viml_range(n);
+    for (var __i16 = 0; __i16 < __c16.length; ++__i16) {
+        var i = __c16[__i16];
         var c = this.reader.peek();
         if (!isxdigit(c)) {
             break;
