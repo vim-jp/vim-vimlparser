@@ -1,0 +1,5 @@
+[flake8]
+per-file-ignores =
+    # undefined names for StringReader, VimLParser, Compiler
+    py/vimlfunc.py:F821
+    py/vimlparser.py:E501

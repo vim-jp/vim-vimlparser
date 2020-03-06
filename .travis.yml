@@ -3,40 +3,63 @@ dist: xenial
 git:
   depth: 10
 
-matrix:
+jobs:
   include:
-    - env:
+    - name: Vim 7.4
+      env:
       - VIM_VERSION=v7.4
-      - MAKE_TARGET=test
+      - MAKE_TARGET=vim/test
       - TEST_PROFILE=vim-profile-v7.4.txt
-    - env:
+    - name: Vim v8
+      env:
       - VIM_VERSION=v8.0.0000
-      - MAKE_TARGET=test
+      - MAKE_TARGET=vim/test
       - TEST_PROFILE=vim-profile-v8.0.txt
-    - env:
+    - name: Vim master
+      env:
       - VIM_VERSION=master
-      - MAKE_TARGET=test
+      - MAKE_TARGET=vim/test
       - TEST_PROFILE=vim-profile-master.txt
-    - env:
+      - TEST_PYTHON=python3
+    - name: Installed Vim with checks
+      env:
       - VIM_VERSION=installed
-      - MAKE_TARGET="clean_compiled check js/test py/test test/node_position/test_position.out"
+      - MAKE_TARGET=test
       - TEST_PROFILE=vim-profile-installed.txt
+      - TEST_PYTHON="python -m coverage run --append"
 
 install:
   - |
-    if [ "$VIM_VERSION" != 'installed' ]; then
+    if [ "$VIM_VERSION" = 'installed' ]; then
+      python -m pip install -q --user flake8 git+https://github.com/Kuniwak/vint
+    else
       bash scripts/install-vim.sh
       export PATH=$HOME/vim/bin:$PATH
     fi
-  - pip install covimerage --user
+  - python -m pip install -q --user covimerage
+  - python -m pip freeze
 
 script:
   - uname -a
   - which -a vim
-  - vim --cmd version --cmd quit
+  - vim --version
   - make --keep-going $MAKE_TARGET
 
 after_success:
+  - curl -s https://codecov.io/bash > /tmp/codecov.sh
+  # Coverage from Python (cannot be combined with non-branch data).
+  - |
+    if [[ -f .coverage_covimerage ]]; then
+      coverage report -m
+      coverage xml
+      bash /tmp/codecov.sh -f coverage.xml -F python
+    fi
+  # Coverage from Vim.
   - covimerage write_coverage $TEST_PROFILE
+  - coverage report -m
   - coverage xml
-  - bash <(curl -s https://codecov.io/bash) -f coverage.xml
+  - bash /tmp/codecov.sh -f coverage.xml -F vimscript
+
+branches:
+  only:
+    - master

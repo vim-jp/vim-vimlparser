@@ -4,21 +4,21 @@
 "
 " License: This file is placed in the public domain.
 
-function! vimlparser#import()
+function! vimlparser#import() abort
   return s:
 endfunction
 
 " @brief Read input as VimScript and return stringified AST.
 " @param input Input filename or string of VimScript.
 " @return Stringified AST.
-function! vimlparser#test(input, ...)
+function! vimlparser#test(input, ...) abort
   try
     if a:0 > 0
       let l:neovim = a:1
     else
       let l:neovim = 0
     endif
-    let i = type(a:input) == 1 && filereadable(a:input) ? readfile(a:input) : split(a:input, "\n")
+    let i = type(a:input) ==# 1 && filereadable(a:input) ? readfile(a:input) : split(a:input, "\n")
     let r = s:StringReader.new(i)
     let p = s:VimLParser.new(l:neovim)
     let c = s:Compiler.new()
@@ -28,12 +28,12 @@ function! vimlparser#test(input, ...)
   endtry
 endfunction
 
-function! s:numtoname(num)
+function! s:numtoname(num) abort
   let sig = printf("function('%s')", a:num)
   for k in keys(s:)
-    if type(s:[k]) == type({})
+    if type(s:[k]) ==# type({})
       for name in keys(s:[k])
-        if type(s:[k][name]) == type(function('tr')) && string(s:[k][name]) == sig
+        if type(s:[k][name]) ==# type(function('tr')) && string(s:[k][name]) ==# sig
           return printf('%s.%s', k, name)
         endif
       endfor
@@ -138,7 +138,9 @@ let s:NODE_CURLYNAMEPART = 90
 let s:NODE_CURLYNAMEEXPR = 91
 let s:NODE_LAMBDA = 92
 let s:NODE_BLOB = 93
-let s:NODE_HEREDOC = 94
+let s:NODE_CONST = 94
+let s:NODE_EVAL = 95
+let s:NODE_HEREDOC = 96
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -212,68 +214,68 @@ let s:TOKEN_HEREDOC = 69
 
 let s:MAX_FUNC_ARGS = 20
 
-function! s:isalpha(c)
+function! s:isalpha(c) abort
   return a:c =~# '^[A-Za-z]$'
 endfunction
 
-function! s:isalnum(c)
+function! s:isalnum(c) abort
   return a:c =~# '^[0-9A-Za-z]$'
 endfunction
 
-function! s:isdigit(c)
+function! s:isdigit(c) abort
   return a:c =~# '^[0-9]$'
 endfunction
 
-function! s:isodigit(c)
+function! s:isodigit(c) abort
   return a:c =~# '^[0-7]$'
 endfunction
 
-function! s:isxdigit(c)
+function! s:isxdigit(c) abort
   return a:c =~# '^[0-9A-Fa-f]$'
 endfunction
 
-function! s:iswordc(c)
+function! s:iswordc(c) abort
   return a:c =~# '^[0-9A-Za-z_]$'
 endfunction
 
-function! s:iswordc1(c)
+function! s:iswordc1(c) abort
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
-function! s:iswhite(c)
+function! s:iswhite(c) abort
   return a:c =~# '^[ \t]$'
 endfunction
 
-function! s:isnamec(c)
+function! s:isnamec(c) abort
   return a:c =~# '^[0-9A-Za-z_:#]$'
 endfunction
 
-function! s:isnamec1(c)
+function! s:isnamec1(c) abort
   return a:c =~# '^[A-Za-z_]$'
 endfunction
 
-function! s:isargname(s)
+function! s:isargname(s) abort
   return a:s =~# '^[A-Za-z_][0-9A-Za-z_]*$'
 endfunction
 
-function! s:isvarname(s)
+function! s:isvarname(s) abort
   return a:s =~# '^[vgslabwt]:$\|^\([vgslabwt]:\)\?[A-Za-z_][0-9A-Za-z_#]*$'
 endfunction
 
 " FIXME:
-function! s:isidc(c)
+function! s:isidc(c) abort
   return a:c =~# '^[0-9A-Za-z_]$'
 endfunction
 
-function! s:isupper(c)
+function! s:isupper(c) abort
   return a:c =~# '^[A-Z]$'
 endfunction
 
-function! s:islower(c)
+function! s:islower(c) abort
   return a:c =~# '^[a-z]$'
 endfunction
 
-function! s:ExArg()
+function! s:ExArg() abort
   let ea = {}
   let ea.forceit = s:FALSE
   let ea.addr_count = 0
@@ -311,6 +313,7 @@ endfunction
 "   node    rest
 "   node[]  list
 "   node[]  rlist
+"   node[]  default_args
 "   node[]  body
 "   string  op
 "   string  str
@@ -320,12 +323,13 @@ endfunction
 " TOPLEVEL .body
 " COMMENT .str
 " EXCMD .ea .str
-" FUNCTION .ea .body .left .rlist .attr .endfunction
+" FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 " ENDFUNCTION .ea
 " DELFUNCTION .ea .left
 " RETURN .ea .left
 " EXCALL .ea .left
 " LET .ea .op .left .list .rest .right
+" CONST .ea .op .left .list .rest .right
 " UNLET .ea .list
 " LOCKVAR .ea .depth .list
 " UNLOCKVAR .ea .depth .list
@@ -344,6 +348,7 @@ endfunction
 " FINALLY .ea .body
 " ENDTRY .ea
 " THROW .ea .left
+" EVAL .ea .left
 " ECHO .ea .list
 " ECHON .ea .list
 " ECHOHL .ea .str
@@ -410,23 +415,23 @@ endfunction
 " CURLYNAMEEXPR .value
 " LAMBDA .rlist .left
 " HEREDOC .rlist .op .body
-function! s:Node(type)
+function! s:Node(type) abort
   return {'type': a:type}
 endfunction
 
-function! s:Err(msg, pos)
+function! s:Err(msg, pos) abort
   return printf('vimlparser: %s: line %d col %d', a:msg, a:pos.lnum, a:pos.col)
 endfunction
 
 let s:VimLParser = {}
 
-function! s:VimLParser.new(...)
+function! s:VimLParser.new(...) abort
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function! s:VimLParser.__init__(...)
+function! s:VimLParser.__init__(...) abort
   if len(a:000) > 0
     let self.neovim = a:000[0]
   else
@@ -436,18 +441,18 @@ function! s:VimLParser.__init__(...)
   let self.find_command_cache = {}
 endfunction
 
-function! s:VimLParser.push_context(node)
+function! s:VimLParser.push_context(node) abort
   call insert(self.context, a:node)
 endfunction
 
-function! s:VimLParser.pop_context()
+function! s:VimLParser.pop_context() abort
   call remove(self.context, 0)
 endfunction
 
-function! s:VimLParser.find_context(type)
+function! s:VimLParser.find_context(type) abort
   let i = 0
   for node in self.context
-    if node.type == a:type
+    if node.type ==# a:type
       return i
     endif
     let i += 1
@@ -455,41 +460,41 @@ function! s:VimLParser.find_context(type)
   return -1
 endfunction
 
-function! s:VimLParser.add_node(node)
+function! s:VimLParser.add_node(node) abort
   call add(self.context[0].body, a:node)
 endfunction
 
-function! s:VimLParser.check_missing_endfunction(ends, pos)
-  if self.context[0].type == s:NODE_FUNCTION
+function! s:VimLParser.check_missing_endfunction(ends, pos) abort
+  if self.context[0].type ==# s:NODE_FUNCTION
     throw s:Err(printf('E126: Missing :endfunction:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function! s:VimLParser.check_missing_endif(ends, pos)
-  if self.context[0].type == s:NODE_IF || self.context[0].type == s:NODE_ELSEIF || self.context[0].type == s:NODE_ELSE
+function! s:VimLParser.check_missing_endif(ends, pos) abort
+  if self.context[0].type ==# s:NODE_IF || self.context[0].type ==# s:NODE_ELSEIF || self.context[0].type ==# s:NODE_ELSE
     throw s:Err(printf('E171: Missing :endif:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function! s:VimLParser.check_missing_endtry(ends, pos)
-  if self.context[0].type == s:NODE_TRY || self.context[0].type == s:NODE_CATCH || self.context[0].type == s:NODE_FINALLY
+function! s:VimLParser.check_missing_endtry(ends, pos) abort
+  if self.context[0].type ==# s:NODE_TRY || self.context[0].type ==# s:NODE_CATCH || self.context[0].type ==# s:NODE_FINALLY
     throw s:Err(printf('E600: Missing :endtry:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function! s:VimLParser.check_missing_endwhile(ends, pos)
-  if self.context[0].type == s:NODE_WHILE
+function! s:VimLParser.check_missing_endwhile(ends, pos) abort
+  if self.context[0].type ==# s:NODE_WHILE
     throw s:Err(printf('E170: Missing :endwhile:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function! s:VimLParser.check_missing_endfor(ends, pos)
-  if self.context[0].type == s:NODE_FOR
+function! s:VimLParser.check_missing_endfor(ends, pos) abort
+  if self.context[0].type ==# s:NODE_FOR
     throw s:Err(printf('E170: Missing :endfor:    %s', a:ends), a:pos)
   endif
 endfunction
 
-function! s:VimLParser.parse(reader)
+function! s:VimLParser.parse(reader) abort
   let self.reader = a:reader
   let self.context = []
   let toplevel = s:Node(s:NODE_TOPLEVEL)
@@ -508,7 +513,7 @@ function! s:VimLParser.parse(reader)
   return toplevel
 endfunction
 
-function! s:VimLParser.parse_one_cmd()
+function! s:VimLParser.parse_one_cmd() abort
   let self.ea = s:ExArg()
 
   if self.reader.peekn(2) ==# '#!'
@@ -534,7 +539,7 @@ function! s:VimLParser.parse_one_cmd()
 endfunction
 
 " FIXME:
-function! s:VimLParser.parse_command_modifiers()
+function! s:VimLParser.parse_command_modifiers() abort
   let modifiers = []
   while s:TRUE
     let pos = self.reader.tell()
@@ -546,42 +551,42 @@ function! s:VimLParser.parse_command_modifiers()
     let k = self.reader.read_alpha()
     let c = self.reader.peekn(1)
     call self.reader.skip_white()
-    if stridx('aboveleft', k) == 0 && len(k) >= 3 " abo\%[veleft]
+    if stridx('aboveleft', k) ==# 0 && len(k) >= 3 " abo\%[veleft]
       call add(modifiers, {'name': 'aboveleft'})
-    elseif stridx('belowright', k) == 0 && len(k) >= 3 " bel\%[owright]
+    elseif stridx('belowright', k) ==# 0 && len(k) >= 3 " bel\%[owright]
       call add(modifiers, {'name': 'belowright'})
-    elseif stridx('browse', k) == 0 && len(k) >= 3 " bro\%[wse]
+    elseif stridx('browse', k) ==# 0 && len(k) >= 3 " bro\%[wse]
       call add(modifiers, {'name': 'browse'})
-    elseif stridx('botright', k) == 0 && len(k) >= 2 " bo\%[tright]
+    elseif stridx('botright', k) ==# 0 && len(k) >= 2 " bo\%[tright]
       call add(modifiers, {'name': 'botright'})
-    elseif stridx('confirm', k) == 0 && len(k) >= 4 " conf\%[irm]
+    elseif stridx('confirm', k) ==# 0 && len(k) >= 4 " conf\%[irm]
       call add(modifiers, {'name': 'confirm'})
-    elseif stridx('keepmarks', k) == 0 && len(k) >= 3 " kee\%[pmarks]
+    elseif stridx('keepmarks', k) ==# 0 && len(k) >= 3 " kee\%[pmarks]
       call add(modifiers, {'name': 'keepmarks'})
-    elseif stridx('keepalt', k) == 0 && len(k) >= 5 " keepa\%[lt]
+    elseif stridx('keepalt', k) ==# 0 && len(k) >= 5 " keepa\%[lt]
       call add(modifiers, {'name': 'keepalt'})
-    elseif stridx('keepjumps', k) == 0 && len(k) >= 5 " keepj\%[umps]
+    elseif stridx('keepjumps', k) ==# 0 && len(k) >= 5 " keepj\%[umps]
       call add(modifiers, {'name': 'keepjumps'})
-    elseif stridx('keeppatterns', k) == 0 && len(k) >= 5 " keepp\%[atterns]
+    elseif stridx('keeppatterns', k) ==# 0 && len(k) >= 5 " keepp\%[atterns]
       call add(modifiers, {'name': 'keeppatterns'})
-    elseif stridx('hide', k) == 0 && len(k) >= 3 "hid\%[e]
+    elseif stridx('hide', k) ==# 0 && len(k) >= 3 " hid\%[e]
       if self.ends_excmds(c)
         break
       endif
       call add(modifiers, {'name': 'hide'})
-    elseif stridx('lockmarks', k) == 0 && len(k) >= 3 " loc\%[kmarks]
+    elseif stridx('lockmarks', k) ==# 0 && len(k) >= 3 " loc\%[kmarks]
       call add(modifiers, {'name': 'lockmarks'})
-    elseif stridx('leftabove', k) == 0 && len(k) >= 5 " lefta\%[bove]
+    elseif stridx('leftabove', k) ==# 0 && len(k) >= 5 " lefta\%[bove]
       call add(modifiers, {'name': 'leftabove'})
-    elseif stridx('noautocmd', k) == 0 && len(k) >= 3 " noa\%[utocmd]
+    elseif stridx('noautocmd', k) ==# 0 && len(k) >= 3 " noa\%[utocmd]
       call add(modifiers, {'name': 'noautocmd'})
-    elseif stridx('noswapfile', k) == 0 && len(k) >= 3 " :nos\%[wapfile]
+    elseif stridx('noswapfile', k) ==# 0 && len(k) >= 3 " :nos\%[wapfile]
       call add(modifiers, {'name': 'noswapfile'})
-    elseif stridx('rightbelow', k) == 0 && len(k) >= 6 "rightb\%[elow]
+    elseif stridx('rightbelow', k) ==# 0 && len(k) >= 6 " rightb\%[elow]
       call add(modifiers, {'name': 'rightbelow'})
-    elseif stridx('sandbox', k) == 0 && len(k) >= 3 " san\%[dbox]
+    elseif stridx('sandbox', k) ==# 0 && len(k) >= 3 " san\%[dbox]
       call add(modifiers, {'name': 'sandbox'})
-    elseif stridx('silent', k) == 0 && len(k) >= 3 " sil\%[ent]
+    elseif stridx('silent', k) ==# 0 && len(k) >= 3 " sil\%[ent]
       if c ==# '!'
         call self.reader.get()
         call add(modifiers, {'name': 'silent', 'bang': 1})
@@ -594,13 +599,13 @@ function! s:VimLParser.parse_command_modifiers()
       else
         call add(modifiers, {'name': 'tab'})
       endif
-    elseif stridx('topleft', k) == 0 && len(k) >= 2 " to\%[pleft]
+    elseif stridx('topleft', k) ==# 0 && len(k) >= 2 " to\%[pleft]
       call add(modifiers, {'name': 'topleft'})
-    elseif stridx('unsilent', k) == 0 && len(k) >= 3 " uns\%[ilent]
+    elseif stridx('unsilent', k) ==# 0 && len(k) >= 3 " uns\%[ilent]
       call add(modifiers, {'name': 'unsilent'})
-    elseif stridx('vertical', k) == 0 && len(k) >= 4 " vert\%[ical]
+    elseif stridx('vertical', k) ==# 0 && len(k) >= 4 " vert\%[ical]
       call add(modifiers, {'name': 'vertical'})
-    elseif stridx('verbose', k) == 0 && len(k) >= 4 " verb\%[ose]
+    elseif stridx('verbose', k) ==# 0 && len(k) >= 4 " verb\%[ose]
       if d !=# ''
         call add(modifiers, {'name': 'verbose', 'count': str2nr(d, 10)})
       else
@@ -615,7 +620,7 @@ function! s:VimLParser.parse_command_modifiers()
 endfunction
 
 " FIXME:
-function! s:VimLParser.parse_range()
+function! s:VimLParser.parse_range() abort
   let tokens = []
 
   while s:TRUE
@@ -697,7 +702,7 @@ function! s:VimLParser.parse_range()
 endfunction
 
 " FIXME:
-function! s:VimLParser.parse_pattern(delimiter)
+function! s:VimLParser.parse_pattern(delimiter) abort
   let pattern = ''
   let endc = ''
   let inbracket = 0
@@ -706,7 +711,7 @@ function! s:VimLParser.parse_pattern(delimiter)
     if c ==# ''
       break
     endif
-    if c ==# a:delimiter && inbracket == 0
+    if c ==# a:delimiter && inbracket ==# 0
       let endc = c
       break
     endif
@@ -727,7 +732,7 @@ function! s:VimLParser.parse_pattern(delimiter)
   return [pattern, endc]
 endfunction
 
-function! s:VimLParser.parse_command()
+function! s:VimLParser.parse_command() abort
   call self.reader.skip_white_and_colon()
 
   let self.ea.cmdpos = self.reader.getpos()
@@ -741,7 +746,7 @@ function! s:VimLParser.parse_command()
 
   let self.ea.cmd = self.find_command()
 
-  if self.ea.cmd is s:NIL
+  if self.ea.cmd is# s:NIL
     call self.reader.setpos(self.ea.cmdpos)
     throw s:Err(printf('E492: Not an editor command: %s', self.reader.peekline()), self.ea.cmdpos)
   endif
@@ -807,6 +812,7 @@ function! s:VimLParser.parse_command()
   call self._parse_command(self.ea.cmd.parser)
 endfunction
 
+" TODO: self[a:parser]
 function! s:VimLParser._parse_command(parser) abort
   if a:parser ==# 'parse_cmd_append'
     call self.parse_cmd_append()
@@ -862,6 +868,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_insert()
   elseif a:parser ==# 'parse_cmd_let'
     call self.parse_cmd_let()
+  elseif a:parser ==# 'parse_cmd_const'
+    call self.parse_cmd_const()
   elseif a:parser ==# 'parse_cmd_loadkeymap'
     call self.parse_cmd_loadkeymap()
   elseif a:parser ==# 'parse_cmd_lockvar'
@@ -886,6 +894,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_tcl()
   elseif a:parser ==# 'parse_cmd_throw'
     call self.parse_cmd_throw()
+  elseif a:parser ==# 'parse_cmd_eval'
+    call self.parse_cmd_eval()
   elseif a:parser ==# 'parse_cmd_try'
     call self.parse_cmd_try()
   elseif a:parser ==# 'parse_cmd_unlet'
@@ -905,7 +915,7 @@ function! s:VimLParser._parse_command(parser) abort
   endif
 endfunction
 
-function! s:VimLParser.find_command()
+function! s:VimLParser.find_command() abort
   let c = self.reader.peekn(1)
   let name = ''
 
@@ -940,16 +950,16 @@ function! s:VimLParser.find_command()
   let cmd = s:NIL
 
   for x in self.builtin_commands
-    if stridx(x.name, name) == 0 && len(name) >= x.minlen
+    if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
       unlet cmd
       let cmd = x
       break
     endif
   endfor
 
-  if self.neovim  
+  if self.neovim
     for x in self.neovim_additional_commands
-      if stridx(x.name, name) == 0 && len(name) >= x.minlen
+      if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
         unlet cmd
         let cmd = x
         break
@@ -957,16 +967,16 @@ function! s:VimLParser.find_command()
     endfor
 
     for x in self.neovim_removed_commands
-      if stridx(x.name, name) == 0 && len(name) >= x.minlen
+      if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
         unlet cmd
         let cmd = s:NIL
         break
       endif
     endfor
   endif
-  
+
   " FIXME: user defined command
-  if (cmd is s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
+  if (cmd is# s:NIL || cmd.name ==# 'Print') && name =~# '^[A-Z]'
     let name .= self.reader.read_alnum()
     unlet cmd
     let cmd = {'name': name, 'flags': 'USERCMD', 'parser': 'parse_cmd_usercmd'}
@@ -978,13 +988,13 @@ function! s:VimLParser.find_command()
 endfunction
 
 " TODO:
-function! s:VimLParser.parse_hashbang()
+function! s:VimLParser.parse_hashbang() abort
   call self.reader.getn(-1)
 endfunction
 
 " TODO:
 " ++opt=val
-function! s:VimLParser.parse_argopt()
+function! s:VimLParser.parse_argopt() abort
   while self.reader.p(0) ==# '+' && self.reader.p(1) ==# '+'
     let s = self.reader.peekn(20)
     if s =~# '^++bin\>'
@@ -1028,7 +1038,7 @@ endfunction
 
 " TODO:
 " +command
-function! s:VimLParser.parse_argcmd()
+function! s:VimLParser.parse_argcmd() abort
   if self.reader.peekn(1) ==# '+'
     call self.reader.getn(1)
     if self.reader.peekn(1) ==# ' '
@@ -1039,7 +1049,7 @@ function! s:VimLParser.parse_argcmd()
   endif
 endfunction
 
-function! s:VimLParser.read_cmdarg()
+function! s:VimLParser.read_cmdarg() abort
   let r = ''
   while s:TRUE
     let c = self.reader.peekn(1)
@@ -1055,7 +1065,7 @@ function! s:VimLParser.read_cmdarg()
   return r
 endfunction
 
-function! s:VimLParser.parse_comment()
+function! s:VimLParser.parse_comment() abort
   let npos = self.reader.getpos()
   let c = self.reader.get()
   if c !=# '"'
@@ -1067,7 +1077,7 @@ function! s:VimLParser.parse_comment()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_trail()
+function! s:VimLParser.parse_trail() abort
   call self.reader.skip_white()
   let c = self.reader.peek()
   if c ==# '<EOF>'
@@ -1085,7 +1095,7 @@ function! s:VimLParser.parse_trail()
 endfunction
 
 " modifier or range only command line
-function! s:VimLParser.parse_cmd_modifier_range()
+function! s:VimLParser.parse_cmd_modifier_range() abort
   let node = s:Node(s:NODE_EXCMD)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1094,7 +1104,7 @@ function! s:VimLParser.parse_cmd_modifier_range()
 endfunction
 
 " TODO:
-function! s:VimLParser.parse_cmd_common()
+function! s:VimLParser.parse_cmd_common() abort
   let end = self.reader.getpos()
   if self.ea.cmd.flags =~# '\<TRLBAR\>' && !self.ea.usefilter
     let end = self.separate_nextcmd()
@@ -1120,7 +1130,7 @@ function! s:VimLParser.parse_cmd_common()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.separate_nextcmd()
+function! s:VimLParser.separate_nextcmd() abort
   if self.ea.cmd.name ==# 'vimgrep' || self.ea.cmd.name ==# 'vimgrepadd' || self.ea.cmd.name ==# 'lvimgrep' || self.ea.cmd.name ==# 'lvimgrepadd'
     call self.skip_vimgrep_pat()
   endif
@@ -1157,7 +1167,7 @@ function! s:VimLParser.separate_nextcmd()
           \   && ((self.ea.cmd.name !=# '@' && self.ea.cmd.name !=# '*')
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
-          \       || self.reader.getpos().i != self.ea.argpos.i + 1 || pc !=# '@'))
+          \       || self.reader.getpos().i !=# self.ea.argpos.i + 1 || pc !=# '@'))
       let has_cpo_bar = s:FALSE " &cpoptions =~ 'b'
       if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
@@ -1176,7 +1186,7 @@ function! s:VimLParser.separate_nextcmd()
 endfunction
 
 " FIXME
-function! s:VimLParser.skip_vimgrep_pat()
+function! s:VimLParser.skip_vimgrep_pat() abort
   if self.reader.peekn(1) ==# ''
     " pass
   elseif s:isidc(self.reader.peekn(1))
@@ -1195,7 +1205,7 @@ function! s:VimLParser.skip_vimgrep_pat()
   endif
 endfunction
 
-function! s:VimLParser.parse_cmd_append()
+function! s:VimLParser.parse_cmd_append() abort
   call self.reader.setpos(self.ea.linepos)
   let cmdline = self.reader.readline()
   let lines = [cmdline]
@@ -1218,11 +1228,11 @@ function! s:VimLParser.parse_cmd_append()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_insert()
+function! s:VimLParser.parse_cmd_insert() abort
   call self.parse_cmd_append()
 endfunction
 
-function! s:VimLParser.parse_cmd_loadkeymap()
+function! s:VimLParser.parse_cmd_loadkeymap() abort
   call self.reader.setpos(self.ea.linepos)
   let cmdline = self.reader.readline()
   let lines = [cmdline]
@@ -1240,7 +1250,7 @@ function! s:VimLParser.parse_cmd_loadkeymap()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_lua()
+function! s:VimLParser.parse_cmd_lua() abort
   let lines = []
   call self.reader.skip_white()
   if self.reader.peekn(2) ==# '<<'
@@ -1277,43 +1287,43 @@ function! s:VimLParser.parse_cmd_lua()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_mzscheme()
+function! s:VimLParser.parse_cmd_mzscheme() abort
   call self.parse_cmd_lua()
 endfunction
 
-function! s:VimLParser.parse_cmd_perl()
+function! s:VimLParser.parse_cmd_perl() abort
   call self.parse_cmd_lua()
 endfunction
 
-function! s:VimLParser.parse_cmd_python()
+function! s:VimLParser.parse_cmd_python() abort
   call self.parse_cmd_lua()
 endfunction
 
-function! s:VimLParser.parse_cmd_python3()
+function! s:VimLParser.parse_cmd_python3() abort
   call self.parse_cmd_lua()
 endfunction
 
-function! s:VimLParser.parse_cmd_ruby()
+function! s:VimLParser.parse_cmd_ruby() abort
   call self.parse_cmd_lua()
 endfunction
 
-function! s:VimLParser.parse_cmd_tcl()
+function! s:VimLParser.parse_cmd_tcl() abort
   call self.parse_cmd_lua()
 endfunction
 
-function! s:VimLParser.parse_cmd_finish()
+function! s:VimLParser.parse_cmd_finish() abort
   call self.parse_cmd_common()
-  if self.context[0].type == s:NODE_TOPLEVEL
+  if self.context[0].type ==# s:NODE_TOPLEVEL
     call self.reader.seek_end(0)
   endif
 endfunction
 
 " FIXME
-function! s:VimLParser.parse_cmd_usercmd()
+function! s:VimLParser.parse_cmd_usercmd() abort
   call self.parse_cmd_common()
 endfunction
 
-function! s:VimLParser.parse_cmd_function()
+function! s:VimLParser.parse_cmd_function() abort
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
@@ -1334,10 +1344,10 @@ function! s:VimLParser.parse_cmd_function()
   let left = self.parse_lvalue_func()
   call self.reader.skip_white()
 
-  if left.type == s:NODE_IDENTIFIER
+  if left.type ==# s:NODE_IDENTIFIER
     let s = left.value
     let ss = split(s, '\zs')
-    if ss[0] !=# '<' && !s:isupper(ss[0]) && stridx(s, ':') == -1 && stridx(s, '#') == -1
+    if ss[0] !=# '<' && ss[0] !=# '_' && !s:isupper(ss[0]) && stridx(s, ':') ==# -1 && stridx(s, '#') ==# -1
       throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
     endif
   endif
@@ -1356,18 +1366,19 @@ function! s:VimLParser.parse_cmd_function()
   let node.ea = self.ea
   let node.left = left
   let node.rlist = []
+  let node.default_args = []
   let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0}
   let node.endfunction = s:NIL
   call self.reader.getn(1)
   let tokenizer = s:ExprTokenizer.new(self.reader)
-  if tokenizer.peek().type == s:TOKEN_PCLOSE
+  if tokenizer.peek().type ==# s:TOKEN_PCLOSE
     call tokenizer.get()
   else
     let named = {}
     while s:TRUE
       let varnode = s:Node(s:NODE_IDENTIFIER)
       let token = tokenizer.get()
-      if token.type == s:TOKEN_IDENTIFIER
+      if token.type ==# s:TOKEN_IDENTIFIER
         if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
           throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
         elseif has_key(named, token.value)
@@ -1377,28 +1388,34 @@ function! s:VimLParser.parse_cmd_function()
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
+        if tokenizer.peek().type ==# s:TOKEN_EQ
+          call tokenizer.get()
+          call add(node.default_args, self.parse_expr())
+        elseif len(node.default_args) > 0
+          throw s:Err('E989: Non-default argument follows default argument', varnode.pos)
+        endif
         " XXX: Vim doesn't skip white space before comma.  F(a ,b) => E475
-        if s:iswhite(self.reader.p(0)) && tokenizer.peek().type == s:TOKEN_COMMA
+        if s:iswhite(self.reader.p(0)) && tokenizer.peek().type ==# s:TOKEN_COMMA
           throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
         endif
         let token = tokenizer.get()
-        if token.type == s:TOKEN_COMMA
+        if token.type ==# s:TOKEN_COMMA
           " XXX: Vim allows last comma.  F(a, b, ) => OK
-          if tokenizer.peek().type == s:TOKEN_PCLOSE
+          if tokenizer.peek().type ==# s:TOKEN_PCLOSE
             call tokenizer.get()
             break
           endif
-        elseif token.type == s:TOKEN_PCLOSE
+        elseif token.type ==# s:TOKEN_PCLOSE
           break
         else
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
-      elseif token.type == s:TOKEN_DOTDOTDOT
+      elseif token.type ==# s:TOKEN_DOTDOTDOT
         let varnode.pos = token.pos
         let varnode.value = token.value
         call add(node.rlist, varnode)
         let token = tokenizer.get()
-        if token.type == s:TOKEN_PCLOSE
+        if token.type ==# s:TOKEN_PCLOSE
           break
         else
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
@@ -1430,12 +1447,12 @@ function! s:VimLParser.parse_cmd_function()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_endfunction()
+function! s:VimLParser.parse_cmd_endfunction() abort
   call self.check_missing_endif('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endtry('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endwhile('ENDFUNCTION', self.ea.cmdpos)
   call self.check_missing_endfor('ENDFUNCTION', self.ea.cmdpos)
-  if self.context[0].type != s:NODE_FUNCTION
+  if self.context[0].type !=# s:NODE_FUNCTION
     throw s:Err('E193: :endfunction not inside a function', self.ea.cmdpos)
   endif
   call self.reader.getn(-1)
@@ -1446,7 +1463,7 @@ function! s:VimLParser.parse_cmd_endfunction()
   call self.pop_context()
 endfunction
 
-function! s:VimLParser.parse_cmd_delfunction()
+function! s:VimLParser.parse_cmd_delfunction() abort
   let node = s:Node(s:NODE_DELFUNCTION)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1454,8 +1471,8 @@ function! s:VimLParser.parse_cmd_delfunction()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_return()
-  if self.find_context(s:NODE_FUNCTION) == -1
+function! s:VimLParser.parse_cmd_return() abort
+  if self.find_context(s:NODE_FUNCTION) ==# -1
     throw s:Err('E133: :return not inside a function', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_RETURN)
@@ -1470,7 +1487,7 @@ function! s:VimLParser.parse_cmd_return()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_call()
+function! s:VimLParser.parse_cmd_call() abort
   let node = s:Node(s:NODE_EXCALL)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1480,13 +1497,13 @@ function! s:VimLParser.parse_cmd_call()
     throw s:Err('E471: Argument required', self.reader.getpos())
   endif
   let node.left = self.parse_expr()
-  if node.left.type != s:NODE_CALL
+  if node.left.type !=# s:NODE_CALL
     throw s:Err('Not an function call', node.left.pos)
   endif
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_heredoc()
+function! s:VimLParser.parse_heredoc() abort
   let node = s:Node(s:NODE_HEREDOC)
   let node.pos = self.ea.cmdpos
   let node.op = ''
@@ -1524,7 +1541,7 @@ function! s:VimLParser.parse_heredoc()
   throw s:Err(printf("E990: Missing end marker '%s'", node.op), self.reader.getpos())
 endfunction
 
-function! s:VimLParser.parse_cmd_let()
+function! s:VimLParser.parse_cmd_let() abort
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
@@ -1582,7 +1599,42 @@ function! s:VimLParser.parse_cmd_let()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_unlet()
+function! s:VimLParser.parse_cmd_const() abort
+  let pos = self.reader.tell()
+  call self.reader.skip_white()
+
+  " :const
+  if self.ends_excmds(self.reader.peek())
+    call self.reader.seek_set(pos)
+    call self.parse_cmd_common()
+    return
+  endif
+
+  let lhs = self.parse_constlhs()
+  call self.reader.skip_white()
+  let s1 = self.reader.peekn(1)
+
+  " :const {var-name}
+  if self.ends_excmds(s1) || s1 !=# '='
+    call self.reader.seek_set(pos)
+    call self.parse_cmd_common()
+    return
+  endif
+
+  " :const left op right
+  let node = s:Node(s:NODE_CONST)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  call self.reader.getn(1)
+  let node.op = s1
+  let node.left = lhs.left
+  let node.list = lhs.list
+  let node.rest = lhs.rest
+  let node.right = self.parse_expr()
+  call self.add_node(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_unlet() abort
   let node = s:Node(s:NODE_UNLET)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1590,7 +1642,7 @@ function! s:VimLParser.parse_cmd_unlet()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_lockvar()
+function! s:VimLParser.parse_cmd_lockvar() abort
   let node = s:Node(s:NODE_LOCKVAR)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1604,7 +1656,7 @@ function! s:VimLParser.parse_cmd_lockvar()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_unlockvar()
+function! s:VimLParser.parse_cmd_unlockvar() abort
   let node = s:Node(s:NODE_UNLOCKVAR)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1618,7 +1670,7 @@ function! s:VimLParser.parse_cmd_unlockvar()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_if()
+function! s:VimLParser.parse_cmd_if() abort
   let node = s:Node(s:NODE_IF)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1631,11 +1683,11 @@ function! s:VimLParser.parse_cmd_if()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_elseif()
-  if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF
+function! s:VimLParser.parse_cmd_elseif() abort
+  if self.context[0].type !=# s:NODE_IF && self.context[0].type !=# s:NODE_ELSEIF
     throw s:Err('E582: :elseif without :if', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_IF
+  if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ELSEIF)
@@ -1647,11 +1699,11 @@ function! s:VimLParser.parse_cmd_elseif()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_else()
-  if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF
+function! s:VimLParser.parse_cmd_else() abort
+  if self.context[0].type !=# s:NODE_IF && self.context[0].type !=# s:NODE_ELSEIF
     throw s:Err('E581: :else without :if', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_IF
+  if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ELSE)
@@ -1662,11 +1714,11 @@ function! s:VimLParser.parse_cmd_else()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_endif()
-  if self.context[0].type != s:NODE_IF && self.context[0].type != s:NODE_ELSEIF && self.context[0].type != s:NODE_ELSE
+function! s:VimLParser.parse_cmd_endif() abort
+  if self.context[0].type !=# s:NODE_IF && self.context[0].type !=# s:NODE_ELSEIF && self.context[0].type !=# s:NODE_ELSE
     throw s:Err('E580: :endif without :if', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_IF
+  if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ENDIF)
@@ -1676,7 +1728,7 @@ function! s:VimLParser.parse_cmd_endif()
   call self.pop_context()
 endfunction
 
-function! s:VimLParser.parse_cmd_while()
+function! s:VimLParser.parse_cmd_while() abort
   let node = s:Node(s:NODE_WHILE)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1687,8 +1739,8 @@ function! s:VimLParser.parse_cmd_while()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_endwhile()
-  if self.context[0].type != s:NODE_WHILE
+function! s:VimLParser.parse_cmd_endwhile() abort
+  if self.context[0].type !=# s:NODE_WHILE
     throw s:Err('E588: :endwhile without :while', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_ENDWHILE)
@@ -1698,7 +1750,7 @@ function! s:VimLParser.parse_cmd_endwhile()
   call self.pop_context()
 endfunction
 
-function! s:VimLParser.parse_cmd_for()
+function! s:VimLParser.parse_cmd_for() abort
   let node = s:Node(s:NODE_FOR)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1720,8 +1772,8 @@ function! s:VimLParser.parse_cmd_for()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_endfor()
-  if self.context[0].type != s:NODE_FOR
+function! s:VimLParser.parse_cmd_endfor() abort
+  if self.context[0].type !=# s:NODE_FOR
     throw s:Err('E588: :endfor without :for', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_ENDFOR)
@@ -1731,8 +1783,8 @@ function! s:VimLParser.parse_cmd_endfor()
   call self.pop_context()
 endfunction
 
-function! s:VimLParser.parse_cmd_continue()
-  if self.find_context(s:NODE_WHILE) == -1 && self.find_context(s:NODE_FOR) == -1
+function! s:VimLParser.parse_cmd_continue() abort
+  if self.find_context(s:NODE_WHILE) ==# -1 && self.find_context(s:NODE_FOR) ==# -1
     throw s:Err('E586: :continue without :while or :for', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_CONTINUE)
@@ -1741,8 +1793,8 @@ function! s:VimLParser.parse_cmd_continue()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_break()
-  if self.find_context(s:NODE_WHILE) == -1 && self.find_context(s:NODE_FOR) == -1
+function! s:VimLParser.parse_cmd_break() abort
+  if self.find_context(s:NODE_WHILE) ==# -1 && self.find_context(s:NODE_FOR) ==# -1
     throw s:Err('E587: :break without :while or :for', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_BREAK)
@@ -1751,7 +1803,7 @@ function! s:VimLParser.parse_cmd_break()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_try()
+function! s:VimLParser.parse_cmd_try() abort
   let node = s:Node(s:NODE_TRY)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -1763,13 +1815,13 @@ function! s:VimLParser.parse_cmd_try()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_catch()
-  if self.context[0].type == s:NODE_FINALLY
+function! s:VimLParser.parse_cmd_catch() abort
+  if self.context[0].type ==# s:NODE_FINALLY
     throw s:Err('E604: :catch after :finally', self.ea.cmdpos)
-  elseif self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
+  elseif self.context[0].type !=# s:NODE_TRY && self.context[0].type !=# s:NODE_CATCH
     throw s:Err('E603: :catch without :try', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_TRY
+  if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_CATCH)
@@ -1785,11 +1837,11 @@ function! s:VimLParser.parse_cmd_catch()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_finally()
-  if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH
+function! s:VimLParser.parse_cmd_finally() abort
+  if self.context[0].type !=# s:NODE_TRY && self.context[0].type !=# s:NODE_CATCH
     throw s:Err('E606: :finally without :try', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_TRY
+  if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_FINALLY)
@@ -1800,11 +1852,11 @@ function! s:VimLParser.parse_cmd_finally()
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_endtry()
-  if self.context[0].type != s:NODE_TRY && self.context[0].type != s:NODE_CATCH && self.context[0].type != s:NODE_FINALLY
+function! s:VimLParser.parse_cmd_endtry() abort
+  if self.context[0].type !=# s:NODE_TRY && self.context[0].type !=# s:NODE_CATCH && self.context[0].type !=# s:NODE_FINALLY
     throw s:Err('E602: :endtry without :try', self.ea.cmdpos)
   endif
-  if self.context[0].type != s:NODE_TRY
+  if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
   let node = s:Node(s:NODE_ENDTRY)
@@ -1814,7 +1866,7 @@ function! s:VimLParser.parse_cmd_endtry()
   call self.pop_context()
 endfunction
 
-function! s:VimLParser.parse_cmd_throw()
+function! s:VimLParser.parse_cmd_throw() abort
   let node = s:Node(s:NODE_THROW)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1822,7 +1874,15 @@ function! s:VimLParser.parse_cmd_throw()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_echo()
+function! s:VimLParser.parse_cmd_eval() abort
+  let node = s:Node(s:NODE_EVAL)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.left = self.parse_expr()
+  call self.add_node(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_echo() abort
   let node = s:Node(s:NODE_ECHO)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1830,7 +1890,7 @@ function! s:VimLParser.parse_cmd_echo()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_echon()
+function! s:VimLParser.parse_cmd_echon() abort
   let node = s:Node(s:NODE_ECHON)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1838,7 +1898,7 @@ function! s:VimLParser.parse_cmd_echon()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_echohl()
+function! s:VimLParser.parse_cmd_echohl() abort
   let node = s:Node(s:NODE_ECHOHL)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1849,7 +1909,7 @@ function! s:VimLParser.parse_cmd_echohl()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_echomsg()
+function! s:VimLParser.parse_cmd_echomsg() abort
   let node = s:Node(s:NODE_ECHOMSG)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1857,7 +1917,7 @@ function! s:VimLParser.parse_cmd_echomsg()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_echoerr()
+function! s:VimLParser.parse_cmd_echoerr() abort
   let node = s:Node(s:NODE_ECHOERR)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1865,7 +1925,7 @@ function! s:VimLParser.parse_cmd_echoerr()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_execute()
+function! s:VimLParser.parse_cmd_execute() abort
   let node = s:Node(s:NODE_EXECUTE)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
@@ -1873,11 +1933,11 @@ function! s:VimLParser.parse_cmd_execute()
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_expr()
+function! s:VimLParser.parse_expr() abort
   return s:ExprParser.new(self.reader).parse()
 endfunction
 
-function! s:VimLParser.parse_exprlist()
+function! s:VimLParser.parse_exprlist() abort
   let list = []
   while s:TRUE
     call self.reader.skip_white()
@@ -1891,31 +1951,55 @@ function! s:VimLParser.parse_exprlist()
   return list
 endfunction
 
-function! s:VimLParser.parse_lvalue_func()
+function! s:VimLParser.parse_lvalue_func() abort
   let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
-  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
+  if node.type ==# s:NODE_IDENTIFIER || node.type ==# s:NODE_CURLYNAME || node.type ==# s:NODE_SUBSCRIPT || node.type ==# s:NODE_DOT || node.type ==# s:NODE_OPTION || node.type ==# s:NODE_ENV || node.type ==# s:NODE_REG
     return node
   endif
   throw s:Err('Invalid Expression', node.pos)
 endfunction
 
 " FIXME:
-function! s:VimLParser.parse_lvalue()
+function! s:VimLParser.parse_lvalue() abort
   let p = s:LvalueParser.new(self.reader)
   let node = p.parse()
-  if node.type == s:NODE_IDENTIFIER
+  if node.type ==# s:NODE_IDENTIFIER
     if !s:isvarname(node.value)
       throw s:Err(printf('E461: Illegal variable name: %s', node.value), node.pos)
     endif
   endif
-  if node.type == s:NODE_IDENTIFIER || node.type == s:NODE_CURLYNAME || node.type == s:NODE_SUBSCRIPT || node.type == s:NODE_SLICE || node.type == s:NODE_DOT || node.type == s:NODE_OPTION || node.type == s:NODE_ENV || node.type == s:NODE_REG
+  if node.type ==# s:NODE_IDENTIFIER || node.type ==# s:NODE_CURLYNAME || node.type ==# s:NODE_SUBSCRIPT || node.type ==# s:NODE_SLICE || node.type ==# s:NODE_DOT || node.type ==# s:NODE_OPTION || node.type ==# s:NODE_ENV || node.type ==# s:NODE_REG
     return node
   endif
   throw s:Err('Invalid Expression', node.pos)
 endfunction
 
-function! s:VimLParser.parse_lvaluelist()
+" TODO: merge with s:VimLParser.parse_lvalue()
+function! s:VimLParser.parse_constlvalue() abort
+  let p = s:LvalueParser.new(self.reader)
+  let node = p.parse()
+  if node.type ==# s:NODE_IDENTIFIER
+    if !s:isvarname(node.value)
+      throw s:Err(printf('E461: Illegal variable name: %s', node.value), node.pos)
+    endif
+  endif
+  if node.type ==# s:NODE_IDENTIFIER || node.type ==# s:NODE_CURLYNAME
+    return node
+  elseif node.type ==# s:NODE_SUBSCRIPT || node.type ==# s:NODE_SLICE || node.type ==# s:NODE_DOT
+    throw s:Err('E996: Cannot lock a list or dict', node.pos)
+  elseif node.type ==# s:NODE_OPTION
+    throw s:Err('E996: Cannot lock an option', node.pos)
+  elseif node.type ==# s:NODE_ENV
+    throw s:Err('E996: Cannot lock an environment variable', node.pos)
+  elseif node.type ==# s:NODE_REG
+    throw s:Err('E996: Cannot lock a register', node.pos)
+  endif
+  throw s:Err('Invalid Expression', node.pos)
+endfunction
+
+
+function! s:VimLParser.parse_lvaluelist() abort
   let list = []
   let node = self.parse_expr()
   call add(list, node)
@@ -1931,25 +2015,25 @@ function! s:VimLParser.parse_lvaluelist()
 endfunction
 
 " FIXME:
-function! s:VimLParser.parse_letlhs()
+function! s:VimLParser.parse_letlhs() abort
   let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
   let tokenizer = s:ExprTokenizer.new(self.reader)
-  if tokenizer.peek().type == s:TOKEN_SQOPEN
+  if tokenizer.peek().type ==# s:TOKEN_SQOPEN
     call tokenizer.get()
     let lhs.list = []
     while s:TRUE
       let node = self.parse_lvalue()
       call add(lhs.list, node)
       let token = tokenizer.get()
-      if token.type == s:TOKEN_SQCLOSE
+      if token.type ==# s:TOKEN_SQCLOSE
         break
-      elseif token.type == s:TOKEN_COMMA
+      elseif token.type ==# s:TOKEN_COMMA
         continue
-      elseif token.type == s:TOKEN_SEMICOLON
+      elseif token.type ==# s:TOKEN_SEMICOLON
         let node = self.parse_lvalue()
         let lhs.rest = node
         let token = tokenizer.get()
-        if token.type == s:TOKEN_SQCLOSE
+        if token.type ==# s:TOKEN_SQCLOSE
           break
         else
           throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
@@ -1964,12 +2048,46 @@ function! s:VimLParser.parse_letlhs()
   return lhs
 endfunction
 
-function! s:VimLParser.ends_excmds(c)
+" TODO: merge with s:VimLParser.parse_letlhs() ?
+function! s:VimLParser.parse_constlhs() abort
+  let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
+  let tokenizer = s:ExprTokenizer.new(self.reader)
+  if tokenizer.peek().type ==# s:TOKEN_SQOPEN
+    call tokenizer.get()
+    let lhs.list = []
+    while s:TRUE
+      let node = self.parse_lvalue()
+      call add(lhs.list, node)
+      let token = tokenizer.get()
+      if token.type ==# s:TOKEN_SQCLOSE
+        break
+      elseif token.type ==# s:TOKEN_COMMA
+        continue
+      elseif token.type ==# s:TOKEN_SEMICOLON
+        let node = self.parse_lvalue()
+        let lhs.rest = node
+        let token = tokenizer.get()
+        if token.type ==# s:TOKEN_SQCLOSE
+          break
+        else
+          throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
+        endif
+      else
+        throw s:Err(printf('E475 Invalid argument: %s', token.value), token.pos)
+      endif
+    endwhile
+  else
+    let lhs.left = self.parse_constlvalue()
+  endif
+  return lhs
+endfunction
+
+function! s:VimLParser.ends_excmds(c) abort
   return a:c ==# '' || a:c ==# '|' || a:c ==# '"' || a:c ==# '<EOF>' || a:c ==# '<EOL>'
 endfunction
 
 " FIXME: validate argument
-function! s:VimLParser.parse_wincmd()
+function! s:VimLParser.parse_wincmd() abort
   let c = self.reader.getn(1)
   if c ==# ''
     throw s:Err('E471: Argument required', self.reader.getpos())
@@ -1992,7 +2110,7 @@ function! s:VimLParser.parse_wincmd()
 endfunction
 
 " FIXME: validate argument
-function! s:VimLParser.parse_cmd_syntax()
+function! s:VimLParser.parse_cmd_syntax() abort
   let end = self.reader.getpos()
   while s:TRUE
     let end = self.reader.getpos()
@@ -2167,6 +2285,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'endtry', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endtry'},
       \ {'name': 'endwhile', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN', 'parser': 'parse_cmd_endwhile'},
       \ {'name': 'enew', 'minlen': 3, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'eval', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_eval'},
       \ {'name': 'ex', 'minlen': 2, 'flags': 'BANG|FILE1|EDITCMD|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'execute', 'minlen': 3, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_execute'},
       \ {'name': 'exit', 'minlen': 3, 'flags': 'RANGE|WHOLEFOLD|BANG|FILE1|ARGOPT|DFLALL|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
@@ -2242,6 +2361,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'left', 'minlen': 2, 'flags': 'TRLBAR|RANGE|WHOLEFOLD|EXTRA|CMDWIN|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'leftabove', 'minlen': 5, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
       \ {'name': 'let', 'minlen': 3, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_let'},
+      \ {'name': 'const', 'minlen': 4, 'flags': 'EXTRA|NOTRLCOM|SBOXOK|CMDWIN', 'parser': 'parse_cmd_const'},
       \ {'name': 'lexpr', 'minlen': 3, 'flags': 'NEEDARG|WORD1|NOTRLCOM|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lfile', 'minlen': 2, 'flags': 'TRLBAR|FILE1|BANG', 'parser': 'parse_cmd_common'},
       \ {'name': 'lfirst', 'minlen': 4, 'flags': 'RANGE|NOTADR|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
@@ -2598,31 +2718,506 @@ let s:VimLParser.builtin_commands = [
       \ {'flags': 'EX_EXTRA|EX_TRLBAR|EX_CMDWIN', 'minlen': 2, 'name': 'xrestore', 'parser': 'parse_cmd_common'},
       \]
 
+let s:VimLParser.builtin_functions = [
+      \ {'name': 'abs', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'acos', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'add', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'and', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'append', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'appendbufline', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'argc', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'argidx', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'arglistid', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'argv', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'asin', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'assert_beeps', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'assert_equal', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'assert_equalfile', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'assert_exception', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'assert_fails', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'assert_false', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'assert_inrange', 'min_argc': 3, 'max_argc': 4},
+      \ {'name': 'assert_match', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'assert_notequal', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'assert_notmatch', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'assert_report', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'assert_true', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'atan', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'atan2', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'balloon_gettext', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'balloon_show', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'balloon_split', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'browse', 'min_argc': 4, 'max_argc': 4},
+      \ {'name': 'browsedir', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'bufadd', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'bufexists', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'buffer_exists', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'buffer_name', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'buffer_number', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'buflisted', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'bufload', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'bufloaded', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'bufname', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'bufnr', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'bufwinid', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'bufwinnr', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'byte2line', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'byteidx', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'byteidxcomp', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'call', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'ceil', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'ch_canread', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'ch_close', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'ch_close_in', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'ch_evalexpr', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'ch_evalraw', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'ch_getbufnr', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'ch_getjob', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'ch_info', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'ch_log', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'ch_logfile', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'ch_open', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'ch_read', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'ch_readblob', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'ch_readraw', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'ch_sendexpr', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'ch_sendraw', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'ch_setoptions', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'ch_status', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'changenr', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'char2nr', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'chdir', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'cindent', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'clearmatches', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'col', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'complete', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'complete_add', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'complete_check', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'complete_info', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'confirm', 'min_argc': 1, 'max_argc': 4},
+      \ {'name': 'copy', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'cos', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'cosh', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'count', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'cscope_connection', 'min_argc': 0, 'max_argc': 3},
+      \ {'name': 'cursor', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'debugbreak', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'deepcopy', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'delete', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'deletebufline', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'did_filetype', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'diff_filler', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'diff_hlID', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'empty', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'environ', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'escape', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'eval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'eventhandler', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'executable', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'execute', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'exepath', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'exists', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'exp', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'expand', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'expandcmd', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'extend', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'feedkeys', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'file_readable', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'filereadable', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'filewritable', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'filter', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'finddir', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'findfile', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'float2nr', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'floor', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'fmod', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'fnameescape', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'fnamemodify', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'foldclosed', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'foldclosedend', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'foldlevel', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'foldtext', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'foldtextresult', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'foreground', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'funcref', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'function', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'garbagecollect', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'get', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'get_lazy', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'getbufinfo', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getbufline', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'getbufvar', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'getchangelist', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getchar', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getcharmod', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcharsearch', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcmdline', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcmdpos', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcmdtype', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcmdwintype', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcompletion', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'getcurpos', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getcwd', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'getenv', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getfontname', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getfperm', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getfsize', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getftime', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getftype', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getjumplist', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'getline', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'getloclist', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'getmatches', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getpid', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getpos', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'getqflist', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getreg', 'min_argc': 0, 'max_argc': 3},
+      \ {'name': 'getregtype', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'gettabinfo', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'gettabvar', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'gettabwinvar', 'min_argc': 3, 'max_argc': 4},
+      \ {'name': 'gettagstack', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getwininfo', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getwinpos', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'getwinposx', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getwinposy', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'getwinvar', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'glob', 'min_argc': 1, 'max_argc': 4},
+      \ {'name': 'glob2regpat', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'globpath', 'min_argc': 2, 'max_argc': 5},
+      \ {'name': 'has', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'has_key', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'haslocaldir', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'hasmapto', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'highlightID', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'highlight_exists', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'histadd', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'histdel', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'histget', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'histnr', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'hlID', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'hlexists', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'hostname', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'iconv', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'indent', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'index', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'input', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'inputdialog', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'inputlist', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'inputrestore', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'inputsave', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'inputsecret', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'insert', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'invert', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'isdirectory', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'isinf', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'islocked', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'isnan', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'items', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'job_getchannel', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'job_info', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'job_setoptions', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'job_start', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'job_status', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'job_stop', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'join', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'js_decode', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'js_encode', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'json_decode', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'json_encode', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'keys', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'last_buffer_nr', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'len', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'libcall', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'libcallnr', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'line', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'line2byte', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'lispindent', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'list2str', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'listener_add', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'listener_flush', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'listener_remove', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'localtime', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'log', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'log10', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'luaeval', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'map', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'maparg', 'min_argc': 1, 'max_argc': 4},
+      \ {'name': 'mapcheck', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'match', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'matchadd', 'min_argc': 2, 'max_argc': 5},
+      \ {'name': 'matchaddpos', 'min_argc': 2, 'max_argc': 5},
+      \ {'name': 'matcharg', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'matchdelete', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'matchend', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'matchlist', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'matchstr', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'matchstrpos', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'max', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'min', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'mkdir', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'mode', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'mzeval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'nextnonblank', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'nr2char', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'or', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'pathshorten', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'perleval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'popup_atcursor', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_beval', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_clear', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'popup_close', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'popup_create', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_dialog', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_filter_menu', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_filter_yesno', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_getoptions', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'popup_getpos', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'popup_hide', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'popup_locate', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_menu', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_move', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_notification', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_setoptions', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_settext', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'popup_show', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'pow', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'prevnonblank', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'printf', 'min_argc': 1, 'max_argc': 19},
+      \ {'name': 'prompt_setcallback', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'prompt_setinterrupt', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'prompt_setprompt', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'prop_add', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'prop_clear', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'prop_list', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'prop_remove', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'prop_type_add', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'prop_type_change', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'prop_type_delete', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'prop_type_get', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'prop_type_list', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'pumvisible', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'py3eval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'pyeval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'pyxeval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'range', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'readdir', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'readfile', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'reg_executing', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'reg_recording', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'reltime', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'reltimefloat', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'reltimestr', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'remote_expr', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'remote_foreground', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'remote_peek', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'remote_read', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'remote_send', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'remote_startserver', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'remove', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'rename', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'repeat', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'resolve', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'reverse', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'round', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'rubyeval', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'screenattr', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'screenchar', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'screenchars', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'screencol', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'screenpos', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'screenrow', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'screenstring', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'search', 'min_argc': 1, 'max_argc': 4},
+      \ {'name': 'searchdecl', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'searchpair', 'min_argc': 3, 'max_argc': 7},
+      \ {'name': 'searchpairpos', 'min_argc': 3, 'max_argc': 7},
+      \ {'name': 'searchpos', 'min_argc': 1, 'max_argc': 4},
+      \ {'name': 'server2client', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'serverlist', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'setbufline', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'setbufvar', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'setcharsearch', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'setcmdpos', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'setenv', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'setfperm', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'setline', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'setloclist', 'min_argc': 2, 'max_argc': 4},
+      \ {'name': 'setmatches', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'setpos', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'setqflist', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'setreg', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'settabvar', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'settabwinvar', 'min_argc': 4, 'max_argc': 4},
+      \ {'name': 'settagstack', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'setwinvar', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'sha256', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'shellescape', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'shiftwidth', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'sign_define', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'sign_getdefined', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'sign_getplaced', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'sign_jump', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'sign_place', 'min_argc': 4, 'max_argc': 5},
+      \ {'name': 'sign_placelist', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'sign_undefine', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'sign_unplace', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'sign_unplacelist', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'simplify', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'sin', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'sinh', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'sort', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'sound_clear', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'sound_playevent', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'sound_playfile', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'sound_stop', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'soundfold', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'spellbadword', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'spellsuggest', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'split', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'sqrt', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'str2float', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'str2list', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'str2nr', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'strcharpart', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'strchars', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'strdisplaywidth', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'strftime', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'strgetchar', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'stridx', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'string', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'strlen', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'strpart', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'strridx', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'strtrans', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'strwidth', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'submatch', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'substitute', 'min_argc': 4, 'max_argc': 4},
+      \ {'name': 'swapinfo', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'swapname', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'synID', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'synIDattr', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'synIDtrans', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'synconcealed', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'synstack', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'system', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'systemlist', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'tabpagebuflist', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'tabpagenr', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'tabpagewinnr', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'tagfiles', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'taglist', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'tan', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'tanh', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'tempname', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'term_dumpdiff', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'term_dumpload', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'term_dumpwrite', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'term_getaltscreen', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_getansicolors', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_getattr', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_getcursor', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_getjob', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_getline', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_getscrolled', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_getsize', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_getstatus', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_gettitle', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'term_gettty', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'term_list', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'term_scrape', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_sendkeys', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_setansicolors', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_setkill', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_setrestore', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'term_setsize', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'term_start', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'term_wait', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'test_alloc_fail', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'test_autochdir', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_feedinput', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'test_garbagecollect_now', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_garbagecollect_soon', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_getvalue', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'test_ignore_error', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'test_null_blob', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_null_channel', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_null_dict', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_null_job', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_null_list', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_null_partial', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_null_string', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'test_option_not_set', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'test_override', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'test_refcount', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'test_scrollbar', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'test_setmouse', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'test_settime', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'timer_info', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'timer_pause', 'min_argc': 2, 'max_argc': 2},
+      \ {'name': 'timer_start', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'timer_stop', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'timer_stopall', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'tolower', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'toupper', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'tr', 'min_argc': 3, 'max_argc': 3},
+      \ {'name': 'trim', 'min_argc': 1, 'max_argc': 2},
+      \ {'name': 'trunc', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'type', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'undofile', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'undotree', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'uniq', 'min_argc': 1, 'max_argc': 3},
+      \ {'name': 'values', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'virtcol', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'visualmode', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'wildmenumode', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'win_execute', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'win_findbuf', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'win_getid', 'min_argc': 0, 'max_argc': 2},
+      \ {'name': 'win_gotoid', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'win_id2tabwin', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'win_id2win', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'win_screenpos', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'winbufnr', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'wincol', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'winheight', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'winlayout', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'winline', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'winnr', 'min_argc': 0, 'max_argc': 1},
+      \ {'name': 'winrestcmd', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'winrestview', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'winsaveview', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'winwidth', 'min_argc': 1, 'max_argc': 1},
+      \ {'name': 'wordcount', 'min_argc': 0, 'max_argc': 0},
+      \ {'name': 'writefile', 'min_argc': 2, 'max_argc': 3},
+      \ {'name': 'xor', 'min_argc': 2, 'max_argc': 2},
+      \]
+
 let s:ExprTokenizer = {}
 
-function! s:ExprTokenizer.new(...)
+function! s:ExprTokenizer.new(...) abort
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function! s:ExprTokenizer.__init__(reader)
+function! s:ExprTokenizer.__init__(reader) abort
   let self.reader = a:reader
   let self.cache = {}
 endfunction
 
-function! s:ExprTokenizer.token(type, value, pos)
+function! s:ExprTokenizer.token(type, value, pos) abort
   return {'type': a:type, 'value': a:value, 'pos': a:pos}
 endfunction
 
-function! s:ExprTokenizer.peek()
+function! s:ExprTokenizer.peek() abort
   let pos = self.reader.tell()
   let r = self.get()
   call self.reader.seek_set(pos)
   return r
 endfunction
 
-function! s:ExprTokenizer.get()
+function! s:ExprTokenizer.get() abort
   " FIXME: remove dirty hack
   if has_key(self.cache, self.reader.tell())
     let x = self.cache[self.reader.tell()]
@@ -2636,7 +3231,7 @@ function! s:ExprTokenizer.get()
   return r
 endfunction
 
-function! s:ExprTokenizer.get2()
+function! s:ExprTokenizer.get2() abort
   let r = self.reader
   let pos = r.getpos()
   let c = r.peek()
@@ -2897,7 +3492,7 @@ function! s:ExprTokenizer.get2()
   endif
 endfunction
 
-function! s:ExprTokenizer.get_sstring()
+function! s:ExprTokenizer.get_sstring() abort
   call self.reader.skip_white()
   let c = self.reader.p(0)
   if c !=# "'"
@@ -2925,7 +3520,7 @@ function! s:ExprTokenizer.get_sstring()
   return s
 endfunction
 
-function! s:ExprTokenizer.get_dstring()
+function! s:ExprTokenizer.get_dstring() abort
   call self.reader.skip_white()
   let c = self.reader.p(0)
   if c !=# '"'
@@ -2957,58 +3552,60 @@ function! s:ExprTokenizer.get_dstring()
   return s
 endfunction
 
-function! s:ExprTokenizer.get_dict_literal_key()
+function! s:ExprTokenizer.parse_dict_literal_key() abort
   call self.reader.skip_white()
-  let r = self.reader
-  let c = r.peek()
-  if !s:isalnum(c) && c != '_' && c != '-'
-    throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+  let c = self.reader.peek()
+  if !s:isalnum(c) && c !=# '_' && c !=# '-'
+    throw s:Err(printf('unexpected character: %s', c), self.reader.getpos())
   endif
+  let node = s:Node(s:NODE_STRING)
   let s = c
   call self.reader.seek_cur(1)
+  let node.pos = self.reader.getpos()
   while s:TRUE
     let c = self.reader.p(0)
     if c ==# '<EOF>' || c ==# '<EOL>'
       throw s:Err('unexpectd EOL', self.reader.getpos())
     endif
-    if !s:isalnum(c) && c != '_' && c != '-'
+    if !s:isalnum(c) && c !=# '_' && c !=# '-'
       break
     endif
     call self.reader.seek_cur(1)
     let s .= c
   endwhile
-  return s
+  let node.value = "'" . s . "'"
+  return node
 endfunction
 
 let s:ExprParser = {}
 
-function! s:ExprParser.new(...)
+function! s:ExprParser.new(...) abort
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function! s:ExprParser.__init__(reader)
+function! s:ExprParser.__init__(reader) abort
   let self.reader = a:reader
   let self.tokenizer = s:ExprTokenizer.new(a:reader)
 endfunction
 
-function! s:ExprParser.parse()
+function! s:ExprParser.parse() abort
   return self.parse_expr1()
 endfunction
 
 " expr1: expr2 ? expr1 : expr1
-function! s:ExprParser.parse_expr1()
+function! s:ExprParser.parse_expr1() abort
   let left = self.parse_expr2()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
-  if token.type == s:TOKEN_QUESTION
+  if token.type ==# s:TOKEN_QUESTION
     let node = s:Node(s:NODE_TERNARY)
     let node.pos = token.pos
     let node.cond = left
     let node.left = self.parse_expr1()
     let token = self.tokenizer.get()
-    if token.type != s:TOKEN_COLON
+    if token.type !=# s:TOKEN_COLON
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
     endif
     let node.right = self.parse_expr1()
@@ -3020,12 +3617,12 @@ function! s:ExprParser.parse_expr1()
 endfunction
 
 " expr2: expr3 || expr3 ..
-function! s:ExprParser.parse_expr2()
+function! s:ExprParser.parse_expr2() abort
   let left = self.parse_expr3()
   while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
-    if token.type == s:TOKEN_OROR
+    if token.type ==# s:TOKEN_OROR
       let node = s:Node(s:NODE_OR)
       let node.pos = token.pos
       let node.left = left
@@ -3040,12 +3637,12 @@ function! s:ExprParser.parse_expr2()
 endfunction
 
 " expr3: expr4 && expr4
-function! s:ExprParser.parse_expr3()
+function! s:ExprParser.parse_expr3() abort
   let left = self.parse_expr4()
   while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
-    if token.type == s:TOKEN_ANDAND
+    if token.type ==# s:TOKEN_ANDAND
       let node = s:Node(s:NODE_AND)
       let node.pos = token.pos
       let node.left = left
@@ -3074,185 +3671,185 @@ endfunction
 "
 "        expr5 is expr5
 "        expr5 isnot expr5
-function! s:ExprParser.parse_expr4()
+function! s:ExprParser.parse_expr4() abort
   let left = self.parse_expr5()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
-  if token.type == s:TOKEN_EQEQ
+  if token.type ==# s:TOKEN_EQEQ
     let node = s:Node(s:NODE_EQUAL)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_EQEQCI
+  elseif token.type ==# s:TOKEN_EQEQCI
     let node = s:Node(s:NODE_EQUALCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_EQEQCS
+  elseif token.type ==# s:TOKEN_EQEQCS
     let node = s:Node(s:NODE_EQUALCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_NEQ
+  elseif token.type ==# s:TOKEN_NEQ
     let node = s:Node(s:NODE_NEQUAL)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_NEQCI
+  elseif token.type ==# s:TOKEN_NEQCI
     let node = s:Node(s:NODE_NEQUALCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_NEQCS
+  elseif token.type ==# s:TOKEN_NEQCS
     let node = s:Node(s:NODE_NEQUALCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_GT
+  elseif token.type ==# s:TOKEN_GT
     let node = s:Node(s:NODE_GREATER)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_GTCI
+  elseif token.type ==# s:TOKEN_GTCI
     let node = s:Node(s:NODE_GREATERCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_GTCS
+  elseif token.type ==# s:TOKEN_GTCS
     let node = s:Node(s:NODE_GREATERCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_GTEQ
+  elseif token.type ==# s:TOKEN_GTEQ
     let node = s:Node(s:NODE_GEQUAL)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_GTEQCI
+  elseif token.type ==# s:TOKEN_GTEQCI
     let node = s:Node(s:NODE_GEQUALCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_GTEQCS
+  elseif token.type ==# s:TOKEN_GTEQCS
     let node = s:Node(s:NODE_GEQUALCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_LT
+  elseif token.type ==# s:TOKEN_LT
     let node = s:Node(s:NODE_SMALLER)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_LTCI
+  elseif token.type ==# s:TOKEN_LTCI
     let node = s:Node(s:NODE_SMALLERCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_LTCS
+  elseif token.type ==# s:TOKEN_LTCS
     let node = s:Node(s:NODE_SMALLERCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_LTEQ
+  elseif token.type ==# s:TOKEN_LTEQ
     let node = s:Node(s:NODE_SEQUAL)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_LTEQCI
+  elseif token.type ==# s:TOKEN_LTEQCI
     let node = s:Node(s:NODE_SEQUALCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_LTEQCS
+  elseif token.type ==# s:TOKEN_LTEQCS
     let node = s:Node(s:NODE_SEQUALCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_MATCH
+  elseif token.type ==# s:TOKEN_MATCH
     let node = s:Node(s:NODE_MATCH)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_MATCHCI
+  elseif token.type ==# s:TOKEN_MATCHCI
     let node = s:Node(s:NODE_MATCHCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_MATCHCS
+  elseif token.type ==# s:TOKEN_MATCHCS
     let node = s:Node(s:NODE_MATCHCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_NOMATCH
+  elseif token.type ==# s:TOKEN_NOMATCH
     let node = s:Node(s:NODE_NOMATCH)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_NOMATCHCI
+  elseif token.type ==# s:TOKEN_NOMATCHCI
     let node = s:Node(s:NODE_NOMATCHCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_NOMATCHCS
+  elseif token.type ==# s:TOKEN_NOMATCHCS
     let node = s:Node(s:NODE_NOMATCHCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_IS
+  elseif token.type ==# s:TOKEN_IS
     let node = s:Node(s:NODE_IS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_ISCI
+  elseif token.type ==# s:TOKEN_ISCI
     let node = s:Node(s:NODE_ISCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_ISCS
+  elseif token.type ==# s:TOKEN_ISCS
     let node = s:Node(s:NODE_ISCS)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_ISNOT
+  elseif token.type ==# s:TOKEN_ISNOT
     let node = s:Node(s:NODE_ISNOT)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_ISNOTCI
+  elseif token.type ==# s:TOKEN_ISNOTCI
     let node = s:Node(s:NODE_ISNOTCI)
     let node.pos = token.pos
     let node.left = left
     let node.right = self.parse_expr5()
     let left = node
-  elseif token.type == s:TOKEN_ISNOTCS
+  elseif token.type ==# s:TOKEN_ISNOTCS
     let node = s:Node(s:NODE_ISNOTCS)
     let node.pos = token.pos
     let node.left = left
@@ -3268,30 +3865,30 @@ endfunction
 "        expr6 - expr6 ..
 "        expr6 . expr6 ..
 "        expr6 .. expr6 ..
-function! s:ExprParser.parse_expr5()
+function! s:ExprParser.parse_expr5() abort
   let left = self.parse_expr6()
   while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
-    if token.type == s:TOKEN_PLUS
+    if token.type ==# s:TOKEN_PLUS
       let node = s:Node(s:NODE_ADD)
       let node.pos = token.pos
       let node.left = left
       let node.right = self.parse_expr6()
       let left = node
-    elseif token.type == s:TOKEN_MINUS
+    elseif token.type ==# s:TOKEN_MINUS
       let node = s:Node(s:NODE_SUBTRACT)
       let node.pos = token.pos
       let node.left = left
       let node.right = self.parse_expr6()
       let left = node
-    elseif token.type == s:TOKEN_DOTDOT " TODO check scriptversion?
+    elseif token.type ==# s:TOKEN_DOTDOT " TODO check scriptversion?
       let node = s:Node(s:NODE_CONCAT)
       let node.pos = token.pos
       let node.left = left
       let node.right = self.parse_expr6()
       let left = node
-    elseif token.type == s:TOKEN_DOT " TODO check scriptversion?
+    elseif token.type ==# s:TOKEN_DOT " TODO check scriptversion?
       let node = s:Node(s:NODE_CONCAT)
       let node.pos = token.pos
       let node.left = left
@@ -3308,24 +3905,24 @@ endfunction
 " expr6: expr7 * expr7 ..
 "        expr7 / expr7 ..
 "        expr7 % expr7 ..
-function! s:ExprParser.parse_expr6()
+function! s:ExprParser.parse_expr6() abort
   let left = self.parse_expr7()
   while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
-    if token.type == s:TOKEN_STAR
+    if token.type ==# s:TOKEN_STAR
       let node = s:Node(s:NODE_MULTIPLY)
       let node.pos = token.pos
       let node.left = left
       let node.right = self.parse_expr7()
       let left = node
-    elseif token.type == s:TOKEN_SLASH
+    elseif token.type ==# s:TOKEN_SLASH
       let node = s:Node(s:NODE_DIVIDE)
       let node.pos = token.pos
       let node.left = left
       let node.right = self.parse_expr7()
       let left = node
-    elseif token.type == s:TOKEN_PERCENT
+    elseif token.type ==# s:TOKEN_PERCENT
       let node = s:Node(s:NODE_REMAINDER)
       let node.pos = token.pos
       let node.left = left
@@ -3342,20 +3939,20 @@ endfunction
 " expr7: ! expr7
 "        - expr7
 "        + expr7
-function! s:ExprParser.parse_expr7()
+function! s:ExprParser.parse_expr7() abort
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
-  if token.type == s:TOKEN_NOT
+  if token.type ==# s:TOKEN_NOT
     let node = s:Node(s:NODE_NOT)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
     return node
-  elseif token.type == s:TOKEN_MINUS
+  elseif token.type ==# s:TOKEN_MINUS
     let node = s:Node(s:NODE_MINUS)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
     return node
-  elseif token.type == s:TOKEN_PLUS
+  elseif token.type ==# s:TOKEN_PLUS
     let node = s:Node(s:NODE_PLUS)
     let node.pos = token.pos
     let node.left = self.parse_expr7()
@@ -3371,43 +3968,43 @@ endfunction
 "        expr8[expr1 : expr1]
 "        expr8.name
 "        expr8(expr1, ...)
-function! s:ExprParser.parse_expr8()
+function! s:ExprParser.parse_expr8() abort
   let left = self.parse_expr9()
   while s:TRUE
     let pos = self.reader.tell()
     let c = self.reader.peek()
     let token = self.tokenizer.get()
-    if !s:iswhite(c) && token.type == s:TOKEN_SQOPEN
+    if !s:iswhite(c) && token.type ==# s:TOKEN_SQOPEN
       let npos = token.pos
-      if self.tokenizer.peek().type == s:TOKEN_COLON
+      if self.tokenizer.peek().type ==# s:TOKEN_COLON
         call self.tokenizer.get()
         let node = s:Node(s:NODE_SLICE)
         let node.pos = npos
         let node.left = left
         let node.rlist = [s:NIL, s:NIL]
         let token = self.tokenizer.peek()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           let node.rlist[1] = self.parse_expr1()
         endif
         let token = self.tokenizer.get()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
         let left = node
       else
         let right = self.parse_expr1()
-        if self.tokenizer.peek().type == s:TOKEN_COLON
+        if self.tokenizer.peek().type ==# s:TOKEN_COLON
           call self.tokenizer.get()
           let node = s:Node(s:NODE_SLICE)
           let node.pos = npos
           let node.left = left
           let node.rlist = [right, s:NIL]
           let token = self.tokenizer.peek()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             let node.rlist[1] = self.parse_expr1()
           endif
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
           let left = node
@@ -3417,31 +4014,31 @@ function! s:ExprParser.parse_expr8()
           let node.left = left
           let node.right = right
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
           let left = node
         endif
       endif
       unlet node
-    elseif token.type == s:TOKEN_POPEN
+    elseif token.type ==# s:TOKEN_POPEN
       let node = s:Node(s:NODE_CALL)
       let node.pos = token.pos
       let node.left = left
       let node.rlist = []
-      if self.tokenizer.peek().type == s:TOKEN_PCLOSE
+      if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
         call self.tokenizer.get()
       else
         while s:TRUE
           call add(node.rlist, self.parse_expr1())
           let token = self.tokenizer.get()
-          if token.type == s:TOKEN_COMMA
+          if token.type ==# s:TOKEN_COMMA
             " XXX: Vim allows foo(a, b, ).  Lint should warn it.
-            if self.tokenizer.peek().type == s:TOKEN_PCLOSE
+            if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
               call self.tokenizer.get()
               break
             endif
-          elseif token.type == s:TOKEN_PCLOSE
+          elseif token.type ==# s:TOKEN_PCLOSE
             break
           else
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
@@ -3454,9 +4051,9 @@ function! s:ExprParser.parse_expr8()
       endif
       let left = node
       unlet node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT " TODO check scriptversion?
+    elseif !s:iswhite(c) && token.type ==# s:TOKEN_DOT " TODO check scriptversion?
       let node = self.parse_dot(token, left)
-      if node is s:NIL
+      if node is# s:NIL
         call self.reader.seek_set(pos)
         break
       endif
@@ -3485,46 +4082,46 @@ endfunction
 "        @r
 "        function(expr1, ...)
 "        func{ti}on(expr1, ...)
-function! s:ExprParser.parse_expr9()
+function! s:ExprParser.parse_expr9() abort
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   let node = s:Node(-1)
-  if token.type == s:TOKEN_NUMBER
+  if token.type ==# s:TOKEN_NUMBER
     let node = s:Node(s:NODE_NUMBER)
     let node.pos = token.pos
     let node.value = token.value
-  elseif token.type == s:TOKEN_BLOB
+  elseif token.type ==# s:TOKEN_BLOB
     let node = s:Node(s:NODE_BLOB)
     let node.pos = token.pos
     let node.value = token.value
-  elseif token.type == s:TOKEN_DQUOTE
+  elseif token.type ==# s:TOKEN_DQUOTE
     call self.reader.seek_set(pos)
     let node = s:Node(s:NODE_STRING)
     let node.pos = token.pos
     let node.value = '"' . self.tokenizer.get_dstring() . '"'
-  elseif token.type == s:TOKEN_SQUOTE
+  elseif token.type ==# s:TOKEN_SQUOTE
     call self.reader.seek_set(pos)
     let node = s:Node(s:NODE_STRING)
     let node.pos = token.pos
     let node.value = "'" . self.tokenizer.get_sstring() . "'"
-  elseif token.type == s:TOKEN_SQOPEN
+  elseif token.type ==# s:TOKEN_SQOPEN
     let node = s:Node(s:NODE_LIST)
     let node.pos = token.pos
     let node.value = []
     let token = self.tokenizer.peek()
-    if token.type == s:TOKEN_SQCLOSE
+    if token.type ==# s:TOKEN_SQCLOSE
       call self.tokenizer.get()
     else
       while s:TRUE
         call add(node.value, self.parse_expr1())
         let token = self.tokenizer.peek()
-        if token.type == s:TOKEN_COMMA
+        if token.type ==# s:TOKEN_COMMA
           call self.tokenizer.get()
-          if self.tokenizer.peek().type == s:TOKEN_SQCLOSE
+          if self.tokenizer.peek().type ==# s:TOKEN_SQCLOSE
             call self.tokenizer.get()
             break
           endif
-        elseif token.type == s:TOKEN_SQCLOSE
+        elseif token.type ==# s:TOKEN_SQCLOSE
           call self.tokenizer.get()
           break
         else
@@ -3532,17 +4129,17 @@ function! s:ExprParser.parse_expr9()
         endif
       endwhile
     endif
-  elseif token.type == s:TOKEN_COPEN || token.type == s:TOKEN_LITCOPEN
-    let is_litdict = token.type == s:TOKEN_LITCOPEN
+  elseif token.type ==# s:TOKEN_COPEN || token.type ==# s:TOKEN_LITCOPEN
+    let is_litdict = token.type ==# s:TOKEN_LITCOPEN
     let savepos = self.reader.tell()
     let nodepos = token.pos
     let token = self.tokenizer.get()
-    let lambda = token.type == s:TOKEN_ARROW
-    if !lambda && !(token.type == s:TOKEN_SQUOTE || token.type == s:TOKEN_DQUOTE)
+    let lambda = token.type ==# s:TOKEN_ARROW
+    if !lambda && !(token.type ==# s:TOKEN_SQUOTE || token.type ==# s:TOKEN_DQUOTE)
       " if the token type is stirng, we cannot peek next token and we can
       " assume it's not lambda.
       let token2 = self.tokenizer.peek()
-      let lambda = token2.type == s:TOKEN_ARROW || token2.type == s:TOKEN_COMMA
+      let lambda = token2.type ==# s:TOKEN_ARROW || token2.type ==# s:TOKEN_COMMA
     endif
     " fallback to dict or {expr} if true
     let fallback = s:FALSE
@@ -3553,9 +4150,9 @@ function! s:ExprParser.parse_expr9()
       let node.rlist = []
       let named = {}
       while s:TRUE
-        if token.type == s:TOKEN_ARROW
+        if token.type ==# s:TOKEN_ARROW
           break
-        elseif token.type == s:TOKEN_IDENTIFIER
+        elseif token.type ==# s:TOKEN_IDENTIFIER
           if !s:isargname(token.value)
             throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
           elseif has_key(named, token.value)
@@ -3566,30 +4163,30 @@ function! s:ExprParser.parse_expr9()
           let varnode.pos = token.pos
           let varnode.value = token.value
           " XXX: Vim doesn't skip white space before comma.  {a ,b -> ...} => E475
-          if s:iswhite(self.reader.p(0)) && self.tokenizer.peek().type == s:TOKEN_COMMA
+          if s:iswhite(self.reader.p(0)) && self.tokenizer.peek().type ==# s:TOKEN_COMMA
             throw s:Err('E475: Invalid argument: White space is not allowed before comma', self.reader.getpos())
           endif
           let token = self.tokenizer.get()
           call add(node.rlist, varnode)
-          if token.type == s:TOKEN_COMMA
+          if token.type ==# s:TOKEN_COMMA
             " XXX: Vim allows last comma.  {a, b, -> ...} => OK
             let token = self.tokenizer.peek()
-            if token.type == s:TOKEN_ARROW
+            if token.type ==# s:TOKEN_ARROW
               call self.tokenizer.get()
               break
             endif
-          elseif token.type == s:TOKEN_ARROW
+          elseif token.type ==# s:TOKEN_ARROW
             break
           else
             throw s:Err(printf('unexpected token: %s, type: %d', token.value, token.type), token.pos)
           endif
-        elseif token.type == s:TOKEN_DOTDOTDOT
+        elseif token.type ==# s:TOKEN_DOTDOTDOT
           let varnode = s:Node(s:NODE_IDENTIFIER)
           let varnode.pos = token.pos
           let varnode.value = token.value
           call add(node.rlist, varnode)
           let token = self.tokenizer.peek()
-          if token.type == s:TOKEN_ARROW
+          if token.type ==# s:TOKEN_ARROW
             call self.tokenizer.get()
             break
           else
@@ -3604,7 +4201,7 @@ function! s:ExprParser.parse_expr9()
       if !fallback
         let node.left = self.parse_expr1()
         let token = self.tokenizer.get()
-        if token.type != s:TOKEN_CCLOSE
+        if token.type !=# s:TOKEN_CCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
         return node
@@ -3616,14 +4213,14 @@ function! s:ExprParser.parse_expr9()
     let node.value = []
     call self.reader.seek_set(savepos)
     let token = self.tokenizer.peek()
-    if token.type == s:TOKEN_CCLOSE
+    if token.type ==# s:TOKEN_CCLOSE
       call self.tokenizer.get()
       return node
     endif
     while 1
-      let key = is_litdict ? self.parse_dict_literal_key() : self.parse_expr1()
+      let key = is_litdict ? self.tokenizer.parse_dict_literal_key() : self.parse_expr1()
       let token = self.tokenizer.get()
-      if token.type == s:TOKEN_CCLOSE
+      if token.type ==# s:TOKEN_CCLOSE
         if !empty(node.value)
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
@@ -3631,52 +4228,52 @@ function! s:ExprParser.parse_expr9()
         let node = self.parse_identifier()
         break
       endif
-      if token.type != s:TOKEN_COLON
+      if token.type !=# s:TOKEN_COLON
         throw s:Err(printf('unexpected token: %s', token.value), token.pos)
       endif
       let val = self.parse_expr1()
       call add(node.value, [key, val])
       let token = self.tokenizer.get()
-      if token.type == s:TOKEN_COMMA
-        if self.tokenizer.peek().type == s:TOKEN_CCLOSE
+      if token.type ==# s:TOKEN_COMMA
+        if self.tokenizer.peek().type ==# s:TOKEN_CCLOSE
           call self.tokenizer.get()
           break
         endif
-      elseif token.type == s:TOKEN_CCLOSE
+      elseif token.type ==# s:TOKEN_CCLOSE
         break
       else
         throw s:Err(printf('unexpected token: %s', token.value), token.pos)
       endif
     endwhile
     return node
-  elseif token.type == s:TOKEN_POPEN
+  elseif token.type ==# s:TOKEN_POPEN
     let node = self.parse_expr1()
     let token = self.tokenizer.get()
-    if token.type != s:TOKEN_PCLOSE
+    if token.type !=# s:TOKEN_PCLOSE
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
     endif
-  elseif token.type == s:TOKEN_OPTION
+  elseif token.type ==# s:TOKEN_OPTION
     let node = s:Node(s:NODE_OPTION)
     let node.pos = token.pos
     let node.value = token.value
-  elseif token.type == s:TOKEN_IDENTIFIER
+  elseif token.type ==# s:TOKEN_IDENTIFIER
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif s:FALSE && (token.type == s:TOKEN_COLON || token.type == s:TOKEN_SHARP)
+  elseif s:FALSE && (token.type ==# s:TOKEN_COLON || token.type ==# s:TOKEN_SHARP)
     " XXX: no parse error but invalid expression
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
+  elseif token.type ==# s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_IS || token.type == s:TOKEN_ISCS || token.type == s:TOKEN_ISNOT || token.type == s:TOKEN_ISNOTCS
+  elseif token.type ==# s:TOKEN_IS || token.type ==# s:TOKEN_ISCS || token.type ==# s:TOKEN_ISNOT || token.type ==# s:TOKEN_ISNOTCS
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_ENV
+  elseif token.type ==# s:TOKEN_ENV
     let node = s:Node(s:NODE_ENV)
     let node.pos = token.pos
     let node.value = token.value
-  elseif token.type == s:TOKEN_REG
+  elseif token.type ==# s:TOKEN_REG
     let node = s:Node(s:NODE_REG)
     let node.pos = token.pos
     let node.value = token.value
@@ -3686,18 +4283,11 @@ function! s:ExprParser.parse_expr9()
   return node
 endfunction
 
-function! s:ExprParser.parse_dict_literal_key()
-  let node = s:Node(s:NODE_STRING)
-  let node.pos = self.reader.tell()
-  let node.value = "'" . self.tokenizer.get_dict_literal_key() . "'"
-  return node
-endfunction
-
 " SUBSCRIPT or CONCAT
 "   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 "   str  "." expr6         => (concat str expr6)
-function! s:ExprParser.parse_dot(token, left)
-  if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
+function! s:ExprParser.parse_dot(token, left) abort
+  if a:left.type !=# s:NODE_IDENTIFIER && a:left.type !=# s:NODE_CURLYNAME && a:left.type !=# s:NODE_DICT && a:left.type !=# s:NODE_SUBSCRIPT && a:left.type !=# s:NODE_CALL && a:left.type !=# s:NODE_DOT
     return s:NIL
   endif
   if !s:iswordc(self.reader.p(0))
@@ -3721,8 +4311,8 @@ endfunction
 
 " CONCAT
 "   str  ".." expr6         => (concat str expr6)
-function! s:ExprParser.parse_concat(token, left)
-  if a:left.type != s:NODE_IDENTIFIER && a:left.type != s:NODE_CURLYNAME && a:left.type != s:NODE_DICT && a:left.type != s:NODE_SUBSCRIPT && a:left.type != s:NODE_CALL && a:left.type != s:NODE_DOT
+function! s:ExprParser.parse_concat(token, left) abort
+  if a:left.type !=# s:NODE_IDENTIFIER && a:left.type !=# s:NODE_CURLYNAME && a:left.type !=# s:NODE_DICT && a:left.type !=# s:NODE_SUBSCRIPT && a:left.type !=# s:NODE_CALL && a:left.type !=# s:NODE_DOT
     return s:NIL
   endif
   if !s:iswordc(self.reader.p(0))
@@ -3744,11 +4334,11 @@ function! s:ExprParser.parse_concat(token, left)
   return node
 endfunction
 
-function! s:ExprParser.parse_identifier()
+function! s:ExprParser.parse_identifier() abort
   call self.reader.skip_white()
   let npos = self.reader.getpos()
   let curly_parts = self.parse_curly_parts()
-  if len(curly_parts) == 1 && curly_parts[0].type == s:NODE_CURLYNAMEPART
+  if len(curly_parts) ==# 1 && curly_parts[0].type ==# s:NODE_CURLYNAMEPART
     let node = s:Node(s:NODE_IDENTIFIER)
     let node.pos = npos
     let node.value = curly_parts[0].value
@@ -3761,7 +4351,7 @@ function! s:ExprParser.parse_identifier()
   endif
 endfunction
 
-function! s:ExprParser.parse_curly_parts()
+function! s:ExprParser.parse_curly_parts() abort
   let curly_parts = []
   let c = self.reader.peek()
   let pos = self.reader.getpos()
@@ -3806,50 +4396,50 @@ endfunction
 
 let s:LvalueParser = copy(s:ExprParser)
 
-function! s:LvalueParser.parse()
+function! s:LvalueParser.parse() abort
   return self.parse_lv8()
 endfunction
 
 " expr8: expr8[expr1]
 "        expr8[expr1 : expr1]
 "        expr8.name
-function! s:LvalueParser.parse_lv8()
+function! s:LvalueParser.parse_lv8() abort
   let left = self.parse_lv9()
   while s:TRUE
     let pos = self.reader.tell()
     let c = self.reader.peek()
     let token = self.tokenizer.get()
-    if !s:iswhite(c) && token.type == s:TOKEN_SQOPEN
+    if !s:iswhite(c) && token.type ==# s:TOKEN_SQOPEN
       let npos = token.pos
       let node = s:Node(-1)
-      if self.tokenizer.peek().type == s:TOKEN_COLON
+      if self.tokenizer.peek().type ==# s:TOKEN_COLON
         call self.tokenizer.get()
         let node = s:Node(s:NODE_SLICE)
         let node.pos = npos
         let node.left = left
         let node.rlist = [s:NIL, s:NIL]
         let token = self.tokenizer.peek()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           let node.rlist[1] = self.parse_expr1()
         endif
         let token = self.tokenizer.get()
-        if token.type != s:TOKEN_SQCLOSE
+        if token.type !=# s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
       else
         let right = self.parse_expr1()
-        if self.tokenizer.peek().type == s:TOKEN_COLON
+        if self.tokenizer.peek().type ==# s:TOKEN_COLON
           call self.tokenizer.get()
           let node = s:Node(s:NODE_SLICE)
           let node.pos = npos
           let node.left = left
           let node.rlist = [right, s:NIL]
           let token = self.tokenizer.peek()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             let node.rlist[1] = self.parse_expr1()
           endif
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         else
@@ -3858,16 +4448,16 @@ function! s:LvalueParser.parse_lv8()
           let node.left = left
           let node.right = right
           let token = self.tokenizer.get()
-          if token.type != s:TOKEN_SQCLOSE
+          if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
         endif
       endif
       let left = node
       unlet node
-    elseif !s:iswhite(c) && token.type == s:TOKEN_DOT
+    elseif !s:iswhite(c) && token.type ==# s:TOKEN_DOT
       let node = self.parse_dot(token, left)
-      if node is s:NIL
+      if node is# s:NIL
         call self.reader.seek_set(pos)
         break
       endif
@@ -3886,28 +4476,28 @@ endfunction
 "        var{ria}ble
 "        $VAR
 "        @r
-function! s:LvalueParser.parse_lv9()
+function! s:LvalueParser.parse_lv9() abort
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   let node = s:Node(-1)
-  if token.type == s:TOKEN_COPEN
+  if token.type ==# s:TOKEN_COPEN
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_OPTION
+  elseif token.type ==# s:TOKEN_OPTION
     let node = s:Node(s:NODE_OPTION)
     let node.pos = token.pos
     let node.value = token.value
-  elseif token.type == s:TOKEN_IDENTIFIER
+  elseif token.type ==# s:TOKEN_IDENTIFIER
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
+  elseif token.type ==# s:TOKEN_LT && self.reader.peekn(4) ==? 'SID>'
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
-  elseif token.type == s:TOKEN_ENV
+  elseif token.type ==# s:TOKEN_ENV
     let node = s:Node(s:NODE_ENV)
     let node.pos = token.pos
     let node.value = token.value
-  elseif token.type == s:TOKEN_REG
+  elseif token.type ==# s:TOKEN_REG
     let node = s:Node(s:NODE_REG)
     let node.pos = token.pos
     let node.pos = token.pos
@@ -3920,13 +4510,13 @@ endfunction
 
 let s:StringReader = {}
 
-function! s:StringReader.new(...)
+function! s:StringReader.new(...) abort
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function! s:StringReader.__init__(lines)
+function! s:StringReader.__init__(lines) abort
   let self.buf = []
   let self.pos = []
   let lnum = 0
@@ -3967,41 +4557,41 @@ function! s:StringReader.__init__(lines)
   let self.i = 0
 endfunction
 
-function! s:StringReader.eof()
+function! s:StringReader.eof() abort
   return self.i >= len(self.buf)
 endfunction
 
-function! s:StringReader.tell()
+function! s:StringReader.tell() abort
   return self.i
 endfunction
 
-function! s:StringReader.seek_set(i)
+function! s:StringReader.seek_set(i) abort
   let self.i = a:i
 endfunction
 
-function! s:StringReader.seek_cur(i)
+function! s:StringReader.seek_cur(i) abort
   let self.i = self.i + a:i
 endfunction
 
-function! s:StringReader.seek_end(i)
+function! s:StringReader.seek_end(i) abort
   let self.i = len(self.buf) + a:i
 endfunction
 
-function! s:StringReader.p(i)
+function! s:StringReader.p(i) abort
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
   return self.buf[self.i + a:i]
 endfunction
 
-function! s:StringReader.peek()
+function! s:StringReader.peek() abort
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
   return self.buf[self.i]
 endfunction
 
-function! s:StringReader.get()
+function! s:StringReader.get() abort
   if self.i >= len(self.buf)
     return '<EOF>'
   endif
@@ -4009,14 +4599,14 @@ function! s:StringReader.get()
   return self.buf[self.i - 1]
 endfunction
 
-function! s:StringReader.peekn(n)
+function! s:StringReader.peekn(n) abort
   let pos = self.tell()
   let r = self.getn(a:n)
   call self.seek_set(pos)
   return r
 endfunction
 
-function! s:StringReader.getn(n)
+function! s:StringReader.getn(n) abort
   let r = ''
   let j = 0
   while self.i < len(self.buf) && (a:n < 0 || j < a:n)
@@ -4031,17 +4621,17 @@ function! s:StringReader.getn(n)
   return r
 endfunction
 
-function! s:StringReader.peekline()
+function! s:StringReader.peekline() abort
   return self.peekn(-1)
 endfunction
 
-function! s:StringReader.readline()
+function! s:StringReader.readline() abort
   let r = self.getn(-1)
   call self.get()
   return r
 endfunction
 
-function! s:StringReader.getstr(begin, end)
+function! s:StringReader.getstr(begin, end) abort
   let r = ''
   for i in range(a:begin.i, a:end.i - 1)
     if i >= len(self.buf)
@@ -4056,16 +4646,16 @@ function! s:StringReader.getstr(begin, end)
   return r
 endfunction
 
-function! s:StringReader.getpos()
+function! s:StringReader.getpos() abort
   let [lnum, col, offset] = self.pos[self.i]
   return {'i': self.i, 'lnum': lnum, 'col': col, 'offset': offset}
 endfunction
 
-function! s:StringReader.setpos(pos)
+function! s:StringReader.setpos(pos) abort
   let self.i  = a:pos.i
 endfunction
 
-function! s:StringReader.read_alpha()
+function! s:StringReader.read_alpha() abort
   let r = ''
   while s:isalpha(self.peekn(1))
     let r .= self.getn(1)
@@ -4073,7 +4663,7 @@ function! s:StringReader.read_alpha()
   return r
 endfunction
 
-function! s:StringReader.read_alnum()
+function! s:StringReader.read_alnum() abort
   let r = ''
   while s:isalnum(self.peekn(1))
     let r .= self.getn(1)
@@ -4081,7 +4671,7 @@ function! s:StringReader.read_alnum()
   return r
 endfunction
 
-function! s:StringReader.read_digit()
+function! s:StringReader.read_digit() abort
   let r = ''
   while s:isdigit(self.peekn(1))
     let r .= self.getn(1)
@@ -4089,7 +4679,7 @@ function! s:StringReader.read_digit()
   return r
 endfunction
 
-function! s:StringReader.read_odigit()
+function! s:StringReader.read_odigit() abort
   let r = ''
   while s:isodigit(self.peekn(1))
     let r .= self.getn(1)
@@ -4097,7 +4687,7 @@ function! s:StringReader.read_odigit()
   return r
 endfunction
 
-function! s:StringReader.read_blob()
+function! s:StringReader.read_blob() abort
   let r = ''
   while 1
     let s = self.peekn(2)
@@ -4114,7 +4704,7 @@ function! s:StringReader.read_blob()
   return r
 endfunction
 
-function! s:StringReader.read_xdigit()
+function! s:StringReader.read_xdigit() abort
   let r = ''
   while s:isxdigit(self.peekn(1))
     let r .= self.getn(1)
@@ -4122,7 +4712,7 @@ function! s:StringReader.read_xdigit()
   return r
 endfunction
 
-function! s:StringReader.read_bdigit()
+function! s:StringReader.read_bdigit() abort
   let r = ''
   while self.peekn(1) ==# '0' || self.peekn(1) ==# '1'
     let r .= self.getn(1)
@@ -4130,7 +4720,7 @@ function! s:StringReader.read_bdigit()
   return r
 endfunction
 
-function! s:StringReader.read_integer()
+function! s:StringReader.read_integer() abort
   let r = ''
   let c = self.peekn(1)
   if c ==# '-' || c ==# '+'
@@ -4139,7 +4729,7 @@ function! s:StringReader.read_integer()
   return r . self.read_digit()
 endfunction
 
-function! s:StringReader.read_word()
+function! s:StringReader.read_word() abort
   let r = ''
   while s:iswordc(self.peekn(1))
     let r .= self.getn(1)
@@ -4147,7 +4737,7 @@ function! s:StringReader.read_word()
   return r
 endfunction
 
-function! s:StringReader.read_white()
+function! s:StringReader.read_white() abort
   let r = ''
   while s:iswhite(self.peekn(1))
     let r .= self.getn(1)
@@ -4155,15 +4745,17 @@ function! s:StringReader.read_white()
   return r
 endfunction
 
-function! s:StringReader.read_nonwhite()
+function! s:StringReader.read_nonwhite() abort
   let r = ''
-  while !s:iswhite(self.peekn(1))
+  let ch = self.peekn(1)
+  while !s:iswhite(ch) && ch !=# ''
     let r .= self.getn(1)
+    let ch = self.peekn(1)
   endwhile
   return r
 endfunction
 
-function! s:StringReader.read_name()
+function! s:StringReader.read_name() abort
   let r = ''
   while s:isnamec(self.peekn(1))
     let r .= self.getn(1)
@@ -4171,13 +4763,13 @@ function! s:StringReader.read_name()
   return r
 endfunction
 
-function! s:StringReader.skip_white()
+function! s:StringReader.skip_white() abort
   while s:iswhite(self.peekn(1))
     call self.seek_cur(1)
   endwhile
 endfunction
 
-function! s:StringReader.skip_white_and_colon()
+function! s:StringReader.skip_white_and_colon() abort
   while s:TRUE
     let c = self.peekn(1)
     if !s:iswhite(c) && c !=# ':'
@@ -4189,19 +4781,19 @@ endfunction
 
 let s:Compiler = {}
 
-function! s:Compiler.new(...)
+function! s:Compiler.new(...) abort
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function! s:Compiler.__init__()
+function! s:Compiler.__init__() abort
   let self.indent = ['']
   let self.lines = []
 endfunction
 
-function! s:Compiler.out(...)
-  if len(a:000) == 1
+function! s:Compiler.out(...) abort
+  if len(a:000) ==# 1
     if a:000[0][0] ==# ')'
       let self.lines[-1] .= a:000[0]
     else
@@ -4212,203 +4804,209 @@ function! s:Compiler.out(...)
   endif
 endfunction
 
-function! s:Compiler.incindent(s)
+function! s:Compiler.incindent(s) abort
   call insert(self.indent, self.indent[0] . a:s)
 endfunction
 
-function! s:Compiler.decindent()
+function! s:Compiler.decindent() abort
   call remove(self.indent, 0)
 endfunction
 
-function! s:Compiler.compile(node)
-  if a:node.type == s:NODE_TOPLEVEL
+function! s:Compiler.compile(node) abort
+  if a:node.type ==# s:NODE_TOPLEVEL
     return self.compile_toplevel(a:node)
-  elseif a:node.type == s:NODE_COMMENT
+  elseif a:node.type ==# s:NODE_COMMENT
     call self.compile_comment(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_EXCMD
+  elseif a:node.type ==# s:NODE_EXCMD
     call self.compile_excmd(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_FUNCTION
+  elseif a:node.type ==# s:NODE_FUNCTION
     call self.compile_function(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_DELFUNCTION
+  elseif a:node.type ==# s:NODE_DELFUNCTION
     call self.compile_delfunction(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_RETURN
+  elseif a:node.type ==# s:NODE_RETURN
     call self.compile_return(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_EXCALL
+  elseif a:node.type ==# s:NODE_EXCALL
     call self.compile_excall(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_LET
+  elseif a:node.type ==# s:NODE_EVAL
+    call self.compile_eval(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_LET
     call self.compile_let(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_UNLET
+  elseif a:node.type ==# s:NODE_CONST
+    call self.compile_const(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_UNLET
     call self.compile_unlet(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_LOCKVAR
+  elseif a:node.type ==# s:NODE_LOCKVAR
     call self.compile_lockvar(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_UNLOCKVAR
+  elseif a:node.type ==# s:NODE_UNLOCKVAR
     call self.compile_unlockvar(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_IF
+  elseif a:node.type ==# s:NODE_IF
     call self.compile_if(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_WHILE
+  elseif a:node.type ==# s:NODE_WHILE
     call self.compile_while(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_FOR
+  elseif a:node.type ==# s:NODE_FOR
     call self.compile_for(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_CONTINUE
+  elseif a:node.type ==# s:NODE_CONTINUE
     call self.compile_continue(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_BREAK
+  elseif a:node.type ==# s:NODE_BREAK
     call self.compile_break(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_TRY
+  elseif a:node.type ==# s:NODE_TRY
     call self.compile_try(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_THROW
+  elseif a:node.type ==# s:NODE_THROW
     call self.compile_throw(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_ECHO
+  elseif a:node.type ==# s:NODE_ECHO
     call self.compile_echo(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_ECHON
+  elseif a:node.type ==# s:NODE_ECHON
     call self.compile_echon(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_ECHOHL
+  elseif a:node.type ==# s:NODE_ECHOHL
     call self.compile_echohl(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_ECHOMSG
+  elseif a:node.type ==# s:NODE_ECHOMSG
     call self.compile_echomsg(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_ECHOERR
+  elseif a:node.type ==# s:NODE_ECHOERR
     call self.compile_echoerr(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_EXECUTE
+  elseif a:node.type ==# s:NODE_EXECUTE
     call self.compile_execute(a:node)
     return s:NIL
-  elseif a:node.type == s:NODE_TERNARY
+  elseif a:node.type ==# s:NODE_TERNARY
     return self.compile_ternary(a:node)
-  elseif a:node.type == s:NODE_OR
+  elseif a:node.type ==# s:NODE_OR
     return self.compile_or(a:node)
-  elseif a:node.type == s:NODE_AND
+  elseif a:node.type ==# s:NODE_AND
     return self.compile_and(a:node)
-  elseif a:node.type == s:NODE_EQUAL
+  elseif a:node.type ==# s:NODE_EQUAL
     return self.compile_equal(a:node)
-  elseif a:node.type == s:NODE_EQUALCI
+  elseif a:node.type ==# s:NODE_EQUALCI
     return self.compile_equalci(a:node)
-  elseif a:node.type == s:NODE_EQUALCS
+  elseif a:node.type ==# s:NODE_EQUALCS
     return self.compile_equalcs(a:node)
-  elseif a:node.type == s:NODE_NEQUAL
+  elseif a:node.type ==# s:NODE_NEQUAL
     return self.compile_nequal(a:node)
-  elseif a:node.type == s:NODE_NEQUALCI
+  elseif a:node.type ==# s:NODE_NEQUALCI
     return self.compile_nequalci(a:node)
-  elseif a:node.type == s:NODE_NEQUALCS
+  elseif a:node.type ==# s:NODE_NEQUALCS
     return self.compile_nequalcs(a:node)
-  elseif a:node.type == s:NODE_GREATER
+  elseif a:node.type ==# s:NODE_GREATER
     return self.compile_greater(a:node)
-  elseif a:node.type == s:NODE_GREATERCI
+  elseif a:node.type ==# s:NODE_GREATERCI
     return self.compile_greaterci(a:node)
-  elseif a:node.type == s:NODE_GREATERCS
+  elseif a:node.type ==# s:NODE_GREATERCS
     return self.compile_greatercs(a:node)
-  elseif a:node.type == s:NODE_GEQUAL
+  elseif a:node.type ==# s:NODE_GEQUAL
     return self.compile_gequal(a:node)
-  elseif a:node.type == s:NODE_GEQUALCI
+  elseif a:node.type ==# s:NODE_GEQUALCI
     return self.compile_gequalci(a:node)
-  elseif a:node.type == s:NODE_GEQUALCS
+  elseif a:node.type ==# s:NODE_GEQUALCS
     return self.compile_gequalcs(a:node)
-  elseif a:node.type == s:NODE_SMALLER
+  elseif a:node.type ==# s:NODE_SMALLER
     return self.compile_smaller(a:node)
-  elseif a:node.type == s:NODE_SMALLERCI
+  elseif a:node.type ==# s:NODE_SMALLERCI
     return self.compile_smallerci(a:node)
-  elseif a:node.type == s:NODE_SMALLERCS
+  elseif a:node.type ==# s:NODE_SMALLERCS
     return self.compile_smallercs(a:node)
-  elseif a:node.type == s:NODE_SEQUAL
+  elseif a:node.type ==# s:NODE_SEQUAL
     return self.compile_sequal(a:node)
-  elseif a:node.type == s:NODE_SEQUALCI
+  elseif a:node.type ==# s:NODE_SEQUALCI
     return self.compile_sequalci(a:node)
-  elseif a:node.type == s:NODE_SEQUALCS
+  elseif a:node.type ==# s:NODE_SEQUALCS
     return self.compile_sequalcs(a:node)
-  elseif a:node.type == s:NODE_MATCH
+  elseif a:node.type ==# s:NODE_MATCH
     return self.compile_match(a:node)
-  elseif a:node.type == s:NODE_MATCHCI
+  elseif a:node.type ==# s:NODE_MATCHCI
     return self.compile_matchci(a:node)
-  elseif a:node.type == s:NODE_MATCHCS
+  elseif a:node.type ==# s:NODE_MATCHCS
     return self.compile_matchcs(a:node)
-  elseif a:node.type == s:NODE_NOMATCH
+  elseif a:node.type ==# s:NODE_NOMATCH
     return self.compile_nomatch(a:node)
-  elseif a:node.type == s:NODE_NOMATCHCI
+  elseif a:node.type ==# s:NODE_NOMATCHCI
     return self.compile_nomatchci(a:node)
-  elseif a:node.type == s:NODE_NOMATCHCS
+  elseif a:node.type ==# s:NODE_NOMATCHCS
     return self.compile_nomatchcs(a:node)
-  elseif a:node.type == s:NODE_IS
+  elseif a:node.type ==# s:NODE_IS
     return self.compile_is(a:node)
-  elseif a:node.type == s:NODE_ISCI
+  elseif a:node.type ==# s:NODE_ISCI
     return self.compile_isci(a:node)
-  elseif a:node.type == s:NODE_ISCS
+  elseif a:node.type ==# s:NODE_ISCS
     return self.compile_iscs(a:node)
-  elseif a:node.type == s:NODE_ISNOT
+  elseif a:node.type ==# s:NODE_ISNOT
     return self.compile_isnot(a:node)
-  elseif a:node.type == s:NODE_ISNOTCI
+  elseif a:node.type ==# s:NODE_ISNOTCI
     return self.compile_isnotci(a:node)
-  elseif a:node.type == s:NODE_ISNOTCS
+  elseif a:node.type ==# s:NODE_ISNOTCS
     return self.compile_isnotcs(a:node)
-  elseif a:node.type == s:NODE_ADD
+  elseif a:node.type ==# s:NODE_ADD
     return self.compile_add(a:node)
-  elseif a:node.type == s:NODE_SUBTRACT
+  elseif a:node.type ==# s:NODE_SUBTRACT
     return self.compile_subtract(a:node)
-  elseif a:node.type == s:NODE_CONCAT
+  elseif a:node.type ==# s:NODE_CONCAT
     return self.compile_concat(a:node)
-  elseif a:node.type == s:NODE_MULTIPLY
+  elseif a:node.type ==# s:NODE_MULTIPLY
     return self.compile_multiply(a:node)
-  elseif a:node.type == s:NODE_DIVIDE
+  elseif a:node.type ==# s:NODE_DIVIDE
     return self.compile_divide(a:node)
-  elseif a:node.type == s:NODE_REMAINDER
+  elseif a:node.type ==# s:NODE_REMAINDER
     return self.compile_remainder(a:node)
-  elseif a:node.type == s:NODE_NOT
+  elseif a:node.type ==# s:NODE_NOT
     return self.compile_not(a:node)
-  elseif a:node.type == s:NODE_PLUS
+  elseif a:node.type ==# s:NODE_PLUS
     return self.compile_plus(a:node)
-  elseif a:node.type == s:NODE_MINUS
+  elseif a:node.type ==# s:NODE_MINUS
     return self.compile_minus(a:node)
-  elseif a:node.type == s:NODE_SUBSCRIPT
+  elseif a:node.type ==# s:NODE_SUBSCRIPT
     return self.compile_subscript(a:node)
-  elseif a:node.type == s:NODE_SLICE
+  elseif a:node.type ==# s:NODE_SLICE
     return self.compile_slice(a:node)
-  elseif a:node.type == s:NODE_DOT
+  elseif a:node.type ==# s:NODE_DOT
     return self.compile_dot(a:node)
-  elseif a:node.type == s:NODE_CALL
+  elseif a:node.type ==# s:NODE_CALL
     return self.compile_call(a:node)
-  elseif a:node.type == s:NODE_NUMBER
+  elseif a:node.type ==# s:NODE_NUMBER
     return self.compile_number(a:node)
-  elseif a:node.type == s:NODE_BLOB
+  elseif a:node.type ==# s:NODE_BLOB
     return self.compile_blob(a:node)
-  elseif a:node.type == s:NODE_STRING
+  elseif a:node.type ==# s:NODE_STRING
     return self.compile_string(a:node)
-  elseif a:node.type == s:NODE_LIST
+  elseif a:node.type ==# s:NODE_LIST
     return self.compile_list(a:node)
-  elseif a:node.type == s:NODE_DICT
+  elseif a:node.type ==# s:NODE_DICT
     return self.compile_dict(a:node)
-  elseif a:node.type == s:NODE_OPTION
+  elseif a:node.type ==# s:NODE_OPTION
     return self.compile_option(a:node)
-  elseif a:node.type == s:NODE_IDENTIFIER
+  elseif a:node.type ==# s:NODE_IDENTIFIER
     return self.compile_identifier(a:node)
-  elseif a:node.type == s:NODE_CURLYNAME
+  elseif a:node.type ==# s:NODE_CURLYNAME
     return self.compile_curlyname(a:node)
-  elseif a:node.type == s:NODE_ENV
+  elseif a:node.type ==# s:NODE_ENV
     return self.compile_env(a:node)
-  elseif a:node.type == s:NODE_REG
+  elseif a:node.type ==# s:NODE_REG
     return self.compile_reg(a:node)
-  elseif a:node.type == s:NODE_CURLYNAMEPART
+  elseif a:node.type ==# s:NODE_CURLYNAMEPART
     return self.compile_curlynamepart(a:node)
-  elseif a:node.type == s:NODE_CURLYNAMEEXPR
+  elseif a:node.type ==# s:NODE_CURLYNAMEEXPR
     return self.compile_curlynameexpr(a:node)
-  elseif a:node.type == s:NODE_LAMBDA
+  elseif a:node.type ==# s:NODE_LAMBDA
     return self.compile_lambda(a:node)
   elseif a:node.type == s:NODE_HEREDOC
     return self.compile_heredoc(a:node)
@@ -4418,65 +5016,80 @@ function! s:Compiler.compile(node)
   return s:NIL
 endfunction
 
-function! s:Compiler.compile_body(body)
+function! s:Compiler.compile_body(body) abort
   for node in a:body
     call self.compile(node)
   endfor
 endfunction
 
-function! s:Compiler.compile_toplevel(node)
+function! s:Compiler.compile_toplevel(node) abort
   call self.compile_body(a:node.body)
   return self.lines
 endfunction
 
-function! s:Compiler.compile_comment(node)
+function! s:Compiler.compile_comment(node) abort
   call self.out(';%s', a:node.str)
 endfunction
 
-function! s:Compiler.compile_excmd(node)
+function! s:Compiler.compile_excmd(node) abort
   call self.out('(excmd "%s")', escape(a:node.str, '\"'))
 endfunction
 
-function! s:Compiler.compile_function(node)
+function! s:Compiler.compile_function(node) abort
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
-  if !empty(rlist) && rlist[-1] ==# '...'
-    let rlist[-1] = '. ...'
+  let default_args = map(a:node.default_args, 'self.compile(v:val)')
+  if !empty(rlist)
+    let remaining = s:FALSE
+    if rlist[-1] ==# '...'
+      call remove(rlist, -1)
+      let remaining = s:TRUE
+    endif
+    for i in range(len(rlist))
+      if i < len(rlist) - len(default_args)
+        let left .= printf(' %s', rlist[i])
+      else
+        let left .= printf(' (%s %s)', rlist[i], default_args[i + len(default_args) - len(rlist)])
+      endif
+    endfor
+    if remaining
+      let left .= ' . ...'
+    endif
   endif
-  if empty(rlist)
-    call self.out('(function (%s)', left)
-  else
-    call self.out('(function (%s %s)', left, join(rlist, ' '))
-  endif
+  call self.out('(function (%s)', left)
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   call self.out(')')
   call self.decindent()
 endfunction
 
-function! s:Compiler.compile_delfunction(node)
+function! s:Compiler.compile_delfunction(node) abort
   call self.out('(delfunction %s)', self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_return(node)
-  if a:node.left is s:NIL
+function! s:Compiler.compile_return(node) abort
+  if a:node.left is# s:NIL
     call self.out('(return)')
   else
     call self.out('(return %s)', self.compile(a:node.left))
   endif
 endfunction
 
-function! s:Compiler.compile_excall(node)
+function! s:Compiler.compile_excall(node) abort
   call self.out('(call %s)', self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_let(node)
+function! s:Compiler.compile_eval(node) abort
+  call self.out('(eval %s)', self.compile(a:node.left))
+endfunction
+
+function! s:Compiler.compile_let(node) abort
   let left = ''
-  if a:node.left isnot s:NIL
+  if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
   else
     let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot s:NIL
+    if a:node.rest isnot# s:NIL
       let left .= ' . ' . self.compile(a:node.rest)
     endif
     let left = '(' . left . ')'
@@ -4485,30 +5098,46 @@ function! s:Compiler.compile_let(node)
   call self.out('(let %s %s %s)', a:node.op, left, right)
 endfunction
 
-function! s:Compiler.compile_unlet(node)
+" TODO: merge with s:Compiler.compile_let() ?
+function! s:Compiler.compile_const(node) abort
+  let left = ''
+  if a:node.left isnot# s:NIL
+    let left = self.compile(a:node.left)
+  else
+    let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
+    if a:node.rest isnot# s:NIL
+      let left .= ' . ' . self.compile(a:node.rest)
+    endif
+    let left = '(' . left . ')'
+  endif
+  let right = self.compile(a:node.right)
+  call self.out('(const %s %s %s)', a:node.op, left, right)
+endfunction
+
+function! s:Compiler.compile_unlet(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(unlet %s)', join(list, ' '))
 endfunction
 
-function! s:Compiler.compile_lockvar(node)
+function! s:Compiler.compile_lockvar(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
-  if a:node.depth is s:NIL
+  if a:node.depth is# s:NIL
     call self.out('(lockvar %s)', join(list, ' '))
   else
     call self.out('(lockvar %s %s)', a:node.depth, join(list, ' '))
   endif
 endfunction
 
-function! s:Compiler.compile_unlockvar(node)
+function! s:Compiler.compile_unlockvar(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
-  if a:node.depth is s:NIL
+  if a:node.depth is# s:NIL
     call self.out('(unlockvar %s)', join(list, ' '))
   else
     call self.out('(unlockvar %s %s)', a:node.depth, join(list, ' '))
   endif
 endfunction
 
-function! s:Compiler.compile_if(node)
+function! s:Compiler.compile_if(node) abort
   call self.out('(if %s', self.compile(a:node.cond))
   call self.incindent('  ')
   call self.compile_body(a:node.body)
@@ -4519,7 +5148,7 @@ function! s:Compiler.compile_if(node)
     call self.compile_body(enode.body)
     call self.decindent()
   endfor
-  if a:node.else isnot s:NIL
+  if a:node.else isnot# s:NIL
     call self.out(' else')
     call self.incindent('  ')
     call self.compile_body(a:node.else.body)
@@ -4530,7 +5159,7 @@ function! s:Compiler.compile_if(node)
   call self.decindent()
 endfunction
 
-function! s:Compiler.compile_while(node)
+function! s:Compiler.compile_while(node) abort
   call self.out('(while %s', self.compile(a:node.cond))
   call self.incindent('  ')
   call self.compile_body(a:node.body)
@@ -4538,13 +5167,13 @@ function! s:Compiler.compile_while(node)
   call self.decindent()
 endfunction
 
-function! s:Compiler.compile_for(node)
+function! s:Compiler.compile_for(node) abort
   let left = ''
-  if a:node.left isnot s:NIL
+  if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
   else
     let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot s:NIL
+    if a:node.rest isnot# s:NIL
       let left .= ' . ' . self.compile(a:node.rest)
     endif
     let left = '(' . left . ')'
@@ -4557,20 +5186,20 @@ function! s:Compiler.compile_for(node)
   call self.decindent()
 endfunction
 
-function! s:Compiler.compile_continue(node)
+function! s:Compiler.compile_continue(node) abort
   call self.out('(continue)')
 endfunction
 
-function! s:Compiler.compile_break(node)
+function! s:Compiler.compile_break(node) abort
   call self.out('(break)')
 endfunction
 
-function! s:Compiler.compile_try(node)
+function! s:Compiler.compile_try(node) abort
   call self.out('(try')
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   for cnode in a:node.catch
-    if cnode.pattern isnot s:NIL
+    if cnode.pattern isnot# s:NIL
       call self.decindent()
       call self.out(' catch /%s/', cnode.pattern)
       call self.incindent('  ')
@@ -4582,7 +5211,7 @@ function! s:Compiler.compile_try(node)
       call self.compile_body(cnode.body)
     endif
   endfor
-  if a:node.finally isnot s:NIL
+  if a:node.finally isnot# s:NIL
     call self.decindent()
     call self.out(' finally')
     call self.incindent('  ')
@@ -4592,222 +5221,222 @@ function! s:Compiler.compile_try(node)
   call self.decindent()
 endfunction
 
-function! s:Compiler.compile_throw(node)
+function! s:Compiler.compile_throw(node) abort
   call self.out('(throw %s)', self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_echo(node)
+function! s:Compiler.compile_echo(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echo %s)', join(list, ' '))
 endfunction
 
-function! s:Compiler.compile_echon(node)
+function! s:Compiler.compile_echon(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echon %s)', join(list, ' '))
 endfunction
 
-function! s:Compiler.compile_echohl(node)
+function! s:Compiler.compile_echohl(node) abort
   call self.out('(echohl "%s")', escape(a:node.str, '\"'))
 endfunction
 
-function! s:Compiler.compile_echomsg(node)
+function! s:Compiler.compile_echomsg(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echomsg %s)', join(list, ' '))
 endfunction
 
-function! s:Compiler.compile_echoerr(node)
+function! s:Compiler.compile_echoerr(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echoerr %s)', join(list, ' '))
 endfunction
 
-function! s:Compiler.compile_execute(node)
+function! s:Compiler.compile_execute(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(execute %s)', join(list, ' '))
 endfunction
 
-function! s:Compiler.compile_ternary(node)
+function! s:Compiler.compile_ternary(node) abort
   return printf('(?: %s %s %s)', self.compile(a:node.cond), self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_or(node)
+function! s:Compiler.compile_or(node) abort
   return printf('(|| %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_and(node)
+function! s:Compiler.compile_and(node) abort
   return printf('(&& %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_equal(node)
+function! s:Compiler.compile_equal(node) abort
   return printf('(== %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_equalci(node)
+function! s:Compiler.compile_equalci(node) abort
   return printf('(==? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_equalcs(node)
+function! s:Compiler.compile_equalcs(node) abort
   return printf('(==# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_nequal(node)
+function! s:Compiler.compile_nequal(node) abort
   return printf('(!= %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_nequalci(node)
+function! s:Compiler.compile_nequalci(node) abort
   return printf('(!=? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_nequalcs(node)
+function! s:Compiler.compile_nequalcs(node) abort
   return printf('(!=# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_greater(node)
+function! s:Compiler.compile_greater(node) abort
   return printf('(> %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_greaterci(node)
+function! s:Compiler.compile_greaterci(node) abort
   return printf('(>? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_greatercs(node)
+function! s:Compiler.compile_greatercs(node) abort
   return printf('(># %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_gequal(node)
+function! s:Compiler.compile_gequal(node) abort
   return printf('(>= %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_gequalci(node)
+function! s:Compiler.compile_gequalci(node) abort
   return printf('(>=? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_gequalcs(node)
+function! s:Compiler.compile_gequalcs(node) abort
   return printf('(>=# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_smaller(node)
+function! s:Compiler.compile_smaller(node) abort
   return printf('(< %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_smallerci(node)
+function! s:Compiler.compile_smallerci(node) abort
   return printf('(<? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_smallercs(node)
+function! s:Compiler.compile_smallercs(node) abort
   return printf('(<# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_sequal(node)
+function! s:Compiler.compile_sequal(node) abort
   return printf('(<= %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_sequalci(node)
+function! s:Compiler.compile_sequalci(node) abort
   return printf('(<=? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_sequalcs(node)
+function! s:Compiler.compile_sequalcs(node) abort
   return printf('(<=# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_match(node)
+function! s:Compiler.compile_match(node) abort
   return printf('(=~ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_matchci(node)
+function! s:Compiler.compile_matchci(node) abort
   return printf('(=~? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_matchcs(node)
+function! s:Compiler.compile_matchcs(node) abort
   return printf('(=~# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_nomatch(node)
+function! s:Compiler.compile_nomatch(node) abort
   return printf('(!~ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_nomatchci(node)
+function! s:Compiler.compile_nomatchci(node) abort
   return printf('(!~? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_nomatchcs(node)
+function! s:Compiler.compile_nomatchcs(node) abort
   return printf('(!~# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_is(node)
+function! s:Compiler.compile_is(node) abort
   return printf('(is %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_isci(node)
+function! s:Compiler.compile_isci(node) abort
   return printf('(is? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_iscs(node)
+function! s:Compiler.compile_iscs(node) abort
   return printf('(is# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_isnot(node)
+function! s:Compiler.compile_isnot(node) abort
   return printf('(isnot %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_isnotci(node)
+function! s:Compiler.compile_isnotci(node) abort
   return printf('(isnot? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_isnotcs(node)
+function! s:Compiler.compile_isnotcs(node) abort
   return printf('(isnot# %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_add(node)
+function! s:Compiler.compile_add(node) abort
   return printf('(+ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_subtract(node)
+function! s:Compiler.compile_subtract(node) abort
   return printf('(- %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_concat(node)
+function! s:Compiler.compile_concat(node) abort
   return printf('(concat %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_multiply(node)
+function! s:Compiler.compile_multiply(node) abort
   return printf('(* %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_divide(node)
+function! s:Compiler.compile_divide(node) abort
   return printf('(/ %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_remainder(node)
+function! s:Compiler.compile_remainder(node) abort
   return printf('(%% %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_not(node)
+function! s:Compiler.compile_not(node) abort
   return printf('(! %s)', self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_plus(node)
+function! s:Compiler.compile_plus(node) abort
   return printf('(+ %s)', self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_minus(node)
+function! s:Compiler.compile_minus(node) abort
   return printf('(- %s)', self.compile(a:node.left))
 endfunction
 
-function! s:Compiler.compile_subscript(node)
+function! s:Compiler.compile_subscript(node) abort
   return printf('(subscript %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_slice(node)
-  let r0 = a:node.rlist[0] is s:NIL ? 'nil' : self.compile(a:node.rlist[0])
-  let r1 = a:node.rlist[1] is s:NIL ? 'nil' : self.compile(a:node.rlist[1])
+function! s:Compiler.compile_slice(node) abort
+  let r0 = a:node.rlist[0] is# s:NIL ? 'nil' : self.compile(a:node.rlist[0])
+  let r1 = a:node.rlist[1] is# s:NIL ? 'nil' : self.compile(a:node.rlist[1])
   return printf('(slice %s %s %s)', self.compile(a:node.left), r0, r1)
 endfunction
 
-function! s:Compiler.compile_dot(node)
+function! s:Compiler.compile_dot(node) abort
   return printf('(dot %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
-function! s:Compiler.compile_call(node)
+function! s:Compiler.compile_call(node) abort
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   if empty(rlist)
     return printf('(%s)', self.compile(a:node.left))
@@ -4816,19 +5445,19 @@ function! s:Compiler.compile_call(node)
   endif
 endfunction
 
-function! s:Compiler.compile_number(node)
+function! s:Compiler.compile_number(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_blob(node)
+function! s:Compiler.compile_blob(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_string(node)
+function! s:Compiler.compile_string(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_list(node)
+function! s:Compiler.compile_list(node) abort
   let value = map(a:node.value, 'self.compile(v:val)')
   if empty(value)
     return '(list)'
@@ -4837,7 +5466,7 @@ function! s:Compiler.compile_list(node)
   endif
 endfunction
 
-function! s:Compiler.compile_dict(node)
+function! s:Compiler.compile_dict(node) abort
   let value = map(a:node.value, '"(" . self.compile(v:val[0]) . " " . self.compile(v:val[1]) . ")"')
   if empty(value)
     return '(dict)'
@@ -4846,35 +5475,35 @@ function! s:Compiler.compile_dict(node)
   endif
 endfunction
 
-function! s:Compiler.compile_option(node)
+function! s:Compiler.compile_option(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_identifier(node)
+function! s:Compiler.compile_identifier(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_curlyname(node)
+function! s:Compiler.compile_curlyname(node) abort
   return join(map(a:node.value, 'self.compile(v:val)'), '')
 endfunction
 
-function! s:Compiler.compile_env(node)
+function! s:Compiler.compile_env(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_reg(node)
+function! s:Compiler.compile_reg(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_curlynamepart(node)
+function! s:Compiler.compile_curlynamepart(node) abort
   return a:node.value
 endfunction
 
-function! s:Compiler.compile_curlynameexpr(node)
+function! s:Compiler.compile_curlynameexpr(node) abort
   return '{' . self.compile(a:node.value) . '}'
 endfunction
 
-function! s:Compiler.escape_string(str)
+function! s:Compiler.escape_string(str) abort
   let m = {"\n": '\n', "\t": '\t', "\r": '\r'}
   let out = '"'
   for i in range(len(a:str))
@@ -4889,7 +5518,7 @@ function! s:Compiler.escape_string(str)
   return out
 endfunction
 
-function! s:Compiler.compile_lambda(node)
+function! s:Compiler.compile_lambda(node) abort
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
 endfunction
@@ -4917,24 +5546,24 @@ let s:RegexpParser.RE_NOMAGIC = 2
 let s:RegexpParser.RE_MAGIC = 3
 let s:RegexpParser.RE_VERY_MAGIC = 4
 
-function! s:RegexpParser.new(...)
+function! s:RegexpParser.new(...) abort
   let obj = copy(self)
   call call(obj.__init__, a:000, obj)
   return obj
 endfunction
 
-function! s:RegexpParser.__init__(reader, cmd, delim)
+function! s:RegexpParser.__init__(reader, cmd, delim) abort
   let self.reader = a:reader
   let self.cmd = a:cmd
   let self.delim = a:delim
   let self.reg_magic = self.RE_MAGIC
 endfunction
 
-function! s:RegexpParser.isend(c)
+function! s:RegexpParser.isend(c) abort
   return a:c ==# '<EOF>' || a:c ==# '<EOL>' || a:c ==# self.delim
 endfunction
 
-function! s:RegexpParser.parse_regexp()
+function! s:RegexpParser.parse_regexp() abort
   let prevtoken = ''
   let ntoken = ''
   let ret = []
@@ -4964,13 +5593,13 @@ function! s:RegexpParser.parse_regexp()
       endif
     elseif ntoken ==# '\^'
       " '^' is only magic as the very first character.
-      if self.reg_magic != self.RE_VERY_MAGIC && prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
+      if self.reg_magic !=# self.RE_VERY_MAGIC && prevtoken !=# '' && prevtoken !=# '\&' && prevtoken !=# '\|' && prevtoken !=# '\n' && prevtoken !=# '\(' && prevtoken !=# '\%('
         let ntoken = '^'
       endif
     elseif ntoken ==# '\$'
       " '$' is only magic as the very last character
       let pos = self.reader.tell()
-      if self.reg_magic != self.RE_VERY_MAGIC
+      if self.reg_magic !=# self.RE_VERY_MAGIC
         while !self.isend(self.reader.peek())
           let [t, n] = self.get_token()
           " XXX: Vim doesn't check \v and \V?
@@ -4996,19 +5625,19 @@ function! s:RegexpParser.parse_regexp()
 endfunction
 
 " @return [actual_token, normalized_token]
-function! s:RegexpParser.get_token()
-  if self.reg_magic == self.RE_VERY_MAGIC
+function! s:RegexpParser.get_token() abort
+  if self.reg_magic ==# self.RE_VERY_MAGIC
     return self.get_token_very_magic()
-  elseif self.reg_magic == self.RE_MAGIC
+  elseif self.reg_magic ==# self.RE_MAGIC
     return self.get_token_magic()
-  elseif self.reg_magic == self.RE_NOMAGIC
+  elseif self.reg_magic ==# self.RE_NOMAGIC
     return self.get_token_nomagic()
-  elseif self.reg_magic == self.RE_VERY_NOMAGIC
+  elseif self.reg_magic ==# self.RE_VERY_NOMAGIC
     return self.get_token_very_nomagic()
   endif
 endfunction
 
-function! s:RegexpParser.get_token_very_magic()
+function! s:RegexpParser.get_token_very_magic() abort
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -5055,7 +5684,7 @@ function! s:RegexpParser.get_token_very_magic()
   return [c, c]
 endfunction
 
-function! s:RegexpParser.get_token_magic()
+function! s:RegexpParser.get_token_magic() abort
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -5106,7 +5735,7 @@ function! s:RegexpParser.get_token_magic()
   return [c, c]
 endfunction
 
-function! s:RegexpParser.get_token_nomagic()
+function! s:RegexpParser.get_token_nomagic() abort
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -5157,7 +5786,7 @@ function! s:RegexpParser.get_token_nomagic()
   return [c, c]
 endfunction
 
-function! s:RegexpParser.get_token_very_nomagic()
+function! s:RegexpParser.get_token_very_nomagic() abort
   if self.isend(self.reader.peek())
     return ['<END>', '<END>']
   endif
@@ -5206,17 +5835,17 @@ function! s:RegexpParser.get_token_very_nomagic()
   return [c, c]
 endfunction
 
-function! s:RegexpParser.get_token_backslash_common()
+function! s:RegexpParser.get_token_backslash_common() abort
   let cclass = 'iIkKfFpPsSdDxXoOwWhHaAlLuU'
   let c = self.reader.get()
   if c ==# '\'
     return ['\\', '\\']
-  elseif stridx(cclass, c) != -1
+  elseif stridx(cclass, c) !=# -1
     return ['\' . c, '\' . c]
   elseif c ==# '_'
     let epos = self.reader.getpos()
     let c = self.reader.get()
-    if stridx(cclass, c) != -1
+    if stridx(cclass, c) !=# -1
       return ['\_' . c, '\_ . c']
     elseif c ==# '^'
       return ['\_^', '\_^']
@@ -5228,14 +5857,14 @@ function! s:RegexpParser.get_token_backslash_common()
       return self.get_token_sq('\_[')
     endif
     throw s:Err('E63: invalid use of \_', epos)
-  elseif stridx('etrb', c) != -1
+  elseif stridx('etrb', c) !=# -1
     return ['\' . c, '\' . c]
-  elseif stridx('123456789', c) != -1
+  elseif stridx('123456789', c) !=# -1
     return ['\' . c, '\' . c]
   elseif c ==# 'z'
     let epos = self.reader.getpos()
     let c = self.reader.get()
-    if stridx('123456789', c) != -1
+    if stridx('123456789', c) !=# -1
       return ['\z' . c, '\z' . c]
     elseif c ==# 's'
       return ['\zs', '\zs']
@@ -5245,7 +5874,7 @@ function! s:RegexpParser.get_token_backslash_common()
       return ['\z(', '\z(']
     endif
     throw s:Err('E68: Invalid character after \z', epos)
-  elseif stridx('cCmMvVZ', c) != -1
+  elseif stridx('cCmMvVZ', c) !=# -1
     return ['\' . c, '\' . c]
   elseif c ==# '%'
     let epos = self.reader.getpos()
@@ -5282,7 +5911,7 @@ function! s:RegexpParser.get_token_backslash_common()
 endfunction
 
 " \{}
-function! s:RegexpParser.get_token_brace(pre)
+function! s:RegexpParser.get_token_brace(pre) abort
   let r = ''
   let minus = ''
   let comma = ''
@@ -5315,7 +5944,7 @@ function! s:RegexpParser.get_token_brace(pre)
 endfunction
 
 " \[]
-function! s:RegexpParser.get_token_sq(pre)
+function! s:RegexpParser.get_token_sq(pre) abort
   let start = self.reader.tell()
   let r = ''
   " Complement of range
@@ -5352,7 +5981,7 @@ function! s:RegexpParser.get_token_sq(pre)
       let [e, startc] = self.get_token_sq_c()
       let r .= e
     endif
-    if startc != 0 && self.reader.p(0) ==# '-' && !self.isend(self.reader.p(1)) && !(self.reader.p(1) ==# '\' && self.reader.p(2) ==# 'n')
+    if startc !=# 0 && self.reader.p(0) ==# '-' && !self.isend(self.reader.p(1)) && !(self.reader.p(1) ==# '\' && self.reader.p(2) ==# 'n')
       call self.reader.seek_cur(1)
       let r .= '-'
       let c = self.reader.p(0)
@@ -5376,7 +6005,7 @@ function! s:RegexpParser.get_token_sq(pre)
 endfunction
 
 " [c]
-function! s:RegexpParser.get_token_sq_c()
+function! s:RegexpParser.get_token_sq_c() abort
   let c = self.reader.p(0)
   if c ==# '\'
     call self.reader.seek_cur(1)
@@ -5386,20 +6015,20 @@ function! s:RegexpParser.get_token_sq_c()
       return ['\n', 0]
     elseif c ==# 'r'
       call self.reader.seek_cur(1)
-      return ['\r', char2nr("\r")]
+      return ['\r', 13]
     elseif c ==# 't'
       call self.reader.seek_cur(1)
-      return ['\t', char2nr("\t")]
+      return ['\t', 9]
     elseif c ==# 'e'
       call self.reader.seek_cur(1)
-      return ['\e', char2nr("\e")]
+      return ['\e', 27]
     elseif c ==# 'b'
       call self.reader.seek_cur(1)
-      return ['\b', char2nr("\b")]
-    elseif stridx(']^-\', c) != -1
+      return ['\b', 8]
+    elseif stridx(']^-\', c) !=# -1
       call self.reader.seek_cur(1)
       return ['\' . c, char2nr(c)]
-    elseif stridx('doxuU', c) != -1
+    elseif stridx('doxuU', c) !=# -1
       let [c, n] = self.get_token_sq_coll_char()
       return [c, n]
     else
@@ -5415,7 +6044,7 @@ function! s:RegexpParser.get_token_sq_c()
 endfunction
 
 " [\d123]
-function! s:RegexpParser.get_token_sq_coll_char()
+function! s:RegexpParser.get_token_sq_coll_char() abort
   let pos = self.reader.tell()
   let c = self.reader.get()
   if c ==# 'd'
@@ -5444,7 +6073,7 @@ function! s:RegexpParser.get_token_sq_coll_char()
 endfunction
 
 " [[.a.]]
-function! s:RegexpParser.get_token_sq_coll_element()
+function! s:RegexpParser.get_token_sq_coll_element() abort
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# '.' && !self.isend(self.reader.p(2)) && self.reader.p(3) ==# '.' && self.reader.p(4) ==# ']'
     return self.reader.getn(5)
   endif
@@ -5452,7 +6081,7 @@ function! s:RegexpParser.get_token_sq_coll_element()
 endfunction
 
 " [[=a=]]
-function! s:RegexpParser.get_token_sq_equi_class()
+function! s:RegexpParser.get_token_sq_equi_class() abort
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# '=' && !self.isend(self.reader.p(2)) && self.reader.p(3) ==# '=' && self.reader.p(4) ==# ']'
     return self.reader.getn(5)
   endif
@@ -5460,7 +6089,7 @@ function! s:RegexpParser.get_token_sq_equi_class()
 endfunction
 
 " [[:alpha:]]
-function! s:RegexpParser.get_token_sq_char_class()
+function! s:RegexpParser.get_token_sq_char_class() abort
   let class_names = ['alnum', 'alpha', 'blank', 'cntrl', 'digit', 'graph', 'lower', 'print', 'punct', 'space', 'upper', 'xdigit', 'tab', 'return', 'backspace', 'escape']
   let pos = self.reader.tell()
   if self.reader.p(0) ==# '[' && self.reader.p(1) ==# ':'
@@ -5480,7 +6109,7 @@ function! s:RegexpParser.get_token_sq_char_class()
 endfunction
 
 " \@...
-function! s:RegexpParser.get_token_at(pre)
+function! s:RegexpParser.get_token_at(pre) abort
   let epos = self.reader.getpos()
   let c = self.reader.get()
   if c ==# '>'
@@ -5501,7 +6130,7 @@ function! s:RegexpParser.get_token_at(pre)
 endfunction
 
 " \%...
-function! s:RegexpParser.get_token_percent(pre)
+function! s:RegexpParser.get_token_percent(pre) abort
   let c = self.reader.get()
   if c ==# '^'
     return [a:pre . '^', '\%^']
@@ -5521,7 +6150,7 @@ function! s:RegexpParser.get_token_percent(pre)
 endfunction
 
 " \%[]
-function! s:RegexpParser.get_token_percent_sq(pre)
+function! s:RegexpParser.get_token_percent_sq(pre) abort
   let r = ''
   while s:TRUE
     let c = self.reader.peek()
@@ -5541,7 +6170,7 @@ function! s:RegexpParser.get_token_percent_sq(pre)
 endfunction
 
 " \%'m \%l \%c \%v
-function! s:RegexpParser.get_token_mlvc(pre)
+function! s:RegexpParser.get_token_mlvc(pre) abort
   let r = ''
   let cmp = ''
   if self.reader.p(0) ==# '<' || self.reader.p(0) ==# '>'
@@ -5576,15 +6205,15 @@ function! s:RegexpParser.get_token_mlvc(pre)
   throw s:Err('E71: Invalid character after %', self.reader.getpos())
 endfunction
 
-function! s:RegexpParser.getdecchrs()
+function! s:RegexpParser.getdecchrs() abort
   return self.reader.read_digit()
 endfunction
 
-function! s:RegexpParser.getoctchrs()
+function! s:RegexpParser.getoctchrs() abort
   return self.reader.read_odigit()
 endfunction
 
-function! s:RegexpParser.gethexchrs(n)
+function! s:RegexpParser.gethexchrs(n) abort
   let r = ''
   for i in range(a:n)
     let c = self.reader.peek()
