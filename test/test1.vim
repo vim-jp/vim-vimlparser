@@ -66,6 +66,8 @@ let a /= 4
 let a %= 5
 let a ..= 'foo'
 echo ('foo' .. 'bar')..'baz'
+echo 'foo' .. ('bar'..'baz')
+echo 'foo' .. 'bar' .. 'baz'
 let a = '🐥'
 const a = 1
 const [a, b] = [1, 2]

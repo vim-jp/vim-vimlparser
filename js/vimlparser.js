@@ -578,13 +578,14 @@ function ExArg() {
 // PLUS .left
 // SUBSCRIPT .left .right
 // SLICE .left .rlist
-// METHOD .left .right .lambda_rlist
+// METHOD .left .right
 // CALL .left .rlist
 // DOT .left .right
 // NUMBER .value
 // STRING .value
 // LIST .value
 // DICT .value
+// BLOB .value
 // NESTING .left
 // OPTION .value
 // IDENTIFIER .value
@@ -3399,14 +3400,19 @@ ExprParser.prototype.parse_expr8 = function() {
             delete node;
         }
         else if (token.type == TOKEN_ARROW) {
+            var funcname_or_lambda = this.parse_expr9();
+            var token = this.tokenizer.get();
+            if (token.type != TOKEN_POPEN) {
+                throw Err("E107: Missing parentheses: lambda", token.pos);
+            }
+            var right = Node(NODE_CALL);
+            right.pos = token.pos;
+            right.left = funcname_or_lambda;
+            right.rlist = this.parse_rlist();
             var node = Node(NODE_METHOD);
             node.pos = token.pos;
             node.left = left;
-            node.right = this.parse_expr8();
-            node.lambda_rlist = NIL;
-            if (node.right.type != NODE_CALL) {
-                throw Err("Rhs of method operator must be an function call", node.right.pos);
-            }
+            node.right = right;
             var left = node;
             delete node;
         }
@@ -3414,33 +3420,7 @@ ExprParser.prototype.parse_expr8 = function() {
             var node = Node(NODE_CALL);
             node.pos = token.pos;
             node.left = left;
-            node.rlist = [];
-            if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
-                this.tokenizer.get();
-            }
-            else {
-                while (TRUE) {
-                    viml_add(node.rlist, this.parse_expr1());
-                    var token = this.tokenizer.get();
-                    if (token.type == TOKEN_COMMA) {
-                        // XXX: Vim allows foo(a, b, ).  Lint should warn it.
-                        if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
-                            this.tokenizer.get();
-                            break;
-                        }
-                    }
-                    else if (token.type == TOKEN_PCLOSE) {
-                        break;
-                    }
-                    else {
-                        throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
-                    }
-                }
-            }
-            if (viml_len(node.rlist) > MAX_FUNC_ARGS) {
-                // TODO: funcname E740: Too many arguments for function: %s
-                throw Err("E740: Too many arguments for function", node.pos);
-            }
+            node.rlist = this.parse_rlist();
             var left = node;
             delete node;
         }
@@ -3460,6 +3440,38 @@ ExprParser.prototype.parse_expr8 = function() {
         }
     }
     return left;
+}
+
+ExprParser.prototype.parse_rlist = function() {
+    var rlist = [];
+    var token = this.tokenizer.peek();
+    if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
+        this.tokenizer.get();
+    }
+    else {
+        while (TRUE) {
+            viml_add(rlist, this.parse_expr1());
+            var token = this.tokenizer.get();
+            if (token.type == TOKEN_COMMA) {
+                // XXX: Vim allows foo(a, b, ).  Lint should warn it.
+                if (this.tokenizer.peek().type == TOKEN_PCLOSE) {
+                    this.tokenizer.get();
+                    break;
+                }
+            }
+            else if (token.type == TOKEN_PCLOSE) {
+                break;
+            }
+            else {
+                throw Err(viml_printf("unexpected token: %s", token.value), token.pos);
+            }
+        }
+    }
+    if (viml_len(rlist) > MAX_FUNC_ARGS) {
+        // TODO: funcname E740: Too many arguments for function: %s
+        throw Err("E740: Too many arguments for function", token.pos);
+    }
+    return rlist;
 }
 
 // expr9: number
