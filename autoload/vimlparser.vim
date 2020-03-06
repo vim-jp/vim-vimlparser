@@ -4028,44 +4028,26 @@ function! s:ExprParser.parse_expr8() abort
       endif
       unlet node
     elseif token.type ==# s:TOKEN_ARROW
+      let funcname_or_lambda = self.parse_expr9()
+      let token = self.tokenizer.get()
+      if token.type !=# s:TOKEN_POPEN
+        throw s:Err('E107: Missing parentheses: lambda', token.pos)
+      endif
+      let right = s:Node(s:NODE_CALL)
+      let right.pos = token.pos
+      let right.left = funcname_or_lambda
+      let right.rlist = self.parse_rlist()
       let node = s:Node(s:NODE_METHOD)
       let node.pos = token.pos
       let node.left = left
-      let node.right = self.parse_expr8()
-      let node.lambda_rlist = s:NIL
-      if node.right.type !=# s:NODE_CALL
-        throw s:Err('Rhs of method operator must be an function call', node.right.pos)
-      endif
+      let node.right = right
       let left = node
       unlet node
     elseif token.type ==# s:TOKEN_POPEN
       let node = s:Node(s:NODE_CALL)
       let node.pos = token.pos
       let node.left = left
-      let node.rlist = []
-      if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
-        call self.tokenizer.get()
-      else
-        while s:TRUE
-          call add(node.rlist, self.parse_expr1())
-          let token = self.tokenizer.get()
-          if token.type ==# s:TOKEN_COMMA
-            " XXX: Vim allows foo(a, b, ).  Lint should warn it.
-            if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
-              call self.tokenizer.get()
-              break
-            endif
-          elseif token.type ==# s:TOKEN_PCLOSE
-            break
-          else
-            throw s:Err(printf('unexpected token: %s', token.value), token.pos)
-          endif
-        endwhile
-      endif
-      if len(node.rlist) > s:MAX_FUNC_ARGS
-        " TODO: funcname E740: Too many arguments for function: %s
-        throw s:Err('E740: Too many arguments for function', node.pos)
-      endif
+      let node.rlist = self.parse_rlist()
       let left = node
       unlet node
     elseif !s:iswhite(c) && token.type ==# s:TOKEN_DOT " TODO check scriptversion?
@@ -4082,6 +4064,35 @@ function! s:ExprParser.parse_expr8() abort
     endif
   endwhile
   return left
+endfunction
+
+function! s:ExprParser.parse_rlist() abort
+  let rlist = []
+  let token = self.tokenizer.peek()
+  if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
+    call self.tokenizer.get()
+  else
+    while s:TRUE
+      call add(rlist, self.parse_expr1())
+      let token = self.tokenizer.get()
+      if token.type ==# s:TOKEN_COMMA
+        " XXX: Vim allows foo(a, b, ).  Lint should warn it.
+        if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
+          call self.tokenizer.get()
+          break
+        endif
+      elseif token.type ==# s:TOKEN_PCLOSE
+        break
+      else
+        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      endif
+    endwhile
+  endif
+  if len(rlist) > s:MAX_FUNC_ARGS
+    " TODO: funcname E740: Too many arguments for function: %s
+    throw s:Err('E740: Too many arguments for function', token.pos)
+  endif
+  return rlist
 endfunction
 
 " expr9: number

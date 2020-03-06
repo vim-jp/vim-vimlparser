@@ -4,3 +4,8 @@
 (echo (method 'john' ((lambda (s) (concat 'hello ' s)))))
 (echo (method 'john' ((lambda (s b) (concat (concat (concat (concat 'hello ' s) ' ... and goodbye ') b) '!')) 'bob')))
 (echo (method 'john' ((lambda (...) (concat 'hello ' (method a:000 (join ', ')))) 'bob')))
+(eval (method funcs (map (lambda () (v:val)))))
+(let = session (method (method (s:get_sessions) (filter (lambda () (==# (dot v:val name) session_name)))) (get 0 (dict))))
+(let = session (method (method (s:get_sessions) (filter (lambda () (==# (dot v:val name) session_name)))) (get 0 (dict))))
+(echo (method expr8 (s:flatmap)))
+(echo (method (method expr8 (s:flatmap)) (filter (lambda (i) (% i 2)))))
