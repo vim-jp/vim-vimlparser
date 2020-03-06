@@ -2,14 +2,14 @@
 
 " TODO more loose pattern?
 function! s:get_parse_lines(lines) abort
-  let from = index(a:lines, '} functions[] =')
+  let from = match(a:lines, '\vstatic\s+funcentry_T\s+global_functions\[]\s+\=')
   if from ==# -1
     throw 'cannot parse functions'
   endif
   " find next '{'
   let from = index(a:lines, '{', from + 1)
   let to = index(a:lines, '};', from + 1)
-  return map(range(from + 1, to - 1), {_,i -> a:lines[i] })
+  return a:lines[from + 1 : to - 1]
 endfunction
 
 function! s:parse(evalfunc_c) abort
@@ -18,14 +18,16 @@ function! s:parse(evalfunc_c) abort
   " { 'name': string, 'min_argc': integer, 'max_argc': integer }
   let funcs = []
 
+  " TODO: f_retfunc, f_func (currently vim9script is unstable)
   for line in s:get_parse_lines(lines)
-    let m = matchlist(line, '\v\{\s*"(\w+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*\w+\s*\}')
+    let m = matchlist(line, '\v\{\s*"(\w+)"\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\w+)')
     if !empty(m)
-      let [name, min_argc, max_argc] = m[1:3]
+      let [name, min_argc, max_argc, argtype] = m[1:4]
       call add(funcs, {
       \   'name': name,
       \   'min_argc': min_argc + 0,
       \   'max_argc': max_argc + 0,
+      \   'argtype': argtype,
       \})
     endif
   endfor
@@ -37,11 +39,7 @@ function! s:diff(existing, latest) abort
   for func in a:existing
     let existing_names[func.name] = v:true
   endfor
-  let new_funcs = []
-  for func in filter(copy(a:latest), {_, f -> !has_key(existing_names, f.name)})
-    let new_funcs = add(new_funcs, func)
-  endfor
-  return new_funcs
+  return filter(copy(a:latest), {_, f -> !has_key(existing_names, f.name)})
 endfunction
 
 function! s:gen_viml(new_funcs) abort
@@ -49,8 +47,8 @@ function! s:gen_viml(new_funcs) abort
   for f in a:new_funcs
     " output items in this key order
     let lines = add(lines,
-    \ printf('      \ {''name'': %s, ''min_argc'': %s, ''max_argc'': %s},',
-    \       string(f.name), string(f.min_argc), string(f.max_argc)))
+    \ printf('      \ {''name'': %s, ''min_argc'': %s, ''max_argc'': %s, ''argtype'': %s},',
+    \       string(f.name), string(f.min_argc), string(f.max_argc), string(f.argtype)))
   endfor
   return join(lines, "\n")
 endfunction

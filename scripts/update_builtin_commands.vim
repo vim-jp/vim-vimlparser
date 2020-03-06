@@ -85,6 +85,9 @@ function! s:parse(ex_cmds_h) abort
     if line =~# '^EXCMD('
       let name = matchstr(line, '"\zs.*\ze",')
       let flags = matchstr(lines[i+1], '\t\+\zs.*\ze,$')
+      let flags = substitute(flags, '\<EX_', '', 'g')
+      " for :vim9script
+      let flags = flags ==# '0' ? '' : flags
 
       let minlen = len(trie.common(name)) + 1
       call trie.add(name)
