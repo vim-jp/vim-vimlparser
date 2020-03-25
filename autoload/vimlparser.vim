@@ -2970,6 +2970,7 @@ let s:VimLParser.builtin_functions = [
       \ {'name': 'matchstr', 'min_argc': 2, 'max_argc': 4, 'argtype': 'FEARG_1'},
       \ {'name': 'matchstrpos', 'min_argc': 2, 'max_argc': 4, 'argtype': 'FEARG_1'},
       \ {'name': 'max', 'min_argc': 1, 'max_argc': 1, 'argtype': 'FEARG_1'},
+      \ {'name': 'menu_info', 'min_argc': 1, 'max_argc': 2, 'argtype': 'FEARG_1'},
       \ {'name': 'min', 'min_argc': 1, 'max_argc': 1, 'argtype': 'FEARG_1'},
       \ {'name': 'mkdir', 'min_argc': 1, 'max_argc': 3, 'argtype': 'FEARG_1'},
       \ {'name': 'mode', 'min_argc': 0, 'max_argc': 1, 'argtype': 'FEARG_1'},
