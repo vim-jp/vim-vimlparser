@@ -31,7 +31,7 @@ jobs:
 install:
   - |
     if [ "$VIM_VERSION" = 'installed' ]; then
-      python -m pip install -q --user flake8 git+https://github.com/Kuniwak/vint
+      python -m pip install -q --user flake8 git+https://github.com/Vimjas/vint
     else
       bash scripts/install-vim.sh
       export PATH=$HOME/vim/bin:$PATH
