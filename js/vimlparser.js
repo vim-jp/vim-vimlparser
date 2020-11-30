@@ -1809,6 +1809,7 @@ VimLParser.prototype.parse_heredoc = function() {
     node.body = [];
     while (TRUE) {
         this.reader.skip_white();
+        var pos = this.reader.getpos();
         var key = this.reader.read_word();
         if (key == "") {
             break;
@@ -1818,7 +1819,10 @@ VimLParser.prototype.parse_heredoc = function() {
             break;
         }
         else {
-            viml_add(node.rlist, key);
+            var keynode = Node(NODE_STRING);
+            keynode.pos = pos;
+            keynode.value = key;
+            viml_add(node.rlist, keynode);
         }
     }
     if (node.op == "") {
@@ -1829,11 +1833,15 @@ VimLParser.prototype.parse_heredoc = function() {
         if (this.reader.peek() == "<EOF>") {
             break;
         }
+        var pos = this.reader.getpos();
         var line = this.reader.getn(-1);
         if (line == node.op) {
             return node;
         }
-        viml_add(node.body, line);
+        var linenode = Node(NODE_STRING);
+        linenode.pos = pos;
+        linenode.value = line;
+        viml_add(node.body, linenode);
         this.reader.get();
     }
     throw Err(viml_printf("E990: Missing end marker '%s'", node.op), this.reader.getpos());
@@ -5094,13 +5102,13 @@ Compiler.prototype.compile_heredoc = function(node) {
         var rlist = "(list)";
     }
     else {
-        var rlist = "(list " + viml_join(node.rlist.map((function(vval) { return this.escape_string(vval); }).bind(this)), " ") + ")";
+        var rlist = "(list " + viml_join(node.rlist.map((function(vval) { return this.escape_string(vval.value); }).bind(this)), " ") + ")";
     }
     if (viml_empty(node.body)) {
         var body = "(list)";
     }
     else {
-        var body = "(list " + viml_join(node.body.map((function(vval) { return this.escape_string(vval); }).bind(this)), " ") + ")";
+        var body = "(list " + viml_join(node.body.map((function(vval) { return this.escape_string(vval.value); }).bind(this)), " ") + ")";
     }
     var op = this.escape_string(node.op);
     return viml_printf("(heredoc %s %s %s)", rlist, op, body);
