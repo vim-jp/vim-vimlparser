@@ -5183,7 +5183,7 @@ function! s:Compiler.compile_lockvar(node) abort
   if a:node.depth is# s:NIL
     call self.out('(lockvar %s)', join(list, ' '))
   else
-    call self.out('(lockvar %s %s)', a:node.depth, join(list, ' '))
+    call self.out('(lockvar %d %s)', a:node.depth, join(list, ' '))
   endif
 endfunction
 
@@ -5192,7 +5192,7 @@ function! s:Compiler.compile_unlockvar(node) abort
   if a:node.depth is# s:NIL
     call self.out('(unlockvar %s)', join(list, ' '))
   else
-    call self.out('(unlockvar %s %s)', a:node.depth, join(list, ' '))
+    call self.out('(unlockvar %d %s)', a:node.depth, join(list, ' '))
   endif
 endfunction
 

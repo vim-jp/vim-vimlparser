@@ -3737,14 +3737,14 @@ class Compiler:
         if node.depth is NIL:
             self.out("(lockvar %s)", viml_join(list, " "))
         else:
-            self.out("(lockvar %s %s)", node.depth, viml_join(list, " "))
+            self.out("(lockvar %d %s)", node.depth, viml_join(list, " "))
 
     def compile_unlockvar(self, node):
         list = [self.compile(vval) for vval in node.list]
         if node.depth is NIL:
             self.out("(unlockvar %s)", viml_join(list, " "))
         else:
-            self.out("(unlockvar %s %s)", node.depth, viml_join(list, " "))
+            self.out("(unlockvar %d %s)", node.depth, viml_join(list, " "))
 
     def compile_if(self, node):
         self.out("(if %s", self.compile(node.cond))
