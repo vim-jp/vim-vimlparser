@@ -1516,7 +1516,7 @@ function! s:VimLParser.parse_heredoc() abort
   while s:TRUE
     call self.reader.skip_white()
     let key = self.reader.read_word()
-    if key == ''
+    if key ==# ''
       break
     endif
     if !s:islower(key[0])
@@ -5067,7 +5067,7 @@ function! s:Compiler.compile(node) abort
     return self.compile_curlynameexpr(a:node)
   elseif a:node.type ==# s:NODE_LAMBDA
     return self.compile_lambda(a:node)
-  elseif a:node.type == s:NODE_HEREDOC
+  elseif a:node.type ==# s:NODE_HEREDOC
     return self.compile_heredoc(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
