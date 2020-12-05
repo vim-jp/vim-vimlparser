@@ -4681,7 +4681,7 @@ Compiler.prototype.compile_lockvar = function(node) {
         this.out("(lockvar %s)", viml_join(list, " "));
     }
     else {
-        this.out("(lockvar %s %s)", node.depth, viml_join(list, " "));
+        this.out("(lockvar %d %s)", node.depth, viml_join(list, " "));
     }
 }
 
@@ -4691,7 +4691,7 @@ Compiler.prototype.compile_unlockvar = function(node) {
         this.out("(unlockvar %s)", viml_join(list, " "));
     }
     else {
-        this.out("(unlockvar %s %s)", node.depth, viml_join(list, " "));
+        this.out("(unlockvar %d %s)", node.depth, viml_join(list, " "));
     }
 }
 
