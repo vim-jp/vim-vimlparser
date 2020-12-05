@@ -1488,6 +1488,7 @@ class VimLParser:
         node.body = []
         while TRUE:
             self.reader.skip_white()
+            pos = self.reader.getpos()
             key = self.reader.read_word()
             if key == "":
                 break
@@ -1495,17 +1496,24 @@ class VimLParser:
                 node.op = key
                 break
             else:
-                viml_add(node.rlist, key)
+                keynode = Node(NODE_STRING)
+                keynode.pos = pos
+                keynode.value = key
+                viml_add(node.rlist, keynode)
         if node.op == "":
             raise VimLParserException(Err("E172: Missing marker", self.reader.getpos()))
         self.parse_trail()
         while TRUE:
             if self.reader.peek() == "<EOF>":
                 break
+            pos = self.reader.getpos()
             line = self.reader.getn(-1)
             if line == node.op:
                 return node
-            viml_add(node.body, line)
+            linenode = Node(NODE_STRING)
+            linenode.pos = pos
+            linenode.value = line
+            viml_add(node.body, linenode)
             self.reader.get()
         raise VimLParserException(Err(viml_printf("E990: Missing end marker '%s'", node.op), self.reader.getpos()))
 
@@ -4054,11 +4062,11 @@ class Compiler:
         if viml_empty(node.rlist):
             rlist = "(list)"
         else:
-            rlist = "(list " + viml_join([self.escape_string(vval) for vval in node.rlist], " ") + ")"
+            rlist = "(list " + viml_join([self.escape_string(vval.value) for vval in node.rlist], " ") + ")"
         if viml_empty(node.body):
             body = "(list)"
         else:
-            body = "(list " + viml_join([self.escape_string(vval) for vval in node.body], " ") + ")"
+            body = "(list " + viml_join([self.escape_string(vval.value) for vval in node.body], " ") + ")"
         op = self.escape_string(node.op)
         return viml_printf("(heredoc %s %s %s)", rlist, op, body)
 
