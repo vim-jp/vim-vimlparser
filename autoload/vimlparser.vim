@@ -3059,6 +3059,7 @@ let s:VimLParser.builtin_functions = [
       \ {'name': 'screenrow', 'min_argc': 0, 'max_argc': 0, 'argtype': '0'},
       \ {'name': 'screenstring', 'min_argc': 2, 'max_argc': 2, 'argtype': 'FEARG_1'},
       \ {'name': 'search', 'min_argc': 1, 'max_argc': 4, 'argtype': 'FEARG_1'},
+      \ {'name': 'searchcount', 'min_args': 0, 'max_args': 1, 'argtype': 'FEARG_1'},
       \ {'name': 'searchdecl', 'min_argc': 1, 'max_argc': 3, 'argtype': 'FEARG_1'},
       \ {'name': 'searchpair', 'min_argc': 3, 'max_argc': 7, 'argtype': '0'},
       \ {'name': 'searchpairpos', 'min_argc': 3, 'max_argc': 7, 'argtype': '0'},
