@@ -1,24 +1,17 @@
 //!/usr/bin/env nodejs
-// usage: nodejs vimlparser.js [--neovim] foo.vim
+// usage: nodejs vimlparser.js [--neovim] [--vspec] foo.vim
 
 var fs = require('fs');
 var util = require('util');
 
 function main() {
-    var neovim = false;
-    var fpath = ''
     var args = process.argv;
-    if (args.length == 4) {
-        if (args[2] == '--neovim') {
-            neovim = true;
-        }
-        fpath = args[3];
-    } else if (args.length == 3) {
-        neovim = false;
-        fpath = args[2]
-    }
+    var options = args.slice(1, -1);
+    var neovim = options.indexOf('--neovim') > -1;
+    var vspec = options.indexOf('--vspec') > -1;
+    var fpath = args[args.length - 1]
     var r = new StringReader(viml_readfile(fpath));
-    var p = new VimLParser(neovim);
+    var p = new VimLParser(neovim, vspec);
     var c = new Compiler();
     try {
         var lines = c.compile(p.parse(r));

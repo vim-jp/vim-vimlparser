@@ -18,9 +18,14 @@ function! vimlparser#test(input, ...) abort
     else
       let l:neovim = 0
     endif
+    if a:0 > 1
+      let l:vspec = a:2
+    else
+      let l:vspec = 0
+    endif
     let i = type(a:input) ==# 1 && filereadable(a:input) ? readfile(a:input) : split(a:input, "\n")
     let r = s:StringReader.new(i)
-    let p = s:VimLParser.new(l:neovim)
+    let p = s:VimLParser.new(l:neovim, l:vspec)
     let c = s:Compiler.new()
     echo join(c.compile(p.parse(r)), "\n")
   catch
@@ -439,6 +444,12 @@ function! s:VimLParser.__init__(...) abort
     let self.neovim = a:000[0]
   else
     let self.neovim = 0
+  endif
+
+  if len(a:000) > 1
+    let self.vspec = a:000[1]
+  else
+    let self.vspec = 0
   endif
 
   let self.find_command_cache = {}
@@ -973,6 +984,16 @@ function! s:VimLParser.find_command() abort
       if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
         unlet cmd
         let cmd = s:NIL
+        break
+      endif
+    endfor
+  endif
+
+  if self.vspec
+    for x in self.vspec_additional_commands
+      if x.name ==# name
+        unlet cmd
+        let cmd = x
         break
       endif
     endfor
@@ -2156,6 +2177,14 @@ let s:VimLParser.neovim_removed_commands = [
       \ {'name': 'shell', 'minlen':2, 'flags': 'TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'tearoff', 'minlen':2, 'flags': 'NEEDARG|EXTRA|TRLBAR|NOTRLCOM|CMDWIN', 'parser': 'parse_cmd_common'},
       \ {'name': 'gvim', 'minlen':2, 'flags': 'BANG|FILES|EDITCMD|ARGOPT|TRLBAR|CMDWIN', 'parser': 'parse_cmd_common'}]
+
+let s:VimLParser.vspec_additional_commands = [
+      \ {'name': 'describe', 'flags': '', 'parser': 'parse_cmd_common'},
+      \ {'name': 'end', 'flags': '', 'parser': 'parse_cmd_common'},
+      \ {'name': 'it', 'flags': '', 'parser': 'parse_cmd_common'},
+      \ {'name': 'before', 'flags': '', 'parser': 'parse_cmd_common'},
+      \ {'name': 'after', 'flags': '', 'parser': 'parse_cmd_common'},
+      \ {'name': 'context', 'flags': '', 'parser': 'parse_cmd_common'}]
 
 " To find new builtin_commands, run the below script.
 " $ scripts/update_builtin_commands.sh /path/to/vim/src/ex_cmds.h

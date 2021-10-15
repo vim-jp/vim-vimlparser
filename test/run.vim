@@ -14,10 +14,15 @@ function! s:run()
     let r = s:vimlparser.StringReader.new(src)
     if vimfile =~# 'test_neo'
         let l:neovim = 1
+        let l:vspec = 0
+    elseif vimfile =~# 'test_vspec'
+        let l:neovim = 0
+        let l:vspec = 1
     else
         let l:neovim = 0
+        let l:vspec = 0
     endif
-    let p = s:vimlparser.VimLParser.new(l:neovim)
+    let p = s:vimlparser.VimLParser.new(l:neovim, l:vspec)
     let c = s:vimlparser.Compiler.new()
     try
       let out = c.compile(p.parse(r))

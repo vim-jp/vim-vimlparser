@@ -1,15 +1,18 @@
 #!/usr/bin/env python3
-# usage: python3 vimlparser.py [--neovim] foo.vim
+# usage: python3 vimlparser.py [--neovim] [--vspec] foo.vim
 
 import sys
 import re
 
 
 def main():
-    use_neovim = sys.argv[1] == "--neovim"
+    options = sys.argv[1:-1]
+
+    use_neovim = "--neovim" in options
+    use_vspec = "--vspec" in options
 
     r = StringReader(viml_readfile(sys.argv[-1]))
-    p = VimLParser(use_neovim)
+    p = VimLParser(use_neovim, use_vspec)
     c = Compiler()
     try:
         for line in c.compile(p.parse(r)):
