@@ -2122,21 +2122,94 @@ endfunction
 
 " FIXME: validate argument
 function! s:VimLParser.parse_cmd_syntax() abort
-  let end = self.reader.getpos()
+  let subcmd = self.reader.read_alpha()
+
+  " Read name
+  if subcmd ==# 'region' || subcmd ==# 'match'
+    call self.reader.read_white()
+    call self.reader.read_alpha()
+  endif
+
+  let match_pattern = subcmd !=# 'match'
+
   while s:TRUE
     let end = self.reader.getpos()
+    let pattern = s:FALSE
+
+    " Read non-alpha
     let c = self.reader.peek()
-    if c ==# '/' || c ==# "'" || c ==# '"'
+    if self.ends_excmds(c)
+      if !match_pattern && (c ==# '|' || c ==# '"')
+        let pattern = s:TRUE
+        let match_pattern = s:TRUE
+      else
+        break
+      endif
+    elseif !s:isalpha(c)
+      if !match_pattern && !s:iswhite(c)
+        let pattern = s:TRUE
+        let match_pattern = s:TRUE
+      else
+        call self.reader.getn(1)
+        continue
+      endif
+    endif
+
+    " Read arg
+    if !pattern
+      let arg_pos = self.reader.tell()
+      let arg = self.reader.read_alpha()
+
+      if !match_pattern
+            \ && arg !=# 'keepend'
+            \ && arg !=# 'conceal'
+            \ && arg !=# 'cchar'
+            \ && arg !=# 'contained'
+            \ && arg !=# 'containedin'
+            \ && arg !=# 'nextgroup'
+            \ && arg !=# 'transparent'
+            \ && arg !=# 'skipwhite'
+            \ && arg !=# 'skipnl'
+            \ && arg !=# 'skipempty'
+        let match_pattern = s:TRUE
+        let pattern = s:TRUE
+        call self.reader.seek_set(arg_pos)
+      elseif subcmd ==# 'region' && (arg ==# 'start' || arg ==# 'skip' || arg ==# 'end')
+        if self.reader.peek() !=# '='
+          continue
+        endif
+        call self.reader.getn(1)
+        let pattern = s:TRUE
+      elseif self.reader.peek() ==# '='
+        " Read arg value
+        call self.reader.getn(1)
+        if arg ==# 'cchar'
+          call self.reader.getn(1)
+        else
+          while s:TRUE
+            call self.reader.read_alpha()
+            let c = self.reader.peek()
+            if c ==# ',' || c ==# '@'
+              call self.reader.getn(1)
+            else
+              break
+            endif
+          endwhile
+        endif
+      endif
+    endif
+
+    " Read pattern
+    if pattern
+      let c = self.reader.peek()
+      if self.ends_excmds(c) && c !=# '|' && c !=# '"'
+        continue
+      endif
       call self.reader.getn(1)
       call self.parse_pattern(c)
-    elseif c ==# '='
-      call self.reader.getn(1)
-      call self.parse_pattern(' ')
-    elseif self.ends_excmds(c)
-      break
     endif
-    call self.reader.getn(1)
   endwhile
+
   let node = s:Node(s:NODE_EXCMD)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea

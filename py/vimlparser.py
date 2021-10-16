@@ -1993,19 +1993,63 @@ class VimLParser:
 
     # FIXME: validate argument
     def parse_cmd_syntax(self):
-        end = self.reader.getpos()
+        subcmd = self.reader.read_alpha()
+        # Read name
+        if subcmd == "region" or subcmd == "match":
+            self.reader.read_white()
+            self.reader.read_alpha()
+        match_pattern = subcmd != "match"
         while TRUE:
             end = self.reader.getpos()
+            pattern = FALSE
+            # Read non-alpha
             c = self.reader.peek()
-            if c == "/" or c == "'" or c == "\"":
+            if self.ends_excmds(c):
+                if not match_pattern and (c == "|" or c == "\""):
+                    pattern = TRUE
+                    match_pattern = TRUE
+                else:
+                    break
+            elif not isalpha(c):
+                if not match_pattern and not iswhite(c):
+                    pattern = TRUE
+                    match_pattern = TRUE
+                else:
+                    self.reader.getn(1)
+                    continue
+            # Read arg
+            if not pattern:
+                arg_pos = self.reader.tell()
+                arg = self.reader.read_alpha()
+                if not match_pattern and arg != "keepend" and arg != "conceal" and arg != "cchar" and arg != "contained" and arg != "containedin" and arg != "nextgroup" and arg != "transparent" and arg != "skipwhite" and arg != "skipnl" and arg != "skipempty":
+                    match_pattern = TRUE
+                    pattern = TRUE
+                    self.reader.seek_set(arg_pos)
+                elif subcmd == "region" and (arg == "start" or arg == "skip" or arg == "end"):
+                    if self.reader.peek() != "=":
+                        continue
+                    self.reader.getn(1)
+                    pattern = TRUE
+                elif self.reader.peek() == "=":
+                    # Read arg value
+                    self.reader.getn(1)
+                    if arg == "cchar":
+                        self.reader.getn(1)
+                    else:
+                        while TRUE:
+                            self.reader.read_alpha()
+                            c = self.reader.peek()
+                            if c == "," or c == "@":
+                                self.reader.getn(1)
+                            else:
+                                break
+            # Read pattern
+            if pattern:
+                c = self.reader.peek()
+                if self.ends_excmds(c) and c != "|" and c != "\"":
+                    continue
                 self.reader.getn(1)
                 self.parse_pattern(c)
-            elif c == "=":
-                self.reader.getn(1)
-                self.parse_pattern(" ")
-            elif self.ends_excmds(c):
-                break
-            self.reader.getn(1)
         node = Node(NODE_EXCMD)
         node.pos = self.ea.cmdpos
         node.ea = self.ea
