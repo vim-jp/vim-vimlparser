@@ -1,6 +1,6 @@
 # Vim script parsers
 
-[![Build Status](https://travis-ci.com/vim-jp/vim-vimlparser.svg?branch=master)](https://travis-ci.com/github/vim-jp/vim-vimlparser) [![codecov](https://codecov.io/gh/vim-jp/vim-vimlparser/branch/master/graph/badge.svg)](https://codecov.io/gh/vim-jp/vim-vimlparser)
+[![Build Status](https://github.com/vim-jp/vim-vimlparser/workflows/Test/badge.svg)](https://github.com/vim-jp/vim-vimlparser/actions?query=workflow%3A%22Test%22) [![codecov](https://codecov.io/gh/vim-jp/vim-vimlparser/branch/master/graph/badge.svg)](https://codecov.io/gh/vim-jp/vim-vimlparser)
 
 This is Vim script language ([a.k.a. VimL](#about-project-name)) parsers.
 
