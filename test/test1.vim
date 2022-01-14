@@ -53,6 +53,7 @@ echohl Error
 echon "echon"
 echomsg "echomsg"
 echoerr "echoerr"
+echoconsole "echoconsole"
 execute "normal ihello"
 echo [] [1,2,3] [1,2,3,]
 echo {} {"x":"y"} {"x":"y","z":"w",}

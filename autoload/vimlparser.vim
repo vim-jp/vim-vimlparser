@@ -142,6 +142,7 @@ let s:NODE_CONST = 94
 let s:NODE_EVAL = 95
 let s:NODE_HEREDOC = 96
 let s:NODE_METHOD = 97
+let s:NODE_ECHOCONSOLE = 98
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -833,6 +834,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_delfunction()
   elseif a:parser ==# 'parse_cmd_echo'
     call self.parse_cmd_echo()
+  elseif a:parser ==# 'parse_cmd_echoconsole'
+    call self.parse_cmd_echoconsole()
   elseif a:parser ==# 'parse_cmd_echoerr'
     call self.parse_cmd_echoerr()
   elseif a:parser ==# 'parse_cmd_echohl'
@@ -1936,6 +1939,14 @@ function! s:VimLParser.parse_cmd_echoerr() abort
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_cmd_echoconsole() abort
+  let node = s:Node(s:NODE_ECHOCONSOLE)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.list = self.parse_exprlist()
+  call self.add_node(node)
+endfunction
+
 function! s:VimLParser.parse_cmd_execute() abort
   let node = s:Node(s:NODE_EXECUTE)
   let node.pos = self.ea.cmdpos
@@ -2303,7 +2314,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'echoerr', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echoerr'},
       \ {'name': 'echohl', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echohl'},
       \ {'name': 'echomsg', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echomsg'},
-      \ {'name': 'echoconsole', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'echoconsole', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echoconsole'},
       \ {'name': 'echon', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echon'},
       \ {'name': 'else', 'minlen': 2, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_else'},
       \ {'name': 'elseif', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_elseif'},
@@ -5012,6 +5023,9 @@ function! s:Compiler.compile(node) abort
   elseif a:node.type ==# s:NODE_ECHOERR
     call self.compile_echoerr(a:node)
     return s:NIL
+  elseif a:node.type ==# s:NODE_ECHOCONSOLE
+    call self.compile_echoconsole(a:node)
+    return s:NIL
   elseif a:node.type ==# s:NODE_EXECUTE
     call self.compile_execute(a:node)
     return s:NIL
@@ -5374,6 +5388,11 @@ endfunction
 function! s:Compiler.compile_echoerr(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echoerr %s)', join(list, ' '))
+endfunction
+
+function! s:Compiler.compile_echoconsole(node) abort
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('(echoconsole %s)', join(list, ' '))
 endfunction
 
 function! s:Compiler.compile_execute(node) abort
