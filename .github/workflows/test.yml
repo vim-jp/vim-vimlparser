@@ -29,7 +29,7 @@ jobs:
             test_python: python3
           # Installed Vim with checks
           - vim_version: installed
-            make_target: test
+            make_target: fast-test
             test_profile: vim-profile-installed.txt
             test_python: "python -m coverage run --append"
 
@@ -44,21 +44,27 @@ jobs:
         with:
           fetch-depth: 10
 
-      - name: Install Vint
-        if: matrix.vim_version == 'installed'
-        run: |
-          python -m pip install -q --user flake8 git+https://github.com/Vimjas/vint
-
       - name: Install Vim
         if: matrix.vim_version != 'installed'
         run: |
           bash scripts/install-vim.sh
           echo "$HOME/vim/bin" >> $GITHUB_PATH
 
+      - name: Install Vint
+        if: matrix.make_target == 'fast-test'
+        run: |
+          python -m pip install -q --user flake8 git+https://github.com/Vimjas/vint
+
       - name: Install Covimerage
         run: |
           python -m pip install -q --user covimerage
           python -m pip freeze
+
+      - name: Compile js and py
+        if: matrix.make_target == 'fast-test'
+        timeout-minutes: 10
+        run: |
+          make clean_compiled all
 
       - name: Test
         timeout-minutes: 10
@@ -68,8 +74,20 @@ jobs:
           vim --version
           make --keep-going $MAKE_TARGET
 
+      - name: Commit and push
+        if: success() && matrix.make_target == 'fast-test' && github.ref_name == 'master'
+        run: |
+          if ! make fast-check; then
+            git config --local user.name 'github-actions[bot]'
+            git config --local user.email 'github-actions[bot]@users.noreply.github.com'
+            git remote set-url origin 'https://github-actions:${{ github.token }}@github.com/${{ github.repository }}'
+            git add js/vimlparser.js py/vimlparser.py
+            git commit -m 'generate js and py'
+            git push origin '${{ github.ref_name }}'
+          fi
+
       - name: Coverage from Python
-        if: matrix.make_target == 'test' && success()
+        if: success() && matrix.make_target == 'fast-test'
         run: |
           # Coverage from Python (cannot be combined with non-branch data).
           if [[ -f .coverage_covimerage ]]; then
@@ -78,7 +96,7 @@ jobs:
           fi
 
       - name: Codecov for Python
-        if: matrix.make_target == 'test' && success()
+        if: success() && matrix.make_target == 'fast-test'
         uses: codecov/codecov-action@v2
         with:
           files: coverage.xml
