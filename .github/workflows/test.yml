@@ -1,0 +1,100 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Vim 7.4
+          - vim_version: v7.4
+            make_target: vim/test
+            test_profile: vim-profile-v7.4.txt
+          # Vim v8
+          - vim_version: v8.0.0000
+            make_target: vim/test
+            test_profile: vim-profile-v8.0.txt
+          # Vim master
+          - vim_version: master
+            make_target: vim/test
+            test_profile: vim-profile-master.txt
+            test_python: python3
+          # Installed Vim with checks
+          - vim_version: installed
+            make_target: test
+            test_profile: vim-profile-installed.txt
+            test_python: "python -m coverage run --append"
+
+    env:
+      VIM_VERSION: ${{ matrix.vim_version }}
+      MAKE_TARGET: ${{ matrix.make_target }}
+      TEST_PROFILE: ${{ matrix.test_profile }}
+      TEST_PYTHON: ${{ matrix.test_python }}
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 10
+
+      - name: Install Vint
+        if: matrix.vim_version == 'installed'
+        run: |
+          python -m pip install -q --user flake8 git+https://github.com/Vimjas/vint
+
+      - name: Install Vim
+        if: matrix.vim_version != 'installed'
+        run: |
+          bash scripts/install-vim.sh
+          echo "$HOME/vim/bin" >> $GITHUB_PATH
+
+      - name: Install Covimerage
+        run: |
+          python -m pip install -q --user covimerage
+          python -m pip freeze
+
+      - name: Test
+        timeout-minutes: 10
+        run: |
+          uname -a
+          which -a vim
+          vim --version
+          make --keep-going $MAKE_TARGET
+
+      - name: Coverage from Python
+        if: matrix.make_target == 'test' && success()
+        run: |
+          # Coverage from Python (cannot be combined with non-branch data).
+          if [[ -f .coverage_covimerage ]]; then
+            coverage report -m
+            coverage xml
+          fi
+
+      - name: Codecov for Python
+        if: matrix.make_target == 'test' && success()
+        uses: codecov/codecov-action@v2
+        with:
+          files: coverage.xml
+          flags: python
+
+      - name: Coverage from Vim
+        if: success()
+        run: |
+          # Coverage from Vim.
+          covimerage write_coverage $TEST_PROFILE
+          coverage report -m
+          coverage xml
+
+      - name: Codecov for Vim
+        if: success()
+        uses: codecov/codecov-action@v2
+        with:
+          files: coverage.xml
+          flags: vimscript
