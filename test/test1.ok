@@ -46,6 +46,7 @@
 (echon "echon")
 (echomsg "echomsg")
 (echoerr "echoerr")
+(echoconsole "echoconsole")
 (execute "normal ihello")
 (echo (list) (list 1 2 3) (list 1 2 3))
 (echo (dict) (dict ("x" "y")) (dict ("x" "y") ("z" "w")))

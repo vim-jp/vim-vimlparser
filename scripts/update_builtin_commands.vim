@@ -118,7 +118,9 @@ endfunction
 function! s:gen_viml(newcmds) abort
   let lines = []
   for c in a:newcmds
-    let lines = add(lines, '      \ ' . string(c) . ',')
+    let lines = add(lines,
+    \ printf('      \ {''name'': %s, ''minlen'': %s, ''flags'': %s, ''parser'': %s},',
+    \       string(c.name), string(c.minlen), string(c.flags), string(c.parser)))
   endfor
   return join(lines, "\n")
 endfunction
