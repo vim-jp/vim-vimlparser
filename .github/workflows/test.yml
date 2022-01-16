@@ -74,16 +74,20 @@ jobs:
           vim --version
           make --keep-going $MAKE_TARGET
 
-      - name: Commit and push
-        if: success() && matrix.make_target == 'fast-test' && github.ref_name == 'master'
+      - name: Generate js and py
+        if: matrix.make_target == 'fast-test' && github.ref_name == 'master'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           if ! make fast-check; then
             git config --local user.name 'github-actions[bot]'
             git config --local user.email 'github-actions[bot]@users.noreply.github.com'
-            git remote set-url origin 'https://github-actions:${{ github.token }}@github.com/${{ github.repository }}'
+            git switch -c bot/generate-jspy
             git add js/vimlparser.js py/vimlparser.py
-            git commit -m 'generate js and py'
-            git push origin '${{ github.ref_name }}'
+            git commit -m 'chore: generate js and py'
+            git push -u origin "$(git rev-parse --abbrev-ref @)"
+            gh pr create --base master --title 'chore: generate js and py' --body '' | tee /tmp/pull_request
+            gh pr merge "$(cat /tmp/pull_request)" --auto --merge --delete-branch
           fi
 
       - name: Coverage from Python
