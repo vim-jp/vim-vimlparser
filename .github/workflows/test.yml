@@ -87,7 +87,7 @@ jobs:
           fi
 
       - name: Coverage from Python
-        if: success() && matrix.make_target == 'fast-test'
+        if: always() && matrix.make_target == 'fast-test'
         run: |
           # Coverage from Python (cannot be combined with non-branch data).
           if [[ -f .coverage_covimerage ]]; then
@@ -96,14 +96,14 @@ jobs:
           fi
 
       - name: Codecov for Python
-        if: success() && matrix.make_target == 'fast-test'
+        if: matrix.make_target == 'fast-test'
         uses: codecov/codecov-action@v2
         with:
           files: coverage.xml
           flags: python
 
       - name: Coverage from Vim
-        if: success()
+        if: always()
         run: |
           # Coverage from Vim.
           covimerage write_coverage $TEST_PROFILE
@@ -111,7 +111,6 @@ jobs:
           coverage xml
 
       - name: Codecov for Vim
-        if: success()
         uses: codecov/codecov-action@v2
         with:
           files: coverage.xml
