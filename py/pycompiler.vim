@@ -931,7 +931,7 @@ function! s:parse_args() abort
 	let v = args
   endif
   return v
-endfunction:
+endfunction
 
 function! s:main() abort
   try
