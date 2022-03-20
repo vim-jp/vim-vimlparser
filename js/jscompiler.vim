@@ -386,7 +386,9 @@ endfunction
 
 function s:JavascriptCompiler.compile_unlet(node)
   let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('delete %s;', join(list, ', '))
+  "For strict mode of JavaScript, we prohibit to delete variables.
+  "call self.out('delete %s;', join(list, ', '))
+  call self.out('%s;', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_lockvar(node)
