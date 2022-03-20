@@ -864,6 +864,15 @@ function! s:convert(in, out) abort
       \   '}',
       \ ]
     call writefile(head + lines + tail, a:out)
+    let esm = [
+      \   'const M = {',
+      \   '  VimLParser: VimLParser,',
+      \   '  StringReader: StringReader,',
+      \   '  Compiler: Compiler',
+      \   '};',
+      \   'export default M;',
+      \ ]
+    call writefile(head + lines + esm, substitute(a:out, '\.js', '\.mjs', ''))
   catch
     throw substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
