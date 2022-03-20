@@ -1,8 +1,8 @@
 //!/usr/bin/env nodejs
 // usage: nodejs vimlparser.js [--neovim] foo.vim
 
-import fs from 'fs';
-import util from 'util';
+import fs from "fs";
+import util from "util";
 
 function main() {
     var neovim = false;
@@ -5962,9 +5962,4 @@ RegexpParser.prototype.gethexchrs = function(n) {
     return r;
 }
 
-const M = {
-  VimLParser: VimLParser,
-  StringReader: StringReader,
-  Compiler: Compiler
-};
-export default M;
+export { VimLParser, StringReader, Compiler };

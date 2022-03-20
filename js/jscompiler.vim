@@ -867,14 +867,9 @@ function! s:convert(in, out) abort
       \ ]
     call writefile(head + lines + tail, a:out)
     let esmtail = [
-      \   'const M = {',
-      \   '  VimLParser: VimLParser,',
-      \   '  StringReader: StringReader,',
-      \   '  Compiler: Compiler',
-      \   '};',
-      \   'export default M;',
+      \   'export { VimLParser, StringReader, Compiler };',
       \ ]
-    let esmhead = substitute(head, "var \([a-z]+\) = require('\([a-z]+\)')", 'import \1 from "\2"', 'g')
+    let esmhead = map(head, { _, line -> substitute(line, "var \\(\\w*\\) = require('\\(\\w*\\)')", 'import \1 from "\2"', 'g')})
     call writefile(esmhead + lines + esmtail, substitute(a:out, '\.js', '\.mjs', ''))
   catch
     throw substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
