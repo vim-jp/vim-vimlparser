@@ -1,8 +1,8 @@
 //!/usr/bin/env nodejs
 // usage: nodejs vimlparser.js [--neovim] foo.vim
 
-var fs = require('fs');
-var util = require('util');
+import fs from 'fs';
+import util from 'util';
 
 function main() {
     var neovim = false;
@@ -1222,7 +1222,7 @@ VimLParser.prototype.find_command = function() {
     for (var __i4 = 0; __i4 < __c4.length; ++__i4) {
         var x = __c4[__i4];
         if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
-            delete cmd;
+            cmd;
             var cmd = x;
             break;
         }
@@ -1232,7 +1232,7 @@ VimLParser.prototype.find_command = function() {
         for (var __i5 = 0; __i5 < __c5.length; ++__i5) {
             var x = __c5[__i5];
             if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
-                delete cmd;
+                cmd;
                 var cmd = x;
                 break;
             }
@@ -1241,7 +1241,7 @@ VimLParser.prototype.find_command = function() {
         for (var __i6 = 0; __i6 < __c6.length; ++__i6) {
             var x = __c6[__i6];
             if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
-                delete cmd;
+                cmd;
                 var cmd = NIL;
                 break;
             }
@@ -1250,7 +1250,7 @@ VimLParser.prototype.find_command = function() {
     // FIXME: user defined command
     if ((cmd === NIL || cmd.name == "Print") && viml_eqregh(name, "^[A-Z]")) {
         name += this.reader.read_alnum();
-        delete cmd;
+        cmd;
         var cmd = {"name":name, "flags":"USERCMD", "parser":"parse_cmd_usercmd"};
     }
     this.find_command_cache[name] = cmd;
@@ -3417,7 +3417,7 @@ ExprParser.prototype.parse_expr8 = function() {
                     var left = node;
                 }
             }
-            delete node;
+            node;
         }
         else if (token.type == TOKEN_ARROW) {
             var funcname_or_lambda = this.parse_expr9();
@@ -3434,7 +3434,7 @@ ExprParser.prototype.parse_expr8 = function() {
             node.left = left;
             node.right = right;
             var left = node;
-            delete node;
+            node;
         }
         else if (token.type == TOKEN_POPEN) {
             var node = Node(NODE_CALL);
@@ -3442,7 +3442,7 @@ ExprParser.prototype.parse_expr8 = function() {
             node.left = left;
             node.rlist = this.parse_rlist();
             var left = node;
-            delete node;
+            node;
         }
         else if (!iswhite(c) && token.type == TOKEN_DOT) {
             // TODO check scriptversion?
@@ -3452,7 +3452,7 @@ ExprParser.prototype.parse_expr8 = function() {
                 break;
             }
             var left = node;
-            delete node;
+            node;
         }
         else {
             this.reader.seek_set(pos);
@@ -3915,7 +3915,7 @@ LvalueParser.prototype.parse_lv8 = function() {
                 }
             }
             var left = node;
-            delete node;
+            node;
         }
         else if (!iswhite(c) && token.type == TOKEN_DOT) {
             var node = this.parse_dot(token, left);
@@ -3924,7 +3924,7 @@ LvalueParser.prototype.parse_lv8 = function() {
                 break;
             }
             var left = node;
-            delete node;
+            node;
         }
         else {
             this.reader.seek_set(pos);
