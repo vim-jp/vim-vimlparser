@@ -1509,13 +1509,15 @@ function! s:VimLParser.parse_cmd_call() abort
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_heredoc() abort
+function! s:VimLParser.parse_heredoc(prefix) abort
   let node = s:Node(s:NODE_HEREDOC)
   let node.pos = self.ea.cmdpos
   let node.op = ''
   let node.rlist = []
   let node.body = []
 
+  " allow prefix to precede heredoc end marker if true
+  let is_trim = s:FALSE
   while s:TRUE
     call self.reader.skip_white()
     let pos = self.reader.getpos()
@@ -1531,6 +1533,9 @@ function! s:VimLParser.parse_heredoc() abort
       let keynode.pos = pos
       let keynode.value = key
       call add(node.rlist, keynode)
+      if key ==# 'trim'
+        let is_trim = s:TRUE
+      endif
     endif
   endwhile
   if node.op ==# ''
@@ -1543,7 +1548,7 @@ function! s:VimLParser.parse_heredoc() abort
     endif
     let pos = self.reader.getpos()
     let line = self.reader.getn(-1)
-    if line ==# node.op
+    if line ==# node.op || is_trim && line ==# a:prefix . node.op
       return node
     endif
     let linenode = s:Node(s:NODE_STRING)
@@ -1600,7 +1605,31 @@ function! s:VimLParser.parse_cmd_let() abort
     call self.reader.getn(len(s2))
     call self.reader.skip_white()
     let node.op = s2
-    let node.right = self.parse_heredoc()
+
+    " compute allowed prefix for heredoc end marker (e.g. EOF)
+    let pos = self.reader.tell()
+    while self.reader.tell() > 0
+      if self.reader.peek() ==# '<EOL>'
+        call self.reader.seek_cur(1)
+        break
+      endif
+      call self.reader.seek_cur(-1)
+    endwhile
+    let prefix = ''
+    while s:TRUE
+      let c = self.reader.getn(1)
+      if c ==# ':'
+        " any presence of leading ':' disables prefix for heredoc end marker
+        let prefix = ''
+        break
+      elseif !s:iswhite(c)
+        break
+      endif
+      let prefix .= c
+    endwhile
+    call self.reader.seek_set(pos)
+
+    let node.right = self.parse_heredoc(prefix)
     call self.add_node(node)
     return
   elseif s1 ==# '='
