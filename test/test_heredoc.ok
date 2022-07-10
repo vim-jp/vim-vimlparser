@@ -1,3 +1,11 @@
 (let =<< a (heredoc (list) "EOS" (list "hello" " world")))
 (let =<< a (heredoc (list "trim") "EOS" (list "\thello" "world")))
 (let =<< a (heredoc (list) "EOS" (list)))
+(if v:true
+  ; matching leading indentation is accepted
+  (let =<< a (heredoc (list "trim") "EOS" (list "\t\thello" "\tworld")))
+  (let =<< a (heredoc (list "trim") "EOS" (list "   hello" "  world")))
+  ; but isn't required
+  (let =<< a (heredoc (list "trim") "EOS" (list "   hello" "  world"))))
+; we don't actually do the trimming for trim heredocs
+(let =<< a (heredoc (list "trim") "EOS" (list "  hello" "   world")))
