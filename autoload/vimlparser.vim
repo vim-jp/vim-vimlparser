@@ -1504,7 +1504,7 @@ function! s:VimLParser.parse_cmd_call() abort
   endif
   let node.left = self.parse_expr()
   if node.left.type !=# s:NODE_CALL
-    throw s:Err('Not an function call', node.left.pos)
+    throw s:Err('Not a function call', node.left.pos)
   endif
   call self.add_node(node)
 endfunction
@@ -6006,7 +6006,7 @@ function! s:RegexpParser.get_token_backslash_common() abort
     elseif c ==# '['
       return self.get_token_sq('\_[')
     endif
-    throw s:Err('E63: invalid use of \_', epos)
+    throw s:Err('E63: Invalid use of \_', epos)
   elseif stridx('etrb', c) !=# -1
     return ['\' . c, '\' . c]
   elseif stridx('123456789', c) !=# -1
