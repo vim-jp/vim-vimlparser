@@ -223,6 +223,7 @@ function viml_has_key(obj, key) {
 function viml_stridx(a, b) {
     return a.indexOf(b);
 }
+
 var NIL = [];
 var TRUE = 1;
 var FALSE = 0;

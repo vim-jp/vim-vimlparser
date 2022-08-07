@@ -29,3 +29,7 @@ let a =<< trim EOS
   hello
    world
 EOS
+  : let a =<< trim EOS
+	  hello
+		world
+EOS

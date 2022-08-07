@@ -9,3 +9,4 @@
   (let =<< a (heredoc (list "trim") "EOS" (list "   hello" "  world"))))
 ; we don't actually do the trimming for trim heredocs
 (let =<< a (heredoc (list "trim") "EOS" (list "  hello" "   world")))
+(let =<< a (heredoc (list "trim") "EOS" (list "\t  hello" "\t\tworld")))
