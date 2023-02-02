@@ -1169,6 +1169,21 @@ class VimLParser:
                 end = self.reader.getpos()
                 if self.reader.getn(1) == "":
                     break
+        elif self.ea.cmd.name == "def":
+            # TODO: support vim9script
+            while not self.reader.eof():
+                c = self.reader.peek()
+                if c == "#":
+                    self.reader.readline()
+                elif c == "'":
+                    ExprTokenizer(self.reader).get_sstring()
+                elif c == "\"":
+                    ExprTokenizer(self.reader).get_dstring()
+                elif self.reader.peekn(6) == "enddef":
+                    self.reader.seek_cur(6)
+                    break
+                else:
+                    self.reader.seek_cur(1)
         else:
             while TRUE:
                 end = self.reader.getpos()

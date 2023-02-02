@@ -1403,6 +1403,28 @@ VimLParser.prototype.parse_cmd_common = function() {
             }
         }
     }
+    else if (this.ea.cmd.name == "def") {
+        // TODO: support vim9script
+        while (!this.reader.eof()) {
+            var c = this.reader.peek();
+            if (c == "#") {
+                this.reader.readline();
+            }
+            else if (c == "'") {
+                new ExprTokenizer(this.reader).get_sstring();
+            }
+            else if (c == "\"") {
+                new ExprTokenizer(this.reader).get_dstring();
+            }
+            else if (this.reader.peekn(6) == "enddef") {
+                this.reader.seek_cur(6);
+                break;
+            }
+            else {
+                this.reader.seek_cur(1);
+            }
+        }
+    }
     else {
         while (TRUE) {
             var end = this.reader.getpos();
