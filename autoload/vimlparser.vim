@@ -1121,6 +1121,23 @@ function! s:VimLParser.parse_cmd_common() abort
         break
       endif
     endwhile
+  elseif self.ea.cmd.name ==# 'def'
+    " TODO: support vim9script
+    while !self.reader.eof()
+      let c = self.reader.peek()
+      if c ==# '#'
+        call self.reader.readline()
+      elseif c ==# "'"
+        call s:ExprTokenizer.new(self.reader).get_sstring()
+      elseif c ==# '"'
+        call s:ExprTokenizer.new(self.reader).get_dstring()
+      elseif self.reader.peekn(6) ==# 'enddef'
+        call self.reader.seek_cur(6)
+        break
+      else
+        call self.reader.seek_cur(1)
+      endif
+    endwhile
   else
     while s:TRUE
       let end = self.reader.getpos()
