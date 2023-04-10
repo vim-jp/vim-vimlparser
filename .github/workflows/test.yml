@@ -97,7 +97,7 @@ jobs:
 
       - name: Codecov for Python
         if: matrix.make_target == 'fast-test'
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: coverage.xml
           flags: python
@@ -111,7 +111,7 @@ jobs:
           coverage xml
 
       - name: Codecov for Vim
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           files: coverage.xml
           flags: vimscript
