@@ -1483,12 +1483,14 @@ class VimLParser:
             raise VimLParserException(Err("Not an function call", node.left.pos))
         self.add_node(node)
 
-    def parse_heredoc(self):
+    def parse_heredoc(self, prefix):
         node = Node(NODE_HEREDOC)
         node.pos = self.ea.cmdpos
         node.op = ""
         node.rlist = []
         node.body = []
+        # allow prefix to precede heredoc end marker if true
+        is_trim = FALSE
         while TRUE:
             self.reader.skip_white()
             pos = self.reader.getpos()
@@ -1503,6 +1505,8 @@ class VimLParser:
                 keynode.pos = pos
                 keynode.value = key
                 viml_add(node.rlist, keynode)
+                if key == "trim":
+                    is_trim = TRUE
         if node.op == "":
             raise VimLParserException(Err("E172: Missing marker", self.reader.getpos()))
         self.parse_trail()
@@ -1511,7 +1515,7 @@ class VimLParser:
                 break
             pos = self.reader.getpos()
             line = self.reader.getn(-1)
-            if line == node.op:
+            if line == node.op or is_trim and line == prefix + node.op:
                 return node
             linenode = Node(NODE_STRING)
             linenode.pos = pos
@@ -1558,7 +1562,25 @@ class VimLParser:
             self.reader.getn(viml_len(s2))
             self.reader.skip_white()
             node.op = s2
-            node.right = self.parse_heredoc()
+            # compute allowed prefix for heredoc end marker (e.g. EOF)
+            pos = self.reader.tell()
+            while self.reader.tell() > 0:
+                if self.reader.peek() == "<EOL>":
+                    self.reader.seek_cur(1)
+                    break
+                self.reader.seek_cur(-1)
+            prefix = ""
+            while TRUE:
+                c = self.reader.getn(1)
+                if c == ":":
+                    # any presence of leading ':' disables prefix for heredoc end marker
+                    prefix = ""
+                    break
+                elif not iswhite(c):
+                    break
+                prefix += c
+            self.reader.seek_set(pos)
+            node.right = self.parse_heredoc(prefix)
             self.add_node(node)
             return
         elif s1 == "=":
