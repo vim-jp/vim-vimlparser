@@ -386,7 +386,9 @@ endfunction
 
 function s:JavascriptCompiler.compile_unlet(node)
   let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('delete %s;', join(list, ', '))
+  "For strict mode of JavaScript, we prohibit to delete variables.
+  "call self.out('delete %s;', join(list, ', '))
+  call self.out('%s;', join(list, ', '))
 endfunction
 
 function s:JavascriptCompiler.compile_lockvar(node)
@@ -864,6 +866,11 @@ function! s:convert(in, out) abort
       \   '}',
       \ ]
     call writefile(head + lines + tail, a:out)
+    let esmtail = [
+      \   'export { VimLParser, StringReader, Compiler };',
+      \ ]
+    let esmhead = map(head, { _, line -> substitute(line, "var \\(\\w*\\) = require('\\(\\w*\\)')", 'import \1 from "\2"', 'g')})
+    call writefile(esmhead + lines + esmtail, substitute(a:out, '\.js', '\.mjs', ''))
   catch
     throw substitute(v:throwpoint, '\.\.\zs\d\+', '\=s:numtoname(submatch(0))', 'g') . "\n" . v:exception
   endtry
