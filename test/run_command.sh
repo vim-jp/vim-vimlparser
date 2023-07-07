@@ -19,14 +19,16 @@ test_file() {
     return
   fi
 
-  local neovim=""
+  local syntax=""
   if [[ $vimfile =~ "test_neo" ]]; then
-    neovim="--neovim"
+    syntax="--neovim"
+  elif [[ $vimfile =~ "test_vspec" ]]; then
+    syntax="--vspec"
   fi
 
   rm -f ${outfile}
 
-  ${vimlparser} ${neovim} ${vimfile} &> ${outfile}
+  ${vimlparser} ${syntax} ${vimfile} &> ${outfile}
 
   diffout=$(diff -u ${outfile} ${okfile})
   if [ -n "$diffout" ]; then
