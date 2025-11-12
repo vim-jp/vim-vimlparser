@@ -767,7 +767,10 @@ function s:PythonCompiler.compile_subscript(node)
 endfunction
 
 function s:PythonCompiler.compile_slice(node)
-  throw 'NotImplemented: slice'
+  let left = self.compile(a:node.left)
+  let rstart = a:node.rlist[0] is s:NIL ? '' : self.compile(a:node.rlist[0])
+  let rend = a:node.rlist[1] is s:NIL ? '' : (self.compile(a:node.rlist[1]) . ' + 1')
+  return printf('%s[%s:%s]', left, rstart, rend)
 endfunction
 
 function s:PythonCompiler.compile_dot(node)

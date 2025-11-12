@@ -386,7 +386,9 @@ endfunction
 
 function s:JavascriptCompiler.compile_unlet(node)
   let list = map(a:node.list, 'self.compile(v:val)')
-  call self.out('delete %s;', join(list, ', '))
+  for v in list
+    call self.out('%s = undefined;', v)
+  endfor
 endfunction
 
 function s:JavascriptCompiler.compile_lockvar(node)
@@ -719,7 +721,13 @@ function s:JavascriptCompiler.compile_subscript(node)
 endfunction
 
 function s:JavascriptCompiler.compile_slice(node)
-  throw 'NotImplemented: slice'
+  let left = self.compile(a:node.left)
+  let start = a:node.rlist[0] is s:NIL ? '0' : self.compile(a:node.rlist[0])
+  if a:node.rlist[1] is s:NIL
+    return printf('%s.slice(%s)', left, start)
+  else
+    return printf('%s.slice(%s, %s + 1)', left, start, self.compile(a:node.rlist[1]))
+  endif
 endfunction
 
 function s:JavascriptCompiler.compile_dot(node)

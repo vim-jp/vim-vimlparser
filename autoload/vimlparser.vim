@@ -1,6 +1,6 @@
 " vim:set ts=8 sts=2 sw=2 tw=0 et:
 "
-" VimL parser - Vim Script Parser
+" VimL parser - Vim script Parser
 "
 " License: This file is placed in the public domain.
 
@@ -8,8 +8,8 @@ function! vimlparser#import() abort
   return s:
 endfunction
 
-" @brief Read input as VimScript and return stringified AST.
-" @param input Input filename or string of VimScript.
+" @brief Read input as Vim script and return stringified AST.
+" @param input Input filename or string of Vim script.
 " @return Stringified AST.
 function! vimlparser#test(input, ...) abort
   try
@@ -143,6 +143,8 @@ let s:NODE_EVAL = 95
 let s:NODE_HEREDOC = 96
 let s:NODE_METHOD = 97
 let s:NODE_ECHOCONSOLE = 98
+let s:NODE_DEF = 99
+let s:NODE_ENDDEF = 100
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -474,6 +476,12 @@ function! s:VimLParser.check_missing_endfunction(ends, pos) abort
   endif
 endfunction
 
+function! s:VimLParser.check_missing_enddef(ends, pos) abort
+  if self.context[0].type ==# s:NODE_DEF
+    throw s:Err(printf('E126: Missing :enddef:    %s', a:ends), a:pos)
+  endif
+endfunction
+
 function! s:VimLParser.check_missing_endif(ends, pos) abort
   if self.context[0].type ==# s:NODE_IF || self.context[0].type ==# s:NODE_ELSEIF || self.context[0].type ==# s:NODE_ELSE
     throw s:Err(printf('E171: Missing :endif:    %s', a:ends), a:pos)
@@ -509,6 +517,7 @@ function! s:VimLParser.parse(reader) abort
     call self.parse_one_cmd()
   endwhile
   call self.check_missing_endfunction('TOPLEVEL', self.reader.getpos())
+  call self.check_missing_enddef('TOPLEVEL', self.reader.getpos())
   call self.check_missing_endif('TOPLEVEL', self.reader.getpos())
   call self.check_missing_endtry('TOPLEVEL', self.reader.getpos())
   call self.check_missing_endwhile('TOPLEVEL', self.reader.getpos())
@@ -830,6 +839,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_common()
   elseif a:parser ==# 'parse_cmd_continue'
     call self.parse_cmd_continue()
+  elseif a:parser ==# 'parse_cmd_def'
+    call self.parse_cmd_def()
   elseif a:parser ==# 'parse_cmd_delfunction'
     call self.parse_cmd_delfunction()
   elseif a:parser ==# 'parse_cmd_echo'
@@ -848,6 +859,8 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_else()
   elseif a:parser ==# 'parse_cmd_elseif'
     call self.parse_cmd_elseif()
+  elseif a:parser ==# 'parse_cmd_enddef'
+    call self.parse_cmd_enddef()
   elseif a:parser ==# 'parse_cmd_endfor'
     call self.parse_cmd_endfor()
   elseif a:parser ==# 'parse_cmd_endfunction'
@@ -1329,7 +1342,7 @@ function! s:VimLParser.parse_cmd_usercmd() abort
   call self.parse_cmd_common()
 endfunction
 
-function! s:VimLParser.parse_cmd_function() abort
+function! s:VimLParser.parse_cmd_function_or_def(is_def) abort
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
@@ -1351,10 +1364,14 @@ function! s:VimLParser.parse_cmd_function() abort
   call self.reader.skip_white()
 
   if left.type ==# s:NODE_IDENTIFIER
-    let s = left.value
-    let ss = split(s, '\zs')
-    if ss[0] !=# '<' && ss[0] !=# '_' && !s:isupper(ss[0]) && stridx(s, ':') ==# -1 && stridx(s, '#') ==# -1
-      throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
+    if a:is_def
+      call self.validate_defname(left)
+    else
+      let s = left.value
+      let ss = split(s, '\zs')
+      if ss[0] !=# '<' && ss[0] !=# '_' && !s:isupper(ss[0]) && stridx(s, ':') ==# -1 && stridx(s, '#') ==# -1
+        throw s:Err(printf('E128: Function name must start with a capital or contain a colon: %s', s), left.pos)
+      endif
     endif
   endif
 
@@ -1366,14 +1383,15 @@ function! s:VimLParser.parse_cmd_function() abort
   endif
 
   " :function[!] {name}([arguments]) [range] [abort] [dict] [closure]
-  let node = s:Node(s:NODE_FUNCTION)
+  " :def[!] {name}([arguments])[: type]
+  let node = s:Node(a:is_def ? s:NODE_DEF : s:NODE_FUNCTION)
   let node.pos = self.ea.cmdpos
   let node.body = []
   let node.ea = self.ea
   let node.left = left
   let node.rlist = []
   let node.default_args = []
-  let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0}
+  let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0, 'return_type': s:NIL}
   let node.endfunction = s:NIL
   call self.reader.getn(1)
   let tokenizer = s:ExprTokenizer.new(self.reader)
@@ -1385,9 +1403,14 @@ function! s:VimLParser.parse_cmd_function() abort
       let varnode = s:Node(s:NODE_IDENTIFIER)
       let token = tokenizer.get()
       if token.type ==# s:TOKEN_IDENTIFIER
-        if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
-          throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
-        elseif has_key(named, token.value)
+        if a:is_def
+          let token = self.parse_defarg(tokenizer, token)
+        else
+          if !s:isargname(token.value) || token.value ==# 'firstline' || token.value ==# 'lastline'
+            throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
+          endif
+        endif
+        if has_key(named, token.value)
           throw s:Err(printf('E853: Duplicate argument name: %s', token.value), token.pos)
         endif
         let named[token.value] = 1
@@ -1406,10 +1429,17 @@ function! s:VimLParser.parse_cmd_function() abort
         endif
         let token = tokenizer.get()
         if token.type ==# s:TOKEN_COMMA
+          let p = self.reader.p(0)
+          if a:is_def && p ==# '<EOL>'
+            call self.reader.seek_cur(1)
+          endif
           " XXX: Vim allows last comma.  F(a, b, ) => OK
           if tokenizer.peek().type ==# s:TOKEN_PCLOSE
             call tokenizer.get()
             break
+          endif
+          if a:is_def && !s:iswhite(p) && p !=# '<EOL>'
+            throw s:Err("E1069: White space required after ','", token.pos)
           endif
         elseif token.type ==# s:TOKEN_PCLOSE
           break
@@ -1426,47 +1456,118 @@ function! s:VimLParser.parse_cmd_function() abort
         else
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
+      elseif a:is_def && token.type ==# s:TOKEN_EOL
+        if tokenizer.peek().type ==# s:TOKEN_PCLOSE
+          call tokenizer.get()
+          break
+        endif
       else
         throw s:Err(printf('unexpected token: %s', token.value), token.pos)
       endif
     endwhile
   endif
-  while s:TRUE
-    call self.reader.skip_white()
-    let epos = self.reader.getpos()
-    let key = self.reader.read_alpha()
-    if key ==# ''
-      break
-    elseif key ==# 'range'
-      let node.attr.range = s:TRUE
-    elseif key ==# 'abort'
-      let node.attr.abort = s:TRUE
-    elseif key ==# 'dict'
-      let node.attr.dict = s:TRUE
-    elseif key ==# 'closure'
-      let node.attr.closure = s:TRUE
-    else
-      throw s:Err(printf('unexpected token: %s', key), epos)
-    endif
-  endwhile
+  if a:is_def
+    let node.attr.return_type = tokenizer.parse_type()
+  else
+    while s:TRUE
+      call self.reader.skip_white()
+      let epos = self.reader.getpos()
+      let key = self.reader.read_alpha()
+      if key ==# ''
+        break
+      elseif key ==# 'range'
+        let node.attr.range = s:TRUE
+      elseif key ==# 'abort'
+        let node.attr.abort = s:TRUE
+      elseif key ==# 'dict'
+        let node.attr.dict = s:TRUE
+      elseif key ==# 'closure'
+        let node.attr.closure = s:TRUE
+      else
+        throw s:Err(printf('unexpected token: %s', key), epos)
+      endif
+    endwhile
+  endif
   call self.add_node(node)
   call self.push_context(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_endfunction() abort
-  call self.check_missing_endif('ENDFUNCTION', self.ea.cmdpos)
-  call self.check_missing_endtry('ENDFUNCTION', self.ea.cmdpos)
-  call self.check_missing_endwhile('ENDFUNCTION', self.ea.cmdpos)
-  call self.check_missing_endfor('ENDFUNCTION', self.ea.cmdpos)
-  if self.context[0].type !=# s:NODE_FUNCTION
-    throw s:Err('E193: :endfunction not inside a function', self.ea.cmdpos)
+function! s:VimLParser.validate_defname(left) abort
+  let s = a:left.value
+  if stridx(s, '#') !=# -1
+    throw s:Err('E1263: Cannot use name with # in Vim9 script, use export instead', a:left.pos)
+  endif
+  let i = 0
+  let scope = s[0:1]
+  if scope ==# 's:'
+    throw s:Err('E1268: Cannot use s: in Vim9 script', a:left.pos)
+  elseif scope ==# 'g:'
+    let i = 2
+  endif
+  if s[i] !=# '_' && !s:isupper(s[i])
+    throw s:Err(printf('E1267: Function name must start with a capital: %s', s), a:left.pos)
+  endif
+endfunction
+
+function! s:VimLParser.parse_defarg(tokenizer, current_token) abort
+  let token = a:current_token
+  if token.value[-1:] ==# ':'
+    " fix token.value. 'foo:' -> 'foo'
+    let token.value = token.value[0:-2]
+    call a:tokenizer.reader.seek_cur(-1)
+  else
+    let i = stridx(token.value, ':')
+    if i !=# -1
+      " e.g. 'foo:number'
+      let token.pos.col += i + 1
+      throw s:Err("E1069: White space required after ':'", token.pos)
+    endif
+  endif
+  if !s:isargname(token.value)
+    throw s:Err(printf('E125: Illegal argument: %s', token.value), token.pos)
+  elseif a:tokenizer.parse_type() is s:NIL
+    throw s:Err(printf('E1077: Missing argument type for %s', token.value), token.pos)
+  endif
+  return token
+endfunction
+
+function! s:VimLParser.parse_cmd_function() abort
+  call self.parse_cmd_function_or_def(s:FALSE)
+endfunction
+
+function! s:VimLParser.parse_cmd_def() abort
+  call self.parse_cmd_function_or_def(s:TRUE)
+endfunction
+
+function! s:VimLParser.paser_cmd_endfunction_or_enddef(is_def) abort
+  let cmd = a:is_def ? 'ENDDEF' : 'ENDFUNCTION'
+  call self.check_missing_endif(cmd, self.ea.cmdpos)
+  call self.check_missing_endtry(cmd, self.ea.cmdpos)
+  call self.check_missing_endwhile(cmd, self.ea.cmdpos)
+  call self.check_missing_endfor(cmd, self.ea.cmdpos)
+  if a:is_def
+    if self.context[0].type !=# s:NODE_DEF
+      throw s:Err('E193: :enddef not inside a def', self.ea.cmdpos)
+    endif
+  else
+    if self.context[0].type !=# s:NODE_FUNCTION
+      throw s:Err('E193: :endfunction not inside a function', self.ea.cmdpos)
+    endif
   endif
   call self.reader.getn(-1)
-  let node = s:Node(s:NODE_ENDFUNCTION)
+  let node = s:Node(a:is_def ? s:NODE_ENDDEF : s:NODE_ENDFUNCTION)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
   let self.context[0].endfunction = node
   call self.pop_context()
+endfunction
+
+function! s:VimLParser.parse_cmd_endfunction() abort
+  call self.paser_cmd_endfunction_or_enddef(s:FALSE)
+endfunction
+
+function! s:VimLParser.parse_cmd_enddef() abort
+  call self.paser_cmd_endfunction_or_enddef(s:TRUE)
 endfunction
 
 function! s:VimLParser.parse_cmd_delfunction() abort
@@ -1478,7 +1579,8 @@ function! s:VimLParser.parse_cmd_delfunction() abort
 endfunction
 
 function! s:VimLParser.parse_cmd_return() abort
-  if self.find_context(s:NODE_FUNCTION) ==# -1
+  let defindex = self.find_context(s:NODE_DEF)
+  if self.find_context(s:NODE_FUNCTION) ==# -1 && defindex ==# -1
     throw s:Err('E133: :return not inside a function', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_RETURN)
@@ -1489,6 +1591,14 @@ function! s:VimLParser.parse_cmd_return() abort
   let c = self.reader.peek()
   if c ==# '"' || !self.ends_excmds(c)
     let node.left = self.parse_expr()
+  endif
+  if defindex !=# -1
+    let return_type = self.context[defindex].attr.return_type
+    if node.left isnot s:NIL && return_type is s:NIL
+      throw s:Err('E1096: Returning a value in a function without a return type', self.ea.cmdpos)
+    elseif node.left is s:NIL && return_type isnot s:NIL
+      throw s:Err('E1003: Missing return value', self.ea.cmdpos)
+    endif
   endif
   call self.add_node(node)
 endfunction
@@ -1569,6 +1679,10 @@ function! s:VimLParser.parse_cmd_let() abort
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
+  endif
+
+  if self.find_context(s:NODE_DEF) !=# -1
+    throw s:Err('E1126: Cannot use :let in Vim9 script', self.ea.cmdpos)
   endif
 
   let lhs = self.parse_letlhs()
@@ -2316,7 +2430,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'delmarks', 'minlen': 4, 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'debug', 'minlen': 3, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'debuggreedy', 'minlen': 6, 'flags': 'RANGE|ZEROR|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'def', 'minlen': 3, 'flags': 'EXTRA|BANG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'def', 'minlen': 3, 'flags': 'EXTRA|BANG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_def'},
       \ {'name': 'defer', 'minlen': 4, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'defcompile', 'minlen': 4, 'flags': 'SBOXOK|CMDWIN|LOCK_OK|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'delcommand', 'minlen': 4, 'flags': 'NEEDARG|WORD1|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
@@ -2353,7 +2467,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'endif', 'minlen': 2, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endif'},
       \ {'name': 'endinterface', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'endclass', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'enddef', 'minlen': 4, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'enddef', 'minlen': 4, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_enddef'},
       \ {'name': 'endenum', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'endfunction', 'minlen': 4, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endfunction'},
       \ {'name': 'endfor', 'minlen': 5, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endfor'},
@@ -3686,7 +3800,7 @@ function! s:ExprTokenizer.get_dstring() abort
   while s:TRUE
     let c = self.reader.p(0)
     if c ==# '<EOF>' || c ==# '<EOL>'
-      throw s:Err('unexpectd EOL', self.reader.getpos())
+      throw s:Err('unexpected EOL', self.reader.getpos())
     elseif c ==# '"'
       call self.reader.seek_cur(1)
       break
@@ -3720,7 +3834,7 @@ function! s:ExprTokenizer.parse_dict_literal_key() abort
   while s:TRUE
     let c = self.reader.p(0)
     if c ==# '<EOF>' || c ==# '<EOL>'
-      throw s:Err('unexpectd EOL', self.reader.getpos())
+      throw s:Err('unexpected EOL', self.reader.getpos())
     endif
     if !s:isalnum(c) && c !=# '_' && c !=# '-'
       break
@@ -3730,6 +3844,45 @@ function! s:ExprTokenizer.parse_dict_literal_key() abort
   endwhile
   let node.value = "'" . s . "'"
   return node
+endfunction
+
+function! s:ExprTokenizer.parse_type() abort
+  let c = self.reader.p(0)
+  if c !=# ':'
+    return s:NIL
+  endif
+  call self.reader.seek_cur(1)
+  if !s:iswhite(self.reader.p(0))
+    throw s:Err("E1069: White space required after ':'", self.reader.getpos())
+  endif
+  call self.reader.skip_white()
+  let s = ''
+  let generics = 0
+  while s:TRUE
+    if generics !=# 0
+      call self.reader.skip_white()
+      let c = self.reader.p(0)
+      if c ==# '<'
+        let generics += 1
+      elseif c ==# '>'
+        let generics -= 1
+      elseif c ==# '<EOF>' || c ==# '<EOL>'
+        throw s:Err('unexpected EOL', self.reader.getpos())
+      elseif !s:iswordc(c) && c !=# '.' && c !=# ','
+        throw s:Err(printf('unexpected token: %s', c), self.reader.getpos())
+      endif
+    else
+      let c = self.reader.p(0)
+      if c ==# '<'
+        let generics += 1
+      elseif !s:iswordc(c)
+        break
+      endif
+    endif
+    call self.reader.seek_cur(1)
+    let s .= c
+  endwhile
+  return s ==# '' ? s:NIL : s
 endfunction
 
 let s:ExprParser = {}
@@ -5002,7 +5155,10 @@ function! s:Compiler.compile(node) abort
     call self.compile_excmd(a:node)
     return s:NIL
   elseif a:node.type ==# s:NODE_FUNCTION
-    call self.compile_function(a:node)
+    call self.compile_function_or_def(a:node, s:FALSE)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_DEF
+    call self.compile_function_or_def(a:node, s:TRUE)
     return s:NIL
   elseif a:node.type ==# s:NODE_DELFUNCTION
     call self.compile_delfunction(a:node)
@@ -5220,7 +5376,7 @@ function! s:Compiler.compile_excmd(node) abort
   call self.out('(excmd "%s")', escape(a:node.str, '\"'))
 endfunction
 
-function! s:Compiler.compile_function(node) abort
+function! s:Compiler.compile_function_or_def(node, is_def) abort
   let left = self.compile(a:node.left)
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let default_args = map(a:node.default_args, 'self.compile(v:val)')
@@ -5241,7 +5397,7 @@ function! s:Compiler.compile_function(node) abort
       let left .= ' . ...'
     endif
   endif
-  call self.out('(function (%s)', left)
+  call self.out('(%s (%s)', a:is_def ? 'def' : 'function', left)
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   call self.out(')')
