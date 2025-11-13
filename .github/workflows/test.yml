@@ -8,7 +8,10 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # runs-on: ubuntu-latest
+    # covimerage.CoveragePlugin not supported with PyTracer after upgrade to ubuntu 24.04
+    # https://github.com/Vimjas/covimerage/issues/104
+    runs-on: ubuntu-22.04
 
     strategy:
       fail-fast: false
