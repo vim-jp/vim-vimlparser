@@ -121,6 +121,8 @@ let s:NODE_REMAINDER = 72
 let s:NODE_NOT = 73
 let s:NODE_MINUS = 74
 let s:NODE_PLUS = 75
+let s:NODE_LSHIFT = 99
+let s:NODE_RSHIFT = 100
 let s:NODE_SUBSCRIPT = 76
 let s:NODE_SLICE = 77
 let s:NODE_CALL = 78
@@ -213,6 +215,8 @@ let s:TOKEN_BLOB = 66
 let s:TOKEN_LITCOPEN = 67
 let s:TOKEN_DOTDOT = 68
 let s:TOKEN_HEREDOC = 69
+let s:TOKEN_LSHIFT = 70
+let s:TOKEN_RSHIFT = 71
 
 let s:MAX_FUNC_ARGS = 20
 
@@ -3525,6 +3529,9 @@ function! s:ExprTokenizer.get2() abort
     elseif r.p(1) ==# '#'
       call r.seek_cur(2)
       return self.token(s:TOKEN_GTCS, '>#', pos)
+    elseif r.p(1) ==# '>'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_RSHIFT, '>>', pos)
     else
       call r.seek_cur(1)
       return self.token(s:TOKEN_GT, '>', pos)
@@ -3536,6 +3543,9 @@ function! s:ExprTokenizer.get2() abort
     elseif r.p(1) ==# '#'
       call r.seek_cur(2)
       return self.token(s:TOKEN_LTCS, '<#', pos)
+    elseif r.p(1) ==# '<'
+      call r.seek_cur(2)
+      return self.token(s:TOKEN_LSHIFT, '<<', pos)
     else
       call r.seek_cur(1)
       return self.token(s:TOKEN_LT, '<', pos)
@@ -4021,7 +4031,7 @@ endfunction
 "        expr6 . expr6 ..
 "        expr6 .. expr6 ..
 function! s:ExprParser.parse_expr5() abort
-  let left = self.parse_expr6()
+  let left = self.parse_expr5_5()
   while s:TRUE
     let pos = self.reader.tell()
     let token = self.tokenizer.get()
@@ -4029,22 +4039,49 @@ function! s:ExprParser.parse_expr5() abort
       let node = s:Node(s:NODE_ADD)
       let node.pos = token.pos
       let node.left = left
-      let node.right = self.parse_expr6()
+      let node.right = self.parse_expr5_5()
       let left = node
     elseif token.type ==# s:TOKEN_MINUS
       let node = s:Node(s:NODE_SUBTRACT)
       let node.pos = token.pos
       let node.left = left
-      let node.right = self.parse_expr6()
+      let node.right = self.parse_expr5_5()
       let left = node
     elseif token.type ==# s:TOKEN_DOTDOT " TODO check scriptversion?
       let node = s:Node(s:NODE_CONCAT)
       let node.pos = token.pos
       let node.left = left
-      let node.right = self.parse_expr6()
+      let node.right = self.parse_expr5_5()
       let left = node
     elseif token.type ==# s:TOKEN_DOT " TODO check scriptversion?
       let node = s:Node(s:NODE_CONCAT)
+      let node.pos = token.pos
+      let node.left = left
+      let node.right = self.parse_expr5_5()
+      let left = node
+    else
+      call self.reader.seek_set(pos)
+      break
+    endif
+  endwhile
+  return left
+endfunction
+
+" expr5_5: expr6 << expr6 ..
+"          expr6 >> expr6 ..
+function! s:ExprParser.parse_expr5_5() abort
+  let left = self.parse_expr6()
+  while s:TRUE
+    let pos = self.reader.tell()
+    let token = self.tokenizer.get()
+    if token.type ==# s:TOKEN_LSHIFT
+      let node = s:Node(s:NODE_LSHIFT)
+      let node.pos = token.pos
+      let node.left = left
+      let node.right = self.parse_expr6()
+      let left = node
+    elseif token.type ==# s:TOKEN_RSHIFT
+      let node = s:Node(s:NODE_RSHIFT)
       let node.pos = token.pos
       let node.left = left
       let node.right = self.parse_expr6()
@@ -5151,6 +5188,10 @@ function! s:Compiler.compile(node) abort
     return self.compile_divide(a:node)
   elseif a:node.type ==# s:NODE_REMAINDER
     return self.compile_remainder(a:node)
+  elseif a:node.type ==# s:NODE_LSHIFT
+    return self.compile_lshift(a:node)
+  elseif a:node.type ==# s:NODE_RSHIFT
+    return self.compile_rshift(a:node)
   elseif a:node.type ==# s:NODE_NOT
     return self.compile_not(a:node)
   elseif a:node.type ==# s:NODE_PLUS
@@ -5598,6 +5639,14 @@ endfunction
 
 function! s:Compiler.compile_remainder(node) abort
   return printf('(%% %s %s)', self.compile(a:node.left), self.compile(a:node.right))
+endfunction
+
+function! s:Compiler.compile_lshift(node) abort
+  return printf('(<< %s %s)', self.compile(a:node.left), self.compile(a:node.right))
+endfunction
+
+function! s:Compiler.compile_rshift(node) abort
+  return printf('(>> %s %s)', self.compile(a:node.left), self.compile(a:node.right))
 endfunction
 
 function! s:Compiler.compile_not(node) abort
