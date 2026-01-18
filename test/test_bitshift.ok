@@ -1,4 +1,3 @@
-Coverage.py warning: Plugin file tracers (covimerage.CoveragePlugin) aren't supported with PyTracer
 ; Test bitshift operators
 (let = a (<< 1 2))
 (let = b (>> 8 2))
