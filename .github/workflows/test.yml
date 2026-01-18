@@ -31,7 +31,7 @@ jobs:
           - vim_version: installed
             make_target: fast-test
             test_profile: vim-profile-installed.txt
-            test_python: "python -m coverage run --append"
+            test_python: "python -m coverage run --append -q"
 
     env:
       VIM_VERSION: ${{ matrix.vim_version }}
