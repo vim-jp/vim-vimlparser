@@ -121,8 +121,6 @@ let s:NODE_REMAINDER = 72
 let s:NODE_NOT = 73
 let s:NODE_MINUS = 74
 let s:NODE_PLUS = 75
-let s:NODE_LSHIFT = 99
-let s:NODE_RSHIFT = 100
 let s:NODE_SUBSCRIPT = 76
 let s:NODE_SLICE = 77
 let s:NODE_CALL = 78
@@ -145,6 +143,8 @@ let s:NODE_EVAL = 95
 let s:NODE_HEREDOC = 96
 let s:NODE_METHOD = 97
 let s:NODE_ECHOCONSOLE = 98
+let s:NODE_LSHIFT = 99
+let s:NODE_RSHIFT = 100
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
