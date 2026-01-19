@@ -210,6 +210,19 @@ def viml_has_key(obj, key):
 def viml_stridx(a, b):
     return a.find(b)
 
+def viml_type(obj):
+    if obj is None: return 0
+    if isinstance(obj, (int, float)): return 0
+    if isinstance(obj, str): return 1
+    if isinstance(obj, list): return 3
+    if isinstance(obj, dict): return 4
+    if callable(obj): return 2
+    return 0
+
+def viml_function(name):
+    # Return a dummy function for type comparison
+    return lambda: None
+
 
 NIL = []
 TRUE = 1
@@ -605,6 +618,10 @@ class VimLParser:
             self.neovim = a000[0]
         else:
             self.neovim = 0
+        if viml_len(a000) > 1 and viml_type(a000[1]) == viml_type(AttributeDict({})):
+            self.callbacks = a000[1]
+        else:
+            self.callbacks = AttributeDict({})
         self.find_command_cache = AttributeDict({})
 
     def push_context(self, node):
@@ -623,6 +640,10 @@ class VimLParser:
 
     def add_node(self, node):
         viml_add(self.context[0].body, node)
+
+    def invoke_callback(self, name, *a000):
+        if viml_has_key(self.callbacks, name) and viml_type(self.callbacks[name]) == viml_type(viml_function("tr")):
+            viml_call(self.callbacks[name], a000)
 
     def check_missing_endfunction(self, ends, pos):
         if self.context[0].type == NODE_FUNCTION:
@@ -1028,6 +1049,8 @@ class VimLParser:
             name = c
         elif self.reader.peekn(2) == "py":
             name = self.reader.read_alnum()
+        elif self.reader.peekn(4) == "vim9":
+            name = self.reader.read_alnum()
         else:
             pos = self.reader.tell()
             name = self.reader.read_alpha()
@@ -1039,11 +1062,19 @@ class VimLParser:
         if viml_has_key(self.find_command_cache, name):
             return self.find_command_cache[name]
         cmd = NIL
-        for x in self.builtin_commands:
-            if viml_stridx(x.name, name) == 0 and viml_len(name) >= x.minlen:
-                del cmd
-                cmd = x
-                break
+        # Special case for vim9script and vim9cmd to avoid matching vimgrep
+        if name != "vim9script" and name != "vim9cmd":
+            for x in self.builtin_commands:
+                if viml_stridx(x.name, name) == 0 and viml_len(name) >= x.minlen:
+                    del cmd
+                    cmd = x
+                    break
+        elif name == "vim9script":
+            del cmd
+            cmd = AttributeDict({"name": "vim9script", "minlen": 5, "flags": "WORD1|CMDWIN|LOCK_OK", "parser": "parse_cmd_common"})
+        elif name == "vim9cmd":
+            del cmd
+            cmd = AttributeDict({"name": "vim9cmd", "minlen": 4, "flags": "NEEDARG|EXTRA|NOTRLCOM|CMDWIN|LOCK_OK", "parser": "parse_cmd_common"})
         if self.neovim:
             for x in self.neovim_additional_commands:
                 if viml_stridx(x.name, name) == 0 and viml_len(name) >= x.minlen:
@@ -1182,6 +1213,13 @@ class VimLParser:
         node.pos = self.ea.cmdpos
         node.ea = self.ea
         node.str = self.reader.getstr(self.ea.linepos, end)
+        # Invoke callback for vim9 script commands
+        if self.ea.cmd.name == "vim9script":
+            self.invoke_callback("vim9script_callback", node, node.str)
+        elif self.ea.cmd.name == "vim9cmd":
+            self.invoke_callback("vim9cmd_callback", node, node.str)
+        elif self.ea.cmd.name == "def":
+            self.invoke_callback("def_callback", node, node.str)
         self.add_node(node)
 
     def separate_nextcmd(self):

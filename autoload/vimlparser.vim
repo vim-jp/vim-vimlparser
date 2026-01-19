@@ -446,6 +446,12 @@ function! s:VimLParser.__init__(...) abort
     let self.neovim = 0
   endif
 
+  if len(a:000) > 1 && type(a:000[1]) ==# type({})
+    let self.callbacks = a:000[1]
+  else
+    let self.callbacks = {}
+  endif
+
   let self.find_command_cache = {}
 endfunction
 
@@ -470,6 +476,12 @@ endfunction
 
 function! s:VimLParser.add_node(node) abort
   call add(self.context[0].body, a:node)
+endfunction
+
+function! s:VimLParser.invoke_callback(name, ...) abort
+  if has_key(self.callbacks, a:name) && type(self.callbacks[a:name]) ==# type(function('tr'))
+    call call(self.callbacks[a:name], a:000)
+  endif
 endfunction
 
 function! s:VimLParser.check_missing_endfunction(ends, pos) abort
@@ -940,6 +952,8 @@ function! s:VimLParser.find_command() abort
     let name = c
   elseif self.reader.peekn(2) ==# 'py'
     let name = self.reader.read_alnum()
+  elseif self.reader.peekn(4) ==# 'vim9'
+    let name = self.reader.read_alnum()
   else
     let pos = self.reader.tell()
     let name = self.reader.read_alpha()
@@ -959,13 +973,22 @@ function! s:VimLParser.find_command() abort
 
   let cmd = s:NIL
 
-  for x in self.builtin_commands
-    if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
-      unlet cmd
-      let cmd = x
-      break
-    endif
-  endfor
+  " Special case for vim9script and vim9cmd to avoid matching vimgrep
+  if name !=# 'vim9script' && name !=# 'vim9cmd'
+    for x in self.builtin_commands
+      if stridx(x.name, name) ==# 0 && len(name) >= x.minlen
+        unlet cmd
+        let cmd = x
+        break
+      endif
+    endfor
+  elseif name ==# 'vim9script'
+    unlet cmd
+    let cmd = {'name': 'vim9script', 'minlen': 5, 'flags': 'WORD1|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'}
+  elseif name ==# 'vim9cmd'
+    unlet cmd
+    let cmd = {'name': 'vim9cmd', 'minlen': 4, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'}
+  endif
 
   if self.neovim
     for x in self.neovim_additional_commands
@@ -1137,6 +1160,16 @@ function! s:VimLParser.parse_cmd_common() abort
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
   let node.str = self.reader.getstr(self.ea.linepos, end)
+
+  " Invoke callback for vim9 script commands
+  if self.ea.cmd.name ==# 'vim9script'
+    call self.invoke_callback('vim9script_callback', node, node.str)
+  elseif self.ea.cmd.name ==# 'vim9cmd'
+    call self.invoke_callback('vim9cmd_callback', node, node.str)
+  elseif self.ea.cmd.name ==# 'def'
+    call self.invoke_callback('def_callback', node, node.str)
+  endif
+
   call self.add_node(node)
 endfunction
 

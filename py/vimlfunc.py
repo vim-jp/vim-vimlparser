@@ -209,3 +209,16 @@ def viml_has_key(obj, key):
 
 def viml_stridx(a, b):
     return a.find(b)
+
+def viml_type(obj):
+    if obj is None: return 0
+    if isinstance(obj, (int, float)): return 0
+    if isinstance(obj, str): return 1
+    if isinstance(obj, list): return 3
+    if isinstance(obj, dict): return 4
+    if callable(obj): return 2
+    return 0
+
+def viml_function(name):
+    # Return a dummy function for type comparison
+    return lambda: None

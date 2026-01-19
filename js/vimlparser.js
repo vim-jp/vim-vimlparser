@@ -224,6 +224,21 @@ function viml_stridx(a, b) {
     return a.indexOf(b);
 }
 
+function viml_type(obj) {
+    if (obj === null || obj === undefined) return 0;
+    if (typeof obj === 'number') return 0;
+    if (typeof obj === 'string') return 1;
+    if (Array.isArray(obj)) return 3;
+    if (typeof obj === 'object') return 4;
+    if (typeof obj === 'function') return 2;
+    return 0;
+}
+
+function viml_function(name) {
+    // Return a dummy function for type comparison
+    return function() {};
+}
+
 var NIL = [];
 var TRUE = 1;
 var FALSE = 0;
@@ -618,6 +633,12 @@ VimLParser.prototype.__init__ = function() {
     else {
         this.neovim = 0;
     }
+    if (viml_len(a000) > 1 && viml_type(a000[1]) == viml_type({})) {
+        this.callbacks = a000[1];
+    }
+    else {
+        this.callbacks = {};
+    }
     this.find_command_cache = {};
 }
 
@@ -644,6 +665,13 @@ VimLParser.prototype.find_context = function(type) {
 
 VimLParser.prototype.add_node = function(node) {
     viml_add(this.context[0].body, node);
+}
+
+VimLParser.prototype.invoke_callback = function(name) {
+    var a000 = Array.prototype.slice.call(arguments, 1);
+    if (viml_has_key(this.callbacks, name) && viml_type(this.callbacks[name]) == viml_type(viml_function("tr"))) {
+        viml_call(this.callbacks[name], a000);
+    }
 }
 
 VimLParser.prototype.check_missing_endfunction = function(ends, pos) {
@@ -1207,6 +1235,9 @@ VimLParser.prototype.find_command = function() {
     else if (this.reader.peekn(2) == "py") {
         var name = this.reader.read_alnum();
     }
+    else if (this.reader.peekn(4) == "vim9") {
+        var name = this.reader.read_alnum();
+    }
     else {
         var pos = this.reader.tell();
         var name = this.reader.read_alpha();
@@ -1222,14 +1253,25 @@ VimLParser.prototype.find_command = function() {
         return this.find_command_cache[name];
     }
     var cmd = NIL;
-    var __c4 = this.builtin_commands;
-    for (var __i4 = 0; __i4 < __c4.length; ++__i4) {
-        var x = __c4[__i4];
-        if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
-            delete cmd;
-            var cmd = x;
-            break;
+    // Special case for vim9script and vim9cmd to avoid matching vimgrep
+    if (name != "vim9script" && name != "vim9cmd") {
+        var __c4 = this.builtin_commands;
+        for (var __i4 = 0; __i4 < __c4.length; ++__i4) {
+            var x = __c4[__i4];
+            if (viml_stridx(x.name, name) == 0 && viml_len(name) >= x.minlen) {
+                delete cmd;
+                var cmd = x;
+                break;
+            }
         }
+    }
+    else if (name == "vim9script") {
+        delete cmd;
+        var cmd = {"name":"vim9script", "minlen":5, "flags":"WORD1|CMDWIN|LOCK_OK", "parser":"parse_cmd_common"};
+    }
+    else if (name == "vim9cmd") {
+        delete cmd;
+        var cmd = {"name":"vim9cmd", "minlen":4, "flags":"NEEDARG|EXTRA|NOTRLCOM|CMDWIN|LOCK_OK", "parser":"parse_cmd_common"};
     }
     if (this.neovim) {
         var __c5 = this.neovim_additional_commands;
@@ -1419,6 +1461,16 @@ VimLParser.prototype.parse_cmd_common = function() {
     node.pos = this.ea.cmdpos;
     node.ea = this.ea;
     node.str = this.reader.getstr(this.ea.linepos, end);
+    // Invoke callback for vim9 script commands
+    if (this.ea.cmd.name == "vim9script") {
+        this.invoke_callback("vim9script_callback", node, node.str);
+    }
+    else if (this.ea.cmd.name == "vim9cmd") {
+        this.invoke_callback("vim9cmd_callback", node, node.str);
+    }
+    else if (this.ea.cmd.name == "def") {
+        this.invoke_callback("def_callback", node, node.str);
+    }
     this.add_node(node);
 }
 

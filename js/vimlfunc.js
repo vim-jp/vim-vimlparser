@@ -224,3 +224,18 @@ function viml_stridx(a, b) {
     return a.indexOf(b);
 }
 
+function viml_type(obj) {
+    if (obj === null || obj === undefined) return 0;
+    if (typeof obj === 'number') return 0;
+    if (typeof obj === 'string') return 1;
+    if (Array.isArray(obj)) return 3;
+    if (typeof obj === 'object') return 4;
+    if (typeof obj === 'function') return 2;
+    return 0;
+}
+
+function viml_function(name) {
+    // Return a dummy function for type comparison
+    return function() {};
+}
+
