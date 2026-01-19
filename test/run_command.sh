@@ -26,7 +26,7 @@ test_file() {
 
   rm -f ${outfile}
 
-  ${vimlparser} ${neovim} ${vimfile} &> ${outfile}
+  ${vimlparser} ${neovim} ${vimfile} 2>&1 | grep -v "^Coverage.py warning" > ${outfile}
 
   diffout=$(diff -u ${outfile} ${okfile})
   if [ -n "$diffout" ]; then

@@ -311,6 +311,8 @@ NODE_EVAL = 95
 NODE_HEREDOC = 96
 NODE_METHOD = 97
 NODE_ECHOCONSOLE = 98
+NODE_LSHIFT = 99
+NODE_RSHIFT = 100
 TOKEN_EOF = 1
 TOKEN_EOL = 2
 TOKEN_SPACE = 3
@@ -380,6 +382,8 @@ TOKEN_BLOB = 66
 TOKEN_LITCOPEN = 67
 TOKEN_DOTDOT = 68
 TOKEN_HEREDOC = 69
+TOKEN_LSHIFT = 70
+TOKEN_RSHIFT = 71
 MAX_FUNC_ARGS = 20
 
 
@@ -2209,6 +2213,9 @@ class ExprTokenizer:
             elif r.p(1) == "#":
                 r.seek_cur(2)
                 return self.token(TOKEN_GTCS, ">#", pos)
+            elif r.p(1) == ">":
+                r.seek_cur(2)
+                return self.token(TOKEN_RSHIFT, ">>", pos)
             else:
                 r.seek_cur(1)
                 return self.token(TOKEN_GT, ">", pos)
@@ -2219,6 +2226,9 @@ class ExprTokenizer:
             elif r.p(1) == "#":
                 r.seek_cur(2)
                 return self.token(TOKEN_LTCS, "<#", pos)
+            elif r.p(1) == "<":
+                r.seek_cur(2)
+                return self.token(TOKEN_LSHIFT, "<<", pos)
             else:
                 r.seek_cur(1)
                 return self.token(TOKEN_LT, "<", pos)
@@ -2666,7 +2676,7 @@ class ExprParser:
     #        expr6 . expr6 ..
     #        expr6 .. expr6 ..
     def parse_expr5(self):
-        left = self.parse_expr6()
+        left = self.parse_expr5_5()
         while TRUE:
             pos = self.reader.tell()
             token = self.tokenizer.get()
@@ -2674,24 +2684,48 @@ class ExprParser:
                 node = Node(NODE_ADD)
                 node.pos = token.pos
                 node.left = left
-                node.right = self.parse_expr6()
+                node.right = self.parse_expr5_5()
                 left = node
             elif token.type == TOKEN_MINUS:
                 node = Node(NODE_SUBTRACT)
                 node.pos = token.pos
                 node.left = left
-                node.right = self.parse_expr6()
+                node.right = self.parse_expr5_5()
                 left = node
             elif token.type == TOKEN_DOTDOT:
                 # TODO check scriptversion?
                 node = Node(NODE_CONCAT)
                 node.pos = token.pos
                 node.left = left
-                node.right = self.parse_expr6()
+                node.right = self.parse_expr5_5()
                 left = node
             elif token.type == TOKEN_DOT:
                 # TODO check scriptversion?
                 node = Node(NODE_CONCAT)
+                node.pos = token.pos
+                node.left = left
+                node.right = self.parse_expr5_5()
+                left = node
+            else:
+                self.reader.seek_set(pos)
+                break
+        return left
+
+    # expr5_5: expr6 << expr6 ..
+    #          expr6 >> expr6 ..
+    def parse_expr5_5(self):
+        left = self.parse_expr6()
+        while TRUE:
+            pos = self.reader.tell()
+            token = self.tokenizer.get()
+            if token.type == TOKEN_LSHIFT:
+                node = Node(NODE_LSHIFT)
+                node.pos = token.pos
+                node.left = left
+                node.right = self.parse_expr6()
+                left = node
+            elif token.type == TOKEN_RSHIFT:
+                node = Node(NODE_RSHIFT)
                 node.pos = token.pos
                 node.left = left
                 node.right = self.parse_expr6()
@@ -3647,6 +3681,10 @@ class Compiler:
             return self.compile_divide(node)
         elif node.type == NODE_REMAINDER:
             return self.compile_remainder(node)
+        elif node.type == NODE_LSHIFT:
+            return self.compile_lshift(node)
+        elif node.type == NODE_RSHIFT:
+            return self.compile_rshift(node)
         elif node.type == NODE_NOT:
             return self.compile_not(node)
         elif node.type == NODE_PLUS:
@@ -4006,6 +4044,12 @@ class Compiler:
 
     def compile_remainder(self, node):
         return viml_printf("(%% %s %s)", self.compile(node.left), self.compile(node.right))
+
+    def compile_lshift(self, node):
+        return viml_printf("(<< %s %s)", self.compile(node.left), self.compile(node.right))
+
+    def compile_rshift(self, node):
+        return viml_printf("(>> %s %s)", self.compile(node.left), self.compile(node.right))
 
     def compile_not(self, node):
         return viml_printf("(! %s)", self.compile(node.left))

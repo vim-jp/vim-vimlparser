@@ -324,6 +324,8 @@ var NODE_EVAL = 95;
 var NODE_HEREDOC = 96;
 var NODE_METHOD = 97;
 var NODE_ECHOCONSOLE = 98;
+var NODE_LSHIFT = 99;
+var NODE_RSHIFT = 100;
 var TOKEN_EOF = 1;
 var TOKEN_EOL = 2;
 var TOKEN_SPACE = 3;
@@ -393,6 +395,8 @@ var TOKEN_BLOB = 66;
 var TOKEN_LITCOPEN = 67;
 var TOKEN_DOTDOT = 68;
 var TOKEN_HEREDOC = 69;
+var TOKEN_LSHIFT = 70;
+var TOKEN_RSHIFT = 71;
 var MAX_FUNC_ARGS = 20;
 function isalpha(c) {
     return viml_eqregh(c, "^[A-Za-z]$");
@@ -2709,6 +2713,10 @@ ExprTokenizer.prototype.get2 = function() {
             r.seek_cur(2);
             return this.token(TOKEN_GTCS, ">#", pos);
         }
+        else if (r.p(1) == ">") {
+            r.seek_cur(2);
+            return this.token(TOKEN_RSHIFT, ">>", pos);
+        }
         else {
             r.seek_cur(1);
             return this.token(TOKEN_GT, ">", pos);
@@ -2722,6 +2730,10 @@ ExprTokenizer.prototype.get2 = function() {
         else if (r.p(1) == "#") {
             r.seek_cur(2);
             return this.token(TOKEN_LTCS, "<#", pos);
+        }
+        else if (r.p(1) == "<") {
+            r.seek_cur(2);
+            return this.token(TOKEN_LSHIFT, "<<", pos);
         }
         else {
             r.seek_cur(1);
@@ -3274,7 +3286,7 @@ ExprParser.prototype.parse_expr4 = function() {
 //        expr6 . expr6 ..
 //        expr6 .. expr6 ..
 ExprParser.prototype.parse_expr5 = function() {
-    var left = this.parse_expr6();
+    var left = this.parse_expr5_5();
     while (TRUE) {
         var pos = this.reader.tell();
         var token = this.tokenizer.get();
@@ -3282,14 +3294,14 @@ ExprParser.prototype.parse_expr5 = function() {
             var node = Node(NODE_ADD);
             node.pos = token.pos;
             node.left = left;
-            node.right = this.parse_expr6();
+            node.right = this.parse_expr5_5();
             var left = node;
         }
         else if (token.type == TOKEN_MINUS) {
             var node = Node(NODE_SUBTRACT);
             node.pos = token.pos;
             node.left = left;
-            node.right = this.parse_expr6();
+            node.right = this.parse_expr5_5();
             var left = node;
         }
         else if (token.type == TOKEN_DOTDOT) {
@@ -3297,12 +3309,41 @@ ExprParser.prototype.parse_expr5 = function() {
             var node = Node(NODE_CONCAT);
             node.pos = token.pos;
             node.left = left;
-            node.right = this.parse_expr6();
+            node.right = this.parse_expr5_5();
             var left = node;
         }
         else if (token.type == TOKEN_DOT) {
             // TODO check scriptversion?
             var node = Node(NODE_CONCAT);
+            node.pos = token.pos;
+            node.left = left;
+            node.right = this.parse_expr5_5();
+            var left = node;
+        }
+        else {
+            this.reader.seek_set(pos);
+            break;
+        }
+    }
+    return left;
+}
+
+// expr5_5: expr6 << expr6 ..
+//          expr6 >> expr6 ..
+ExprParser.prototype.parse_expr5_5 = function() {
+    var left = this.parse_expr6();
+    while (TRUE) {
+        var pos = this.reader.tell();
+        var token = this.tokenizer.get();
+        if (token.type == TOKEN_LSHIFT) {
+            var node = Node(NODE_LSHIFT);
+            node.pos = token.pos;
+            node.left = left;
+            node.right = this.parse_expr6();
+            var left = node;
+        }
+        else if (token.type == TOKEN_RSHIFT) {
+            var node = Node(NODE_RSHIFT);
             node.pos = token.pos;
             node.left = left;
             node.right = this.parse_expr6();
@@ -4536,6 +4577,12 @@ Compiler.prototype.compile = function(node) {
     else if (node.type == NODE_REMAINDER) {
         return this.compile_remainder(node);
     }
+    else if (node.type == NODE_LSHIFT) {
+        return this.compile_lshift(node);
+    }
+    else if (node.type == NODE_RSHIFT) {
+        return this.compile_rshift(node);
+    }
     else if (node.type == NODE_NOT) {
         return this.compile_not(node);
     }
@@ -5021,6 +5068,14 @@ Compiler.prototype.compile_divide = function(node) {
 
 Compiler.prototype.compile_remainder = function(node) {
     return viml_printf("(%% %s %s)", this.compile(node.left), this.compile(node.right));
+}
+
+Compiler.prototype.compile_lshift = function(node) {
+    return viml_printf("(<< %s %s)", this.compile(node.left), this.compile(node.right));
+}
+
+Compiler.prototype.compile_rshift = function(node) {
+    return viml_printf("(>> %s %s)", this.compile(node.left), this.compile(node.right));
 }
 
 Compiler.prototype.compile_not = function(node) {
