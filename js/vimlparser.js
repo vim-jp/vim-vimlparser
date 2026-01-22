@@ -2475,22 +2475,82 @@ VimLParser.prototype.parse_wincmd = function() {
 
 // FIXME: validate argument
 VimLParser.prototype.parse_cmd_syntax = function() {
-    var end = this.reader.getpos();
+    var subcmd = this.reader.read_alpha();
+    // Read name
+    if (subcmd == "region" || subcmd == "match") {
+        this.reader.read_white();
+        this.reader.read_alpha();
+    }
+    var match_pattern = subcmd != "match";
     while (TRUE) {
         var end = this.reader.getpos();
+        var pattern = FALSE;
+        // Read non-alpha
         var c = this.reader.peek();
-        if (c == "/" || c == "'" || c == "\"") {
+        if (this.ends_excmds(c)) {
+            if (!match_pattern && (c == "|" || c == "\"")) {
+                var pattern = TRUE;
+                var match_pattern = TRUE;
+            }
+            else {
+                break;
+            }
+        }
+        else if (!isalpha(c)) {
+            if (!match_pattern && !iswhite(c)) {
+                var pattern = TRUE;
+                var match_pattern = TRUE;
+            }
+            else {
+                this.reader.getn(1);
+                continue;
+            }
+        }
+        // Read arg
+        if (!pattern) {
+            var arg_pos = this.reader.tell();
+            var arg = this.reader.read_alpha();
+            if (!match_pattern && arg != "keepend" && arg != "conceal" && arg != "cchar" && arg != "contained" && arg != "containedin" && arg != "nextgroup" && arg != "transparent" && arg != "skipwhite" && arg != "skipnl" && arg != "skipempty") {
+                var match_pattern = TRUE;
+                var pattern = TRUE;
+                this.reader.seek_set(arg_pos);
+            }
+            else if (subcmd == "region" && (arg == "start" || arg == "skip" || arg == "end")) {
+                if (this.reader.peek() != "=") {
+                    continue;
+                }
+                this.reader.getn(1);
+                var pattern = TRUE;
+            }
+            else if (this.reader.peek() == "=") {
+                // Read arg value
+                this.reader.getn(1);
+                if (arg == "cchar") {
+                    this.reader.getn(1);
+                }
+                else {
+                    while (TRUE) {
+                        this.reader.read_alpha();
+                        var c = this.reader.peek();
+                        if (c == "," || c == "@") {
+                            this.reader.getn(1);
+                        }
+                        else {
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // Read pattern
+        if (pattern) {
+            var c = this.reader.peek();
+            if (this.ends_excmds(c) && c != "|" && c != "\"") {
+                continue;
+            }
             this.reader.getn(1);
             this.parse_pattern(c);
         }
-        else if (c == "=") {
-            this.reader.getn(1);
-            this.parse_pattern(" ");
-        }
-        else if (this.ends_excmds(c)) {
-            break;
-        }
-        this.reader.getn(1);
     }
     var node = Node(NODE_EXCMD);
     node.pos = this.ea.cmdpos;
