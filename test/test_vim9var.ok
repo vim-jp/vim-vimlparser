@@ -1,0 +1,4 @@
+(vim9script)
+(var = name "hello")
+(var = count 42)
+(final = x (list 1 2 3))

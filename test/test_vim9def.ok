@@ -1,0 +1,9 @@
+(vim9script)
+(def (Foo)
+  (echo "hello"))
+(def (Bar x y): bool
+  (return true))
+(def (Baz a (b 10))
+  (echo a))
+(def (Qux a . ...extra)
+  (echo a))
