@@ -610,8 +610,8 @@ function ExArg() {
 // HEREDOC .rlist .op .body
 // DEF .ea .body .left .rlist .default_args .attr .enddef
 // ENDDEF .ea
-// VAR .ea .op .left .list .rest .right .type
-// FINAL .ea .op .left .list .rest .right .type
+// VAR .ea .op .left .list .rest .right .type_str
+// FINAL .ea .op .left .list .rest .right .type_str
 // EXPORT .ea .body
 // IMPORT .ea .str .left
 // VIM9SCRIPT .ea
@@ -1513,7 +1513,7 @@ VimLParser.prototype.separate_nextcmd = function() {
             }
             this.reader.getn(1);
         }
-        else if (c == "|" || c == "\n" || c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && (this.ea.cmd.name != "@" && this.ea.cmd.name != "*" || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@") || this.vim9script && c == "#" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>")) {
+        else if (c == "|" || c == "\n" || c == "\"" && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>") && (this.ea.cmd.name != "@" && this.ea.cmd.name != "*" || this.reader.getpos() != this.ea.argpos) && (this.ea.cmd.name != "redir" || this.reader.getpos().i != this.ea.argpos.i + 1 || pc != "@") || this.vim9script && c == "#" && iswhite(pc) && !viml_eqregh(this.ea.cmd.flags, "\\<NOTRLCOM\\>")) {
             var has_cpo_bar = FALSE;
             // &cpoptions =~ 'b'
             if ((!has_cpo_bar || !viml_eqregh(this.ea.cmd.flags, "\\<USECTRLV\\>")) && pc == "\\") {
@@ -2079,11 +2079,12 @@ VimLParser.prototype.parse_cmd_def = function() {
         while (TRUE) {
             var varnode = Node(NODE_IDENTIFIER);
             this.reader.skip_white();
+            varnode.type_str = "";
             // Check for ...name (variadic)
             if (this.reader.peekn(3) == "...") {
                 this.reader.getn(3);
                 this.reader.skip_white();
-                var vname = this.reader.read_alpha();
+                var vname = this.reader.read_word();
                 varnode.pos = this.reader.getpos();
                 varnode.value = "..." + vname;
                 // Optionally read type annotation
@@ -2091,7 +2092,7 @@ VimLParser.prototype.parse_cmd_def = function() {
                 if (this.reader.peekn(1) == ":") {
                     this.reader.getn(1);
                     this.reader.skip_white();
-                    this.read_type();
+                    varnode.type_str = this.read_type();
                 }
                 viml_add(node.rlist, varnode);
                 this.reader.skip_white();
@@ -2104,7 +2105,7 @@ VimLParser.prototype.parse_cmd_def = function() {
                 }
             }
             var npos = this.reader.getpos();
-            var pname = this.reader.read_alpha();
+            var pname = this.reader.read_word();
             if (pname == "") {
                 if (this.reader.peekn(1) == ")") {
                     this.reader.getn(1);
@@ -2124,7 +2125,7 @@ VimLParser.prototype.parse_cmd_def = function() {
             if (this.reader.peekn(1) == ":") {
                 this.reader.getn(1);
                 this.reader.skip_white();
-                this.read_type();
+                varnode.type_str = this.read_type();
             }
             // Check for default value
             this.reader.skip_white();
@@ -2394,8 +2395,32 @@ VimLParser.prototype.parse_cmd_import = function() {
     node.left = NIL;
     node.str = "";
     this.reader.skip_white();
-    // Read the rest of the import line as a string (import autoload 'path' or import 'path' as Name)
-    node.str = this.reader.getn(-1);
+    // Read the rest of the import line, stopping at a trailing comment.
+    var line = "";
+    var pending_ws = "";
+    var last_was_white = FALSE;
+    while (TRUE) {
+        var c = this.reader.peekn(1);
+        if (c == "") {
+            break;
+        }
+        if (c == "#" && last_was_white) {
+            // Consume the rest of the line, so parse_trail doesn't see it.
+            this.reader.getn(-1);
+            break;
+        }
+        this.reader.getn(1);
+        if (iswhite(c)) {
+            pending_ws += c;
+            var last_was_white = TRUE;
+        }
+        else {
+            line += pending_ws + c;
+            var pending_ws = "";
+            var last_was_white = FALSE;
+        }
+    }
+    node.str = line;
     this.add_node(node);
 }
 
@@ -5725,6 +5750,9 @@ Compiler.prototype.compile_var = function(node) {
         }
         var left = "(" + left + ")";
     }
+    if (node.type_str != "") {
+        left += ": " + node.type_str;
+    }
     var right = this.compile(node.right);
     this.out("(var %s %s %s)", node.op, left, right);
 }
@@ -5740,6 +5768,9 @@ Compiler.prototype.compile_final = function(node) {
             left += " . " + this.compile(node.rest);
         }
         var left = "(" + left + ")";
+    }
+    if (node.type_str != "") {
+        left += ": " + node.type_str;
     }
     var right = this.compile(node.right);
     this.out("(final %s %s %s)", node.op, left, right);

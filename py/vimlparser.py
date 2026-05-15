@@ -599,8 +599,8 @@ def ExArg():
 # HEREDOC .rlist .op .body
 # DEF .ea .body .left .rlist .default_args .attr .enddef
 # ENDDEF .ea
-# VAR .ea .op .left .list .rest .right .type
-# FINAL .ea .op .left .list .rest .right .type
+# VAR .ea .op .left .list .rest .right .type_str
+# FINAL .ea .op .left .list .rest .right .type_str
 # EXPORT .ea .body
 # IMPORT .ea .str .left
 # VIM9SCRIPT .ea
@@ -1256,7 +1256,7 @@ class VimLParser:
                 if c != "`":
                     raise VimLParserException(Err(viml_printf("unexpected character: %s", c), self.reader.getpos()))
                 self.reader.getn(1)
-            elif c == "|" or c == "\n" or c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and (self.ea.cmd.name != "@" and self.ea.cmd.name != "*" or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@") or self.vim9script and c == "#" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>"):
+            elif c == "|" or c == "\n" or c == "\"" and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>") and (self.ea.cmd.name != "@" and self.ea.cmd.name != "*" or self.reader.getpos() != self.ea.argpos) and (self.ea.cmd.name != "redir" or self.reader.getpos().i != self.ea.argpos.i + 1 or pc != "@") or self.vim9script and c == "#" and iswhite(pc) and not viml_eqregh(self.ea.cmd.flags, "\\<NOTRLCOM\\>"):
                 has_cpo_bar = FALSE
                 # &cpoptions =~ 'b'
                 if (not has_cpo_bar or not viml_eqregh(self.ea.cmd.flags, "\\<USECTRLV\\>")) and pc == "\\":
@@ -1713,11 +1713,12 @@ class VimLParser:
             while TRUE:
                 varnode = Node(NODE_IDENTIFIER)
                 self.reader.skip_white()
+                varnode.type_str = ""
                 # Check for ...name (variadic)
                 if self.reader.peekn(3) == "...":
                     self.reader.getn(3)
                     self.reader.skip_white()
-                    vname = self.reader.read_alpha()
+                    vname = self.reader.read_word()
                     varnode.pos = self.reader.getpos()
                     varnode.value = "..." + vname
                     # Optionally read type annotation
@@ -1725,7 +1726,7 @@ class VimLParser:
                     if self.reader.peekn(1) == ":":
                         self.reader.getn(1)
                         self.reader.skip_white()
-                        self.read_type()
+                        varnode.type_str = self.read_type()
                     viml_add(node.rlist, varnode)
                     self.reader.skip_white()
                     if self.reader.peekn(1) == ")":
@@ -1734,7 +1735,7 @@ class VimLParser:
                     else:
                         raise VimLParserException(Err(viml_printf("E475: Invalid argument: %s", self.reader.peekn(1)), self.reader.getpos()))
                 npos = self.reader.getpos()
-                pname = self.reader.read_alpha()
+                pname = self.reader.read_word()
                 if pname == "":
                     if self.reader.peekn(1) == ")":
                         self.reader.getn(1)
@@ -1751,7 +1752,7 @@ class VimLParser:
                 if self.reader.peekn(1) == ":":
                     self.reader.getn(1)
                     self.reader.skip_white()
-                    self.read_type()
+                    varnode.type_str = self.read_type()
                 # Check for default value
                 self.reader.skip_white()
                 if self.reader.peekn(1) == "=":
@@ -1975,8 +1976,27 @@ class VimLParser:
         node.left = NIL
         node.str = ""
         self.reader.skip_white()
-        # Read the rest of the import line as a string (import autoload 'path' or import 'path' as Name)
-        node.str = self.reader.getn(-1)
+        # Read the rest of the import line, stopping at a trailing comment.
+        line = ""
+        pending_ws = ""
+        last_was_white = FALSE
+        while TRUE:
+            c = self.reader.peekn(1)
+            if c == "":
+                break
+            if c == "#" and last_was_white:
+                # Consume the rest of the line, so parse_trail doesn't see it.
+                self.reader.getn(-1)
+                break
+            self.reader.getn(1)
+            if iswhite(c):
+                pending_ws += c
+                last_was_white = TRUE
+            else:
+                line += pending_ws + c
+                pending_ws = ""
+                last_was_white = FALSE
+        node.str = line
         self.add_node(node)
 
     def parse_cmd_unlet(self):
@@ -4567,6 +4587,8 @@ class Compiler:
             if node.rest is not NIL:
                 left += " . " + self.compile(node.rest)
             left = "(" + left + ")"
+        if node.type_str != "":
+            left += ": " + node.type_str
         right = self.compile(node.right)
         self.out("(var %s %s %s)", node.op, left, right)
 
@@ -4579,6 +4601,8 @@ class Compiler:
             if node.rest is not NIL:
                 left += " . " + self.compile(node.rest)
             left = "(" + left + ")"
+        if node.type_str != "":
+            left += ": " + node.type_str
         right = self.compile(node.right)
         self.out("(final %s %s %s)", node.op, left, right)
 

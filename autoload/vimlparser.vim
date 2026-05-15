@@ -432,8 +432,8 @@ endfunction
 " HEREDOC .rlist .op .body
 " DEF .ea .body .left .rlist .default_args .attr .enddef
 " ENDDEF .ea
-" VAR .ea .op .left .list .rest .right .type
-" FINAL .ea .op .left .list .rest .right .type
+" VAR .ea .op .left .list .rest .right .type_str
+" FINAL .ea .op .left .list .rest .right .type_str
 " EXPORT .ea .body
 " IMPORT .ea .str .left
 " VIM9SCRIPT .ea
@@ -1225,7 +1225,7 @@ function! s:VimLParser.separate_nextcmd() abort
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
           \       || self.reader.getpos().i !=# self.ea.argpos.i + 1 || pc !=# '@'))
-          \ || (self.vim9script && c ==# '#' && self.ea.cmd.flags !~# '\<NOTRLCOM\>')
+          \ || (self.vim9script && c ==# '#' && s:iswhite(pc) && self.ea.cmd.flags !~# '\<NOTRLCOM\>')
       let has_cpo_bar = s:FALSE " &cpoptions =~ 'b'
       if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
@@ -1785,11 +1785,12 @@ function! s:VimLParser.parse_cmd_def() abort
     while s:TRUE
       let varnode = s:Node(s:NODE_IDENTIFIER)
       call self.reader.skip_white()
+      let varnode.type_str = ''
       " Check for ...name (variadic)
       if self.reader.peekn(3) ==# '...'
         call self.reader.getn(3)
         call self.reader.skip_white()
-        let vname = self.reader.read_alpha()
+        let vname = self.reader.read_word()
         let varnode.pos = self.reader.getpos()
         let varnode.value = '...' . vname
         " Optionally read type annotation
@@ -1797,7 +1798,7 @@ function! s:VimLParser.parse_cmd_def() abort
         if self.reader.peekn(1) ==# ':'
           call self.reader.getn(1)
           call self.reader.skip_white()
-          call self.read_type()
+          let varnode.type_str = self.read_type()
         endif
         call add(node.rlist, varnode)
         call self.reader.skip_white()
@@ -1809,7 +1810,7 @@ function! s:VimLParser.parse_cmd_def() abort
         endif
       endif
       let npos = self.reader.getpos()
-      let pname = self.reader.read_alpha()
+      let pname = self.reader.read_word()
       if pname ==# ''
         if self.reader.peekn(1) ==# ')'
           call self.reader.getn(1)
@@ -1829,7 +1830,7 @@ function! s:VimLParser.parse_cmd_def() abort
       if self.reader.peekn(1) ==# ':'
         call self.reader.getn(1)
         call self.reader.skip_white()
-        call self.read_type()
+        let varnode.type_str = self.read_type()
       endif
       " Check for default value
       call self.reader.skip_white()
@@ -2101,8 +2102,31 @@ function! s:VimLParser.parse_cmd_import() abort
   let node.left = s:NIL
   let node.str = ''
   call self.reader.skip_white()
-  " Read the rest of the import line as a string (import autoload 'path' or import 'path' as Name)
-  let node.str = self.reader.getn(-1)
+  " Read the rest of the import line, stopping at a trailing comment.
+  let line = ''
+  let pending_ws = ''
+  let last_was_white = s:FALSE
+  while s:TRUE
+    let c = self.reader.peekn(1)
+    if c ==# ''
+      break
+    endif
+    if c ==# '#' && last_was_white
+      " Consume the rest of the line, so parse_trail doesn't see it.
+      call self.reader.getn(-1)
+      break
+    endif
+    call self.reader.getn(1)
+    if s:iswhite(c)
+      let pending_ws .= c
+      let last_was_white = s:TRUE
+    else
+      let line .= pending_ws . c
+      let pending_ws = ''
+      let last_was_white = s:FALSE
+    endif
+  endwhile
+  let node.str = line
   call self.add_node(node)
 endfunction
 
@@ -6275,6 +6299,9 @@ function! s:Compiler.compile_var(node) abort
     endif
     let left = '(' . left . ')'
   endif
+  if a:node.type_str !=# ''
+    let left .= ': ' . a:node.type_str
+  endif
   let right = self.compile(a:node.right)
   call self.out('(var %s %s %s)', a:node.op, left, right)
 endfunction
@@ -6289,6 +6316,9 @@ function! s:Compiler.compile_final(node) abort
       let left .= ' . ' . self.compile(a:node.rest)
     endif
     let left = '(' . left . ')'
+  endif
+  if a:node.type_str !=# ''
+    let left .= ': ' . a:node.type_str
   endif
   let right = self.compile(a:node.right)
   call self.out('(final %s %s %s)', a:node.op, left, right)
