@@ -1,0 +1,9 @@
+(vim9script)
+(import "autoload 'mylib.vim'")
+(import "'./util.vim' as util")
+(import "'./x.vim' as util2")
+(export
+  (def (MyFunc): string
+    (return "hello")))
+(export
+  (var = myval 42))
