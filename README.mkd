@@ -14,7 +14,7 @@ This parser provide same feature for following languages.
 
 * Vim script
 * Python
-* JavaScript 
+* JavaScript
 
 ## Example
 
@@ -36,6 +36,52 @@ This above code output following.
 ```
 (let = s:message (printf "hello %d" (+ 1 (* 2 3))))
 ```
+
+## Parsing Vim9 Script
+
+VimL parser can detect `vim9script`, `vim9cmd`, and `def` commands via callbacks. This allows delegating Vim9 code parsing to a dedicated Vim9 parser.
+
+### Using with vim-vim9parser
+
+```javascript
+const { VimLParser, StringReader } = require('vimlparser.js');
+const { Vim9Parser } = require('vim9parser.js');
+
+const code = [
+  'vim9script',
+  'var x: number = 10',
+  'def Add(a: number, b: number): number',
+  '  return a + b',
+  'enddef'
+].join('\n');
+
+const reader = new StringReader(code);
+const vim9parser = new Vim9Parser();
+
+const callbacks = {
+  vim9script_callback: (node, content) => {
+    // vim9script found - remaining code is Vim9
+    console.log('Vim9 script detected at line', node.pos.lnum);
+    // Can pass to vim9parser for detailed analysis
+  },
+
+  def_callback: (node, content) => {
+    // def found - parse the function definition
+    console.log('Function definition at line', node.pos.lnum);
+    const vim9ast = vim9parser.parse(content);
+  },
+
+  vim9cmd_callback: (node, content) => {
+    // vim9cmd found - parse the command
+    console.log('Vim9 command at line', node.pos.lnum);
+  }
+};
+
+const parser = new VimLParser(false, callbacks);
+const ast = parser.parse(reader);
+```
+
+This approach enables language servers and tools to support Vim9 syntax while maintaining full VimL compatibility.
 
 ## About project name
 
