@@ -1,0 +1,7 @@
+(let = s:name 'Vim')
+(echo (interpolation "Hello " s:name "!"))
+(echo (interpolation 'It''s ' (concat s:name "9") ' {{literal}} \n'))
+(echo (interpolation (+ 1 2) "{{}}") (interpolation) (interpolation "\"" s:name "\""))
+(echo (?? (get g: 'x') 'default'))
+(echo (?? 0 (?? 1 2)))
+(echo 0o17 0O7)

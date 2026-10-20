@@ -1,0 +1,52 @@
+(vim9script)
+(interface HasSurface
+  (var size: number)
+  (def (Surface): number))
+(abstract
+  (class Shape
+    (var = color 'black')
+    (public
+      (var = thickness 10))
+    (static
+      (var count: number))
+    (public
+      (static
+        (var result: number)))
+    (static
+      (final = LIMIT 9))
+    (abstract
+      (def (Draw)))
+    (static
+      (def (Create): Shape
+        (return null_object)))))
+(class Square extends Shape implements HasSurface
+  (var size: number)
+  (var _protected: list<string>)
+  (def (new this.size (this.color v:none))
+    (assign = (dot this _protected) (list)))
+  (def (Surface): number
+    (return (* (dot this size) (dot this size))))
+  (def (Draw)
+    (call ((dot super Draw)))))
+(enum Color
+  (White)
+  (Red)
+  (Green)
+  (Blue)
+  (Black))
+(enum Planet implements HasSurface
+  (Earth 1 false)
+  (Jupiter 95 true)
+  (Saturn 146 true)
+  (var moons: number)
+  (var has_rings: bool)
+  (def (GetMoons): number
+    (return (dot this moons))))
+(type ListOfStrings list<string>)
+(export
+  (class Exported))
+(export
+  (abstract
+    (class ExportedAbstract)))
+(var = sq ((dot Square new) 3))
+(echo ((dot sq Surface)) ((dot (dot Planet Earth) GetMoons)) (dot (dot Color Red) name))

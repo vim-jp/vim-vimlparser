@@ -1,0 +1,3 @@
+(vim9script)
+(excmd "syntax region IncSearch oneline start='Ex ' end='command'")
+(echo 'next')

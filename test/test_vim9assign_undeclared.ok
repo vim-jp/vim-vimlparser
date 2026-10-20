@@ -1,0 +1,3 @@
+(vim9script)
+(assign = foo 1)
+(var = t (tuple 1 2))

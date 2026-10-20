@@ -152,6 +152,26 @@ let s:NODE_FINAL = 104
 let s:NODE_EXPORT = 105
 let s:NODE_IMPORT = 106
 let s:NODE_VIM9SCRIPT = 107
+let s:NODE_TUPLE = 108
+let s:NODE_CAST = 109
+let s:NODE_ASSIGN = 110
+let s:NODE_BLOCK = 111
+let s:NODE_ENDBLOCK = 112
+let s:NODE_CLASS = 113
+let s:NODE_ENDCLASS = 114
+let s:NODE_INTERFACE = 115
+let s:NODE_ENDINTERFACE = 116
+let s:NODE_ENUM = 117
+let s:NODE_ENDENUM = 118
+let s:NODE_ENUMVALUE = 119
+let s:NODE_TYPE = 120
+let s:NODE_PUBLIC = 121
+let s:NODE_STATIC = 122
+let s:NODE_ABSTRACT = 123
+let s:NODE_FALSY = 124
+let s:NODE_INTERPOLATION = 125
+let s:NODE_DEFER = 126
+let s:NODE_ECHOWINDOW = 127
 
 let s:TOKEN_EOF = 1
 let s:TOKEN_EOL = 2
@@ -224,8 +244,13 @@ let s:TOKEN_DOTDOT = 68
 let s:TOKEN_HEREDOC = 69
 let s:TOKEN_LSHIFT = 70
 let s:TOKEN_RSHIFT = 71
+let s:TOKEN_FATARROW = 72
+let s:TOKEN_QUESTIONQUESTION = 73
 
 let s:MAX_FUNC_ARGS = 20
+
+" Binary operators that continue a Vim9 expression from the previous line.
+let s:VIM9_CONTINUATION_OPS = {'+': 1, '-': 1, '*': 1, '/': 1, '%': 1, '..': 1, '||': 1, '&&': 1, '??': 1, '?': 1, ':': 1, '<<': 1, '>>': 1, '==': 1, '==?': 1, '==#': 1, '!=': 1, '!=?': 1, '!=#': 1, '>=': 1, '>=?': 1, '>=#': 1, '<=': 1, '<=?': 1, '<=#': 1, '=~': 1, '=~?': 1, '=~#': 1, '!~': 1, '!~?': 1, '!~#': 1, '>': 1, '>?': 1, '>#': 1, '<': 1, '<?': 1, '<#': 1}
 
 function! s:isalpha(c) abort
   return a:c =~# '^[A-Za-z]$'
@@ -288,6 +313,27 @@ function! s:islower(c) abort
   return a:c =~# '^[a-z]$'
 endfunction
 
+" Return TRUE for a command that does not exist in Vim9 script.
+function! s:is_removed_in_vim9(name) abort
+  return a:name ==# 'append' || a:name ==# 'change' || a:name ==# 'insert' || a:name ==# 'k' || a:name ==# 'mode'
+        \ || a:name ==# 'open' || a:name ==# 't' || a:name ==# 'xit' || a:name ==# 'Print'
+endfunction
+
+" Return TRUE when the text ends in white space and "{".
+function! s:ends_with_block(str) abort
+  let last = ''
+  let prev = ''
+  for c in split(a:str, '\zs')
+    if !s:iswhite(c)
+      let prev = last
+      let last = c
+    elseif last !=# ''
+      let last = ' '
+    endif
+  endfor
+  return last ==# '{' && (prev ==# ' ' || prev ==# '')
+endfunction
+
 function! s:ExArg() abort
   let ea = {}
   let ea.forceit = s:FALSE
@@ -335,14 +381,14 @@ endfunction
 " }
 " TOPLEVEL .body
 " COMMENT .str
-" EXCMD .ea .str
+" EXCMD .ea .str [.block]
 " FUNCTION .ea .body .left .rlist .default_args .attr .endfunction
 " ENDFUNCTION .ea
 " DELFUNCTION .ea .left
 " RETURN .ea .left
 " EXCALL .ea .left
 " LET .ea .op .left .list .rest .right
-" CONST .ea .op .left .list .rest .right
+" CONST .ea .op .left .list .rest .right [.type_str]
 " UNLET .ea .list
 " LOCKVAR .ea .depth .list
 " UNLOCKVAR .ea .depth .list
@@ -413,7 +459,7 @@ endfunction
 " SUBSCRIPT .left .right
 " SLICE .left .rlist
 " METHOD .left .right
-" CALL .left .rlist
+" CALL .left .rlist [.type_args]
 " DOT .left .right
 " NUMBER .value
 " STRING .value
@@ -428,15 +474,35 @@ endfunction
 " REG .value
 " CURLYNAMEPART .value
 " CURLYNAMEEXPR .value
-" LAMBDA .rlist .left
+" LAMBDA .rlist .left .body .rettype
 " HEREDOC .rlist .op .body
 " DEF .ea .body .left .rlist .default_args .attr .enddef
 " ENDDEF .ea
 " VAR .ea .op .left .list .rest .right .type_str
 " FINAL .ea .op .left .list .rest .right .type_str
 " EXPORT .ea .body
-" IMPORT .ea .str .left
-" VIM9SCRIPT .ea
+" IMPORT .ea .str .left .autoload .alias
+" VIM9SCRIPT .ea .noclear
+" ASSIGN .ea .op .left .list .rest .right
+" BLOCK .ea .body .endblock
+" ENDBLOCK .ea
+" CLASS .ea .name .extends .implements .body .endclass
+" ENDCLASS .ea
+" INTERFACE .ea .name .extends .body .endinterface
+" ENDINTERFACE .ea
+" ENUM .ea .name .implements .enumvalues .body .endenum
+" ENDENUM .ea
+" ENUMVALUE .value .rlist
+" TYPE .ea .name .type_str
+" PUBLIC .ea .body
+" STATIC .ea .body
+" ABSTRACT .ea .body
+" FALSY .left .right
+" INTERPOLATION .value
+" DEFER .ea .left
+" ECHOWINDOW .ea .list
+" TUPLE .value
+" CAST .type_str .left
 function! s:Node(type) abort
   return {'type': a:type}
 endfunction
@@ -462,6 +528,32 @@ function! s:VimLParser.__init__(...) abort
 
   let self.find_command_cache = {}
   let self.vim9script = 0
+  " TRUE while parsing the command after :abstract
+  let self.abstract = s:FALSE
+  " Set by the :vim9cmd (1) and :legacy (0) modifiers for one command.
+  let self.vim9cmd = -1
+endfunction
+
+" Vim9 syntax applies inside :def functions, and in a Vim9 script outside of
+" legacy :function bodies.
+function! s:VimLParser.isvim9() abort
+  if self.vim9cmd !=# -1
+    return self.vim9cmd
+  endif
+  for node in self.context
+    if node.type ==# s:NODE_DEF || node.type ==# s:NODE_LAMBDA || node.type ==# s:NODE_BLOCK || node.type ==# s:NODE_CLASS || node.type ==# s:NODE_INTERFACE || node.type ==# s:NODE_ENUM
+      return s:TRUE
+    elseif node.type ==# s:NODE_FUNCTION
+      return s:FALSE
+    endif
+  endfor
+  return self.vim9script
+endfunction
+
+function! s:VimLParser.declare(node) abort
+  if a:node isnot# s:NIL && a:node.type ==# s:NODE_IDENTIFIER
+    let self.declared[a:node.value] = 1
+  endif
 endfunction
 
 function! s:VimLParser.push_context(node) abort
@@ -529,6 +621,9 @@ function! s:VimLParser.parse(reader) abort
   let toplevel = s:Node(s:NODE_TOPLEVEL)
   let toplevel.pos = self.reader.getpos()
   let toplevel.body = []
+  " Names of declared Vim9 variables, to tell an assignment from an Ex
+  " command.
+  let self.declared = {}
   call self.push_context(toplevel)
   while self.reader.peek() !=# '<EOF>'
     call self.parse_one_cmd()
@@ -539,38 +634,316 @@ function! s:VimLParser.parse(reader) abort
   call self.check_missing_endtry('TOPLEVEL', self.reader.getpos())
   call self.check_missing_endwhile('TOPLEVEL', self.reader.getpos())
   call self.check_missing_endfor('TOPLEVEL', self.reader.getpos())
+  if self.context[0].type ==# s:NODE_BLOCK
+    throw s:Err('E1026: Missing }', self.reader.getpos())
+  elseif self.context[0].type ==# s:NODE_CLASS
+    throw s:Err('E1101: Missing :endclass', self.reader.getpos())
+  elseif self.context[0].type ==# s:NODE_INTERFACE
+    throw s:Err('E1101: Missing :endinterface', self.reader.getpos())
+  elseif self.context[0].type ==# s:NODE_ENUM
+    throw s:Err('E1101: Missing :endenum', self.reader.getpos())
+  endif
   call self.pop_context()
   return toplevel
 endfunction
 
 function! s:VimLParser.parse_one_cmd() abort
   let self.ea = s:ExArg()
+  let self.vim9cmd = -1
 
   if self.reader.peekn(2) ==# '#!'
     call self.parse_hashbang()
     call self.reader.get()
     return
   endif
-  call self.reader.skip_white_and_colon()
+  let vim9 = self.isvim9()
+  let colon = s:FALSE
+  while s:iswhite(self.reader.peekn(1)) || self.reader.peekn(1) ==# ':'
+    if self.reader.peekn(1) ==# ':'
+      let colon = s:TRUE
+    endif
+    call self.reader.seek_cur(1)
+  endwhile
   if self.reader.peekn(1) ==# ''
     call self.reader.get()
     return
   endif
-  if self.reader.peekn(1) ==# '"'
+  if self.reader.peekn(1) ==# '"' && !self.isvim9()
     call self.parse_comment()
     call self.reader.get()
     return
   endif
-  if self.vim9script && self.reader.peekn(1) ==# '#'
+  if self.isvim9() && self.reader.peekn(1) ==# '#'
     call self.parse_comment()
     call self.reader.get()
+    return
+  endif
+  if self.context[0].type ==# s:NODE_ENUM && !self.context[0].values_done && self.parse_enum_values()
+    call self.parse_trail()
     return
   endif
   let self.ea.linepos = self.reader.getpos()
   call self.parse_command_modifiers()
-  call self.parse_range()
+  let vim9 = self.isvim9()
+  if vim9
+    " In Vim9 script a range must be preceded by a colon, without it the line
+    " may be an expression or assignment.
+    call self.reader.skip_white()
+    if self.reader.peekn(1) ==# ':'
+      let colon = s:TRUE
+      call self.reader.skip_white_and_colon()
+    endif
+    if colon
+      call self.parse_range()
+    elseif self.parse_vim9_statement()
+      call self.parse_trail()
+      return
+    endif
+  else
+    call self.parse_range()
+  endif
   call self.parse_command()
   call self.parse_trail()
+endfunction
+
+" Recognize a Vim9 expression or assignment without :eval, :call or :let,
+" like find_ex_command() in Vim.  Return TRUE when the line was parsed.
+function! s:VimLParser.parse_vim9_statement() abort
+  let r = self.reader
+  let pos = r.tell()
+  let self.ea.cmdpos = r.getpos()
+  let c = r.peekn(1)
+  if c ==# '{'
+    " "{" by itself is the start of a block.
+    call r.getn(1)
+    call r.skip_white()
+    let block = self.ends_excmds(r.peek())
+    call r.seek_set(pos)
+    if block
+      return s:FALSE
+    endif
+    call self.parse_vim9_expr_cmd()
+    return s:TRUE
+  elseif c ==# '(' || c ==# "'" || c ==# '"' || (c ==# '$' && (r.p(1) ==# "'" || r.p(1) ==# '"')) || (c ==# '0' && r.p(1) ==# 'z')
+    call self.parse_vim9_expr_cmd()
+    return s:TRUE
+  elseif c ==# '['
+    if self.is_vim9_list_assign()
+      call self.parse_vim9_assign()
+    else
+      call self.parse_vim9_expr_cmd()
+    endif
+    return s:TRUE
+  elseif c ==# '&' || c ==# '$' || (c ==# '@' && r.p(1) !=# '<EOL>')
+    call self.parse_vim9_assign_or_expr()
+    return s:TRUE
+  elseif (c ==# '+' || c ==# '-') && r.p(1) ==# c
+    call self.parse_vim9_increment()
+    return s:TRUE
+  elseif s:isdigit(c)
+    call r.read_digit()
+    call r.skip_white()
+    let method = r.peekn(2) ==# '->'
+    call r.seek_set(pos)
+    if method
+      call self.parse_vim9_expr_cmd()
+    endif
+    return method
+  elseif !s:iswordc1(c)
+    return s:FALSE
+  endif
+  let name = r.read_vim9_name()
+  let c = r.peekn(1)
+  if c ==# '(' || (c ==# '<' && self.is_generic_args())
+    " "funcname(" is always a function call.
+    call r.seek_set(pos)
+    call self.parse_vim9_expr_cmd()
+    return s:TRUE
+  elseif stridx(name, ':') ==# 1 || c ==# '[' || (c ==# '.' && s:iswordc1(r.p(1)))
+    " "g:name", "name[idx]" and "name.member" start an expression or
+    " assignment.
+    call r.seek_set(pos)
+    call self.parse_vim9_assign_or_expr()
+    return s:TRUE
+  endif
+  call r.skip_white()
+  let result = s:FALSE
+  if r.peekn(2) ==# '->'
+    let result = s:TRUE
+  elseif self.peek_assign_op() !=# ''
+    " "name = expr" is an assignment when "name" is a variable or not a
+    " command.
+    let result = has_key(self.declared, name) || self.is_vim9_command(pos) ==# s:FALSE
+  elseif self.ends_excmds(r.peek())
+    " A variable followed by an operator on the next line.  A variable alone
+    " has no effect, then it is a command like :new.
+    let result = has_key(self.declared, name) && (self.is_vim9_command(pos) ==# s:FALSE || self.vim9_line_continues())
+  endif
+  call r.seek_set(pos)
+  if result
+    call self.parse_vim9_assign_or_expr()
+  endif
+  return result
+endfunction
+
+" Return TRUE when the next line continues the expression on this line.
+function! s:VimLParser.vim9_line_continues() abort
+  let pos = self.reader.tell()
+  if self.reader.peek() ==# '#'
+    call self.reader.getn(-1)
+  endif
+  let result = self.reader.peek() ==# '<EOL>' && s:ExprTokenizer.new(self.reader, s:TRUE).next_line_continues()
+  call self.reader.seek_set(pos)
+  return result
+endfunction
+
+" Return TRUE when the text at reader position "pos" is an Ex command that
+" exists in Vim9 script.
+function! s:VimLParser.is_vim9_command(cmdpos) abort
+  let pos = self.reader.tell()
+  call self.reader.seek_set(a:cmdpos)
+  let cmd = self.find_command()
+  call self.reader.seek_set(pos)
+  if cmd is# s:NIL
+    return s:FALSE
+  endif
+  return !s:is_removed_in_vim9(cmd.name)
+endfunction
+
+" Return the assignment operator at the cursor, or an empty string.
+function! s:VimLParser.peek_assign_op() abort
+  let s3 = self.reader.peekn(3)
+  let s2 = self.reader.peekn(2)
+  let op = ''
+  if s3 ==# '..=' || s3 ==# '=<<'
+    let op = s3
+  elseif s2 ==# '+=' || s2 ==# '-=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%=' || s2 ==# '.='
+    let op = s2
+  elseif s2 ==# '==' || s2 ==# '=~' || s2 ==# '=>'
+    return ''
+  elseif self.reader.peekn(1) ==# '='
+    let op = '='
+  endif
+  return op
+endfunction
+
+" Return TRUE when the generic type arguments of a function call follow:
+" "<type, ...>(".
+function! s:VimLParser.is_generic_args() abort
+  let r = self.reader
+  let pos = r.tell()
+  call r.getn(1)
+  let depth = 1
+  while depth > 0
+    let c = r.peekn(1)
+    if c ==# '<'
+      let depth += 1
+    elseif c ==# '>'
+      let depth -= 1
+    elseif !s:iswordc(c) && c !=# ',' && c !=# ' ' && c !=# '(' && c !=# ')' && c !=# ':' && c !=# '.'
+      call r.seek_set(pos)
+      return s:FALSE
+    endif
+    call r.getn(1)
+  endwhile
+  let result = r.peekn(1) ==# '('
+  call r.seek_set(pos)
+  return result
+endfunction
+
+" Return TRUE when "[a, b] =" follows: the list is closed on this line and
+" followed by an assignment operator.
+function! s:VimLParser.is_vim9_list_assign() abort
+  let r = self.reader
+  let pos = r.tell()
+  let depth = 0
+  while s:TRUE
+    let c = r.peekn(1)
+    if c ==# ''
+      call r.seek_set(pos)
+      return s:FALSE
+    endif
+    call r.getn(1)
+    if c ==# '['
+      let depth += 1
+    elseif c ==# ']'
+      let depth -= 1
+      if depth ==# 0
+        break
+      endif
+    elseif c ==# "'" || c ==# '"'
+      while r.peekn(1) !=# '' && r.peekn(1) !=# c
+        call r.getn(1)
+      endwhile
+      call r.getn(1)
+    endif
+  endwhile
+  call r.skip_white()
+  let op = self.peek_assign_op()
+  call r.seek_set(pos)
+  return op !=# '' && op !=# '=<<'
+endfunction
+
+" Vim9 expression used as a command.  A function call is like :call, any
+" other expression is like :eval.
+function! s:VimLParser.parse_vim9_expr_cmd() abort
+  let left = self.parse_expr()
+  if left.type ==# s:NODE_CALL
+    let node = s:Node(s:NODE_EXCALL)
+  else
+    let node = s:Node(s:NODE_EVAL)
+  endif
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.left = left
+  call self.add_node(node)
+endfunction
+
+function! s:VimLParser.parse_vim9_assign_or_expr() abort
+  let pos = self.reader.tell()
+  call self.parse_lvalue()
+  call self.reader.skip_white()
+  let op = self.peek_assign_op()
+  call self.reader.seek_set(pos)
+  if op ==# ''
+    call self.parse_vim9_expr_cmd()
+  else
+    call self.parse_vim9_assign()
+  endif
+endfunction
+
+" Vim9 assignment without :let: "name = expr", "[a, b] = expr", "name += expr"
+function! s:VimLParser.parse_vim9_assign() abort
+  let lhs = self.parse_letlhs()
+  call self.reader.skip_white()
+  let node = s:Node(s:NODE_ASSIGN)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.op = self.peek_assign_op()
+  let node.left = lhs.left
+  let node.list = lhs.list
+  let node.rest = lhs.rest
+  call self.reader.getn(len(node.op))
+  if node.op ==# '=<<'
+    call self.reader.skip_white()
+    let node.right = self.parse_heredoc(self.heredoc_prefix())
+  else
+    let node.right = self.parse_expr()
+  endif
+  call self.add_node(node)
+endfunction
+
+" Vim9 "++var" and "--var"
+function! s:VimLParser.parse_vim9_increment() abort
+  let node = s:Node(s:NODE_ASSIGN)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.op = self.reader.getn(2)
+  let node.left = self.parse_lvalue()
+  let node.list = s:NIL
+  let node.rest = s:NIL
+  let node.right = s:NIL
+  call self.add_node(node)
 endfunction
 
 " FIXME:
@@ -584,9 +957,22 @@ function! s:VimLParser.parse_command_modifiers() abort
       call self.reader.skip_white()
     endif
     let k = self.reader.read_alpha()
+    if k ==# 'vim' && self.reader.peekn(1) ==# '9'
+      let k .= self.reader.read_alnum()
+    endif
     let c = self.reader.peekn(1)
     call self.reader.skip_white()
-    if stridx('aboveleft', k) ==# 0 && len(k) >= 3 " abo\%[veleft]
+    if self.isvim9() && (c ==# '(' || c ==# '[' || c ==# '.' || c ==# ':' || self.peek_assign_op() !=# '' || self.reader.peekn(2) ==# '->')
+      " A Vim9 variable or function, not a modifier.
+      call self.reader.seek_set(pos)
+      break
+    elseif stridx('vim9cmd', k) ==# 0 && len(k) >= 4 " vim9\%[cmd]
+      call add(modifiers, {'name': 'vim9cmd'})
+      let self.vim9cmd = s:TRUE
+    elseif stridx('legacy', k) ==# 0 && len(k) >= 3 " leg\%[acy]
+      call add(modifiers, {'name': 'legacy'})
+      let self.vim9cmd = s:FALSE
+    elseif stridx('aboveleft', k) ==# 0 && len(k) >= 3 " abo\%[veleft]
       call add(modifiers, {'name': 'aboveleft'})
     elseif stridx('belowright', k) ==# 0 && len(k) >= 3 " bel\%[owright]
       call add(modifiers, {'name': 'belowright'})
@@ -772,7 +1158,7 @@ function! s:VimLParser.parse_command() abort
 
   let self.ea.cmdpos = self.reader.getpos()
 
-  if self.reader.peekn(1) ==# '' || self.reader.peekn(1) ==# '"' || (self.vim9script && self.reader.peekn(1) ==# '#')
+  if self.reader.peekn(1) ==# '' || self.ends_excmds(self.reader.peekn(1))
     if !empty(self.ea.modifiers) || !empty(self.ea.range)
       call self.parse_cmd_modifier_range()
     endif
@@ -784,6 +1170,21 @@ function! s:VimLParser.parse_command() abort
   if self.ea.cmd is# s:NIL
     call self.reader.setpos(self.ea.cmdpos)
     throw s:Err(printf('E492: Not an editor command: %s', self.reader.peekline()), self.ea.cmdpos)
+  endif
+
+  if self.isvim9() && s:is_removed_in_vim9(self.ea.cmd.name)
+    call self.reader.setpos(self.ea.cmdpos)
+    throw s:Err(printf('E1100: Command not supported in Vim9 script (missing :var?): %s', self.reader.peekline()), self.ea.cmdpos)
+  endif
+
+  " In legacy script :final is an abbreviation of :finally.
+  if self.ea.cmd.name ==# 'final' && !self.isvim9()
+    for x in self.builtin_commands
+      if x.name ==# 'finally'
+        let self.ea.cmd = x
+        break
+      endif
+    endfor
   endif
 
   if self.reader.peekn(1) ==# '!' && self.ea.cmd.name !=# 'substitute' && self.ea.cmd.name !=# 'smagic' && self.ea.cmd.name !=# 'snomagic'
@@ -961,6 +1362,34 @@ function! s:VimLParser._parse_command(parser) abort
     call self.parse_cmd_export()
   elseif a:parser ==# 'parse_cmd_import'
     call self.parse_cmd_import()
+  elseif a:parser ==# 'parse_cmd_abstract'
+    call self.parse_cmd_abstract()
+  elseif a:parser ==# 'parse_cmd_class'
+    call self.parse_cmd_class()
+  elseif a:parser ==# 'parse_cmd_endclass'
+    call self.parse_cmd_endclass()
+  elseif a:parser ==# 'parse_cmd_interface'
+    call self.parse_cmd_interface()
+  elseif a:parser ==# 'parse_cmd_endinterface'
+    call self.parse_cmd_endinterface()
+  elseif a:parser ==# 'parse_cmd_enum'
+    call self.parse_cmd_enum()
+  elseif a:parser ==# 'parse_cmd_endenum'
+    call self.parse_cmd_endenum()
+  elseif a:parser ==# 'parse_cmd_type'
+    call self.parse_cmd_type()
+  elseif a:parser ==# 'parse_cmd_public'
+    call self.parse_cmd_public()
+  elseif a:parser ==# 'parse_cmd_static'
+    call self.parse_cmd_static()
+  elseif a:parser ==# 'parse_cmd_defer'
+    call self.parse_cmd_defer()
+  elseif a:parser ==# 'parse_cmd_echowindow'
+    call self.parse_cmd_echowindow()
+  elseif a:parser ==# 'parse_cmd_block'
+    call self.parse_cmd_block()
+  elseif a:parser ==# 'parse_cmd_endblock'
+    call self.parse_cmd_endblock()
   else
     throw printf('unknown parser: %s', string(a:parser))
   endif
@@ -976,7 +1405,7 @@ function! s:VimLParser.find_command() abort
   elseif c ==# 's' && self.reader.peekn(5) =~# '\v^s%(c[^sr][^i][^p]|g|i[^mlg]|I|r[^e])'
     call self.reader.getn(1)
     let name = 'substitute'
-  elseif c =~# '[@*!=><&~#]'
+  elseif c =~# '[@*!=><&~#]' || c ==# '{' || c ==# '}'
     call self.reader.getn(1)
     let name = c
   elseif self.reader.peekn(2) ==# 'py'
@@ -1122,7 +1551,7 @@ endfunction
 function! s:VimLParser.parse_comment() abort
   let npos = self.reader.getpos()
   let c = self.reader.get()
-  if c !=# '"' && !(self.vim9script && c ==# '#')
+  if c !=# '"' && c !=# '#'
     throw s:Err(printf('unexpected character: %s', c), npos)
   endif
   let node = s:Node(s:NODE_COMMENT)
@@ -1141,9 +1570,10 @@ function! s:VimLParser.parse_trail() abort
   elseif c ==# '|'
     call self.reader.get()
   elseif c ==# '"'
+    " Also in Vim9 script a double quote after a command starts a comment.
     call self.parse_comment()
     call self.reader.get()
-  elseif self.vim9script && c ==# '#'
+  elseif self.isvim9() && c ==# '#'
     call self.parse_comment()
     call self.reader.get()
   else
@@ -1185,12 +1615,24 @@ function! s:VimLParser.parse_cmd_common() abort
   let node.ea = self.ea
   let node.str = self.reader.getstr(self.ea.linepos, end)
   call self.add_node(node)
+  if (self.ea.cmd.name ==# 'command' || self.ea.cmd.name ==# 'autocmd') && s:ends_with_block(node.str)
+    " The commands of a user command or autocommand in a block use Vim9
+    " syntax: {cmd} ... }
+    let block = s:Node(s:NODE_BLOCK)
+    let block.pos = self.ea.cmdpos
+    let block.ea = self.ea
+    let block.body = []
+    let block.endblock = s:NIL
+    let node.block = block
+    call self.push_context(block)
+  endif
 endfunction
 
 function! s:VimLParser.separate_nextcmd() abort
   if self.ea.cmd.name ==# 'vimgrep' || self.ea.cmd.name ==# 'vimgrepadd' || self.ea.cmd.name ==# 'lvimgrep' || self.ea.cmd.name ==# 'lvimgrepadd'
     call self.skip_vimgrep_pat()
   endif
+  let vim9 = self.isvim9()
   let pc = ''
   let end = self.reader.getpos()
   let nospend = end
@@ -1220,12 +1662,12 @@ function! s:VimLParser.separate_nextcmd() abort
       endif
       call self.reader.getn(1)
     elseif c ==# '|' || c ==# "\n" ||
-          \ (c ==# '"' && self.ea.cmd.flags !~# '\<NOTRLCOM\>'
+          \ (c ==# '"' && !vim9 && self.ea.cmd.flags !~# '\<NOTRLCOM\>'
           \   && ((self.ea.cmd.name !=# '@' && self.ea.cmd.name !=# '*')
           \       || self.reader.getpos() !=# self.ea.argpos)
           \   && (self.ea.cmd.name !=# 'redir'
           \       || self.reader.getpos().i !=# self.ea.argpos.i + 1 || pc !=# '@'))
-          \ || (self.vim9script && c ==# '#' && s:iswhite(pc) && self.ea.cmd.flags !~# '\<NOTRLCOM\>')
+          \ || (vim9 && c ==# '#' && s:iswhite(pc) && self.ea.cmd.flags !~# '\<NOTRLCOM\>')
       let has_cpo_bar = s:FALSE " &cpoptions =~ 'b'
       if (!has_cpo_bar || self.ea.cmd.flags !~# '\<USECTRLV\>') && pc ==# '\'
         call self.reader.get()
@@ -1530,7 +1972,7 @@ function! s:VimLParser.parse_cmd_delfunction() abort
 endfunction
 
 function! s:VimLParser.parse_cmd_return() abort
-  if self.find_context(s:NODE_FUNCTION) ==# -1 && self.find_context(s:NODE_DEF) ==# -1
+  if self.find_context(s:NODE_FUNCTION) ==# -1 && self.find_context(s:NODE_DEF) ==# -1 && self.find_context(s:NODE_LAMBDA) ==# -1
     throw s:Err('E133: :return not inside a function', self.ea.cmdpos)
   endif
   let node = s:Node(s:NODE_RETURN)
@@ -1555,7 +1997,12 @@ function! s:VimLParser.parse_cmd_call() abort
     throw s:Err('E471: Argument required', self.reader.getpos())
   endif
   let node.left = self.parse_expr()
-  if node.left.type !=# s:NODE_CALL
+  " A method call may follow the function call: call Func()->Method()
+  let base = node.left
+  while base.type ==# s:NODE_METHOD
+    let base = base.left
+  endwhile
+  if base.type !=# s:NODE_CALL
     throw s:Err('Not an function call', node.left.pos)
   endif
   call self.add_node(node)
@@ -1657,31 +2104,7 @@ function! s:VimLParser.parse_cmd_let() abort
     call self.reader.getn(len(s2))
     call self.reader.skip_white()
     let node.op = s2
-
-    " compute allowed prefix for heredoc end marker (e.g. EOF)
-    let pos = self.reader.tell()
-    while self.reader.tell() > 0
-      if self.reader.peek() ==# '<EOL>'
-        call self.reader.seek_cur(1)
-        break
-      endif
-      call self.reader.seek_cur(-1)
-    endwhile
-    let prefix = ''
-    while s:TRUE
-      let c = self.reader.getn(1)
-      if c ==# ':'
-        " any presence of leading ':' disables prefix for heredoc end marker
-        let prefix = ''
-        break
-      elseif !s:iswhite(c)
-        break
-      endif
-      let prefix .= c
-    endwhile
-    call self.reader.seek_set(pos)
-
-    let node.right = self.parse_heredoc(prefix)
+    let node.right = self.parse_heredoc(self.heredoc_prefix())
     call self.add_node(node)
     return
   elseif s1 ==# '='
@@ -1694,7 +2117,38 @@ function! s:VimLParser.parse_cmd_let() abort
   call self.add_node(node)
 endfunction
 
+" Compute the allowed prefix for a heredoc end marker (e.g. EOF): the indent
+" of the command line.
+function! s:VimLParser.heredoc_prefix() abort
+  let pos = self.reader.tell()
+  while self.reader.tell() > 0
+    if self.reader.peek() ==# '<EOL>'
+      call self.reader.seek_cur(1)
+      break
+    endif
+    call self.reader.seek_cur(-1)
+  endwhile
+  let prefix = ''
+  while s:TRUE
+    let c = self.reader.getn(1)
+    if c ==# ':'
+      " any presence of leading ':' disables prefix for heredoc end marker
+      let prefix = ''
+      break
+    elseif !s:iswhite(c)
+      break
+    endif
+    let prefix .= c
+  endwhile
+  call self.reader.seek_set(pos)
+  return prefix
+endfunction
+
 function! s:VimLParser.parse_cmd_const() abort
+  if self.isvim9()
+    call self.parse_vim9_decl(s:NODE_CONST)
+    return
+  endif
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
@@ -1730,10 +2184,17 @@ function! s:VimLParser.parse_cmd_const() abort
 endfunction
 
 function! s:VimLParser.parse_cmd_vim9script() abort
-  call self.reader.skip_white()
   let node = s:Node(s:NODE_VIM9SCRIPT)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
+  let node.noclear = s:FALSE
+  call self.reader.skip_white()
+  let pos = self.reader.tell()
+  if self.reader.read_alpha() ==# 'noclear'
+    let node.noclear = s:TRUE
+  else
+    call self.reader.seek_set(pos)
+  endif
   let self.vim9script = 1
   call self.add_node(node)
 endfunction
@@ -1757,6 +2218,15 @@ function! s:VimLParser.parse_cmd_def() abort
   endif
 
   let left = self.parse_lvalue_func()
+
+  " Generic function: :def {name}<{type}, ...>(
+  let type_params = ''
+  if self.reader.peekn(1) ==# '<'
+    while self.reader.peekn(1) !=# '' && self.reader.peekn(1) !=# '>'
+      let type_params .= self.reader.getn(1)
+    endwhile
+    let type_params .= self.reader.getn(1)
+  endif
   call self.reader.skip_white()
 
   " :def {name}
@@ -1774,89 +2244,66 @@ function! s:VimLParser.parse_cmd_def() abort
   let node.left = left
   let node.rlist = []
   let node.default_args = []
-  let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0, 'return_type': ''}
+  let node.attr = {'range': 0, 'abort': 0, 'dict': 0, 'closure': 0, 'return_type': '', 'type_params': type_params}
   let node.enddef = s:NIL
+  " The arguments use Vim9 syntax, also in a legacy script.
+  call self.add_node(node)
+  call self.push_context(node)
   call self.reader.getn(1)
-  call self.reader.skip_white()
-  if self.reader.peekn(1) ==# ')'
-    call self.reader.getn(1)
-  else
-    let named = {}
-    while s:TRUE
-      let varnode = s:Node(s:NODE_IDENTIFIER)
+  let named = {}
+  while s:TRUE
+    call self.skip_vim9_white()
+    if self.reader.peekn(1) ==# ')'
+      call self.reader.getn(1)
+      break
+    endif
+    let varnode = s:Node(s:NODE_IDENTIFIER)
+    let varnode.pos = self.reader.getpos()
+    let varnode.type_str = ''
+    let variadic = self.reader.peekn(3) ==# '...'
+    if variadic
+      call self.reader.getn(3)
+    endif
+    let pname = self.reader.read_word()
+    if pname ==# 'this' && self.reader.peekn(1) ==# '.'
+      " constructor argument that sets an object variable: this.name
+      let pname .= self.reader.getn(1) . self.reader.read_word()
+    endif
+    if pname ==# ''
+      throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekn(1)), self.reader.getpos())
+    endif
+    if has_key(named, pname) && pname !=# '_'
+      throw s:Err(printf('E853: Duplicate argument name: %s', pname), varnode.pos)
+    endif
+    let named[pname] = 1
+    let self.declared[pname] = 1
+    let varnode.value = pname
+    if variadic
+      let varnode.value = '...' . pname
+    endif
+    call add(node.rlist, varnode)
+    " Check for type annotation
+    if self.reader.peekn(1) ==# ':'
+      call self.reader.getn(1)
       call self.reader.skip_white()
-      let varnode.type_str = ''
-      " Check for ...name (variadic)
-      if self.reader.peekn(3) ==# '...'
-        call self.reader.getn(3)
-        call self.reader.skip_white()
-        let vname = self.reader.read_word()
-        let varnode.pos = self.reader.getpos()
-        let varnode.value = '...' . vname
-        " Optionally read type annotation
-        call self.reader.skip_white()
-        if self.reader.peekn(1) ==# ':'
-          call self.reader.getn(1)
-          call self.reader.skip_white()
-          let varnode.type_str = self.read_type()
-        endif
-        call add(node.rlist, varnode)
-        call self.reader.skip_white()
-        if self.reader.peekn(1) ==# ')'
-          call self.reader.getn(1)
-          break
-        else
-          throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekn(1)), self.reader.getpos())
-        endif
-      endif
-      let npos = self.reader.getpos()
-      let pname = self.reader.read_word()
-      if pname ==# ''
-        if self.reader.peekn(1) ==# ')'
-          call self.reader.getn(1)
-          break
-        endif
-        throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekn(1)), self.reader.getpos())
-      endif
-      if has_key(named, pname)
-        throw s:Err(printf('E853: Duplicate argument name: %s', pname), npos)
-      endif
-      let named[pname] = 1
-      let varnode.pos = npos
-      let varnode.value = pname
-      call add(node.rlist, varnode)
-      " Check for type annotation
+      let varnode.type_str = self.read_type()
+    endif
+    " Check for default value
+    call self.reader.skip_white()
+    if self.reader.peekn(1) ==# '=' && !variadic
+      call self.reader.getn(1)
       call self.reader.skip_white()
-      if self.reader.peekn(1) ==# ':'
-        call self.reader.getn(1)
-        call self.reader.skip_white()
-        let varnode.type_str = self.read_type()
-      endif
-      " Check for default value
-      call self.reader.skip_white()
-      if self.reader.peekn(1) ==# '='
-        call self.reader.getn(1)
-        call self.reader.skip_white()
-        call add(node.default_args, self.parse_expr())
-      elseif len(node.default_args) > 0
-        throw s:Err('E989: Non-default argument follows default argument', varnode.pos)
-      endif
-      call self.reader.skip_white()
-      if self.reader.peekn(1) ==# ','
-        call self.reader.getn(1)
-        call self.reader.skip_white()
-        if self.reader.peekn(1) ==# ')'
-          call self.reader.getn(1)
-          break
-        endif
-      elseif self.reader.peekn(1) ==# ')'
-        call self.reader.getn(1)
-        break
-      else
-        throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekn(1)), self.reader.getpos())
-      endif
-    endwhile
-  endif
+      call add(node.default_args, self.parse_expr())
+    elseif len(node.default_args) > 0 && !variadic
+      throw s:Err('E989: Non-default argument follows default argument', varnode.pos)
+    endif
+    call self.skip_vim9_white()
+    if self.reader.peekn(1) ==# ','
+      call self.reader.getn(1)
+    elseif self.reader.peekn(1) !=# ')'
+      throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekn(1)), self.reader.getpos())
+    endif
+  endwhile
   " Check for return type annotation ': type'
   call self.reader.skip_white()
   if self.reader.peekn(1) ==# ':'
@@ -1864,8 +2311,25 @@ function! s:VimLParser.parse_cmd_def() abort
     call self.reader.skip_white()
     let node.attr.return_type = self.read_type()
   endif
-  call self.add_node(node)
-  call self.push_context(node)
+  " A method in an interface and an abstract method have no body.
+  if self.abstract || self.context[1].type ==# s:NODE_INTERFACE
+    call self.pop_context()
+  endif
+endfunction
+
+" Skip white space, comments and line breaks, e.g. in the argument list of a
+" :def function.
+function! s:VimLParser.skip_vim9_white() abort
+  while s:TRUE
+    call self.reader.skip_white()
+    if self.reader.peek() ==# '#'
+      call self.reader.getn(-1)
+    endif
+    if self.reader.peek() !=# '<EOL>'
+      break
+    endif
+    call self.reader.get()
+  endwhile
 endfunction
 
 function! s:VimLParser.read_type() abort
@@ -1879,6 +2343,12 @@ function! s:VimLParser.read_type() abort
       break
     endif
   endwhile
+  " Handle func: rettype
+  if type_str ==# 'func' && self.reader.peekn(1) ==# ':' && s:iswhite(self.reader.p(1))
+    call self.reader.getn(1)
+    call self.reader.skip_white()
+    return type_str . ': ' . self.read_type()
+  endif
   " Handle generics: type<...>
   if self.reader.peekn(1) ==# '<'
     let type_str .= self.reader.getn(1)
@@ -1913,12 +2383,44 @@ function! s:VimLParser.read_type() abort
     " Check for ': rettype' after func params
     call self.reader.skip_white()
     if self.reader.peekn(1) ==# ':'
-      let type_str .= self.reader.getn(1)
+      call self.reader.getn(1)
       call self.reader.skip_white()
-      let type_str .= self.read_type()
+      let type_str .= ': ' . self.read_type()
     endif
   endif
   return type_str
+endfunction
+
+" Parse the statements of a Vim9 lambda "(args) => {", up to the "}" at the
+" start of a line.  Only a comment may follow the "{".
+function! s:VimLParser.parse_lambda_block(node) abort
+  let ea = self.ea
+  let vim9cmd = self.vim9cmd
+  call self.reader.skip_white()
+  if self.reader.peek() ==# '#'
+    call self.reader.getn(-1)
+  endif
+  if self.reader.peek() !=# '<EOL>'
+    throw s:Err(printf('E488: Trailing characters: %s', self.reader.peekline()), self.reader.getpos())
+  endif
+  call self.reader.get()
+  call self.push_context(a:node)
+  while s:TRUE
+    if self.reader.peek() ==# '<EOF>'
+      throw s:Err('E1171: Missing } after inline function', self.reader.getpos())
+    endif
+    let pos = self.reader.tell()
+    call self.reader.skip_white()
+    if self.context[0] is# a:node && self.reader.peek() ==# '}'
+      call self.reader.get()
+      break
+    endif
+    call self.reader.seek_set(pos)
+    call self.parse_one_cmd()
+  endwhile
+  call self.pop_context()
+  let self.ea = ea
+  let self.vim9cmd = vim9cmd
 endfunction
 
 function! s:VimLParser.parse_cmd_enddef() abort
@@ -1938,133 +2440,117 @@ function! s:VimLParser.parse_cmd_enddef() abort
 endfunction
 
 function! s:VimLParser.parse_cmd_var() abort
-  let pos = self.reader.tell()
-  call self.reader.skip_white()
-
-  " :var
-  if self.ends_excmds(self.reader.peek())
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
-    return
-  endif
-
-  " Read variable name directly (avoid LvalueParser eating ':' as part of name)
-  let npos = self.reader.getpos()
-  let vname = self.reader.read_word()
-  if vname ==# ''
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
-    return
-  endif
-  let left = s:Node(s:NODE_IDENTIFIER)
-  let left.pos = npos
-  let left.value = vname
-  call self.reader.skip_white()
-
-  " Check for type annotation
-  let type_str = ''
-  if self.reader.peekn(1) ==# ':'
-    call self.reader.getn(1)
-    call self.reader.skip_white()
-    let type_str = self.read_type()
-    call self.reader.skip_white()
-  endif
-
-  let s1 = self.reader.peekn(1)
-  let s2 = self.reader.peekn(2)
-  if s2 ==# '..'
-    let s2 = self.reader.peekn(3)
-  endif
-
-  " :var {var-name} (no assignment)
-  if self.ends_excmds(s1) || (s2 !=# '+=' && s2 !=# '-=' && s2 !=# '.=' && s2 !=# '..=' && s2 !=# '*=' && s2 !=# '/=' && s2 !=# '%=' && s1 !=# '=')
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
-    return
-  endif
-
-  " :var left op right
-  let node = s:Node(s:NODE_VAR)
-  let node.pos = self.ea.cmdpos
-  let node.ea = self.ea
-  let node.op = ''
-  let node.left = left
-  let node.list = s:NIL
-  let node.rest = s:NIL
-  let node.right = s:NIL
-  let node.type_str = type_str
-  if s2 ==# '+=' || s2 ==# '-=' || s2 ==# '.=' || s2 ==# '..=' || s2 ==# '*=' || s2 ==# '/=' || s2 ==# '%='
-    call self.reader.getn(len(s2))
-    let node.op = s2
-  elseif s1 ==# '='
-    call self.reader.getn(1)
-    let node.op = s1
-  else
-    throw 'NOT REACHED'
-  endif
-  let node.right = self.parse_expr()
-  call self.add_node(node)
+  call self.parse_vim9_decl(s:NODE_VAR)
 endfunction
 
 function! s:VimLParser.parse_cmd_final() abort
+  call self.parse_vim9_decl(s:NODE_FINAL)
+endfunction
+
+" Vim9 declaration with :var, :final or :const:
+"   var name[: type] [= expr]
+"   var [name[: type], ...[; rest]] = expr
+"   var name[: type] =<< [trim] [eval] END
+function! s:VimLParser.parse_vim9_decl(type) abort
   let pos = self.reader.tell()
   call self.reader.skip_white()
 
-  " :final
+  " :var without argument lists variables
   if self.ends_excmds(self.reader.peek())
     call self.reader.seek_set(pos)
     call self.parse_cmd_common()
     return
   endif
 
-  " Read variable name directly
-  let npos = self.reader.getpos()
-  let vname = self.reader.read_word()
-  if vname ==# ''
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
-    return
-  endif
-  let left = s:Node(s:NODE_IDENTIFIER)
-  let left.pos = npos
-  let left.value = vname
-  call self.reader.skip_white()
-
-  " Check for type annotation
-  let type_str = ''
-  if self.reader.peekn(1) ==# ':'
-    call self.reader.getn(1)
-    call self.reader.skip_white()
-    let type_str = self.read_type()
-    call self.reader.skip_white()
-  endif
-
-  let s1 = self.reader.peekn(1)
-
-  " :final {var-name}
-  if self.ends_excmds(s1) || s1 !=# '='
-    call self.reader.seek_set(pos)
-    call self.parse_cmd_common()
-    return
-  endif
-
-  " :final left = right
-  let node = s:Node(s:NODE_FINAL)
+  let node = s:Node(a:type)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
-  call self.reader.getn(1)
-  let node.op = s1
-  let node.left = left
+  let node.op = ''
+  let node.left = s:NIL
   let node.list = s:NIL
   let node.rest = s:NIL
-  let node.right = self.parse_expr()
-  let node.type_str = type_str
+  let node.right = s:NIL
+  let node.type_str = ''
+  if self.reader.peekn(1) ==# '['
+    call self.reader.getn(1)
+    let node.list = []
+    while s:TRUE
+      call add(node.list, self.parse_vim9_decl_name())
+      call self.reader.skip_white()
+      let c = self.reader.getn(1)
+      if c ==# ';'
+        let node.rest = self.parse_vim9_decl_name()
+        call self.reader.skip_white()
+        let c = self.reader.getn(1)
+      endif
+      if c ==# ']'
+        break
+      elseif c !=# ','
+        throw s:Err(printf('E475: Invalid argument: %s', c), self.reader.getpos())
+      endif
+    endwhile
+    for x in node.list
+      call self.declare(x)
+    endfor
+    call self.declare(node.rest)
+  else
+    let node.left = self.parse_vim9_decl_name()
+    let node.type_str = node.left.type_str
+    call self.declare(node.left)
+  endif
+  call self.reader.skip_white()
+  let node.op = self.peek_assign_op()
+  call self.reader.getn(len(node.op))
+  if node.op ==# '=<<'
+    call self.reader.skip_white()
+    let node.right = self.parse_heredoc(self.heredoc_prefix())
+  elseif node.op !=# ''
+    let node.right = self.parse_expr()
+  endif
   call self.add_node(node)
 endfunction
 
-function! s:VimLParser.parse_cmd_export() abort
+" Variable name with an optional type in a Vim9 declaration: "name: type"
+function! s:VimLParser.parse_vim9_decl_name() abort
   call self.reader.skip_white()
-  let export_pos = self.ea.cmdpos
+  let node = s:Node(s:NODE_IDENTIFIER)
+  let node.pos = self.reader.getpos()
+  let node.value = self.reader.read_vim9_name()
+  let node.type_str = ''
+  if node.value ==# ''
+    throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekline()), node.pos)
+  endif
+  if self.reader.peekn(1) ==# ':'
+    call self.reader.getn(1)
+    call self.reader.skip_white()
+    let node.type_str = self.read_type()
+  endif
+  return node
+endfunction
+
+function! s:VimLParser.parse_cmd_export() abort
+  call self.parse_wrapper(s:NODE_EXPORT)
+endfunction
+
+function! s:VimLParser.parse_cmd_public() abort
+  call self.parse_wrapper(s:NODE_PUBLIC)
+endfunction
+
+function! s:VimLParser.parse_cmd_static() abort
+  call self.parse_wrapper(s:NODE_STATIC)
+endfunction
+
+function! s:VimLParser.parse_cmd_abstract() abort
+  let self.abstract = s:TRUE
+  call self.parse_wrapper(s:NODE_ABSTRACT)
+  let self.abstract = s:FALSE
+endfunction
+
+" Parse a command that applies to the following command, like :export
+" and :static.  The nodes of the following command go into the body.
+function! s:VimLParser.parse_wrapper(type) abort
+  call self.reader.skip_white()
+  let wrapper_pos = self.ea.cmdpos
   " Re-find the inner command
   let self.ea.cmdpos = self.reader.getpos()
   let self.ea.cmd = self.find_command()
@@ -2077,57 +2563,286 @@ function! s:VimLParser.parse_cmd_export() abort
   endif
   call self.reader.skip_white()
   let self.ea.argpos = self.reader.getpos()
-  let export_node = s:Node(s:NODE_EXPORT)
-  let export_node.pos = export_pos
-  let export_node.ea = self.ea
-  let export_node.body = []
+  let wrapper = s:Node(a:type)
+  let wrapper.pos = wrapper_pos
+  let wrapper.ea = self.ea
+  let wrapper.body = []
   " Remember current context body position
   let ctx = self.context[0]
   let before = len(ctx.body)
   " Parse the inner command
   call self._parse_command(self.ea.cmd.parser)
-  " Move newly-added nodes into export body
+  " Move newly-added nodes into the wrapper body
   while len(ctx.body) > before
     let moved_node = ctx.body[before]
     call remove(ctx.body, before)
-    call add(export_node.body, moved_node)
+    call add(wrapper.body, moved_node)
   endwhile
-  call add(ctx.body, export_node)
+  call add(ctx.body, wrapper)
 endfunction
 
+" :class {name} [extends {class}] [implements {interface}, ...]
+function! s:VimLParser.parse_cmd_class() abort
+  let node = s:Node(s:NODE_CLASS)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.name = self.read_class_name()
+  let node.extends = ''
+  let node.implements = []
+  let node.body = []
+  let node.endclass = s:NIL
+  while s:TRUE
+    call self.reader.skip_white()
+    let pos = self.reader.tell()
+    let key = self.reader.read_alpha()
+    if key ==# 'extends'
+      call self.reader.skip_white()
+      let node.extends = self.read_type()
+    elseif key ==# 'implements' || key ==# 'specifies'
+      let node.implements = self.read_type_list()
+    else
+      call self.reader.seek_set(pos)
+      break
+    endif
+  endwhile
+  call self.add_node(node)
+  call self.push_context(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_endclass() abort
+  call self.parse_class_end(s:NODE_CLASS, 'E1316: Class can only be defined in Vim9 script')
+endfunction
+
+" :interface {name} [extends {interface}, ...]
+function! s:VimLParser.parse_cmd_interface() abort
+  let node = s:Node(s:NODE_INTERFACE)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.name = self.read_class_name()
+  let node.extends = []
+  let node.body = []
+  let node.endinterface = s:NIL
+  call self.reader.skip_white()
+  let pos = self.reader.tell()
+  if self.reader.read_alpha() ==# 'extends'
+    let node.extends = self.read_type_list()
+  else
+    call self.reader.seek_set(pos)
+  endif
+  call self.add_node(node)
+  call self.push_context(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_endinterface() abort
+  call self.parse_class_end(s:NODE_INTERFACE, 'E1345: :endinterface without :interface')
+endfunction
+
+" :enum {name} [implements {interface}, ...]
+function! s:VimLParser.parse_cmd_enum() abort
+  let node = s:Node(s:NODE_ENUM)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.name = self.read_class_name()
+  let node.implements = []
+  let node.enumvalues = []
+  let node.body = []
+  let node.endenum = s:NIL
+  " The enum values come first.
+  let node.values_done = s:FALSE
+  call self.reader.skip_white()
+  let pos = self.reader.tell()
+  if self.reader.read_alpha() ==# 'implements'
+    let node.implements = self.read_type_list()
+  else
+    call self.reader.seek_set(pos)
+  endif
+  call self.add_node(node)
+  call self.push_context(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_endenum() abort
+  call self.parse_class_end(s:NODE_ENUM, 'E1419: :endenum without :enum')
+endfunction
+
+" Parse the enum values at the start of an enum: "Name[(args)], ..."
+" Return FALSE when the line is not a list of values.
+function! s:VimLParser.parse_enum_values() abort
+  let enumnode = self.context[0]
+  let pos = self.reader.tell()
+  let word = self.reader.read_word()
+  let c = self.reader.peekn(1)
+  call self.reader.seek_set(pos)
+  if word ==# '' || word ==# 'var' || word ==# 'final' || word ==# 'const' || word ==# 'def'
+        \ || word ==# 'static' || word ==# 'public' || word ==# 'endenum'
+        \ || (c !=# '' && c !=# ',' && c !=# '(' && !s:iswhite(c))
+    let enumnode.values_done = s:TRUE
+    return s:FALSE
+  endif
+  while s:TRUE
+    call self.skip_vim9_white()
+    let node = s:Node(s:NODE_ENUMVALUE)
+    let node.pos = self.reader.getpos()
+    let node.value = self.reader.read_word()
+    let node.rlist = []
+    if self.reader.peekn(1) ==# '('
+      let p = s:ExprParser.new(self.reader, self)
+      call p.tokenizer.get()
+      let node.rlist = p.parse_rlist()
+    endif
+    call add(enumnode.enumvalues, node)
+    call self.reader.skip_white()
+    if self.reader.peekn(1) !=# ','
+      break
+    endif
+    call self.reader.getn(1)
+    call self.skip_vim9_white()
+    if self.reader.peek() ==# '<EOF>'
+      break
+    endif
+    let pos = self.reader.tell()
+    let word = self.reader.read_word()
+    call self.reader.seek_set(pos)
+    if word ==# 'endenum'
+      break
+    endif
+  endwhile
+  let enumnode.values_done = s:TRUE
+  return s:TRUE
+endfunction
+
+function! s:VimLParser.parse_class_end(type, msg) abort
+  call self.check_missing_endif(self.ea.cmd.name, self.ea.cmdpos)
+  call self.check_missing_endtry(self.ea.cmd.name, self.ea.cmdpos)
+  call self.check_missing_endwhile(self.ea.cmd.name, self.ea.cmdpos)
+  call self.check_missing_endfor(self.ea.cmd.name, self.ea.cmdpos)
+  call self.check_missing_enddef(self.ea.cmd.name, self.ea.cmdpos)
+  if self.context[0].type !=# a:type
+    throw s:Err(a:msg, self.ea.cmdpos)
+  endif
+  if a:type ==# s:NODE_CLASS
+    let node = s:Node(s:NODE_ENDCLASS)
+    let self.context[0].endclass = node
+  elseif a:type ==# s:NODE_INTERFACE
+    let node = s:Node(s:NODE_ENDINTERFACE)
+    let self.context[0].endinterface = node
+  else
+    let node = s:Node(s:NODE_ENDENUM)
+    let self.context[0].endenum = node
+  endif
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  call self.pop_context()
+endfunction
+
+" :type {name} = {type}
+function! s:VimLParser.parse_cmd_type() abort
+  if !self.isvim9()
+    call self.parse_cmd_common()
+    return
+  endif
+  let node = s:Node(s:NODE_TYPE)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.name = self.read_class_name()
+  call self.reader.skip_white()
+  if self.reader.getn(1) !=# '='
+    throw s:Err('E1403: Missing "=" in type alias', self.reader.getpos())
+  endif
+  call self.reader.skip_white()
+  let node.type_str = self.read_type()
+  let self.declared[node.name] = 1
+  call self.add_node(node)
+endfunction
+
+function! s:VimLParser.read_class_name() abort
+  call self.reader.skip_white()
+  let name = self.reader.read_word()
+  if name ==# ''
+    throw s:Err(printf('E475: Invalid argument: %s', self.reader.peekline()), self.reader.getpos())
+  endif
+  let self.declared[name] = 1
+  return name
+endfunction
+
+" A comma separated list of types, e.g. after "implements".
+function! s:VimLParser.read_type_list() abort
+  let list = []
+  while s:TRUE
+    call self.reader.skip_white()
+    call add(list, self.read_type())
+    call self.reader.skip_white()
+    if self.reader.peekn(1) !=# ','
+      break
+    endif
+    call self.reader.getn(1)
+  endwhile
+  return list
+endfunction
+
+" :import [autoload] {expr} [as {name}]
 function! s:VimLParser.parse_cmd_import() abort
   let node = s:Node(s:NODE_IMPORT)
   let node.pos = self.ea.cmdpos
   let node.ea = self.ea
-  let node.left = s:NIL
-  let node.str = ''
+  let node.autoload = s:FALSE
+  let node.alias = ''
   call self.reader.skip_white()
-  " Read the rest of the import line, stopping at a trailing comment.
-  let line = ''
-  let pending_ws = ''
-  let last_was_white = s:FALSE
-  while s:TRUE
-    let c = self.reader.peekn(1)
-    if c ==# ''
-      break
-    endif
-    if c ==# '#' && last_was_white
-      " Consume the rest of the line, so parse_trail doesn't see it.
-      call self.reader.getn(-1)
-      break
-    endif
-    call self.reader.getn(1)
-    if s:iswhite(c)
-      let pending_ws .= c
-      let last_was_white = s:TRUE
-    else
-      let line .= pending_ws . c
-      let pending_ws = ''
-      let last_was_white = s:FALSE
-    endif
-  endwhile
-  let node.str = line
+  let start = self.reader.getpos()
+  let pos = self.reader.tell()
+  if self.reader.read_alpha() ==# 'autoload' && s:iswhite(self.reader.peekn(1))
+    let node.autoload = s:TRUE
+    call self.reader.skip_white()
+  else
+    call self.reader.seek_set(pos)
+  endif
+  let node.left = self.parse_expr()
+  let end = self.reader.getpos()
+  call self.reader.skip_white()
+  let pos = self.reader.tell()
+  if self.reader.read_alpha() ==# 'as' && s:iswhite(self.reader.peekn(1))
+    call self.reader.skip_white()
+    let node.alias = self.reader.read_word()
+    let self.declared[node.alias] = 1
+    let end = self.reader.getpos()
+  else
+    call self.reader.seek_set(pos)
+  endif
+  " The text of the arguments.
+  let node.str = self.reader.getstr(start, end)
   call self.add_node(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_block() abort
+  if !self.isvim9()
+    call self.parse_cmd_common()
+    return
+  endif
+  let node = s:Node(s:NODE_BLOCK)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.body = []
+  let node.endblock = s:NIL
+  call self.add_node(node)
+  call self.push_context(node)
+endfunction
+
+function! s:VimLParser.parse_cmd_endblock() abort
+  if !self.isvim9()
+    call self.parse_cmd_common()
+    return
+  endif
+  call self.check_missing_endif('}', self.ea.cmdpos)
+  call self.check_missing_endtry('}', self.ea.cmdpos)
+  call self.check_missing_endwhile('}', self.ea.cmdpos)
+  call self.check_missing_endfor('}', self.ea.cmdpos)
+  if self.context[0].type !=# s:NODE_BLOCK
+    throw s:Err('E1128: } without {', self.ea.cmdpos)
+  endif
+  let node = s:Node(s:NODE_ENDBLOCK)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let self.context[0].endblock = node
+  call self.pop_context()
 endfunction
 
 function! s:VimLParser.parse_cmd_unlet() abort
@@ -2254,10 +2969,21 @@ function! s:VimLParser.parse_cmd_for() abort
   let node.left = s:NIL
   let node.right = s:NIL
   let node.endfor = s:NIL
-  let lhs = self.parse_letlhs()
+  if self.isvim9()
+    let lhs = self.parse_vim9_forlhs()
+  else
+    let lhs = self.parse_letlhs()
+  endif
   let node.left = lhs.left
   let node.list = lhs.list
   let node.rest = lhs.rest
+  call self.declare(node.left)
+  if node.list isnot# s:NIL
+    for x in node.list
+      call self.declare(x)
+    endfor
+  endif
+  call self.declare(node.rest)
   call self.reader.skip_white()
   let epos = self.reader.getpos()
   if self.reader.read_alpha() !=# 'in'
@@ -2266,6 +2992,35 @@ function! s:VimLParser.parse_cmd_for() abort
   let node.right = self.parse_expr()
   call self.add_node(node)
   call self.push_context(node)
+endfunction
+
+" Vim9 :for loop variables with optional types: "name: type" or
+" "[name: type, ...]"
+function! s:VimLParser.parse_vim9_forlhs() abort
+  let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
+  call self.reader.skip_white()
+  if self.reader.peekn(1) !=# '['
+    let lhs.left = self.parse_vim9_decl_name()
+    return lhs
+  endif
+  call self.reader.getn(1)
+  let lhs.list = []
+  while s:TRUE
+    call add(lhs.list, self.parse_vim9_decl_name())
+    call self.reader.skip_white()
+    let c = self.reader.getn(1)
+    if c ==# ';'
+      let lhs.rest = self.parse_vim9_decl_name()
+      call self.reader.skip_white()
+      let c = self.reader.getn(1)
+    endif
+    if c ==# ']'
+      break
+    elseif c !=# ','
+      throw s:Err(printf('E475: Invalid argument: %s', c), self.reader.getpos())
+    endif
+  endwhile
+  return lhs
 endfunction
 
 function! s:VimLParser.parse_cmd_endfor() abort
@@ -2429,6 +3184,26 @@ function! s:VimLParser.parse_cmd_echoconsole() abort
   call self.add_node(node)
 endfunction
 
+function! s:VimLParser.parse_cmd_echowindow() abort
+  let node = s:Node(s:NODE_ECHOWINDOW)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.list = self.parse_exprlist()
+  call self.add_node(node)
+endfunction
+
+" :defer {func}({args})
+function! s:VimLParser.parse_cmd_defer() abort
+  let node = s:Node(s:NODE_DEFER)
+  let node.pos = self.ea.cmdpos
+  let node.ea = self.ea
+  let node.left = self.parse_expr()
+  if node.left.type !=# s:NODE_CALL
+    throw s:Err('E107: Missing parentheses', node.left.pos)
+  endif
+  call self.add_node(node)
+endfunction
+
 function! s:VimLParser.parse_cmd_execute() abort
   let node = s:Node(s:NODE_EXECUTE)
   let node.pos = self.ea.cmdpos
@@ -2438,7 +3213,7 @@ function! s:VimLParser.parse_cmd_execute() abort
 endfunction
 
 function! s:VimLParser.parse_expr() abort
-  return s:ExprParser.new(self.reader).parse()
+  return s:ExprParser.new(self.reader, self).parse()
 endfunction
 
 function! s:VimLParser.parse_exprlist() abort
@@ -2456,7 +3231,7 @@ function! s:VimLParser.parse_exprlist() abort
 endfunction
 
 function! s:VimLParser.parse_lvalue_func() abort
-  let p = s:LvalueParser.new(self.reader)
+  let p = s:LvalueParser.new(self.reader, self)
   let node = p.parse()
   if node.type ==# s:NODE_IDENTIFIER || node.type ==# s:NODE_CURLYNAME || node.type ==# s:NODE_SUBSCRIPT || node.type ==# s:NODE_DOT || node.type ==# s:NODE_OPTION || node.type ==# s:NODE_ENV || node.type ==# s:NODE_REG
     return node
@@ -2466,7 +3241,7 @@ endfunction
 
 " FIXME:
 function! s:VimLParser.parse_lvalue() abort
-  let p = s:LvalueParser.new(self.reader)
+  let p = s:LvalueParser.new(self.reader, self)
   let node = p.parse()
   if node.type ==# s:NODE_IDENTIFIER
     if !s:isvarname(node.value)
@@ -2481,7 +3256,7 @@ endfunction
 
 " TODO: merge with s:VimLParser.parse_lvalue()
 function! s:VimLParser.parse_constlvalue() abort
-  let p = s:LvalueParser.new(self.reader)
+  let p = s:LvalueParser.new(self.reader, self)
   let node = p.parse()
   if node.type ==# s:NODE_IDENTIFIER
     if !s:isvarname(node.value)
@@ -2521,7 +3296,7 @@ endfunction
 " FIXME:
 function! s:VimLParser.parse_letlhs() abort
   let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
-  let tokenizer = s:ExprTokenizer.new(self.reader)
+  let tokenizer = s:ExprTokenizer.new(self.reader, self.isvim9())
   if tokenizer.peek().type ==# s:TOKEN_SQOPEN
     call tokenizer.get()
     let lhs.list = []
@@ -2555,7 +3330,7 @@ endfunction
 " TODO: merge with s:VimLParser.parse_letlhs() ?
 function! s:VimLParser.parse_constlhs() abort
   let lhs = {'left': s:NIL, 'list': s:NIL, 'rest': s:NIL}
-  let tokenizer = s:ExprTokenizer.new(self.reader)
+  let tokenizer = s:ExprTokenizer.new(self.reader, self.isvim9())
   if tokenizer.peek().type ==# s:TOKEN_SQOPEN
     call tokenizer.get()
     let lhs.list = []
@@ -2587,8 +3362,12 @@ function! s:VimLParser.parse_constlhs() abort
 endfunction
 
 function! s:VimLParser.ends_excmds(c) abort
-  if self.vim9script && a:c ==# '#'
-    return 1
+  if self.isvim9()
+    if a:c ==# '#'
+      return 1
+    elseif a:c ==# '"'
+      return 0
+    endif
   endif
   return a:c ==# '' || a:c ==# '|' || a:c ==# '"' || a:c ==# '<EOF>' || a:c ==# '<EOL>'
 endfunction
@@ -2660,7 +3439,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'abbreviate', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'abclear', 'minlen': 3, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'aboveleft', 'minlen': 3, 'flags': 'NEEDARG|EXTRA|NOTRLCOM', 'parser': 'parse_cmd_common'},
-      \ {'name': 'abstract', 'minlen': 3, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'abstract', 'minlen': 3, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_abstract'},
       \ {'name': 'all', 'minlen': 2, 'flags': 'BANG|RANGE|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'amenu', 'minlen': 2, 'flags': 'RANGE|ZEROR|EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'anoremenu', 'minlen': 2, 'flags': 'RANGE|ZEROR|EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
@@ -2736,7 +3515,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'chistory', 'minlen': 3, 'flags': 'RANGE|COUNT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'clist', 'minlen': 2, 'flags': 'BANG|EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'clast', 'minlen': 3, 'flags': 'RANGE|COUNT|TRLBAR|BANG', 'parser': 'parse_cmd_common'},
-      \ {'name': 'class', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'class', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_class'},
       \ {'name': 'close', 'minlen': 3, 'flags': 'BANG|RANGE|COUNT|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'clearjumps', 'minlen': 3, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'cmap', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
@@ -2773,7 +3552,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'debug', 'minlen': 3, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'debuggreedy', 'minlen': 6, 'flags': 'RANGE|ZEROR|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'def', 'minlen': 3, 'flags': 'EXTRA|BANG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_def'},
-      \ {'name': 'defer', 'minlen': 4, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'defer', 'minlen': 4, 'flags': 'NEEDARG|EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_defer'},
       \ {'name': 'defcompile', 'minlen': 4, 'flags': 'SBOXOK|CMDWIN|LOCK_OK|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'delcommand', 'minlen': 4, 'flags': 'NEEDARG|WORD1|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'delfunction', 'minlen': 4, 'flags': 'BANG|NEEDARG|WORD1|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_delfunction'},
@@ -2801,22 +3580,22 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'echohl', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echohl'},
       \ {'name': 'echomsg', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echomsg'},
       \ {'name': 'echoconsole', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echoconsole'},
-      \ {'name': 'echowindow', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'echowindow', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echowindow'},
       \ {'name': 'echon', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_echon'},
       \ {'name': 'else', 'minlen': 2, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_else'},
       \ {'name': 'elseif', 'minlen': 5, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_elseif'},
       \ {'name': 'emenu', 'minlen': 2, 'flags': 'NEEDARG|EXTRA|TRLBAR|NOTRLCOM|RANGE|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'endif', 'minlen': 2, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endif'},
-      \ {'name': 'endinterface', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'endclass', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'endinterface', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endinterface'},
+      \ {'name': 'endclass', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endclass'},
       \ {'name': 'enddef', 'minlen': 4, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_enddef'},
-      \ {'name': 'endenum', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'endenum', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endenum'},
       \ {'name': 'endfunction', 'minlen': 4, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endfunction'},
       \ {'name': 'endfor', 'minlen': 5, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endfor'},
       \ {'name': 'endtry', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endtry'},
       \ {'name': 'endwhile', 'minlen': 4, 'flags': 'TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endwhile'},
       \ {'name': 'enew', 'minlen': 3, 'flags': 'BANG|TRLBAR', 'parser': 'parse_cmd_common'},
-      \ {'name': 'enum', 'minlen': 3, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'enum', 'minlen': 3, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_enum'},
       \ {'name': 'eval', 'minlen': 2, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_eval'},
       \ {'name': 'ex', 'minlen': 2, 'flags': 'BANG|FILE1|CMDARG|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'execute', 'minlen': 3, 'flags': 'EXTRA|NOTRLCOM|EXPR_ARG|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_execute'},
@@ -2870,7 +3649,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'inoreabbrev', 'minlen': 6, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'inoremenu', 'minlen': 7, 'flags': 'RANGE|ZEROR|EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'intro', 'minlen': 3, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'interface', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'interface', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_interface'},
       \ {'name': 'isearch', 'minlen': 2, 'flags': 'BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'isplit', 'minlen': 3, 'flags': 'BANG|RANGE|DFLALL|WHOLEFOLD|EXTRA', 'parser': 'parse_cmd_common'},
       \ {'name': 'iunmap', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
@@ -3022,6 +3801,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'ptprevious', 'minlen': 3, 'flags': 'RANGE|BANG|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
       \ {'name': 'ptrewind', 'minlen': 3, 'flags': 'RANGE|BANG|TRLBAR|ZEROR', 'parser': 'parse_cmd_common'},
       \ {'name': 'ptselect', 'minlen': 3, 'flags': 'BANG|TRLBAR|WORD1', 'parser': 'parse_cmd_common'},
+      \ {'name': 'public', 'minlen': 3, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_public'},
       \ {'name': 'put', 'minlen': 2, 'flags': 'RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZEROR|CMDWIN|LOCK_OK|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': 'pwd', 'minlen': 2, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'python', 'minlen': 2, 'flags': 'RANGE|EXTRA|NEEDARG|CMDWIN|LOCK_OK|RESTRICT', 'parser': 'parse_cmd_python'},
@@ -3114,7 +3894,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'startinsert', 'minlen': 4, 'flags': 'BANG|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'startgreplace', 'minlen': 6, 'flags': 'BANG|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'startreplace', 'minlen': 6, 'flags': 'BANG|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'static', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'static', 'minlen': 4, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_static'},
       \ {'name': 'stopinsert', 'minlen': 5, 'flags': 'BANG|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'stjump', 'minlen': 3, 'flags': 'BANG|TRLBAR|WORD1', 'parser': 'parse_cmd_common'},
       \ {'name': 'stselect', 'minlen': 3, 'flags': 'BANG|TRLBAR|WORD1', 'parser': 'parse_cmd_common'},
@@ -3173,7 +3953,7 @@ let s:VimLParser.builtin_commands = [
       \ {'name': 'tselect', 'minlen': 2, 'flags': 'BANG|TRLBAR|WORD1', 'parser': 'parse_cmd_common'},
       \ {'name': 'tunmenu', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'tunmap', 'minlen': 5, 'flags': 'EXTRA|TRLBAR|NOTRLCOM|CTRLV|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': 'type', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'type', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_type'},
       \ {'name': 'undo', 'minlen': 1, 'flags': 'RANGE|COUNT|ZEROR|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'undojoin', 'minlen': 5, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'undolist', 'minlen': 5, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
@@ -3240,14 +4020,21 @@ let s:VimLParser.builtin_commands = [
       \ {'name': '=', 'minlen': 1, 'flags': 'RANGE|TRLBAR|DFLALL|FLAGS|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': '>', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|CMDWIN|LOCK_OK|MODIFY', 'parser': 'parse_cmd_common'},
       \ {'name': '@', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|EXTRA|TRLBAR|CMDWIN|LOCK_OK|NONWHITE_OK', 'parser': 'parse_cmd_common'},
-      \ {'name': '{', 'minlen': 1, 'flags': 'TRLBAR|LOCK_OK|CMDWIN', 'parser': 'parse_cmd_common'},
-      \ {'name': '}', 'minlen': 1, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': '{', 'minlen': 1, 'flags': 'TRLBAR|LOCK_OK|CMDWIN', 'parser': 'parse_cmd_block'},
+      \ {'name': '}', 'minlen': 1, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_endblock'},
       \ {'name': '~', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|EXTRA|CMDWIN|LOCK_OK|MODIFY|NONWHITE_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'Next', 'minlen': 1, 'flags': 'EXTRA|RANGE|COUNT|BANG|CMDARG|ARGOPT|TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': 'Print', 'minlen': 1, 'flags': 'RANGE|WHOLEFOLD|COUNT|FLAGS|TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': 'X', 'minlen': 1, 'flags': 'TRLBAR', 'parser': 'parse_cmd_common'},
       \ {'name': '++', 'minlen': 1, 'flags': 'EXTRA|TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
       \ {'name': '--', 'minlen': 1, 'flags': 'EXTRA|TRLBAR|SBOXOK|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'clipreset', 'minlen': 4, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'iput', 'minlen': 2, 'flags': 'RANGE|WHOLEFOLD|BANG|REGSTR|TRLBAR|ZEROR|CMDWIN|LOCK_OK|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'pbuffer', 'minlen': 2, 'flags': 'BANG|RANGE|BUFNAME|BUFUNL|COUNT|EXTRA|CMDARG|TRLBAR', 'parser': 'parse_cmd_common'},
+      \ {'name': 'redrawtabpanel', 'minlen': 10, 'flags': 'TRLBAR|CMDWIN|LOCK_OK', 'parser': 'parse_cmd_common'},
+      \ {'name': 'this', 'minlen': 3, 'flags': 'EXTRA|NEEDARG|SBOXOK|CMDWIN|LOCK_OK|WHOLE', 'parser': 'parse_cmd_common'},
+      \ {'name': 'uniq', 'minlen': 3, 'flags': 'RANGE|DFLALL|WHOLEFOLD|BANG|EXTRA|NOTRLCOM|MODIFY', 'parser': 'parse_cmd_common'},
+      \ {'name': 'wlrestore', 'minlen': 2, 'flags': 'EXTRA|TRLBAR|CMDWIN|LOCK_OK|BANG', 'parser': 'parse_cmd_common'},
       \]
 
 " To find new builtin_functions, run the below script.
@@ -3812,9 +4599,16 @@ function! s:ExprTokenizer.new(...) abort
   return obj
 endfunction
 
-function! s:ExprTokenizer.__init__(reader) abort
+function! s:ExprTokenizer.__init__(reader, ...) abort
   let self.reader = a:reader
   let self.cache = {}
+  let self.vim9 = s:FALSE
+  if len(a:000) > 0
+    let self.vim9 = a:000[0]
+  endif
+  " Nesting level of brackets, inside which a Vim9 expression may continue
+  " on the next line.
+  let self.depth = 0
 endfunction
 
 function! s:ExprTokenizer.token(type, value, pos) abort
@@ -3829,6 +4623,9 @@ function! s:ExprTokenizer.peek() abort
 endfunction
 
 function! s:ExprTokenizer.get() abort
+  if self.vim9
+    call self.skip_vim9_newline(s:FALSE)
+  endif
   " FIXME: remove dirty hack
   if has_key(self.cache, self.reader.tell())
     let x = self.cache[self.reader.tell()]
@@ -3840,6 +4637,77 @@ function! s:ExprTokenizer.get() abort
   let r = self.get2()
   let self.cache[pos] = [self.reader.tell(), r]
   return r
+endfunction
+
+" In Vim9 script an expression continues on the next line inside brackets,
+" after an operator (a:force), and before an operator that starts the next
+" line.  Comments and empty lines in between are skipped.
+function! s:ExprTokenizer.skip_vim9_newline(force_newline) abort
+  let r = self.reader
+  let force = a:force_newline
+  while s:TRUE
+    let pos = r.tell()
+    call r.skip_white()
+    if r.peek() ==# '#' && r.tell() > 0 && (s:iswhite(r.p(-1)) || r.p(-1) ==# '<EOL>')
+      call r.getn(-1)
+    endif
+    if r.peek() !=# '<EOL>' || !(force || self.depth > 0 || self.next_line_continues()) || self.next_line_is_enddef()
+      call r.seek_set(pos)
+      return
+    endif
+    call r.get()
+    let force = s:TRUE
+  endwhile
+endfunction
+
+" :enddef cannot be used at the start of a continuation line.
+function! s:ExprTokenizer.next_line_is_enddef() abort
+  let r = self.reader
+  let pos = r.tell()
+  call r.get()
+  call r.skip_white()
+  let result = r.read_alpha() ==# 'enddef' && !s:iswordc(r.peekn(1))
+  call r.seek_set(pos)
+  return result
+endfunction
+
+" Return TRUE when the next line, ignoring comments and empty lines, starts
+" with an operator that continues the expression.
+function! s:ExprTokenizer.next_line_continues() abort
+  let r = self.reader
+  let pos = r.tell()
+  while r.peek() ==# '<EOL>'
+    call r.get()
+    call r.skip_white()
+    if r.peek() ==# '#'
+      call r.getn(-1)
+    endif
+  endwhile
+  let c = r.peek()
+  let continues = s:FALSE
+  if c ==# '-' && r.p(1) ==# '>'
+    let continues = s:TRUE
+  elseif c ==# '.' && s:iswordc1(r.p(1))
+    let continues = s:TRUE
+  elseif c ==# 'i' && r.p(1) ==# 's'
+    let op = r.read_alpha()
+    if op ==# 'is' || op ==# 'isnot'
+      if r.peek() ==# '?' || r.peek() ==# '#'
+        call r.get()
+      endif
+      let continues = s:iswhite(r.peek()) || r.peek() ==# '<EOL>'
+    endif
+  elseif c !=# '<EOF>' && stridx('+-*/%.|&?:=!<>', c) !=# -1
+    let op = ''
+    while r.peek() !=# '<EOF>' && stridx('+-*/%.|&?:=!<>~#', r.peek()) !=# -1
+      let op .= r.get()
+    endwhile
+    if has_key(s:VIM9_CONTINUATION_OPS, op)
+      let continues = s:iswhite(r.peek()) || r.peek() ==# '<EOL>'
+    endif
+  endif
+  call r.seek_set(pos)
+  return continues
 endfunction
 
 function! s:ExprTokenizer.get2() abort
@@ -3862,12 +4730,20 @@ function! s:ExprTokenizer.get2() abort
     let s = r.getn(3)
     let s .= r.read_bdigit()
     return self.token(s:TOKEN_NUMBER, s, pos)
+  elseif c ==# '0' && (r.p(1) ==# 'O' || r.p(1) ==# 'o') && s:isodigit(r.p(2))
+    let s = r.getn(3)
+    let s .= r.read_odigit()
+    return self.token(s:TOKEN_NUMBER, s, pos)
   elseif c ==# '0' && (r.p(1) ==# 'Z' || r.p(1) ==# 'z') && r.p(2) !=# '.'
     let s = r.getn(2)
     let s .= r.read_blob()
     return self.token(s:TOKEN_BLOB, s, pos)
   elseif s:isdigit(c)
     let s = r.read_digit()
+    " Vim9 script allows a single quote between digits: 1'000'000
+    while self.vim9 && r.p(0) ==# "'" && s:isdigit(r.p(1))
+      let s .= r.getn(1) . r.read_digit()
+    endwhile
     if r.p(0) ==# '.' && s:isdigit(r.p(1))
       let s .= r.getn(1)
       let s .= r.read_digit()
@@ -3900,7 +4776,11 @@ function! s:ExprTokenizer.get2() abort
       return self.token(s:TOKEN_ISNOT, 'isnot', pos)
     endif
   elseif s:isnamec1(c)
-    let s = r.read_name()
+    if self.vim9
+      let s = r.read_vim9_name()
+    else
+      let s = r.read_name()
+    endif
     return self.token(s:TOKEN_IDENTIFIER, s, pos)
   elseif c ==# '|' && r.p(1) ==# '|'
     call r.seek_cur(2)
@@ -3908,6 +4788,9 @@ function! s:ExprTokenizer.get2() abort
   elseif c ==# '&' && r.p(1) ==# '&'
     call r.seek_cur(2)
     return self.token(s:TOKEN_ANDAND, '&&', pos)
+  elseif c ==# '=' && r.p(1) ==# '>' && self.vim9
+    call r.seek_cur(2)
+    return self.token(s:TOKEN_FATARROW, '=>', pos)
   elseif c ==# '=' && r.p(1) ==# '='
     if r.p(2) ==# '?'
       call r.seek_cur(3)
@@ -4036,6 +4919,9 @@ function! s:ExprTokenizer.get2() abort
   elseif c ==# '!'
     call r.seek_cur(1)
     return self.token(s:TOKEN_NOT, '!', pos)
+  elseif c ==# '?' && r.p(1) ==# '?'
+    call r.seek_cur(2)
+    return self.token(s:TOKEN_QUESTIONQUESTION, '??', pos)
   elseif c ==# '?'
     call r.seek_cur(1)
     return self.token(s:TOKEN_QUESTION, '?', pos)
@@ -4043,7 +4929,7 @@ function! s:ExprTokenizer.get2() abort
     call r.seek_cur(1)
     return self.token(s:TOKEN_COLON, ':', pos)
   elseif c ==# '#'
-    if r.p(1) ==# '{'
+    if r.p(1) ==# '{' && !self.vim9
       call r.seek_cur(2)
       return self.token(s:TOKEN_LITCOPEN, '#{', pos)
     else
@@ -4202,9 +5088,16 @@ function! s:ExprParser.new(...) abort
   return obj
 endfunction
 
-function! s:ExprParser.__init__(reader) abort
+function! s:ExprParser.__init__(reader, ...) abort
   let self.reader = a:reader
-  let self.tokenizer = s:ExprTokenizer.new(a:reader)
+  " The VimLParser using this parser, if any.
+  let self.parser = s:NIL
+  let self.vim9 = s:FALSE
+  if len(a:000) > 0
+    let self.parser = a:000[0]
+    let self.vim9 = self.parser.isvim9()
+  endif
+  let self.tokenizer = s:ExprTokenizer.new(a:reader, self.vim9)
 endfunction
 
 function! s:ExprParser.parse() abort
@@ -4212,11 +5105,18 @@ function! s:ExprParser.parse() abort
 endfunction
 
 " expr1: expr2 ? expr1 : expr1
+"        expr2 ?? expr1
 function! s:ExprParser.parse_expr1() abort
   let left = self.parse_expr2()
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
-  if token.type ==# s:TOKEN_QUESTION
+  if token.type ==# s:TOKEN_QUESTIONQUESTION
+    let node = s:Node(s:NODE_FALSY)
+    let node.pos = token.pos
+    let node.left = left
+    let node.right = self.parse_expr1()
+    let left = node
+  elseif token.type ==# s:TOKEN_QUESTION
     let node = s:Node(s:NODE_TERNARY)
     let node.pos = token.pos
     let node.cond = left
@@ -4505,7 +5405,7 @@ function! s:ExprParser.parse_expr5() abort
       let node.left = left
       let node.right = self.parse_expr5_5()
       let left = node
-    elseif token.type ==# s:TOKEN_DOT " TODO check scriptversion?
+    elseif token.type ==# s:TOKEN_DOT && !self.vim9 " TODO check scriptversion?
       let node = s:Node(s:NODE_CONCAT)
       let node.pos = token.pos
       let node.left = left
@@ -4584,6 +5484,9 @@ endfunction
 "        - expr7
 "        + expr7
 function! s:ExprParser.parse_expr7() abort
+  if self.vim9
+    call self.tokenizer.skip_vim9_newline(s:TRUE)
+  endif
   let pos = self.reader.tell()
   let token = self.tokenizer.get()
   if token.type ==# s:TOKEN_NOT
@@ -4599,6 +5502,17 @@ function! s:ExprParser.parse_expr7() abort
   elseif token.type ==# s:TOKEN_PLUS
     let node = s:Node(s:NODE_PLUS)
     let node.pos = token.pos
+    let node.left = self.parse_expr7()
+    return node
+  elseif token.type ==# s:TOKEN_LT && self.vim9 && self.reader.peekn(4) !=? 'SID>'
+    " Vim9 type cast: <type>expr
+    let node = s:Node(s:NODE_CAST)
+    let node.pos = token.pos
+    let node.type_str = self.parser.read_type()
+    let token = self.tokenizer.get()
+    if token.type !=# s:TOKEN_GT
+      throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+    endif
     let node.left = self.parse_expr7()
     return node
   else
@@ -4621,8 +5535,34 @@ function! s:ExprParser.parse_expr8() abort
     let pos = self.reader.tell()
     let c = self.reader.peek()
     let token = self.tokenizer.get()
-    if !s:iswhite(c) && token.type ==# s:TOKEN_SQOPEN
+    " In Vim9 script no white space or line break is allowed before "[" and
+    " "(", a member "." may start a continuation line.
+    let attached = !s:iswhite(c) && !(self.vim9 && c ==# '<EOL>')
+    if self.vim9 && c ==# '<' && self.parser.is_generic_args()
+      " Vim9 generic function call: Func<type, ...>(args)
+      call self.reader.seek_set(pos)
+      let type_args = self.reader.getn(1)
+      let depth = 1
+      while depth > 0
+        let c = self.reader.getn(1)
+        if c ==# '<'
+          let depth += 1
+        elseif c ==# '>'
+          let depth -= 1
+        endif
+        let type_args .= c
+      endwhile
+      let token = self.tokenizer.get()
+      let node = s:Node(s:NODE_CALL)
+      let node.pos = token.pos
+      let node.left = left
+      let node.type_args = type_args
+      let node.rlist = self.parse_rlist()
+      let left = node
+      unlet node
+    elseif attached && token.type ==# s:TOKEN_SQOPEN
       let npos = token.pos
+      let self.tokenizer.depth += 1
       if self.tokenizer.peek().type ==# s:TOKEN_COLON
         call self.tokenizer.get()
         let node = s:Node(s:NODE_SLICE)
@@ -4634,6 +5574,7 @@ function! s:ExprParser.parse_expr8() abort
           let node.rlist[1] = self.parse_expr1()
         endif
         let token = self.tokenizer.get()
+        let self.tokenizer.depth -= 1
         if token.type !=# s:TOKEN_SQCLOSE
           throw s:Err(printf('unexpected token: %s', token.value), token.pos)
         endif
@@ -4651,6 +5592,7 @@ function! s:ExprParser.parse_expr8() abort
             let node.rlist[1] = self.parse_expr1()
           endif
           let token = self.tokenizer.get()
+          let self.tokenizer.depth -= 1
           if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
@@ -4661,6 +5603,7 @@ function! s:ExprParser.parse_expr8() abort
           let node.left = left
           let node.right = right
           let token = self.tokenizer.get()
+          let self.tokenizer.depth -= 1
           if token.type !=# s:TOKEN_SQCLOSE
             throw s:Err(printf('unexpected token: %s', token.value), token.pos)
           endif
@@ -4684,14 +5627,14 @@ function! s:ExprParser.parse_expr8() abort
       let node.right = right
       let left = node
       unlet node
-    elseif token.type ==# s:TOKEN_POPEN
+    elseif token.type ==# s:TOKEN_POPEN && (attached || !self.vim9)
       let node = s:Node(s:NODE_CALL)
       let node.pos = token.pos
       let node.left = left
       let node.rlist = self.parse_rlist()
       let left = node
       unlet node
-    elseif !s:iswhite(c) && token.type ==# s:TOKEN_DOT " TODO check scriptversion?
+    elseif (attached || (self.vim9 && c ==# '<EOL>')) && token.type ==# s:TOKEN_DOT " TODO check scriptversion?
       let node = self.parse_dot(token, left)
       if node is# s:NIL
         call self.reader.seek_set(pos)
@@ -4709,9 +5652,11 @@ endfunction
 
 function! s:ExprParser.parse_rlist() abort
   let rlist = []
+  let self.tokenizer.depth += 1
   let token = self.tokenizer.peek()
   if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
     call self.tokenizer.get()
+    let self.tokenizer.depth -= 1
   else
     while s:TRUE
       call add(rlist, self.parse_expr1())
@@ -4720,9 +5665,11 @@ function! s:ExprParser.parse_rlist() abort
         " XXX: Vim allows foo(a, b, ).  Lint should warn it.
         if self.tokenizer.peek().type ==# s:TOKEN_PCLOSE
           call self.tokenizer.get()
+          let self.tokenizer.depth -= 1
           break
         endif
       elseif token.type ==# s:TOKEN_PCLOSE
+        let self.tokenizer.depth -= 1
         break
       else
         throw s:Err(printf('unexpected token: %s', token.value), token.pos)
@@ -4777,6 +5724,7 @@ function! s:ExprParser.parse_expr9() abort
     let node = s:Node(s:NODE_LIST)
     let node.pos = token.pos
     let node.value = []
+    let self.tokenizer.depth += 1
     let token = self.tokenizer.peek()
     if token.type ==# s:TOKEN_SQCLOSE
       call self.tokenizer.get()
@@ -4798,6 +5746,9 @@ function! s:ExprParser.parse_expr9() abort
         endif
       endwhile
     endif
+    let self.tokenizer.depth -= 1
+  elseif token.type ==# s:TOKEN_COPEN && self.vim9
+    let node = self.parse_vim9_dict(token)
   elseif token.type ==# s:TOKEN_COPEN || token.type ==# s:TOKEN_LITCOPEN
     let is_litdict = token.type ==# s:TOKEN_LITCOPEN
     let savepos = self.reader.tell()
@@ -4915,9 +5866,13 @@ function! s:ExprParser.parse_expr9() abort
       endif
     endwhile
     return node
+  elseif token.type ==# s:TOKEN_POPEN && self.vim9
+    let node = self.parse_vim9_paren(token)
   elseif token.type ==# s:TOKEN_POPEN
+    let self.tokenizer.depth += 1
     let node = self.parse_expr1()
     let token = self.tokenizer.get()
+    let self.tokenizer.depth -= 1
     if token.type !=# s:TOKEN_PCLOSE
       throw s:Err(printf('unexpected token: %s', token.value), token.pos)
     endif
@@ -4938,6 +5893,8 @@ function! s:ExprParser.parse_expr9() abort
   elseif token.type ==# s:TOKEN_IS || token.type ==# s:TOKEN_ISCS || token.type ==# s:TOKEN_ISNOT || token.type ==# s:TOKEN_ISNOTCS
     call self.reader.seek_set(pos)
     let node = self.parse_identifier()
+  elseif token.type ==# s:TOKEN_ENV && token.value ==# '$' && (self.reader.p(0) ==# '"' || self.reader.p(0) ==# "'")
+    let node = self.parse_interpolation(token)
   elseif token.type ==# s:TOKEN_ENV
     let node = s:Node(s:NODE_ENV)
     let node.pos = token.pos
@@ -4952,11 +5909,252 @@ function! s:ExprParser.parse_expr9() abort
   return node
 endfunction
 
+" Interpolated string: $"text {expr1} text" or $'text {expr1} text'
+" .value is a list of NODE_STRING parts, in the quotes of the string, and
+" expressions.
+function! s:ExprParser.parse_interpolation(token) abort
+  let r = self.reader
+  let node = s:Node(s:NODE_INTERPOLATION)
+  let node.pos = a:token.pos
+  let node.value = []
+  let quote = r.get()
+  let str = ''
+  let strpos = r.getpos()
+  while s:TRUE
+    let c = r.p(0)
+    if c ==# '<EOF>' || c ==# '<EOL>'
+      throw s:Err('unexpected EOL', r.getpos())
+    elseif c ==# quote && quote ==# "'" && r.p(1) ==# "'"
+      let str .= r.getn(2)
+    elseif c ==# quote
+      call r.seek_cur(1)
+      break
+    elseif c ==# '\' && quote ==# '"'
+      let str .= r.getn(2)
+    elseif (c ==# '{' && r.p(1) ==# '{') || (c ==# '}' && r.p(1) ==# '}')
+      let str .= r.getn(2)
+    elseif c ==# '{'
+      if str !=# ''
+        let part = s:Node(s:NODE_STRING)
+        let part.pos = strpos
+        let part.value = quote . str . quote
+        call add(node.value, part)
+        let str = ''
+      endif
+      call r.seek_cur(1)
+      call add(node.value, self.parse_expr1())
+      call r.skip_white()
+      if r.p(0) !=# '}'
+        throw s:Err(printf('unexpected token: %s', r.p(0)), r.getpos())
+      endif
+      call r.seek_cur(1)
+      let strpos = r.getpos()
+    else
+      let str .= r.getn(1)
+    endif
+  endwhile
+  if str !=# ''
+    let part = s:Node(s:NODE_STRING)
+    let part.pos = strpos
+    let part.value = quote . str . quote
+    call add(node.value, part)
+  endif
+  return node
+endfunction
+
+" Vim9 lambda, tuple or expression in parentheses, after the "(":
+"   (args) => expr1
+"   (args): type => {
+"   ()  (expr1,)  (expr1, expr1, ...)
+"   (expr1)
+function! s:ExprParser.parse_vim9_paren(popen) abort
+  if self.is_vim9_lambda()
+    return self.parse_vim9_lambda(a:popen)
+  endif
+  let self.tokenizer.depth += 1
+  let token = self.tokenizer.peek()
+  if token.type ==# s:TOKEN_PCLOSE
+    call self.tokenizer.get()
+    let self.tokenizer.depth -= 1
+    let node = s:Node(s:NODE_TUPLE)
+    let node.pos = a:popen.pos
+    let node.value = []
+    return node
+  endif
+  let node = self.parse_expr1()
+  let token = self.tokenizer.get()
+  if token.type ==# s:TOKEN_COMMA
+    let tuple = s:Node(s:NODE_TUPLE)
+    let tuple.pos = a:popen.pos
+    let tuple.value = [node]
+    while self.tokenizer.peek().type !=# s:TOKEN_PCLOSE
+      call add(tuple.value, self.parse_expr1())
+      let token = self.tokenizer.peek()
+      if token.type ==# s:TOKEN_COMMA
+        call self.tokenizer.get()
+      elseif token.type !=# s:TOKEN_PCLOSE
+        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      endif
+    endwhile
+    let token = self.tokenizer.get()
+    let node = tuple
+  endif
+  let self.tokenizer.depth -= 1
+  if token.type !=# s:TOKEN_PCLOSE
+    throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+  endif
+  return node
+endfunction
+
+" Return TRUE when the text after "(" is the argument list of a Vim9 lambda,
+" i.e. names with optional types, ")", an optional return type and "=>".
+function! s:ExprParser.is_vim9_lambda() abort
+  let r = self.reader
+  let pos = r.tell()
+  let result = s:FALSE
+  while s:TRUE
+    call r.skip_white()
+    if r.peekn(1) ==# ')'
+      break
+    endif
+    if r.peekn(3) ==# '...'
+      call r.getn(3)
+    endif
+    if r.read_word() ==# ''
+      call r.seek_set(pos)
+      return s:FALSE
+    endif
+    if r.peekn(1) ==# ':'
+      call r.getn(1)
+      call r.skip_white()
+      call self.parser.read_type()
+    endif
+    call r.skip_white()
+    if r.peekn(1) ==# ','
+      call r.getn(1)
+    elseif r.peekn(1) !=# ')'
+      call r.seek_set(pos)
+      return s:FALSE
+    endif
+  endwhile
+  call r.getn(1)
+  if r.peekn(1) ==# ':'
+    call r.getn(1)
+    call r.skip_white()
+    call self.parser.read_type()
+  endif
+  call r.skip_white()
+  let result = r.peekn(2) ==# '=>'
+  call r.seek_set(pos)
+  return result
+endfunction
+
+function! s:ExprParser.parse_vim9_lambda(token) abort
+  let r = self.reader
+  let node = s:Node(s:NODE_LAMBDA)
+  let node.pos = a:token.pos
+  let node.rlist = []
+  let node.left = s:NIL
+  let node.body = []
+  let node.rettype = ''
+  while s:TRUE
+    call r.skip_white()
+    if r.peekn(1) ==# ')'
+      call r.getn(1)
+      break
+    endif
+    let varnode = s:Node(s:NODE_IDENTIFIER)
+    let varnode.pos = r.getpos()
+    let varnode.value = ''
+    let varnode.type_str = ''
+    if r.peekn(3) ==# '...'
+      let varnode.value = r.getn(3)
+    endif
+    let name = r.read_word()
+    let varnode.value .= name
+    let self.parser.declared[name] = 1
+    if r.peekn(1) ==# ':'
+      call r.getn(1)
+      call r.skip_white()
+      let varnode.type_str = self.parser.read_type()
+    endif
+    call add(node.rlist, varnode)
+    call r.skip_white()
+    if r.peekn(1) ==# ','
+      call r.getn(1)
+    endif
+  endwhile
+  if r.peekn(1) ==# ':'
+    call r.getn(1)
+    call r.skip_white()
+    let node.rettype = self.parser.read_type()
+  endif
+  call r.skip_white()
+  call r.getn(2)
+  call r.skip_white()
+  let pos = r.tell()
+  if r.peekn(1) ==# '{'
+    call r.getn(1)
+    call r.skip_white()
+    if r.peek() ==# '<EOL>' || r.peek() ==# '#'
+      call self.parser.parse_lambda_block(node)
+      return node
+    endif
+    call r.seek_set(pos)
+  endif
+  let node.left = self.parse_expr1()
+  return node
+endfunction
+
+" Vim9 dictionary: {key: expr1, "key": expr1, [expr1]: expr1, ...}
+" A key made of word characters and "-" is a literal string.
+function! s:ExprParser.parse_vim9_dict(copen) abort
+  let node = s:Node(s:NODE_DICT)
+  let node.pos = a:copen.pos
+  let node.value = []
+  let self.tokenizer.depth += 1
+  while s:TRUE
+    let token = self.tokenizer.peek()
+    if token.type ==# s:TOKEN_CCLOSE
+      call self.tokenizer.get()
+      break
+    endif
+    if token.type ==# s:TOKEN_SQOPEN
+      call self.tokenizer.get()
+      let key = self.parse_expr1()
+      let token = self.tokenizer.get()
+      if token.type !=# s:TOKEN_SQCLOSE
+        throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+      endif
+    elseif token.type ==# s:TOKEN_SQUOTE || token.type ==# s:TOKEN_DQUOTE
+      let key = self.parse_expr1()
+    else
+      call self.tokenizer.skip_vim9_newline(s:FALSE)
+      let key = self.tokenizer.parse_dict_literal_key()
+    endif
+    let token = self.tokenizer.get()
+    if token.type !=# s:TOKEN_COLON
+      throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+    endif
+    let val = self.parse_expr1()
+    call add(node.value, [key, val])
+    let token = self.tokenizer.get()
+    if token.type ==# s:TOKEN_CCLOSE
+      break
+    elseif token.type !=# s:TOKEN_COMMA
+      throw s:Err(printf('unexpected token: %s', token.value), token.pos)
+    endif
+  endwhile
+  let self.tokenizer.depth -= 1
+  return node
+endfunction
+
 " SUBSCRIPT or CONCAT
 "   dict "." [0-9A-Za-z_]+ => (subscript dict key)
 "   str  "." expr6         => (concat str expr6)
+" In Vim9 script "." is always a member access.
 function! s:ExprParser.parse_dot(token, left) abort
-  if a:left.type !=# s:NODE_IDENTIFIER && a:left.type !=# s:NODE_CURLYNAME && a:left.type !=# s:NODE_DICT && a:left.type !=# s:NODE_SUBSCRIPT && a:left.type !=# s:NODE_CALL && a:left.type !=# s:NODE_DOT
+  if !self.vim9 && a:left.type !=# s:NODE_IDENTIFIER && a:left.type !=# s:NODE_CURLYNAME && a:left.type !=# s:NODE_DICT && a:left.type !=# s:NODE_SUBSCRIPT && a:left.type !=# s:NODE_CALL && a:left.type !=# s:NODE_DOT
     return s:NIL
   endif
   if !s:iswordc(self.reader.p(0))
@@ -4964,7 +6162,7 @@ function! s:ExprParser.parse_dot(token, left) abort
   endif
   let pos = self.reader.getpos()
   let name = self.reader.read_word()
-  if s:isnamec(self.reader.p(0))
+  if !self.vim9 && s:isnamec(self.reader.p(0))
     " XXX: foo is str => ok, foo is obj => invalid expression
     " foo.s:bar or foo.bar#baz
     return s:NIL
@@ -5006,6 +6204,17 @@ endfunction
 function! s:ExprParser.parse_identifier() abort
   call self.reader.skip_white()
   let npos = self.reader.getpos()
+  if self.vim9
+    " Vim9 script has no curly-braces names.
+    let node = s:Node(s:NODE_IDENTIFIER)
+    let node.pos = npos
+    if self.reader.peekn(5) ==? '<SID>'
+      let node.value = self.reader.getn(5) . self.reader.read_vim9_name()
+    else
+      let node.value = self.reader.read_vim9_name()
+    endif
+    return node
+  endif
   let curly_parts = self.parse_curly_parts()
   if len(curly_parts) ==# 1 && curly_parts[0].type ==# s:NODE_CURLYNAMEPART
     let node = s:Node(s:NODE_IDENTIFIER)
@@ -5198,7 +6407,19 @@ function! s:StringReader.__init__(lines) abort
       let col += len(c)
       let offset += len(c)
     endfor
-    while lnum + 1 < len(a:lines) && a:lines[lnum + 1] =~# '^\s*\\'
+    while s:TRUE
+      " Comment lines "\ and #\ may appear between continuation lines.
+      let next = lnum + 1
+      while next < len(a:lines) && a:lines[next] =~# '^\s*["#]\\ '
+        let next += 1
+      endwhile
+      if next >= len(a:lines) || a:lines[next] !~# '^\s*\\'
+        break
+      endif
+      while lnum + 1 < next
+        let offset += len(a:lines[lnum + 1]) + 1
+        let lnum += 1
+      endwhile
       let skip = s:TRUE
       let col = 0
       for c in split(a:lines[lnum + 1], '\zs')
@@ -5427,6 +6648,20 @@ endfunction
 function! s:StringReader.read_name() abort
   let r = ''
   while s:isnamec(self.peekn(1))
+    let r .= self.getn(1)
+  endwhile
+  return r
+endfunction
+
+" Read a Vim9 variable or function name.  Unlike read_name() a colon is only
+" part of the name after a one letter scope, e.g. "g:name".
+function! s:StringReader.read_vim9_name() abort
+  let r = ''
+  let c = self.peekn(1)
+  if c !=# '' && stridx('bgltsvw', c) !=# -1 && self.p(1) ==# ':' && !s:iswhite(self.p(2))
+    let r = self.getn(2)
+  endif
+  while s:iswordc(self.peekn(1)) || self.peekn(1) ==# '#'
     let r .= self.getn(1)
   endwhile
   return r
@@ -5706,6 +6941,47 @@ function! s:Compiler.compile(node) abort
   elseif a:node.type ==# s:NODE_VIM9SCRIPT
     call self.compile_vim9script(a:node)
     return s:NIL
+  elseif a:node.type ==# s:NODE_ASSIGN
+    call self.compile_assign(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_BLOCK
+    call self.compile_block(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_CLASS
+    call self.compile_class(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_INTERFACE
+    call self.compile_interface(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_ENUM
+    call self.compile_enum(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_TYPE
+    call self.compile_type(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_PUBLIC
+    call self.compile_wrapper(a:node, 'public')
+    return s:NIL
+  elseif a:node.type ==# s:NODE_STATIC
+    call self.compile_wrapper(a:node, 'static')
+    return s:NIL
+  elseif a:node.type ==# s:NODE_ABSTRACT
+    call self.compile_wrapper(a:node, 'abstract')
+    return s:NIL
+  elseif a:node.type ==# s:NODE_DEFER
+    call self.compile_defer(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_ECHOWINDOW
+    call self.compile_echowindow(a:node)
+    return s:NIL
+  elseif a:node.type ==# s:NODE_TUPLE
+    return self.compile_tuple(a:node)
+  elseif a:node.type ==# s:NODE_FALSY
+    return self.compile_falsy(a:node)
+  elseif a:node.type ==# s:NODE_INTERPOLATION
+    return self.compile_interpolation(a:node)
+  elseif a:node.type ==# s:NODE_CAST
+    return self.compile_cast(a:node)
   else
     throw printf('Compiler: unknown node: %s', string(a:node))
   endif
@@ -5728,7 +7004,15 @@ function! s:Compiler.compile_comment(node) abort
 endfunction
 
 function! s:Compiler.compile_excmd(node) abort
-  call self.out('(excmd "%s")', escape(a:node.str, '\"'))
+  if !has_key(a:node, 'block')
+    call self.out('(excmd "%s")', escape(a:node.str, '\"'))
+    return
+  endif
+  call self.out('(excmd "%s"', escape(a:node.str, '\"'))
+  call self.incindent('  ')
+  call self.compile_body(a:node.block.body)
+  call self.out(')')
+  call self.decindent()
 endfunction
 
 function! s:Compiler.compile_function(node) abort
@@ -5794,8 +7078,15 @@ function! s:Compiler.compile_let(node) abort
   call self.out('(let %s %s %s)', a:node.op, left, right)
 endfunction
 
-" TODO: merge with s:Compiler.compile_let() ?
-function! s:Compiler.compile_const(node) abort
+function! s:Compiler.compile_block(node) abort
+  call self.out('(block')
+  call self.incindent('  ')
+  call self.compile_body(a:node.body)
+  call self.out(')')
+  call self.decindent()
+endfunction
+
+function! s:Compiler.compile_assign(node) abort
   let left = ''
   if a:node.left isnot# s:NIL
     let left = self.compile(a:node.left)
@@ -5806,8 +7097,16 @@ function! s:Compiler.compile_const(node) abort
     endif
     let left = '(' . left . ')'
   endif
-  let right = self.compile(a:node.right)
-  call self.out('(const %s %s %s)', a:node.op, left, right)
+  if a:node.right is# s:NIL
+    call self.out('(assign %s %s)', a:node.op, left)
+  else
+    call self.out('(assign %s %s %s)', a:node.op, left, self.compile(a:node.right))
+  endif
+endfunction
+
+" TODO: merge with s:Compiler.compile_let() ?
+function! s:Compiler.compile_const(node) abort
+  call self.compile_decl(a:node, 'const')
 endfunction
 
 function! s:Compiler.compile_unlet(node) abort
@@ -5866,11 +7165,11 @@ endfunction
 function! s:Compiler.compile_for(node) abort
   let left = ''
   if a:node.left isnot# s:NIL
-    let left = self.compile(a:node.left)
+    let left = self.compile_decl_name(a:node.left)
   else
-    let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
+    let left = join(map(a:node.list, 'self.compile_decl_name(v:val)'), ' ')
     if a:node.rest isnot# s:NIL
-      let left .= ' . ' . self.compile(a:node.rest)
+      let left .= ' . ' . self.compile_decl_name(a:node.rest)
     endif
     let left = '(' . left . ')'
   endif
@@ -5948,6 +7247,15 @@ endfunction
 function! s:Compiler.compile_echoconsole(node) abort
   let list = map(a:node.list, 'self.compile(v:val)')
   call self.out('(echoconsole %s)', join(list, ' '))
+endfunction
+
+function! s:Compiler.compile_echowindow(node) abort
+  let list = map(a:node.list, 'self.compile(v:val)')
+  call self.out('(echowindow %s)', join(list, ' '))
+endfunction
+
+function! s:Compiler.compile_defer(node) abort
+  call self.out('(defer %s)', self.compile(a:node.left))
 endfunction
 
 function! s:Compiler.compile_execute(node) abort
@@ -6151,10 +7459,14 @@ endfunction
 
 function! s:Compiler.compile_call(node) abort
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
+  let left = self.compile(a:node.left)
+  if has_key(a:node, 'type_args')
+    let left .= a:node.type_args
+  endif
   if empty(rlist)
-    return printf('(%s)', self.compile(a:node.left))
+    return printf('(%s)', left)
   else
-    return printf('(%s %s)', self.compile(a:node.left), join(rlist, ' '))
+    return printf('(%s %s)', left, join(rlist, ' '))
   endif
 endfunction
 
@@ -6233,7 +7545,49 @@ endfunction
 
 function! s:Compiler.compile_lambda(node) abort
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
-  return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
+  if a:node.left isnot# s:NIL
+    return printf('(lambda (%s) %s)', join(rlist, ' '), self.compile(a:node.left))
+  endif
+  " Vim9 lambda with a block: put the statements on one line.
+  let compiler = s:Compiler.new()
+  call compiler.compile_body(a:node.body)
+  let body = []
+  for line in compiler.lines
+    let text = ''
+    for c in split(line, '\zs')
+      if text !=# '' || c !=# ' '
+        let text .= c
+      endif
+    endfor
+    call add(body, text)
+  endfor
+  return printf('(lambda (%s) %s)', join(rlist, ' '), join(body, ' '))
+endfunction
+
+function! s:Compiler.compile_falsy(node) abort
+  return printf('(?? %s %s)', self.compile(a:node.left), self.compile(a:node.right))
+endfunction
+
+function! s:Compiler.compile_interpolation(node) abort
+  let value = map(a:node.value, 'self.compile(v:val)')
+  if empty(value)
+    return '(interpolation)'
+  else
+    return printf('(interpolation %s)', join(value, ' '))
+  endif
+endfunction
+
+function! s:Compiler.compile_tuple(node) abort
+  let value = map(a:node.value, 'self.compile(v:val)')
+  if empty(value)
+    return '(tuple)'
+  else
+    return printf('(tuple %s)', join(value, ' '))
+  endif
+endfunction
+
+function! s:Compiler.compile_cast(node) abort
+  return printf('(cast <%s> %s)', a:node.type_str, self.compile(a:node.left))
 endfunction
 
 function! s:Compiler.compile_heredoc(node) abort
@@ -6252,11 +7606,15 @@ function! s:Compiler.compile_heredoc(node) abort
 endfunction
 
 function! s:Compiler.compile_vim9script(node) abort
-  call self.out('(vim9script)')
+  if a:node.noclear
+    call self.out('(vim9script noclear)')
+  else
+    call self.out('(vim9script)')
+  endif
 endfunction
 
 function! s:Compiler.compile_def(node) abort
-  let left = self.compile(a:node.left)
+  let left = self.compile(a:node.left) . a:node.attr.type_params
   let rlist = map(a:node.rlist, 'self.compile(v:val)')
   let default_args = map(a:node.default_args, 'self.compile(v:val)')
   if !empty(rlist)
@@ -6289,51 +7647,112 @@ function! s:Compiler.compile_def(node) abort
 endfunction
 
 function! s:Compiler.compile_var(node) abort
-  let left = ''
-  if a:node.left isnot# s:NIL
-    let left = self.compile(a:node.left)
-  else
-    let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
-    if a:node.rest isnot# s:NIL
-      let left .= ' . ' . self.compile(a:node.rest)
-    endif
-    let left = '(' . left . ')'
-  endif
-  if a:node.type_str !=# ''
-    let left .= ': ' . a:node.type_str
-  endif
-  let right = self.compile(a:node.right)
-  call self.out('(var %s %s %s)', a:node.op, left, right)
+  call self.compile_decl(a:node, 'var')
 endfunction
 
 function! s:Compiler.compile_final(node) abort
+  call self.compile_decl(a:node, 'final')
+endfunction
+
+" A declared name with its Vim9 type, if any: "name: type"
+function! s:Compiler.compile_decl_name(node) abort
+  let name = self.compile(a:node)
+  if has_key(a:node, 'type_str') && a:node.type_str !=# ''
+    let name .= ': ' . a:node.type_str
+  endif
+  return name
+endfunction
+
+function! s:Compiler.compile_decl(node, cmd) abort
   let left = ''
   if a:node.left isnot# s:NIL
-    let left = self.compile(a:node.left)
+    let left = self.compile_decl_name(a:node.left)
   else
-    let left = join(map(a:node.list, 'self.compile(v:val)'), ' ')
+    let left = join(map(a:node.list, 'self.compile_decl_name(v:val)'), ' ')
     if a:node.rest isnot# s:NIL
-      let left .= ' . ' . self.compile(a:node.rest)
+      let left .= ' . ' . self.compile_decl_name(a:node.rest)
     endif
     let left = '(' . left . ')'
   endif
-  if a:node.type_str !=# ''
-    let left .= ': ' . a:node.type_str
+  if a:node.right is# s:NIL
+    call self.out('(%s %s)', a:cmd, left)
+  else
+    call self.out('(%s %s %s %s)', a:cmd, a:node.op, left, self.compile(a:node.right))
   endif
-  let right = self.compile(a:node.right)
-  call self.out('(final %s %s %s)', a:node.op, left, right)
 endfunction
 
 function! s:Compiler.compile_export(node) abort
-  call self.out('(export')
+  call self.compile_wrapper(a:node, 'export')
+endfunction
+
+function! s:Compiler.compile_wrapper(node, name) abort
+  call self.out('(%s', a:name)
   call self.incindent('  ')
   call self.compile_body(a:node.body)
   call self.out(')')
   call self.decindent()
 endfunction
 
+function! s:Compiler.compile_class(node) abort
+  let s = a:node.name
+  if a:node.extends !=# ''
+    let s .= ' extends ' . a:node.extends
+  endif
+  if !empty(a:node.implements)
+    let s .= ' implements ' . join(a:node.implements, ', ')
+  endif
+  call self.out('(class %s', s)
+  call self.incindent('  ')
+  call self.compile_body(a:node.body)
+  call self.out(')')
+  call self.decindent()
+endfunction
+
+function! s:Compiler.compile_interface(node) abort
+  let s = a:node.name
+  if !empty(a:node.extends)
+    let s .= ' extends ' . join(a:node.extends, ', ')
+  endif
+  call self.out('(interface %s', s)
+  call self.incindent('  ')
+  call self.compile_body(a:node.body)
+  call self.out(')')
+  call self.decindent()
+endfunction
+
+function! s:Compiler.compile_enum(node) abort
+  let s = a:node.name
+  if !empty(a:node.implements)
+    let s .= ' implements ' . join(a:node.implements, ', ')
+  endif
+  call self.out('(enum %s', s)
+  call self.incindent('  ')
+  for value in a:node.enumvalues
+    let rlist = map(value.rlist, 'self.compile(v:val)')
+    if empty(rlist)
+      call self.out('(%s)', value.value)
+    else
+      call self.out('(%s %s)', value.value, join(rlist, ' '))
+    endif
+  endfor
+  call self.compile_body(a:node.body)
+  call self.out(')')
+  call self.decindent()
+endfunction
+
+function! s:Compiler.compile_type(node) abort
+  call self.out('(type %s %s)', a:node.name, a:node.type_str)
+endfunction
+
 function! s:Compiler.compile_import(node) abort
-  call self.out('(import "%s")', escape(a:node.str, '\"'))
+  let s = self.compile(a:node.left)
+  if a:node.autoload
+    let s = 'autoload ' . s
+  endif
+  if a:node.alias !=# ''
+    let s .= ' as ' . a:node.alias
+  endif
+  call self.out('(import %s)', s)
 endfunction
 
 " TODO: under construction

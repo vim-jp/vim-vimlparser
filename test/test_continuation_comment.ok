@@ -1,0 +1,2 @@
+(let = s:list (list 1 2))
+(echo s:list)

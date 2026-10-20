@@ -1,0 +1,14 @@
+(vim9script)
+(def (SubBlankHyphen text (separator ' ')): string
+  (return (method text (substitute '[[:blank:]]' separator 'g'))))
+(def (Zip<T, U> first second): list<tuple<T, U>>
+  (return (list)))
+(def (In20s _ _ year): void
+  (assign += count (?: (>= year 2020) 1 0)))
+(def (F . ...l): number
+  ; comment
+  (return (method (Zip<number, number> l l) (len))))
+(def (g:Global)
+  (def (Inner): string
+    (return 'inner'))
+  (echo (Inner)))
