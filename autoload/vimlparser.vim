@@ -557,11 +557,35 @@ function! s:VimLParser.declare(node) abort
 endfunction
 
 function! s:VimLParser.push_context(node) abort
+  if a:node.type ==# s:NODE_DEF || a:node.type ==# s:NODE_FUNCTION
+    call self.push_scope()
+  endif
   call insert(self.context, a:node)
 endfunction
 
 function! s:VimLParser.pop_context() abort
+  if self.context[0].type ==# s:NODE_DEF || self.context[0].type ==# s:NODE_FUNCTION
+    call self.pop_scope()
+  endif
   call remove(self.context, 0)
+endfunction
+
+" Names declared in a function or lambda are only visible inside it: continue
+" with a copy of the declared names and restore them with pop_scope().
+function! s:VimLParser.push_scope() abort
+  call insert(self.outer_declared, self.declared)
+  let declared = {}
+  for name in keys(self.declared)
+    let declared[name] = 1
+  endfor
+  let self.declared = declared
+endfunction
+
+function! s:VimLParser.pop_scope() abort
+  if !empty(self.outer_declared)
+    let self.declared = self.outer_declared[0]
+    call remove(self.outer_declared, 0)
+  endif
 endfunction
 
 function! s:VimLParser.find_context(type) abort
@@ -624,6 +648,7 @@ function! s:VimLParser.parse(reader) abort
   " Names of declared Vim9 variables, to tell an assignment from an Ex
   " command.
   let self.declared = {}
+  let self.outer_declared = []
   call self.push_context(toplevel)
   while self.reader.peek() !=# '<EOF>'
     call self.parse_one_cmd()
@@ -6056,6 +6081,8 @@ function! s:ExprParser.parse_vim9_lambda(token) abort
   let node.left = s:NIL
   let node.body = []
   let node.rettype = ''
+  " the arguments are only declared in the lambda
+  call self.parser.push_scope()
   while s:TRUE
     call r.skip_white()
     if r.peekn(1) ==# ')'
@@ -6097,11 +6124,13 @@ function! s:ExprParser.parse_vim9_lambda(token) abort
     call r.skip_white()
     if r.peek() ==# '<EOL>' || r.peek() ==# '#'
       call self.parser.parse_lambda_block(node)
+      call self.parser.pop_scope()
       return node
     endif
     call r.seek_set(pos)
   endif
   let node.left = self.parse_expr1()
+  call self.parser.pop_scope()
   return node
 endfunction
 

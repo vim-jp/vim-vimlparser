@@ -706,10 +706,28 @@ class VimLParser:
             self.declared[node.value] = 1
 
     def push_context(self, node):
+        if node.type == NODE_DEF or node.type == NODE_FUNCTION:
+            self.push_scope()
         viml_insert(self.context, node)
 
     def pop_context(self):
+        if self.context[0].type == NODE_DEF or self.context[0].type == NODE_FUNCTION:
+            self.pop_scope()
         viml_remove(self.context, 0)
+
+    # Names declared in a function or lambda are only visible inside it: continue
+    # with a copy of the declared names and restore them with pop_scope().
+    def push_scope(self):
+        viml_insert(self.outer_declared, self.declared)
+        declared = AttributeDict({})
+        for name in viml_keys(self.declared):
+            declared[name] = 1
+        self.declared = declared
+
+    def pop_scope(self):
+        if not viml_empty(self.outer_declared):
+            self.declared = self.outer_declared[0]
+            viml_remove(self.outer_declared, 0)
 
     def find_context(self, type):
         i = 0
@@ -755,6 +773,7 @@ class VimLParser:
         # Names of declared Vim9 variables, to tell an assignment from an Ex
         # command.
         self.declared = AttributeDict({})
+        self.outer_declared = []
         self.push_context(toplevel)
         while self.reader.peek() != "<EOF>":
             self.parse_one_cmd()
@@ -4418,6 +4437,8 @@ class ExprParser:
         node.left = NIL
         node.body = []
         node.rettype = ""
+        # the arguments are only declared in the lambda
+        self.parser.push_scope()
         while TRUE:
             r.skip_white()
             if r.peekn(1) == ")":
@@ -4453,9 +4474,11 @@ class ExprParser:
             r.skip_white()
             if r.peek() == "<EOL>" or r.peek() == "#":
                 self.parser.parse_lambda_block(node)
+                self.parser.pop_scope()
                 return node
             r.seek_set(pos)
         node.left = self.parse_expr1()
+        self.parser.pop_scope()
         return node
 
     # Vim9 dictionary: {key: expr1, "key": expr1, [expr1]: expr1, ...}
