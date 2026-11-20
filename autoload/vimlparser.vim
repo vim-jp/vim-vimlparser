@@ -319,6 +319,18 @@ function! s:is_removed_in_vim9(name) abort
         \ || a:name ==# 'open' || a:name ==# 't' || a:name ==# 'xit' || a:name ==# 'Print'
 endfunction
 
+" Return TRUE when "lines" is a Vim9 script: the first command is :vim9script.
+function! s:is_vim9script(lines) abort
+  for line in a:lines
+    if line =~# '^\s*:\=vim9s[a-z]*\>'
+      return s:TRUE
+    elseif line !~# '^\s*$' && line !~# '^\s*"'
+      return s:FALSE
+    endif
+  endfor
+  return s:FALSE
+endfunction
+
 " Return TRUE when the text ends in white space and "{".
 function! s:ends_with_block(str) abort
   let last = ''
@@ -6427,6 +6439,12 @@ function! s:StringReader.__init__(lines) abort
   let self.pos = []
   let lnum = 0
   let offset = 0
+  " Comment lines between continuation lines: "\ in legacy script, #\ in
+  " Vim9 script.
+  let comment_pat = '^\s*"\\ '
+  if s:is_vim9script(a:lines)
+    let comment_pat = '^\s*#\\ '
+  endif
   while lnum < len(a:lines)
     let col = 0
     for c in split(a:lines[lnum], '\zs')
@@ -6436,9 +6454,8 @@ function! s:StringReader.__init__(lines) abort
       let offset += len(c)
     endfor
     while s:TRUE
-      " Comment lines "\ and #\ may appear between continuation lines.
       let next = lnum + 1
-      while next < len(a:lines) && a:lines[next] =~# '^\s*["#]\\ '
+      while next < len(a:lines) && a:lines[next] =~# comment_pat
         let next += 1
       endwhile
       if next >= len(a:lines) || a:lines[next] !~# '^\s*\\'

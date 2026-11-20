@@ -73,7 +73,11 @@ pat_vim2py = {
     "^\\h": "^[A-Za-z_]",
     "^\\s": "^\\s",
     "^\\s*\\\\": "^\\s*\\\\",
-    "^\\s*[\"#]\\\\ ": "^\\s*[\"#]\\\\ ",
+    "^\\s*\"\\\\ ": "^\\s*\"\\\\ ",
+    "^\\s*#\\\\ ": "^\\s*#\\\\ ",
+    "^\\s*:\\=vim9s[a-z]*\\>": "^\\s*:?vim9s[a-z]*\\b",
+    "^\\s*$": "^\\s*$",
+    "^\\s*\"": "^\\s*\"",
     "^[ \\t]$": "^[ \\t]$",
     "^[A-Za-z]$": "^[A-Za-z]$",
     "^[0-9A-Za-z]$": "^[0-9A-Za-z]$",
@@ -483,6 +487,16 @@ def islower(c):
 # Return TRUE for a command that does not exist in Vim9 script.
 def is_removed_in_vim9(name):
     return name == "append" or name == "change" or name == "insert" or name == "k" or name == "mode" or name == "open" or name == "t" or name == "xit" or name == "Print"
+
+
+# Return TRUE when "lines" is a Vim9 script: the first command is :vim9script.
+def is_vim9script(lines):
+    for line in lines:
+        if viml_eqregh(line, "^\\s*:\\=vim9s[a-z]*\\>"):
+            return TRUE
+        elif not viml_eqregh(line, "^\\s*$") and not viml_eqregh(line, "^\\s*\""):
+            return FALSE
+    return FALSE
 
 
 # Return TRUE when the text ends in white space and "{".
@@ -4735,6 +4749,11 @@ class StringReader:
         self.pos = []
         lnum = 0
         offset = 0
+        # Comment lines between continuation lines: "\ in legacy script, #\ in
+        # Vim9 script.
+        comment_pat = "^\\s*\"\\\\ "
+        if is_vim9script(lines):
+            comment_pat = "^\\s*#\\\\ "
         while lnum < viml_len(lines):
             col = 0
             for c in viml_split(lines[lnum], "\\zs"):
@@ -4743,9 +4762,8 @@ class StringReader:
                 col += viml_len(c)
                 offset += viml_len(c)
             while TRUE:
-                # Comment lines "\ and #\ may appear between continuation lines.
                 next = lnum + 1
-                while next < viml_len(lines) and viml_eqregh(lines[next], "^\\s*[\"#]\\\\ "):
+                while next < viml_len(lines) and viml_eqregh(lines[next], comment_pat):
                     next += 1
                 if next >= viml_len(lines) or not viml_eqregh(lines[next], "^\\s*\\\\"):
                     break
