@@ -782,7 +782,6 @@ class VimLParser:
             self.parse_hashbang()
             self.reader.get()
             return
-        vim9 = self.isvim9()
         colon = FALSE
         while iswhite(self.reader.peekn(1)) or self.reader.peekn(1) == ":":
             if self.reader.peekn(1) == ":":

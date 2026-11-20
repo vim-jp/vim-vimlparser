@@ -837,7 +837,6 @@ VimLParser.prototype.parse_one_cmd = function() {
         this.reader.get();
         return;
     }
-    var vim9 = this.isvim9();
     var colon = FALSE;
     while (iswhite(this.reader.peekn(1)) || this.reader.peekn(1) == ":") {
         if (this.reader.peekn(1) == ":") {

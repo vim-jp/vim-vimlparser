@@ -656,7 +656,6 @@ function! s:VimLParser.parse_one_cmd() abort
     call self.reader.get()
     return
   endif
-  let vim9 = self.isvim9()
   let colon = s:FALSE
   while s:iswhite(self.reader.peekn(1)) || self.reader.peekn(1) ==# ':'
     if self.reader.peekn(1) ==# ':'
