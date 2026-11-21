@@ -600,6 +600,17 @@ function! s:VimLParser.pop_scope() abort
   endif
 endfunction
 
+function! s:VimLParser.is_declared(name) abort
+  if has_key(self.declared, a:name)
+    return s:TRUE
+  elseif self.find_context(s:NODE_DEF) ==# -1
+    return s:FALSE
+  endif
+  let self.undeclared_in_def[a:name] = 1
+
+  return has_key(self.script_declared, a:name)
+endfunction
+
 function! s:VimLParser.find_context(type) abort
   let i = 0
   for node in self.context
@@ -651,7 +662,27 @@ function! s:VimLParser.check_missing_endfor(ends, pos) abort
   endif
 endfunction
 
+" A :def function is compiled when it is first called, usually after the whole
+" script was sourced, so script variables declared after the function are
+" visible in it.  When a name in a function body was taken as a command and
+" the script declares it later, parse again with the script variables known.
 function! s:VimLParser.parse(reader) abort
+  let start = a:reader.tell()
+  let vim9script = self.vim9script
+  let self.script_declared = {}
+  let toplevel = self.parse_toplevel(a:reader)
+  for name in keys(self.undeclared_in_def)
+    if has_key(self.declared, name)
+      let self.script_declared = self.declared
+      let self.vim9script = vim9script
+      call a:reader.seek_set(start)
+      return self.parse_toplevel(a:reader)
+    endif
+  endfor
+  return toplevel
+endfunction
+
+function! s:VimLParser.parse_toplevel(reader) abort
   let self.reader = a:reader
   let self.context = []
   let toplevel = s:Node(s:NODE_TOPLEVEL)
@@ -661,6 +692,8 @@ function! s:VimLParser.parse(reader) abort
   " command.
   let self.declared = {}
   let self.outer_declared = []
+  " Names in :def functions that were not declared when they were parsed.
+  let self.undeclared_in_def = {}
   call self.push_context(toplevel)
   while self.reader.peek() !=# '<EOF>'
     call self.parse_one_cmd()
@@ -809,11 +842,11 @@ function! s:VimLParser.parse_vim9_statement() abort
   elseif self.peek_assign_op() !=# ''
     " "name = expr" is an assignment when "name" is a variable or not a
     " command.
-    let result = has_key(self.declared, name) || self.is_vim9_command(pos) ==# s:FALSE
+    let result = self.is_declared(name) || self.is_vim9_command(pos) ==# s:FALSE
   elseif self.ends_excmds(r.peek())
     " A variable followed by an operator on the next line.  A variable alone
     " has no effect, then it is a command like :new.
-    let result = has_key(self.declared, name) && (self.is_vim9_command(pos) ==# s:FALSE || self.vim9_line_continues())
+    let result = self.is_declared(name) && (self.is_vim9_command(pos) ==# s:FALSE || self.vim9_line_continues())
   endif
   call r.seek_set(pos)
   if result

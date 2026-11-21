@@ -743,6 +743,14 @@ class VimLParser:
             self.declared = self.outer_declared[0]
             viml_remove(self.outer_declared, 0)
 
+    def is_declared(self, name):
+        if viml_has_key(self.declared, name):
+            return TRUE
+        elif self.find_context(NODE_DEF) == -1:
+            return FALSE
+        self.undeclared_in_def[name] = 1
+        return viml_has_key(self.script_declared, name)
+
     def find_context(self, type):
         i = 0
         for node in self.context:
@@ -778,7 +786,24 @@ class VimLParser:
         if self.context[0].type == NODE_FOR:
             raise VimLParserException(Err(viml_printf("E170: Missing :endfor:    %s", ends), pos))
 
+    # A :def function is compiled when it is first called, usually after the whole
+    # script was sourced, so script variables declared after the function are
+    # visible in it.  When a name in a function body was taken as a command and
+    # the script declares it later, parse again with the script variables known.
     def parse(self, reader):
+        start = reader.tell()
+        vim9script = self.vim9script
+        self.script_declared = AttributeDict({})
+        toplevel = self.parse_toplevel(reader)
+        for name in viml_keys(self.undeclared_in_def):
+            if viml_has_key(self.declared, name):
+                self.script_declared = self.declared
+                self.vim9script = vim9script
+                reader.seek_set(start)
+                return self.parse_toplevel(reader)
+        return toplevel
+
+    def parse_toplevel(self, reader):
         self.reader = reader
         self.context = []
         toplevel = Node(NODE_TOPLEVEL)
@@ -788,6 +813,8 @@ class VimLParser:
         # command.
         self.declared = AttributeDict({})
         self.outer_declared = []
+        # Names in :def functions that were not declared when they were parsed.
+        self.undeclared_in_def = AttributeDict({})
         self.push_context(toplevel)
         while self.reader.peek() != "<EOF>":
             self.parse_one_cmd()
@@ -916,11 +943,11 @@ class VimLParser:
         elif self.peek_assign_op() != "":
             # "name = expr" is an assignment when "name" is a variable or not a
             # command.
-            result = viml_has_key(self.declared, name) or self.is_vim9_command(pos) == FALSE
+            result = self.is_declared(name) or self.is_vim9_command(pos) == FALSE
         elif self.ends_excmds(r.peek()):
             # A variable followed by an operator on the next line.  A variable alone
             # has no effect, then it is a command like :new.
-            result = viml_has_key(self.declared, name) and (self.is_vim9_command(pos) == FALSE or self.vim9_line_continues())
+            result = self.is_declared(name) and (self.is_vim9_command(pos) == FALSE or self.vim9_line_continues())
         r.seek_set(pos)
         if result:
             self.parse_vim9_assign_or_expr()
