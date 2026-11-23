@@ -1,0 +1,31 @@
+(vim9script)
+(if true
+  (var = put 1)
+  (assign = put 2))
+(excmd "put = 3")
+(def (F)
+  (if false
+    (var = file 1)
+   elseif true
+    (excmd "file = 2")
+   else
+    (var = file 3)
+    (assign = file 4))
+  (for edit (list 1)
+    (echo edit))
+  (excmd "edit = 6")
+  (try
+    (var = new 1)
+   catch
+    (excmd "new = 7")
+   finally
+    (excmd "new = 8"))
+  (block
+    (var = file 1)
+    (if true
+      (assign = file 9)))
+  (excmd "file = 10")
+  (while true
+    (var = put 1)
+    (break))
+  (excmd "put = 11"))

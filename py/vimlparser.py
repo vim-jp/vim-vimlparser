@@ -720,14 +720,27 @@ class VimLParser:
             self.declared[node.value] = 1
 
     def push_context(self, node):
-        if node.type == NODE_DEF or node.type == NODE_FUNCTION:
+        # Functions have their own scope.  In Vim9 script a block also has its own
+        # scope, also at the script level.
+        if node.type == NODE_DEF or node.type == NODE_FUNCTION or node.type == NODE_BLOCK or self.isvim9() and (node.type == NODE_IF or node.type == NODE_WHILE or node.type == NODE_FOR or node.type == NODE_TRY):
             self.push_scope()
+            viml_insert(self.scope_nodes, node)
         viml_insert(self.context, node)
 
     def pop_context(self):
-        if self.context[0].type == NODE_DEF or self.context[0].type == NODE_FUNCTION:
+        if not viml_empty(self.scope_nodes) and self.scope_nodes[0] is self.context[0]:
             self.pop_scope()
+            viml_remove(self.scope_nodes, 0)
         viml_remove(self.context, 0)
+
+    # Names declared in one branch of :if or :try are not visible in the next
+    # branch: go back to the names known before the :if or :try.
+    def reset_branch_scope(self):
+        if not viml_empty(self.scope_nodes) and self.scope_nodes[0] is self.context[0]:
+            declared = AttributeDict({})
+            for name in viml_keys(self.outer_declared[0]):
+                declared[name] = 1
+            self.declared = declared
 
     # Names declared in a function or lambda are only visible inside it: continue
     # with a copy of the declared names and restore them with pop_scope().
@@ -813,6 +826,8 @@ class VimLParser:
         # command.
         self.declared = AttributeDict({})
         self.outer_declared = []
+        # Context nodes that started a scope with push_scope().
+        self.scope_nodes = []
         # Names in :def functions that were not declared when they were parsed.
         self.undeclared_in_def = AttributeDict({})
         self.push_context(toplevel)
@@ -2726,6 +2741,7 @@ class VimLParser:
             raise VimLParserException(Err("E582: :elseif without :if", self.ea.cmdpos))
         if self.context[0].type != NODE_IF:
             self.pop_context()
+        self.reset_branch_scope()
         node = Node(NODE_ELSEIF)
         node.pos = self.ea.cmdpos
         node.body = []
@@ -2739,6 +2755,7 @@ class VimLParser:
             raise VimLParserException(Err("E581: :else without :if", self.ea.cmdpos))
         if self.context[0].type != NODE_IF:
             self.pop_context()
+        self.reset_branch_scope()
         node = Node(NODE_ELSE)
         node.pos = self.ea.cmdpos
         node.body = []
@@ -2791,11 +2808,6 @@ class VimLParser:
         node.left = lhs.left
         node.list = lhs.list
         node.rest = lhs.rest
-        self.declare(node.left)
-        if node.list is not NIL:
-            for x in node.list:
-                self.declare(x)
-        self.declare(node.rest)
         self.reader.skip_white()
         epos = self.reader.getpos()
         if self.reader.read_alpha() != "in":
@@ -2803,6 +2815,12 @@ class VimLParser:
         node.right = self.parse_expr()
         self.add_node(node)
         self.push_context(node)
+        # The loop variables are only visible inside the loop in Vim9 script.
+        self.declare(node.left)
+        if node.list is not NIL:
+            for x in node.list:
+                self.declare(x)
+        self.declare(node.rest)
 
     # Vim9 :for loop variables with optional types: "name: type" or
     # "[name: type, ...]"
@@ -2871,6 +2889,7 @@ class VimLParser:
             raise VimLParserException(Err("E603: :catch without :try", self.ea.cmdpos))
         if self.context[0].type != NODE_TRY:
             self.pop_context()
+        self.reset_branch_scope()
         node = Node(NODE_CATCH)
         node.pos = self.ea.cmdpos
         node.body = []
@@ -2887,6 +2906,7 @@ class VimLParser:
             raise VimLParserException(Err("E606: :finally without :try", self.ea.cmdpos))
         if self.context[0].type != NODE_TRY:
             self.pop_context()
+        self.reset_branch_scope()
         node = Node(NODE_FINALLY)
         node.pos = self.ea.cmdpos
         node.body = []
