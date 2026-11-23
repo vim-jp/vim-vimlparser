@@ -569,17 +569,34 @@ function! s:VimLParser.declare(node) abort
 endfunction
 
 function! s:VimLParser.push_context(node) abort
-  if a:node.type ==# s:NODE_DEF || a:node.type ==# s:NODE_FUNCTION
+  " Functions have their own scope.  In Vim9 script a block also has its own
+  " scope, also at the script level.
+  if a:node.type ==# s:NODE_DEF || a:node.type ==# s:NODE_FUNCTION || a:node.type ==# s:NODE_BLOCK
+        \ || (self.isvim9() && (a:node.type ==# s:NODE_IF || a:node.type ==# s:NODE_WHILE || a:node.type ==# s:NODE_FOR || a:node.type ==# s:NODE_TRY))
     call self.push_scope()
+    call insert(self.scope_nodes, a:node)
   endif
   call insert(self.context, a:node)
 endfunction
 
 function! s:VimLParser.pop_context() abort
-  if self.context[0].type ==# s:NODE_DEF || self.context[0].type ==# s:NODE_FUNCTION
+  if !empty(self.scope_nodes) && self.scope_nodes[0] is# self.context[0]
     call self.pop_scope()
+    call remove(self.scope_nodes, 0)
   endif
   call remove(self.context, 0)
+endfunction
+
+" Names declared in one branch of :if or :try are not visible in the next
+" branch: go back to the names known before the :if or :try.
+function! s:VimLParser.reset_branch_scope() abort
+  if !empty(self.scope_nodes) && self.scope_nodes[0] is# self.context[0]
+    let declared = {}
+    for name in keys(self.outer_declared[0])
+      let declared[name] = 1
+    endfor
+    let self.declared = declared
+  endif
 endfunction
 
 " Names declared in a function or lambda are only visible inside it: continue
@@ -692,6 +709,8 @@ function! s:VimLParser.parse_toplevel(reader) abort
   " command.
   let self.declared = {}
   let self.outer_declared = []
+  " Context nodes that started a scope with push_scope().
+  let self.scope_nodes = []
   " Names in :def functions that were not declared when they were parsed.
   let self.undeclared_in_def = {}
   call self.push_context(toplevel)
@@ -2970,6 +2989,7 @@ function! s:VimLParser.parse_cmd_elseif() abort
   if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
+  call self.reset_branch_scope()
   let node = s:Node(s:NODE_ELSEIF)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -2986,6 +3006,7 @@ function! s:VimLParser.parse_cmd_else() abort
   if self.context[0].type !=# s:NODE_IF
     call self.pop_context()
   endif
+  call self.reset_branch_scope()
   let node = s:Node(s:NODE_ELSE)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -3046,13 +3067,6 @@ function! s:VimLParser.parse_cmd_for() abort
   let node.left = lhs.left
   let node.list = lhs.list
   let node.rest = lhs.rest
-  call self.declare(node.left)
-  if node.list isnot# s:NIL
-    for x in node.list
-      call self.declare(x)
-    endfor
-  endif
-  call self.declare(node.rest)
   call self.reader.skip_white()
   let epos = self.reader.getpos()
   if self.reader.read_alpha() !=# 'in'
@@ -3061,6 +3075,14 @@ function! s:VimLParser.parse_cmd_for() abort
   let node.right = self.parse_expr()
   call self.add_node(node)
   call self.push_context(node)
+  " The loop variables are only visible inside the loop in Vim9 script.
+  call self.declare(node.left)
+  if node.list isnot# s:NIL
+    for x in node.list
+      call self.declare(x)
+    endfor
+  endif
+  call self.declare(node.rest)
 endfunction
 
 " Vim9 :for loop variables with optional types: "name: type" or
@@ -3144,6 +3166,7 @@ function! s:VimLParser.parse_cmd_catch() abort
   if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
+  call self.reset_branch_scope()
   let node = s:Node(s:NODE_CATCH)
   let node.pos = self.ea.cmdpos
   let node.body = []
@@ -3164,6 +3187,7 @@ function! s:VimLParser.parse_cmd_finally() abort
   if self.context[0].type !=# s:NODE_TRY
     call self.pop_context()
   endif
+  call self.reset_branch_scope()
   let node = s:Node(s:NODE_FINALLY)
   let node.pos = self.ea.cmdpos
   let node.body = []
