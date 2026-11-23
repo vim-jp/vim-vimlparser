@@ -57,7 +57,9 @@ jobs:
 
       - name: Install Covimerage
         run: |
-          python -m pip install -q --user covimerage
+          # covimerage writes the JSON data format of coverage 4, while
+          # coverage 5 expects SQLite.
+          python -m pip install -q --user covimerage "coverage<5"
           python -m pip freeze
 
       - name: Compile js and py
