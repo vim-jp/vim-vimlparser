@@ -1,0 +1,6 @@
+(vim9script)
+(excmd "put = 42")
+(def (F)
+  (assign = put 1))
+(var = put 7)
+(call (F))

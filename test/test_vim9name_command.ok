@@ -1,0 +1,6 @@
+(vim9script)
+(def (Highlight new list)
+  (eval (method list (add new))))
+(def (Open)
+  (excmd "new")
+  (excmd "vertical new"))

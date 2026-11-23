@@ -1,0 +1,11 @@
+vim9script noclear
+# A legacy :function in a Vim9 script uses legacy syntax.
+function LegacyFunc()
+  " legacy comment
+  let x = 1 " trailing comment
+  return x
+endfunction
+def Vim9Func()
+  # Vim9 comment
+  echo "string" # trailing comment
+enddef

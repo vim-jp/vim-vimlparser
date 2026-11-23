@@ -1,0 +1,3 @@
+(let = s:l (list 1))
+(call (method (remove s:l 0) (string)))
+(call (method (method (get s:l 0) (string)) (len)))

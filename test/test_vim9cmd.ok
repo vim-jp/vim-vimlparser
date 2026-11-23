@@ -1,0 +1,14 @@
+; legacy script
+(var = x (dict ('key' 1)))
+(assign = (dot x key) 2)
+(echo (dot x key))
+; comment
+(let = s:d (dict))
+(echowindow 'msg' s:d)
+(def (F)
+  (let = s:d (dict ('a' 1)))
+  (let = s:e 1)
+  ; legacy comment
+  (defer (delete 'file'))
+  (var = y 1)
+  (assign = y 2))

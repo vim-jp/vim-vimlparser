@@ -37,6 +37,31 @@ This above code output following.
 (let = s:message (printf "hello %d" (+ 1 (* 2 3))))
 ```
 
+## Vim9 script
+
+Vim9 script is parsed after `vim9script`, inside `:def` functions and Vim9
+lambdas, and for commands with the `:vim9cmd` modifier.  `:function` bodies
+and commands with `:legacy` use legacy syntax.  This includes assignments
+and function calls without `:let` and `:call`, declarations with types,
+`=>` lambdas with blocks, line continuation without backslash, classes,
+interfaces, enums, `:type`, `:import` and `:export`.
+
+```vim
+vim9script
+var total: number = [1, 2, 3]
+  ->reduce((acc, n) => acc + n)
+total += 1
+```
+
+```
+(vim9script)
+(var = total: number (method (list 1 2 3) (reduce (lambda (acc n) (+ acc n)))))
+(assign += total 1)
+```
+
+The Vim script parser is recursive, deeply nested expressions may need a
+larger 'maxfuncdepth'.
+
 ## About project name
 
 We know a name "VimL" is not the common short form of "Vim scripting language".
